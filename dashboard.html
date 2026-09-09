@@ -217,9 +217,9 @@
   </main>
 
   <script type="module">
-    import { fetchStudentSubjects, fetchLevels, fetchStudentProgress, fetchExamsForStudentLevel, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, formatStudentName, toLevelLetter } from './js/api.js';
-    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js';
-    import { showToast, showLoading, hideLoading, getGrade } from './js/app.js';
+    import { fetchStudentSubjects, fetchLevels, fetchStudentProgress, fetchExamsForStudentLevel, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, formatStudentName, toLevelLetter } from './js/api.js?v=1.1';
+    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=1.1';
+    import { showToast, showLoading, hideLoading, getGrade } from './js/app.js?v=1.1';
 
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';

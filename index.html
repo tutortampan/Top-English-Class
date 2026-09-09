@@ -634,9 +634,9 @@
   </div>
 
   <script type="module">
-    import { fetchPrograms, fetchClasses, fetchBatches, fetchStudentsByClass, verifyStudentLogin, formatStudentName } from './js/api.js';
-    import { setStudentSession, getStudentSession } from './js/session.js';
-    import { showToast, showLoading, hideLoading } from './js/app.js';
+    import { fetchPrograms, fetchClasses, fetchBatches, fetchStudentsByClass, verifyStudentLogin, formatStudentName } from './js/api.js?v=1.1';
+    import { setStudentSession, getStudentSession } from './js/session.js?v=1.1';
+    import { showToast, showLoading, hideLoading } from './js/app.js?v=1.1';
 
     // ── Redirect if already logged in ──
     if (getStudentSession()) {

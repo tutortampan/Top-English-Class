@@ -63,9 +63,9 @@
   </div>
 
   <script type="module">
-    import { fetchAttemptResult, fetchAttemptAnswers, startExam } from './js/api.js';
-    import { requireStudentSession } from './js/session.js';
-    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js';
+    import { fetchAttemptResult, fetchAttemptAnswers, startExam } from './js/api.js?v=1.1';
+    import { requireStudentSession } from './js/session.js?v=1.1';
+    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=1.1';
 
     const session = requireStudentSession();
     if (!session) throw new Error('Not authenticated');
