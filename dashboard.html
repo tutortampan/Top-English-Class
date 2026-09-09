@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — TOP ENGLISH CLASS</title>
+  <meta name="description" content="Your TOP ENGLISH CLASS learning dashboard — track progress, view subjects, and start exams." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body class="dashboard-page">
+
+  <div id="toast-container"></div>
+
+  <!-- Top Navigation -->
+  <header class="dashboard-header">
+    <div class="dashboard-header-brand">🎓 TOP ENGLISH CLASS</div>
+    <div class="d-flex align-center gap-3">
+      <!-- Header Avatar -->
+      <div id="header-avatar" class="header-avatar" title="View Profile" id="header-avatar-btn" style="cursor:pointer;">
+        <span id="header-avatar-icon">👤</span>
+        <img id="header-avatar-img" class="hidden" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+      </div>
+      <span id="header-student-name" class="text-muted text-sm fw-600"></span>
+      <button class="btn btn-ghost btn-sm" id="view-profile-btn">Profile</button>
+      <button class="btn btn-ghost btn-sm" id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="dashboard-content">
+
+    <!-- Welcome Banner / Profile Card -->
+    <section class="welcome-banner" aria-labelledby="welcome-heading">
+      <div class="d-flex justify-between align-center" style="flex-wrap:wrap;gap:var(--space-4);">
+        <div>
+          <div class="badge badge-success mb-2">● Active Session</div>
+          <h1 class="welcome-name" id="welcome-heading">Hello, <span id="welcome-name" class="text-gradient">Student</span>! 👋</h1>
+          <p class="welcome-meta" id="welcome-meta">Loading your details…</p>
+        </div>
+        
+        <!-- Score & Grade Badges -->
+        <div class="d-flex gap-4 align-center" style="background:rgba(255,255,255,0.04);padding:var(--space-4) var(--space-6);border-radius:var(--radius-lg);border:1px solid var(--clr-border);">
+          <div style="text-align:center;">
+            <div class="text-xs text-muted mb-1">AVERAGE SCORE</div>
+            <div class="fw-800" style="font-size:1.8rem;color:var(--clr-accent-1);font-family:var(--font-display);" id="stat-overall-score">0%</div>
+          </div>
+          <div style="width:1px;height:40px;background:var(--clr-border);"></div>
+          <div style="text-align:center;">
+            <div class="text-xs text-muted mb-1">GRADE</div>
+            <div class="fw-800" style="font-size:1.8rem;font-family:var(--font-display);" id="stat-overall-grade-badge">—</div>
+          </div>
+          <div style="width:1px;height:40px;background:var(--clr-border);"></div>
+          <div style="text-align:center;">
+            <div class="text-xs text-muted mb-1">EXAMS TAKEN</div>
+            <div class="fw-800" style="font-size:1.8rem;font-family:var(--font-display);" id="stat-exams-done">0</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Subjects Section -->
+    <section aria-labelledby="subjects-heading">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" id="subjects-heading">My Subjects</h2>
+          <p class="section-subtitle">Choose a subject to view levels and available exams</p>
+        </div>
+      </div>
+
+      <div class="subjects-grid" id="subjects-grid">
+        <div class="empty-state">
+          <div class="spinner"></div>
+          <p>Loading subjects…</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Student Profile Modal -->
+    <div class="modal-backdrop hidden" id="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+      <div class="modal-box" style="max-width:640px;">
+        <div class="modal-header">
+          <div>
+            <h3 id="profile-modal-title">👨‍🎓 Student Profile</h3>
+            <p class="text-muted text-sm">Manage profile photo, personal PIN & view history</p>
+          </div>
+          <button class="btn btn-ghost btn-icon" id="close-profile-modal" aria-label="Close">✕</button>
+        </div>
+        <div class="p-4" style="display:flex;flex-direction:column;gap:var(--space-5);">
+          
+          <!-- Avatar & Student Meta Card -->
+          <div class="glass-card p-5 d-flex align-center gap-5" style="position:relative;">
+            <div style="position:relative;cursor:pointer;flex-shrink:0;" id="avatar-container" title="Click to upload profile photo">
+              <div id="avatar-img-wrapper" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--clr-primary),var(--clr-accent-1));display:flex;align-items:center;justify-content:center;font-size:2.4rem;font-weight:700;overflow:hidden;border:3px solid var(--clr-accent-1);box-shadow:0 0 0 4px rgba(99,102,241,0.15);">
+                <span id="avatar-icon">👤</span>
+                <img id="prof-photo-img" class="hidden" style="width:100%;height:100%;object-fit:cover;" alt="Profile Photo" />
+              </div>
+              <div style="position:absolute;bottom:2px;right:2px;background:var(--clr-accent-1);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65rem;box-shadow:var(--shadow-md);border:2px solid var(--clr-base);">📷</div>
+              <input type="file" id="photo-file-input" accept="image/*" class="hidden" />
+            </div>
+            <div style="flex:1;min-width:0;">
+              <h4 class="fw-700 text-lg" id="prof-student-name" style="margin-bottom:var(--space-1);">—</h4>
+              <p class="text-xs text-muted" id="prof-student-prog">—</p>
+              <p class="text-sm text-muted" id="prof-student-class" style="margin-bottom:var(--space-1);">—</p>
+              <p class="text-xs text-muted hidden" id="prof-student-batch" style="margin-bottom:var(--space-1);">—</p>
+              <p class="text-xs text-muted mt-2" style="color:var(--clr-accent-1);">Click photo to change</p>
+            </div>
+          </div>
+
+          <!-- Gender & Title Card -->
+          <div class="glass-card p-5">
+            <div class="d-flex justify-between align-center mb-2" style="flex-wrap:wrap;gap:var(--space-2);">
+              <div>
+                <h4 class="fw-700 text-sm d-flex align-center gap-2">👤 Gender &amp; Honorific Title</h4>
+                <p class="text-xs text-muted">Your title appears as <strong>Mr.</strong> or <strong>Miss</strong> across exams, reports, and rankings.</p>
+              </div>
+              <span id="prof-gender-badge" class="badge badge-neutral">—</span>
+            </div>
+            <div class="d-flex gap-3 mt-3" id="prof-gender-btns">
+              <button type="button" class="btn btn-secondary btn-sm flex-1" id="btn-prof-male">👨 Male (Mr.)</button>
+              <button type="button" class="btn btn-secondary btn-sm flex-1" id="btn-prof-female">👩 Female (Miss)</button>
+            </div>
+          </div>
+
+          <!-- Change PIN Form Card -->
+          <div class="glass-card p-5">
+            <h4 class="fw-700 text-sm d-flex align-center gap-2" style="margin-bottom:var(--space-4);">🔑 Change Personal PIN</h4>
+            <form id="change-pin-form">
+              <div class="d-flex gap-3" style="flex-wrap:wrap;margin-bottom:var(--space-4);">
+                <div style="flex:1;min-width:130px;">
+                  <label class="form-label text-xs">Current PIN</label>
+                  <input type="password" id="pin-old" class="form-control" placeholder="****" maxlength="6" required />
+                </div>
+                <div style="flex:1;min-width:130px;">
+                  <label class="form-label text-xs">New PIN (min 4 digits)</label>
+                  <input type="password" id="pin-new" class="form-control" placeholder="****" maxlength="6" required />
+                </div>
+                <div style="flex:1;min-width:130px;">
+                  <label class="form-label text-xs">Confirm New PIN</label>
+                  <input type="password" id="pin-confirm" class="form-control" placeholder="****" maxlength="6" required />
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm" id="save-pin-btn">Update PIN</button>
+            </form>
+          </div>
+
+          <!-- Exam History -->
+          <div class="glass-card p-5">
+            <h4 class="fw-700 text-sm" style="margin-bottom:var(--space-4);">📋 Recent Exam Attempts &amp; Scores</h4>
+            <div class="table-wrap" style="max-height:220px;overflow-y:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Exam Title</th>
+                    <th>Score</th>
+                    <th>Grade</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="tbl-profile-history">
+                  <tr><td colspan="4" class="text-center text-muted p-4">Loading history…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level Detail Modal -->
+    <div class="modal-backdrop hidden" id="level-modal" role="dialog" aria-modal="true" aria-labelledby="level-modal-title">
+      <div class="modal-box" style="max-width:680px;">
+        <div class="modal-header">
+          <div>
+            <h3 id="level-modal-title">Subject Levels</h3>
+            <p class="text-muted text-sm" id="level-modal-subject"></p>
+          </div>
+          <button class="btn btn-ghost btn-icon" id="close-level-modal" aria-label="Close">✕</button>
+        </div>
+        <div id="levels-container"></div>
+      </div>
+    </div>
+
+    <!-- First-Entry Gender Setup Modal -->
+    <div class="modal-backdrop hidden" id="gender-setup-modal" role="dialog" aria-modal="true" aria-labelledby="gender-setup-title">
+      <div class="modal-box" style="max-width:540px;text-align:center;">
+        <div class="p-6">
+          <div style="font-size:3rem;margin-bottom:var(--space-2);">🌟</div>
+          <h2 id="gender-setup-title" style="font-size:1.5rem;font-weight:800;color:var(--clr-text-1);margin-bottom:var(--space-2);">Personalize Your Account</h2>
+          <p class="text-sm text-muted mb-6">
+            Welcome to TOP ENGLISH CLASS! Please select your gender to personalize your title (<strong>Mr.</strong> / <strong>Miss</strong>):
+          </p>
+
+          <!-- Gender Choice Cards -->
+          <div class="d-flex gap-4 justify-center mb-6" style="flex-wrap:wrap;">
+            <div class="gender-card p-5" id="opt-gender-male" style="flex:1;min-width:180px;cursor:pointer;border:2px solid var(--clr-border);border-radius:var(--radius-lg);background:rgba(255,255,255,0.03);transition:all 0.25s ease;">
+              <div style="font-size:3.2rem;margin-bottom:var(--space-2);">👨</div>
+              <div class="fw-800 text-lg" style="color:var(--clr-text-1);">Male</div>
+              <div class="badge badge-primary mt-2">Title: Mr.</div>
+            </div>
+            <div class="gender-card p-5" id="opt-gender-female" style="flex:1;min-width:180px;cursor:pointer;border:2px solid var(--clr-border);border-radius:var(--radius-lg);background:rgba(255,255,255,0.03);transition:all 0.25s ease;">
+              <div style="font-size:3.2rem;margin-bottom:var(--space-2);">👩</div>
+              <div class="fw-800 text-lg" style="color:var(--clr-text-1);">Female</div>
+              <div class="badge badge-accent mt-2">Title: Miss</div>
+            </div>
+          </div>
+
+          <p class="text-xs text-muted mb-6">ℹ️ You can change this anytime later from your Profile settings.</p>
+
+          <button class="btn btn-primary btn-block" id="btn-confirm-gender" disabled style="padding:var(--space-3) var(--space-6);font-size:1rem;font-weight:700;">
+            Confirm &amp; Continue →
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script type="module">
+    import { fetchStudentSubjects, fetchLevels, fetchStudentProgress, fetchExamsForStudentLevel, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, formatStudentName, toLevelLetter } from './js/api.js';
+    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js';
+    import { showToast, showLoading, hideLoading, getGrade } from './js/app.js';
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    window.escapeHtml = escapeHtml;
+    const session = requireStudentSession();
+    if (!session) throw new Error('Not authenticated');
+
+    // Populate header
+    document.getElementById('header-student-name').textContent = session.student_name;
+    document.getElementById('welcome-name').textContent = session.student_name;
+    document.getElementById('welcome-meta').textContent = `${session.program_name} › ${session.class_name}${session.batch_name ? ' › ' + session.batch_name : ''}`;
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      clearStudentSession();
+      window.location.href = 'index.html';
+    });
+
+    // ── Gender & Title Synchronization ──
+    function applyStudentGenderUI(g) {
+      const cleanName = (session.student_name || '').replace(/^(mr\.?|miss\.?|mrs\.?|ms\.?)\s+/i, '').trim();
+      const formattedName = formatStudentName(cleanName, g);
+      session.student_name = formattedName;
+      session.gender = g || null;
+      updateStudentSessionGender(session.gender, formattedName);
+
+      document.getElementById('header-student-name').textContent = formattedName;
+      document.getElementById('welcome-name').textContent = formattedName;
+      const profName = document.getElementById('prof-student-name');
+      if (profName) profName.textContent = formattedName;
+
+      const badge = document.getElementById('prof-gender-badge');
+      if (badge) {
+        if (g === 'male') {
+          badge.className = 'badge badge-primary';
+          badge.textContent = '👨 Male (Mr.)';
+        } else if (g === 'female') {
+          badge.className = 'badge badge-accent';
+          badge.textContent = '👩 Female (Miss)';
+        } else {
+          badge.className = 'badge badge-neutral';
+          badge.textContent = '⏳ Unassigned';
+        }
+      }
+
+      const btnMale = document.getElementById('btn-prof-male');
+      const btnFemale = document.getElementById('btn-prof-female');
+      if (btnMale && btnFemale) {
+        btnMale.classList.toggle('btn-primary', g === 'male');
+        btnMale.classList.toggle('btn-secondary', g !== 'male');
+        btnFemale.classList.toggle('btn-primary', g === 'female');
+        btnFemale.classList.toggle('btn-secondary', g !== 'female');
+      }
+    }
+
+    async function checkAndPromptGender() {
+      let currentGender = session.gender;
+      if (!currentGender) {
+        try {
+          const sb = await (await import('./js/supabase.js')).getSupabase();
+          const { data: st } = await sb.from('students').select('gender, name').eq('id', session.student_id).single();
+          if (st?.gender) {
+            currentGender = st.gender;
+          }
+        } catch (err) {
+          console.warn('Could not verify gender from DB:', err);
+        }
+      }
+
+      if (currentGender) {
+        applyStudentGenderUI(currentGender);
+        return;
+      }
+
+      // Gender is unassigned — trigger First-Entry Gender Setup Modal
+      const modal = document.getElementById('gender-setup-modal');
+      const optMale = document.getElementById('opt-gender-male');
+      const optFemale = document.getElementById('opt-gender-female');
+      const confirmBtn = document.getElementById('btn-confirm-gender');
+      let selectedGender = null;
+
+      modal.classList.remove('hidden');
+
+      optMale.onclick = () => {
+        selectedGender = 'male';
+        optMale.style.borderColor = 'var(--clr-primary)';
+        optMale.style.background = 'rgba(99, 102, 241, 0.15)';
+        optMale.style.boxShadow = '0 0 0 2px var(--clr-primary)';
+        optFemale.style.borderColor = 'var(--clr-border)';
+        optFemale.style.background = 'rgba(255, 255, 255, 0.03)';
+        optFemale.style.boxShadow = 'none';
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirm as Male (Mr.) →';
+      };
+
+      optFemale.onclick = () => {
+        selectedGender = 'female';
+        optFemale.style.borderColor = 'var(--clr-accent-1)';
+        optFemale.style.background = 'rgba(236, 72, 153, 0.15)';
+        optFemale.style.boxShadow = '0 0 0 2px var(--clr-accent-1)';
+        optMale.style.borderColor = 'var(--clr-border)';
+        optMale.style.background = 'rgba(255, 255, 255, 0.03)';
+        optMale.style.boxShadow = 'none';
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirm as Female (Miss) →';
+      };
+
+      confirmBtn.onclick = async () => {
+        if (!selectedGender) return;
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Saving…';
+        try {
+          await updateStudentGender(session.student_id, selectedGender);
+          applyStudentGenderUI(selectedGender);
+          modal.classList.add('hidden');
+          showToast(`Welcome, ${session.student_name}! Your title has been personalized.`, 'success');
+        } catch (err) {
+          confirmBtn.disabled = false;
+          showToast('Failed to save gender: ' + err.message, 'error');
+        }
+      };
+    }
+
+    // ── Load Subjects ──
+    async function loadDashboard() {
+      showLoading('Loading your dashboard…');
+      try {
+        await checkAndPromptGender();
+
+        const [subjects, progress, attempts] = await Promise.all([
+          fetchStudentSubjects(session.class_id, session.program_id),
+          fetchStudentProgress(session.student_id),
+          fetchAllStudentAttempts(session.student_id)
+        ]);
+
+        hideLoading();
+        renderSubjects(subjects, progress);
+        await computeOverallStats(attempts);
+        setupProfileModal(attempts);
+      } catch(e) {
+        hideLoading();
+        showToast('Failed to load dashboard: ' + e.message, 'error');
+      }
+    }
+
+    function renderSubjects(rawSubjects, progress) {
+      const grid = document.getElementById('subjects-grid');
+      if (!rawSubjects.length) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+          <div class="empty-state__icon">📚</div>
+          <h3>No subjects assigned</h3>
+          <p>Your class doesn't have any subjects assigned yet. Please contact your teacher.</p>
+        </div>`;
+        return;
+      }
+
+      // Strict alphabetical sorting (A to Z)
+      const subjects = [...rawSubjects].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+      const subjectIcons = ['📖', '✏️', '🗣️', '🎧', '📝', '🌐', '📚', '💬'];
+      grid.innerHTML = '';
+
+      subjects.forEach((subj, idx) => {
+        const subjProgress = progress.filter(p => p.subject_id === subj.id);
+        const completedLevels = subjProgress.filter(p => p.is_completed).length;
+        const totalLevels = subjProgress.length;
+        const pct = totalLevels > 0 ? Math.round((completedLevels / totalLevels) * 100) : 0;
+
+        const card = document.createElement('div');
+        card.className = 'subject-card';
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', `Subject: ${subj.name}`);
+        card.innerHTML = `
+          <div class="subject-icon">${subjectIcons[idx % subjectIcons.length]}</div>
+          <div class="subject-name">${subj.name}</div>
+          <div class="text-sm text-muted mb-3">${completedLevels} of ${totalLevels} levels completed</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar" style="width:${pct}%"></div>
+          </div>
+          <div class="levels-track mt-3" id="track-${subj.id}"></div>
+        `;
+
+        card.addEventListener('click', () => openLevelModal(subj, progress));
+        card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openLevelModal(subj, progress); });
+        grid.appendChild(card);
+
+        // Render level dots
+        renderLevelTrack(subj.id, subjProgress);
+      });
+    }
+
+    function formatAnswerType(atype) {
+      if (!atype) return 'Written Test';
+      if (atype === 'speech_to_text') return 'Speaking Test';
+      if (atype === 'written') return 'Written Test';
+      if (atype === 'multiple_choice') return 'Multiple Choice';
+      if (atype === 'dropdown') return 'Dropdown';
+      return atype.replace('_', ' ');
+    }
+
+    function renderLevelTrack(subjectId, subjProgress) {
+      const track = document.getElementById(`track-${subjectId}`);
+      if (!track || !subjProgress.length) return;
+      track.innerHTML = '';
+      const sorted = [...subjProgress].sort((a, b) => a.level_id.localeCompare(b.level_id));
+      sorted.slice(0, 10).forEach(p => {
+        const node = document.createElement('div');
+        node.className = `level-node ${p.is_completed ? 'completed' : p.is_unlocked ? 'unlocked' : 'locked'}`;
+        node.title = p.is_completed ? 'Completed' : p.is_unlocked ? 'In progress' : 'Locked';
+        track.appendChild(node);
+      });
+    }
+
+    // ── Level Modal ──
+    async function openLevelModal(subject, allProgress) {
+      const modal = document.getElementById('level-modal');
+      const container = document.getElementById('levels-container');
+      document.getElementById('level-modal-title').textContent = subject.name;
+      document.getElementById('level-modal-subject').textContent = session.program_name;
+      modal.classList.remove('hidden');
+      container.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loading levels…</p></div>';
+
+      try {
+        const levels = await fetchLevels(subject.id);
+        const subjProgress = allProgress.filter(p => p.subject_id === subject.id);
+
+        if (!levels.length) {
+          container.innerHTML = '<div class="empty-state"><p class="text-muted">No levels configured for this subject.</p></div>';
+          return;
+        }
+
+        container.innerHTML = '';
+        for (const level of levels) {
+          const prog = subjProgress.find(p => p.level_id === level.id);
+          const isUnlocked = (level.level_number === 1) || (prog?.is_unlocked);
+          const isCompleted = prog?.is_completed;
+
+          const levelEl = document.createElement('div');
+          levelEl.className = 'glass-card p-5 mb-4';
+          levelEl.innerHTML = `
+            <div class="d-flex align-center justify-between mb-3">
+              <div class="d-flex align-center gap-3">
+                <span class="badge ${isCompleted ? 'badge-success' : isUnlocked ? 'badge-primary' : 'badge-neutral'}">
+                  ${isCompleted ? '✓ Completed' : isUnlocked ? '▶ Unlocked' : '🔒 Locked'}
+                </span>
+                <span class="fw-700">Level ${toLevelLetter(level.level_number)}: ${level.name}</span>
+              </div>
+            </div>
+            <div id="exams-${level.id}" class="mt-3"></div>
+          `;
+          container.appendChild(levelEl);
+
+          if (isUnlocked) {
+            loadLevelExams(level.id, subject.id, isUnlocked);
+          } else {
+            document.getElementById(`exams-${level.id}`).innerHTML =
+              `<p class="text-sm text-muted">Complete Level ${toLevelLetter(level.level_number - 1)} to unlock this level.</p>`;
+          }
+        }
+      } catch(e) {
+        container.innerHTML = `<div class="empty-state"><p class="text-danger">Failed to load levels. ${e.message}</p></div>`;
+      }
+    }
+
+    async function loadLevelExams(levelId, subjectId, isUnlocked) {
+      const examsEl = document.getElementById(`exams-${levelId}`);
+      try {
+        const rawExams = await fetchExamsForStudentLevel(session.class_id, levelId, session.program_id);
+        if (!rawExams.length) {
+          examsEl.innerHTML = '<p class="text-sm text-muted">No exams available in this level yet.</p>';
+          return;
+        }
+
+        // Strict alphabetical sorting (A to Z)
+        const exams = [...rawExams].sort((a, b) => {
+          const nameA = `${a.exam_type ? a.exam_type + ' - ' : ''}${a.exam_title || ''}`;
+          const nameB = `${b.exam_type ? b.exam_type + ' - ' : ''}${b.exam_title || ''}`;
+          return nameA.localeCompare(nameB);
+        });
+
+        examsEl.innerHTML = '';
+        for (const exam of exams) {
+          let attempts = [];
+          try {
+            attempts = await fetchStudentAttemptsForExam(session.student_id, exam.id);
+          } catch (attErr) {
+            console.warn('Attempt fetch notice for exam:', exam.id, attErr);
+          }
+          const bestPct = attempts.length > 0 ? Math.max(...attempts.map(a => parseFloat(a.percentage || 0))) : null;
+          const passed = bestPct !== null && bestPct >= 60;
+
+          // Prerequisite exam verification
+          let prereqMet = true;
+          let prereqExamTitle = '';
+          if (exam.prerequisite_exam_id) {
+            let prereqAttempts = [];
+            try {
+              prereqAttempts = await fetchStudentAttemptsForExam(session.student_id, exam.prerequisite_exam_id);
+            } catch (pErr) {
+              console.warn('Prereq attempt fetch notice:', pErr);
+            }
+            const prereqBest = prereqAttempts.length > 0 ? Math.max(...prereqAttempts.map(a => parseFloat(a.percentage || 0))) : null;
+            prereqMet = prereqBest !== null && prereqBest >= 60;
+            const pObj = rawExams.find(e => e.id === exam.prerequisite_exam_id);
+            prereqExamTitle = pObj ? (pObj.exam_title || pObj.display_name) : 'Prerequisite Exam';
+          }
+
+          const canStart = isUnlocked && prereqMet;
+
+          const examEl = document.createElement('div');
+          examEl.className = 'd-flex align-center justify-between p-4 rounded mb-2';
+          examEl.style.background = 'rgba(255,255,255,0.03)';
+          examEl.style.border = '1px solid var(--clr-border)';
+          examEl.innerHTML = `
+            <div>
+              <div class="fw-600 text-sm">${escapeHtml(exam.exam_type)} — ${escapeHtml(exam.exam_title)} ${exam.exam_order ? `<span class="badge badge-neutral" style="font-size:0.7rem;margin-left:4px;">Order ${escapeHtml(exam.exam_order)}</span>` : ''}</div>
+              <div class="text-xs text-muted mt-1">⏳ ${exam.time_limit_minutes || 60} min · ${formatAnswerType(exam.answer_type)}</div>
+              ${!prereqMet ? `<div class="mt-1"><span class="badge badge-warning" style="font-size:0.7rem;">🔒 Prerequisite Required: ${escapeHtml(prereqExamTitle)} (Min. 60% to unlock)</span></div>` : ''}
+            </div>
+            <div class="d-flex align-center gap-3">
+              ${bestPct !== null ? `<span class="badge ${passed ? 'badge-success' : 'badge-danger'}">${bestPct.toFixed(0)}% (${getGrade(bestPct)})</span>` : ''}
+              ${canStart ? `<button class="btn btn-primary btn-sm" data-exam-id="${exam.id}" id="start-${exam.id}">Start</button>` : (!prereqMet ? `<button class="btn btn-secondary btn-sm" disabled style="opacity:0.6;cursor:not-allowed;">Locked</button>` : '')}
+            </div>
+          `;
+          examsEl.appendChild(examEl);
+
+          if (canStart) {
+            examEl.querySelector(`#start-${exam.id}`).addEventListener('click', () => {
+              sessionStorage.setItem('tec_exam_id', exam.id);
+              window.location.href = 'exam.html';
+            });
+          }
+        }
+      } catch(e) {
+        console.error('Failed to load level exams:', e);
+        examsEl.innerHTML = `<p class="text-sm text-danger">Failed to load exams: ${escapeHtml(e.message)}</p>`;
+      }
+    }
+
+    // ── Overall Stats Calculation (AGENTS.md §2.8 & §2.10) ──
+    async function computeOverallStats(attempts) {
+      document.getElementById('stat-exams-done').textContent = attempts.length;
+
+      if (!attempts.length) {
+        document.getElementById('stat-overall-score').textContent = '0%';
+        document.getElementById('stat-overall-grade-badge').textContent = '—';
+        return;
+      }
+
+      // Calculate overall score (average of completed attempt percentages)
+      const totalPct = attempts.reduce((acc, curr) => acc + parseFloat(curr.percentage || 0), 0);
+      const avgPct = Math.round(totalPct / attempts.length);
+      const overallGrade = getGrade(avgPct);
+
+      const scoreEl = document.getElementById('stat-overall-score');
+      scoreEl.textContent = `${avgPct}%`;
+      scoreEl.className = `stat-value text-grade-${overallGrade}`;
+
+      const gradeBadge = document.getElementById('stat-overall-grade-badge');
+      gradeBadge.textContent = overallGrade;
+      
+      const gradeColors = { S: '#f59e0b', A: '#10b981', B: '#3b82f6', C: '#f59e0b', D: '#ea580c', E: '#ef4444', F: '#94a3b8' };
+      gradeBadge.style.color = gradeColors[overallGrade] || 'var(--clr-text-1)';
+    }
+
+    // ── Profile Modal & History ──
+    function setupProfileModal(attempts) {
+      const modal = document.getElementById('profile-modal');
+      const openBtn = document.getElementById('view-profile-btn');
+      const closeBtn = document.getElementById('close-profile-modal');
+
+      document.getElementById('prof-student-name').textContent = session.student_name;
+      document.getElementById('prof-student-prog').textContent = `Program: ${session.program_name}`;
+      document.getElementById('prof-student-class').textContent = `Class: ${session.class_name}`;
+      const batchEl = document.getElementById('prof-student-batch');
+      if (batchEl) {
+        if (session.batch_name) {
+          batchEl.textContent = `Batch: ${session.batch_name}`;
+          batchEl.classList.remove('hidden');
+        } else {
+          batchEl.classList.add('hidden');
+        }
+      }
+
+      // Fetch and display existing student photo (profile modal + header)
+      const photoImg = document.getElementById('prof-photo-img');
+      const avatarIcon = document.getElementById('avatar-icon');
+      const headerAvatarImg = document.getElementById('header-avatar-img');
+      const headerAvatarIcon = document.getElementById('header-avatar-icon');
+
+      function applyPhotoEverywhere(url) {
+        // Profile modal avatar
+        photoImg.src = url;
+        photoImg.classList.remove('hidden');
+        avatarIcon.classList.add('hidden');
+        // Header avatar
+        headerAvatarImg.src = url;
+        headerAvatarImg.classList.remove('hidden');
+        headerAvatarIcon.classList.add('hidden');
+      }
+
+      (async () => {
+        try {
+          const sb = await (await import('./js/supabase.js')).getSupabase();
+          const { data: st } = await sb.from('students').select('photo_url').eq('id', session.student_id).single();
+          if (st?.photo_url) applyPhotoEverywhere(st.photo_url);
+        } catch {}
+      })();
+
+      const tbody = document.getElementById('tbl-profile-history');
+      if (tbody) tbody.innerHTML = '';
+
+      if (!attempts.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">No completed exams yet.</td></tr>';
+      } else {
+        attempts.forEach(a => {
+          const tr = document.createElement('tr');
+          const title = a.exams ? `${a.exams.exam_type || ''} — ${a.exams.exam_title || 'Exam'}` : 'Exam';
+          const pct = parseFloat(a.percentage || 0).toFixed(1);
+          const grade = a.grade || getGrade(pct);
+
+          tr.innerHTML = `
+            <td class="fw-600">${title}</td>
+            <td class="fw-700 text-grade-${grade}">${pct}%</td>
+            <td><span class="grade-badge grade-${grade}" style="width:24px;height:24px;font-size:0.75rem;display:inline-flex;">${grade}</span></td>
+            <td class="text-muted text-sm">${a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : '—'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // Photo upload click handler
+      const avatarContainer = document.getElementById('avatar-container');
+      const fileInput = document.getElementById('photo-file-input');
+
+      avatarContainer.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+          showToast('Ukuran foto terlalu besar. Maksimal 2MB.', 'warning');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+          const base64 = evt.target.result;
+          showLoading('Mengunggah foto profil…');
+          try {
+            await uploadStudentPhoto(session.student_id, base64);
+            applyPhotoEverywhere(base64);
+            hideLoading();
+            showToast('Profile photo updated successfully!', 'success');
+          } catch(err) {
+            hideLoading();
+            showToast('Failed to upload photo: ' + err.message, 'error');
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // Change PIN Form Handler
+      const changePinForm = document.getElementById('change-pin-form');
+      changePinForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const oldPin = document.getElementById('pin-old').value.trim();
+        const newPin = document.getElementById('pin-new').value.trim();
+        const confirmPin = document.getElementById('pin-confirm').value.trim();
+
+        if (newPin !== confirmPin) {
+          showToast('New PIN confirmation does not match.', 'warning');
+          return;
+        }
+        if (newPin.length < 4) {
+          showToast('PIN baru minimal 4 digit angka.', 'warning');
+          return;
+        }
+
+        showLoading('Mengubah PIN…');
+        try {
+          await updateStudentPin(session.student_id, oldPin, newPin);
+          hideLoading();
+          showToast('PIN updated successfully!', 'success');
+          changePinForm.reset();
+        } catch(err) {
+          hideLoading();
+          showToast(err.message, 'error');
+        }
+      });
+
+      // Gender & Title Buttons in Profile Modal
+      document.getElementById('btn-prof-male')?.addEventListener('click', async () => {
+        if (session.gender === 'male') return;
+        showLoading('Updating title to Mr.…');
+        try {
+          await updateStudentGender(session.student_id, 'male');
+          applyStudentGenderUI('male');
+          hideLoading();
+          showToast('Title updated to Mr.!', 'success');
+        } catch(err) {
+          hideLoading();
+          showToast('Failed to update gender: ' + err.message, 'error');
+        }
+      });
+
+      document.getElementById('btn-prof-female')?.addEventListener('click', async () => {
+        if (session.gender === 'female') return;
+        showLoading('Updating title to Miss.…');
+        try {
+          await updateStudentGender(session.student_id, 'female');
+          applyStudentGenderUI('female');
+          hideLoading();
+          showToast('Title updated to Miss!', 'success');
+        } catch(err) {
+          hideLoading();
+          showToast('Failed to update gender: ' + err.message, 'error');
+        }
+      });
+
+      openBtn.addEventListener('click', () => {
+        applyStudentGenderUI(session.gender);
+        modal.classList.remove('hidden');
+      });
+      closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+      });
+
+      // Header avatar also opens profile modal
+      document.getElementById('header-avatar').addEventListener('click', () => {
+        applyStudentGenderUI(session.gender);
+        modal.classList.remove('hidden');
+      });
+    }
+
+    // ── Level Modal close ──
+    document.getElementById('close-level-modal').addEventListener('click', () => {
+      document.getElementById('level-modal').classList.add('hidden');
+    });
+    document.getElementById('level-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
+    });
+
+    loadDashboard();
+  </script>
+</body>
+</html>

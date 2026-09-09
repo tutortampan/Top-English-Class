@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en" translate="no" class="notranslate">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google" content="notranslate" />
+  <meta name="googlebot" content="notranslate" />
+  <meta name="robots" content="notranslate" />
+  <title>Exam — TOP ENGLISH CLASS</title>
+  <meta name="description" content="Complete your English exam on TOP ENGLISH CLASS." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body class="exam-page notranslate" translate="no">
+
+  <div id="toast-container"></div>
+
+  <!-- Top bar -->
+  <header class="exam-topbar">
+    <div class="exam-title-bar">
+      <div class="exam-name-display" id="exam-name">Loading exam…</div>
+      <div class="exam-meta-display" id="exam-meta"></div>
+    </div>
+
+    <!-- Timer -->
+    <div class="exam-timer" id="exam-timer" role="timer" aria-live="polite">
+      ⏱ <span id="timer-display">--:--</span>
+    </div>
+
+    <!-- Question counter -->
+    <div class="text-sm text-muted" id="question-counter"></div>
+  </header>
+
+  <!-- Exam progress bar -->
+  <div class="exam-progress-wrap">
+    <div class="exam-progress-fill" id="exam-progress-fill" style="width:0%"></div>
+  </div>
+
+  <!-- Exam body -->
+  <div class="exam-body">
+
+    <!-- Question navigator sidebar -->
+    <aside class="question-sidebar" aria-label="Question navigator">
+      <div class="q-sidebar-header">
+        <p class="text-xs text-muted mb-0 fw-600" style="text-transform:uppercase;letter-spacing:.06em;">Questions</p>
+      </div>
+      <div class="q-nav-grid-wrap">
+        <div class="q-nav-grid" id="q-nav-grid" role="navigation" aria-label="Jump to question"></div>
+      </div>
+
+      <div class="q-nav-legend">
+        <div class="q-nav-legend-item">
+          <div class="q-nav-legend-dot" style="background:rgba(16,185,129,0.3);border:1px solid var(--clr-success);"></div>
+          <span>Answered</span>
+        </div>
+        <div class="q-nav-legend-item">
+          <div class="q-nav-legend-dot" style="background:rgba(99,102,241,0.2);border:1px solid var(--clr-accent-1);"></div>
+          <span>Current</span>
+        </div>
+        <div class="q-nav-legend-item">
+          <div class="q-nav-legend-dot" style="background:var(--clr-surface);border:1px solid var(--clr-border);"></div>
+          <span>Not answered</span>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-3" style="border-top:1px solid var(--clr-border);">
+        <button class="btn btn-success w-100" id="global-submit-btn" style="padding:10px;font-weight:600;">
+          Submit Exam 📋
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main question area -->
+    <main class="exam-main-content" id="exam-main" aria-live="polite">
+      <div class="question-card">
+        <div class="empty-state">
+          <div class="spinner"></div>
+          <p>Loading exam…</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Anti-Cheat Flashing Overlay -->
+  <div id="cheat-overlay" role="alertdialog" aria-modal="true" aria-labelledby="cheat-title">
+    <div class="cheat-box">
+      <div class="cheat-countdown-circle" id="cheat-countdown">10</div>
+      <h2 id="cheat-title" style="font-size:1.6rem;font-weight:800;color:#ffffff;margin-bottom:0.75rem;">🚨 CHEATING ATTEMPT DETECTED! 🚨</h2>
+      <p style="font-size:1rem;color:rgba(255,255,255,0.9);margin-bottom:0.5rem;" id="cheat-reason">You were detected trying to leave the exam page or using navigation buttons!</p>
+      <p style="font-size:0.85rem;color:rgba(255,255,255,0.9);margin-bottom:1.5rem;font-weight:600;">⚠️ The exam will be AUTOMATICALLY SUBMITTED when this countdown reaches 0 seconds!</p>
+      <button class="btn btn-primary" id="dismiss-cheat-btn" style="background:#ffffff;color:#dc2626;font-weight:800;border:none;padding:0.75rem 2rem;font-size:1.05rem;box-shadow:0 10px 25px rgba(0,0,0,0.3);">
+        Return to My Exam
+      </button>
+    </div>
+  </div>
+
+  <!-- Submit confirm modal -->
+  <div class="modal-backdrop hidden" id="submit-modal" role="dialog" aria-modal="true" aria-labelledby="submit-modal-title">
+    <div class="modal-box" style="max-width:480px;text-align:center;">
+      <div style="font-size:3rem;margin-bottom:var(--space-3);" id="submit-modal-icon">📋</div>
+      <h3 id="submit-modal-title" class="mb-3">Submit Exam?</h3>
+      <div id="unanswered-warning-banner" class="hidden mb-4 p-3 rounded text-sm text-left" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;">
+        <div class="fw-700 text-danger mb-1">⚠️ INCOMPLETE EXAM WARNING:</div>
+        <p id="unanswered-warning-text" class="text-xs text-muted mb-0" style="color:rgba(255,255,255,0.9)!important;"></p>
+      </div>
+      <p class="text-muted text-sm mb-6" id="submit-modal-message">
+        You have answered <strong id="answered-count">0</strong> of <strong id="total-count">0</strong> questions.
+        Once submitted, you cannot change your answers.
+      </p>
+      <div class="d-flex gap-3 justify-between">
+        <button class="btn btn-secondary" id="cancel-submit-btn" style="flex:1;">Keep Reviewing</button>
+        <button class="btn btn-primary" id="confirm-submit-btn" style="flex:1;">Submit Exam</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { startExam, saveAnswer, submitExam, logCheatingEvent } from './js/api.js';
+    import { requireStudentSession } from './js/session.js';
+    import { showToast, showLoading, hideLoading, formatTime } from './js/app.js';
+    import { startCountdown, isExpired } from './js/timer.js';
+    import { createSpeechSession, isSpeechSupported } from './js/speech.js';
+
+    const session = requireStudentSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const examId = sessionStorage.getItem('tec_exam_id');
+    if (!examId) { window.location.href = 'dashboard.html'; }
+
+    let currentIndex = 0;
+    let answerRows = [];
+    let attemptData = null;
+    let examData = null;
+    let timerController = null;
+    let answeredMap = {}; // attempt_answer_id -> student_answer
+
+    // ── Anti-Cheat State & Functions ──
+    let isExamActive = false;
+    let cheatInterval = null;
+    let beepInterval = null;
+    let audioCtx = null;
+
+    function playBeepSound() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(950, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      } catch(e) {
+        console.warn('Audio play failed:', e);
+      }
+    }
+
+    // Intercept Back / Return Button
+    function lockHistory() {
+      for (let i = 0; i < 5; i++) {
+        history.pushState({ examLocked: true, step: i }, '', location.href);
+      }
+      window.addEventListener('popstate', () => {
+        if (isExamActive) {
+          for (let i = 0; i < 3; i++) {
+            history.pushState({ examLocked: true, step: i }, '', location.href);
+          }
+          triggerCheatAlert('Browser Navigation / Back Button Pressed');
+        }
+      });
+    }
+
+    function triggerCheatAlert(reason) {
+      if (!isExamActive || cheatInterval) return;
+
+      logCheatingEvent(session.student_id, examId, 'CHEAT_ATTEMPT', {
+        reason: reason,
+        url: location.href,
+        user_agent: navigator.userAgent
+      });
+
+      const overlay = document.getElementById('cheat-overlay');
+      const countEl = document.getElementById('cheat-countdown');
+      const reasonEl = document.getElementById('cheat-reason');
+
+      if (reasonEl) reasonEl.textContent = `Warning: ${reason}!`;
+      overlay.style.display = 'flex';
+
+      let count = 10;
+      countEl.textContent = count;
+
+      playBeepSound();
+      beepInterval = setInterval(playBeepSound, 800);
+
+      cheatInterval = setInterval(() => {
+        count--;
+        countEl.textContent = count;
+        if (count <= 0) {
+          dismissCheatAlert();
+          showToast('Countdown finished! Exam auto-submitted.', 'warning', 5000);
+          autoSubmit();
+        }
+      }, 1000);
+    }
+
+    function dismissCheatAlert() {
+      if (cheatInterval) { clearInterval(cheatInterval); cheatInterval = null; }
+      if (beepInterval) { clearInterval(beepInterval); beepInterval = null; }
+      const overlay = document.getElementById('cheat-overlay');
+      if (overlay) overlay.style.display = 'none';
+    }
+
+    document.getElementById('dismiss-cheat-btn')?.addEventListener('click', dismissCheatAlert);
+    document.getElementById('cheat-overlay')?.addEventListener('click', (e) => {
+      if (e.target === document.getElementById('cheat-overlay')) dismissCheatAlert();
+    });
+
+    // Detect switching tab or minimizing browser
+    document.addEventListener('visibilitychange', () => {
+      if (isExamActive && document.hidden) {
+        triggerCheatAlert('Leaving the Tab / Switching Applications');
+      }
+    });
+
+    // Detect opening another app or losing window focus
+    window.addEventListener('blur', () => {
+      if (isExamActive) {
+        triggerCheatAlert('Screen lost focus / Opened another application');
+      }
+    });
+
+    // Auto-submit when closing tab or browser
+    function submitOnPageExit() {
+      if (!isExamActive || !attemptData?.id) return;
+      saveCurrentAnswer();
+      isExamActive = false;
+
+      const sbKey = 'sb_publishable_dvMkwNJpPlryF0KNiaJRfQ_-fR1WW_4';
+      const endpoint = `https://xuiszvwfjccvucqpactf.supabase.co/rest/v1/attempts?id=eq.${attemptData.id}`;
+      
+      try {
+        fetch(endpoint, {
+          method: 'PATCH',
+          headers: {
+            'apikey': sbKey,
+            'Authorization': `Bearer ${sbKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            status: 'auto_submitted',
+            submitted_at: new Date().toISOString()
+          }),
+          keepalive: true
+        });
+      } catch (e) {}
+
+      // Background persist pending answers
+      for (const row of (answerRows || [])) {
+        const val = answeredMap[row.id];
+        if (val) {
+          try {
+            fetch(`https://xuiszvwfjccvucqpactf.supabase.co/rest/v1/attempt_answers?id=eq.${row.id}`, {
+              method: 'PATCH',
+              headers: {
+                'apikey': sbKey,
+                'Authorization': `Bearer ${sbKey}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal'
+              },
+              body: JSON.stringify({ student_answer: val, updated_at: new Date().toISOString() }),
+              keepalive: true
+            });
+          } catch(e) {}
+        }
+      }
+    }
+
+    window.addEventListener('pagehide', submitOnPageExit);
+
+    window.addEventListener('beforeunload', (e) => {
+      if (isExamActive) {
+        submitOnPageExit();
+        e.preventDefault();
+        e.returnValue = 'Exam is in progress! Closing or reloading this page will automatically submit the exam.';
+        return e.returnValue;
+      }
+    });
+
+    // Block context menu on questions to prevent translation menu
+    document.addEventListener('contextmenu', (e) => {
+      if (!['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+        e.preventDefault();
+        return false;
+      }
+    });
+
+    // Translation Detector: Alert if translation extensions or browser translation features alter the page
+    const translationObserver = new MutationObserver(() => {
+      if (
+        document.documentElement.classList.contains('translated-ltr') ||
+        document.documentElement.classList.contains('translated-rtl') ||
+        document.querySelector('.goog-te-banner-frame, #goog-gt-, font[face], .skiptranslate')
+      ) {
+        triggerCheatAlert('Browser Translator Detected! Please disable Google/Browser Translate.');
+      }
+    });
+    translationObserver.observe(document.documentElement, { attributes: true, childList: true, subtree: true });
+
+    // Seeded shuffle for question_order = 'random'
+    function shuffleWithSeed(array, seedStr) {
+      let seed = 0;
+      for (let i = 0; i < seedStr.length; i++) {
+        seed = (seed << 5) - seed + seedStr.charCodeAt(i);
+        seed |= 0;
+      }
+      const random = () => {
+        const x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+      };
+      const result = [...array];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+
+    // ── Boot ──
+    async function bootExam() {
+      showLoading('Starting exam…');
+      try {
+        const result = await startExam(session.student_id, examId);
+        attemptData = result.attempt;
+        examData = result.exam;
+        answerRows = result.answers || [];
+
+        // Question order shuffle (if random)
+        if (examData?.question_order === 'random' && answerRows.length > 1) {
+          answerRows = shuffleWithSeed(answerRows, attemptData.id || examId);
+        }
+
+        // Prefill any existing answers (resume)
+        if (result.resumed) {
+          answerRows.forEach(row => {
+            if (row.student_answer) answeredMap[row.id] = row.student_answer;
+          });
+          showToast('Resuming your previous attempt.', 'info');
+        }
+
+        // Populate exam name
+        let examDisplayName = examData?.display_name || examData?.name || '';
+        if (!examDisplayName && examData) {
+          const parts = [
+            session.program_name || '',
+            session.class_name || '',
+            examData.subjects?.name || '',
+            examData.levels?.name ? (String(examData.levels.name).toLowerCase().includes('level') ? examData.levels.name : `Level ${examData.levels.name}`) : '',
+            examData.exam_type || '',
+            examData.exam_title || ''
+          ].filter(Boolean);
+          examDisplayName = parts.length > 0 ? parts.join(' · ') : (examData.exam_title || 'Exam');
+        }
+        document.getElementById('exam-name').textContent = examDisplayName || 'Exam';
+        document.getElementById('exam-meta').textContent = `${answerRows.length} Questions · ${session.student_name}`;
+
+        if (!answerRows || answerRows.length === 0) {
+          hideLoading();
+          document.getElementById('exam-main').innerHTML = `
+            <div class="question-card text-center" style="padding:3.5rem 1.5rem;text-align:center;">
+              <div style="font-size:3.5rem;margin-bottom:1rem;">⚠️</div>
+              <h3 style="font-size:1.4rem;font-weight:700;margin-bottom:0.75rem;">No Questions Found</h3>
+              <p class="text-muted" style="max-width:440px;margin:0 auto 1.5rem;line-height:1.6;">
+                This exam does not have any questions available yet. Please inform your instructor or administrator.
+              </p>
+              <button class="btn btn-primary" onclick="window.location.href='dashboard.html'">Return to Dashboard</button>
+            </div>
+          `;
+          return;
+        }
+
+        hideLoading();
+        buildNavGrid();
+        startTimer();
+        renderQuestion(0);
+
+        // Activate Anti-Cheat System
+        isExamActive = true;
+        lockHistory();
+      } catch(e) {
+        hideLoading();
+        showToast(e.message, 'error');
+        setTimeout(() => window.location.href = 'dashboard.html', 2000);
+      }
+    }
+
+    // ── Timer ──
+    function startTimer() {
+      if (!attemptData?.expected_end_at) return;
+
+      if (isExpired(attemptData.expected_end_at)) {
+        autoSubmit();
+        return;
+      }
+
+      const timerEl = document.getElementById('exam-timer');
+      const display = document.getElementById('timer-display');
+
+      timerController = startCountdown(attemptData.expected_end_at, {
+        onTick(remaining) {
+          display.textContent = formatTime(remaining);
+        },
+        onWarning(remaining) {
+          if (remaining <= 120) {
+            timerEl.classList.add('critical');
+            showToast('⚠️ Less than 2 minutes remaining!', 'warning', 5000);
+          } else {
+            timerEl.classList.add('warning');
+            showToast('⏱ 5 minutes remaining.', 'warning', 4000);
+          }
+        },
+        onExpire() {
+          showToast('Time is up! Submitting your exam…', 'warning', 5000);
+          autoSubmit();
+        }
+      });
+    }
+
+    // ── Build Nav Grid ──
+    function buildNavGrid() {
+      const grid = document.getElementById('q-nav-grid');
+      grid.innerHTML = '';
+      if (answerRows.length > 30) {
+        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(28px, 1fr))';
+        grid.style.gap = '4px';
+      } else {
+        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(32px, 1fr))';
+        grid.style.gap = '5px';
+      }
+      answerRows.forEach((_, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'q-nav-btn';
+        btn.id = `qnav-${idx}`;
+        btn.textContent = idx + 1;
+        btn.setAttribute('aria-label', `Question ${idx + 1}`);
+        btn.addEventListener('click', () => {
+          saveCurrentAnswer();
+          renderQuestion(idx);
+        });
+        grid.appendChild(btn);
+      });
+      updateNavGrid();
+    }
+
+    function updateNavGrid() {
+      answerRows.forEach((row, idx) => {
+        const btn = document.getElementById(`qnav-${idx}`);
+        if (!btn) return;
+        btn.classList.toggle('answered', !!answeredMap[row.id]);
+        btn.classList.toggle('current', idx === currentIndex);
+      });
+
+      // Progress bar
+      const answered = Object.values(answeredMap).filter(v => v?.trim()).length;
+      const pct = answerRows.length > 0 ? (answered / answerRows.length) * 100 : 0;
+      document.getElementById('exam-progress-fill').style.width = pct + '%';
+      document.getElementById('question-counter').textContent = `${answered}/${answerRows.length} answered`;
+    }
+
+    // ── Render Question ──
+    function renderQuestion(idx) {
+      currentIndex = idx;
+      const row = answerRows[idx];
+      if (!row) return;
+
+      let snap = row.question_snapshot;
+      if (typeof snap === 'string') {
+        try { snap = JSON.parse(snap); } catch { snap = { question_text: snap, answer_type: 'written' }; }
+      }
+      const answerType = snap?.answer_type || row.answer_type || 'written';
+      const questionText = snap?.question_text || snap?.questionText || snap?.question || snap?.text || snap?.soal || snap?.indonesia || (typeof row.question_snapshot === 'string' ? row.question_snapshot : '') || 'Question text unavailable';
+      const savedAnswer = answeredMap[row.id] || '';
+
+      const main = document.getElementById('exam-main');
+      main.innerHTML = '';
+
+      const card = document.createElement('div');
+      card.className = 'question-card';
+      card.innerHTML = `
+        <div class="question-number">Question ${idx + 1} of ${answerRows.length}</div>
+        <div class="question-text">${questionText}</div>
+        <div id="answer-area"></div>
+        <div class="exam-nav-buttons">
+          <button class="btn btn-secondary" id="prev-btn" ${idx === 0 ? 'disabled' : ''}>← Previous</button>
+          <div class="d-flex gap-3">
+            ${idx === answerRows.length - 1
+              ? `<button class="btn btn-success" id="submit-exam-btn">Submit Exam ✓</button>`
+              : `<button class="btn btn-primary" id="next-btn">Next →</button>`
+            }
+          </div>
+        </div>
+      `;
+      main.appendChild(card);
+
+      // Render answer area
+      const answerArea = document.getElementById('answer-area');
+      if (answerType === 'multiple_choice') {
+        renderMC(answerArea, row, savedAnswer);
+      } else if (answerType === 'dropdown') {
+        renderDropdown(answerArea, row, savedAnswer);
+      } else if (answerType === 'written') {
+        renderWritten(answerArea, row, savedAnswer);
+      } else if (answerType === 'speech_to_text') {
+        renderSpeech(answerArea, row, savedAnswer);
+      }
+
+      // Nav buttons
+      document.getElementById('prev-btn')?.addEventListener('click', () => {
+        saveCurrentAnswer();
+        renderQuestion(idx - 1);
+        updateNavGrid();
+      });
+
+      document.getElementById('next-btn')?.addEventListener('click', () => {
+        saveCurrentAnswer();
+        renderQuestion(idx + 1);
+        updateNavGrid();
+      });
+
+      document.getElementById('submit-exam-btn')?.addEventListener('click', () => {
+        saveCurrentAnswer();
+        openSubmitModal();
+      });
+
+      updateNavGrid();
+    }
+
+    function parseSnapshotOptions(rawOptions) {
+      if (Array.isArray(rawOptions)) return rawOptions;
+      if (!rawOptions) return [];
+      if (typeof rawOptions === 'string') {
+        const trimmed = rawOptions.trim();
+        if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) return parsed;
+          } catch (_) {}
+        }
+        return trimmed.split(',').map(s => s.trim()).filter(Boolean);
+      }
+      return [];
+    }
+
+    // ── Answer type renderers ──
+    function renderMC(area, row, savedAnswer) {
+      const options = parseSnapshotOptions(row.options_snapshot);
+      const letters = ['A','B','C','D','E','F','G','H','I','J'];
+      options.forEach((opt, i) => {
+        const optText = typeof opt === 'string' ? opt : opt.text || opt.value || JSON.stringify(opt);
+        const btn = document.createElement('div');
+        btn.className = `mc-option ${savedAnswer === optText ? 'selected' : ''}`;
+        btn.setAttribute('role', 'radio');
+        btn.setAttribute('aria-checked', savedAnswer === optText ? 'true' : 'false');
+        btn.setAttribute('tabindex', '0');
+        btn.innerHTML = `
+          <div class="mc-letter">${letters[i] || i+1}</div>
+          <div>${optText}</div>
+        `;
+        btn.addEventListener('click', () => {
+          area.querySelectorAll('.mc-option').forEach(o => {
+            o.classList.remove('selected');
+            o.setAttribute('aria-checked', 'false');
+          });
+          btn.classList.add('selected');
+          btn.setAttribute('aria-checked', 'true');
+          answeredMap[row.id] = optText;
+          updateNavGrid();
+          autoSave(row.id, optText);
+
+          // Streamlined UI: Auto-advance to next question
+          const nextBtn = document.getElementById('next-btn');
+          if (nextBtn) {
+            setTimeout(() => nextBtn.click(), 400);
+          }
+        });
+        btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') btn.click(); });
+        area.appendChild(btn);
+      });
+    }
+
+    function renderDropdown(area, row, savedAnswer) {
+      const rawOptions = parseSnapshotOptions(row.options_snapshot);
+      const options = [...rawOptions].sort((a, b) => {
+        const valA = String(typeof a === 'string' ? a : a.text || a.value || '');
+        const valB = String(typeof b === 'string' ? b : b.text || b.value || '');
+        return valA.localeCompare(valB);
+      });
+      const sel = document.createElement('select');
+      sel.className = 'form-control';
+      sel.id = `dropdown-${row.id}`;
+      sel.setAttribute('aria-label', 'Select answer');
+      sel.innerHTML = '<option value="">— Select answer —</option>' +
+        options.map(o => {
+          const v = typeof o === 'string' ? o : o.text || o.value;
+          return `<option value="${v}" ${savedAnswer === v ? 'selected' : ''}>${v}</option>`;
+        }).join('');
+      sel.addEventListener('change', () => {
+        answeredMap[row.id] = sel.value;
+        updateNavGrid();
+        autoSave(row.id, sel.value);
+
+        // Streamlined UI: Auto-advance to next question
+        const nextBtn = document.getElementById('next-btn');
+        if (nextBtn) {
+          setTimeout(() => nextBtn.click(), 400);
+        }
+      });
+      area.appendChild(sel);
+    }
+
+    function renderWritten(area, row, savedAnswer) {
+      const ta = document.createElement('textarea');
+      ta.className = 'written-input';
+      ta.id = `written-${row.id}`;
+      ta.placeholder = 'Type your answer here…';
+      ta.value = savedAnswer;
+      ta.setAttribute('aria-label', 'Written answer');
+      ta.addEventListener('input', () => {
+        answeredMap[row.id] = ta.value;
+        updateNavGrid();
+      });
+      ta.addEventListener('blur', () => autoSave(row.id, ta.value));
+      area.appendChild(ta);
+    }
+
+    function renderSpeech(area, row, savedAnswer) {
+      if (!isSpeechSupported()) {
+        area.innerHTML = `
+          <div class="glass-card p-5" style="border-color:rgba(245,158,11,0.3);">
+            <p class="text-warning fw-600 mb-2">⚠️ Speech Recognition Unavailable</p>
+            <p class="text-sm text-muted mb-4">Your browser doesn't support speech recognition. Please use Chrome or Edge.</p>
+            <p class="text-sm text-muted mb-3">You can type your answer instead:</p>
+          </div>
+        `;
+        renderWritten(area, row, savedAnswer);
+        return;
+      }
+
+      const wrapper = document.createElement('div');
+      const ta = document.createElement('textarea');
+      ta.className = 'written-input mb-4';
+      ta.id = `speech-text-${row.id}`;
+      ta.placeholder = 'Click the microphone below and speak your answer. The voice result will appear here...';
+      ta.value = savedAnswer;
+      ta.readOnly = true;
+      ta.style.cursor = 'default';
+      ta.style.background = 'rgba(255, 255, 255, 0.04)';
+      ta.setAttribute('aria-label', 'Speech to text answer display');
+
+      const controls = document.createElement('div');
+      controls.className = 'speech-controls';
+
+      const micBtn = document.createElement('button');
+      micBtn.className = 'mic-btn';
+      micBtn.id = `mic-${row.id}`;
+      micBtn.setAttribute('aria-label', 'Start recording');
+      micBtn.innerHTML = '🎤';
+
+      const statusEl = document.createElement('div');
+      statusEl.className = 'speech-status';
+      statusEl.textContent = 'Click the mic to start speaking';
+
+      const langSelect = document.createElement('select');
+      langSelect.className = 'form-control';
+      langSelect.style.width = 'auto';
+      langSelect.style.marginLeft = 'auto';
+      langSelect.innerHTML = `
+        <option value="en-US">English (US)</option>
+        <option value="en-GB">English (UK)</option>
+      `;
+
+      controls.appendChild(micBtn);
+      controls.appendChild(statusEl);
+      controls.appendChild(langSelect);
+
+      wrapper.appendChild(ta);
+      wrapper.appendChild(controls);
+      area.appendChild(wrapper);
+
+      let speechSessionObj = null;
+
+      micBtn.addEventListener('click', () => {
+        if (speechSessionObj?.isListening()) {
+          speechSessionObj.stop();
+          return;
+        }
+
+        speechSessionObj = createSpeechSession({
+          lang: langSelect.value,
+          onStart() {
+            micBtn.classList.add('listening');
+            micBtn.innerHTML = '⏹';
+            micBtn.setAttribute('aria-label', 'Stop recording');
+            statusEl.textContent = '🔴 Listening… Speak clearly.';
+          },
+          onResult(interim) {
+            statusEl.textContent = `Hearing: "${interim}"`;
+          },
+          onFinal(transcript) {
+            ta.value = transcript;
+            answeredMap[row.id] = transcript;
+            updateNavGrid();
+            autoSave(row.id, transcript);
+          },
+          onEnd() {
+            micBtn.classList.remove('listening');
+            micBtn.innerHTML = '🎤';
+            micBtn.setAttribute('aria-label', 'Start recording');
+            statusEl.textContent = '✅ Done. Speak into the microphone again if you want to retry.';
+          },
+          onError(msg) {
+            micBtn.classList.remove('listening');
+            micBtn.innerHTML = '🎤';
+            statusEl.textContent = `⚠️ ${msg}`;
+            showToast(msg, 'warning');
+            
+            if (msg.includes('network') || msg.includes('Network') || msg.includes('service')) {
+              ta.readOnly = false;
+              ta.style.cursor = 'text';
+              ta.style.background = 'var(--clr-surface)';
+              ta.placeholder = 'Type your answer here (fallback manual typing)...';
+              ta.focus();
+              ta.addEventListener('input', () => {
+                answeredMap[row.id] = ta.value;
+                updateNavGrid();
+              });
+              ta.addEventListener('blur', () => autoSave(row.id, ta.value));
+              showToast('Microphone network service unavailable. Manual typing fallback unlocked.', 'info', 5000);
+            }
+          }
+        });
+
+        speechSessionObj.start();
+      });
+    }
+
+    // ── Global Keyboard Shortcuts ──
+    document.addEventListener('keydown', (e) => {
+      // Streamlined UI: Spacebar toggles microphone if active question is Speech to Text
+      if (e.code === 'Space') {
+        const activeElement = document.activeElement;
+        const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
+        if (!isTyping) {
+          const micBtn = document.querySelector('.mic-btn');
+          if (micBtn) {
+            e.preventDefault();
+            micBtn.click();
+          }
+        }
+      }
+    });
+
+    // ── Auto-save ──
+    async function autoSave(attemptAnswerId, studentAnswer) {
+      try {
+        await saveAnswer(attemptAnswerId, studentAnswer);
+      } catch(e) {
+        // Silently fail autosave — data is in memory
+      }
+    }
+
+    function saveCurrentAnswer() {
+      const row = answerRows[currentIndex];
+      if (!row) return;
+      const ta = document.getElementById(`written-${row.id}`) || document.getElementById(`speech-text-${row.id}`);
+      if (ta) answeredMap[row.id] = ta.value;
+      const dd = document.getElementById(`dropdown-${row.id}`);
+      if (dd) answeredMap[row.id] = dd.value;
+    }
+
+    // ── Submit Modal ──
+    function openSubmitModal() {
+      const answered = Object.values(answeredMap).filter(v => v?.trim()).length;
+      const total = answerRows.length;
+      const unanswered = total - answered;
+
+      document.getElementById('answered-count').textContent = answered;
+      document.getElementById('total-count').textContent = total;
+
+      const warningBanner = document.getElementById('unanswered-warning-banner');
+      const warningText = document.getElementById('unanswered-warning-text');
+      const confirmBtn = document.getElementById('confirm-submit-btn');
+      const modalIcon = document.getElementById('submit-modal-icon');
+
+      if (unanswered > 0) {
+        document.getElementById('unanswered-warning-banner')?.classList.remove('hidden');
+        if (warningText) warningText.textContent = `You have ${unanswered} question(s) that have not been answered!`;
+        confirmBtn?.classList.remove('btn-primary');
+        confirmBtn?.classList.add('btn-danger');
+        if (confirmBtn) confirmBtn.textContent = `Submit Anyway (${unanswered} Unanswered)`;
+        if (modalIcon) modalIcon.textContent = '⚠️';
+      } else {
+        warningBanner?.classList.add('hidden');
+        confirmBtn?.classList.remove('btn-danger');
+        confirmBtn?.classList.add('btn-primary');
+        if (confirmBtn) confirmBtn.textContent = 'Submit Exam';
+        if (modalIcon) modalIcon.textContent = '📋';
+      }
+
+      document.getElementById('submit-modal').classList.remove('hidden');
+    }
+
+    document.getElementById('cancel-submit-btn').addEventListener('click', () => {
+      document.getElementById('submit-modal').classList.add('hidden');
+    });
+
+    document.getElementById('confirm-submit-btn').addEventListener('click', async () => {
+      document.getElementById('submit-modal').classList.add('hidden');
+      await doSubmit();
+    });
+
+    document.getElementById('global-submit-btn')?.addEventListener('click', () => {
+      saveCurrentAnswer();
+      openSubmitModal();
+    });
+
+    async function doSubmit(isAuto = false) {
+      isExamActive = false; // Disable anti-cheat alerts on submission
+      timerController?.stop();
+      saveCurrentAnswer();
+      if (attemptData?.id) {
+        sessionStorage.setItem('tec_attempt_id', attemptData.id);
+      }
+      showLoading(isAuto ? 'Time is up. Auto-submitting the exam.' : 'Submitting your exam.');
+
+      const payload = answerRows.map(row => ({
+        attempt_answer_id: row.id,
+        student_answer: answeredMap[row.id] || '',
+      }));
+
+      try {
+        const targetStatus = isAuto ? 'auto_submitted' : 'submitted';
+        const result = await submitExam(attemptData.id, payload, { status: targetStatus });
+        hideLoading();
+        sessionStorage.setItem('tec_attempt_id', attemptData.id);
+        window.location.href = 'result.html';
+      } catch(e) {
+        console.error('Submit error:', e);
+        hideLoading();
+        if (isAuto) {
+          // Direct fallback patch in background if RPC failed
+          try {
+            const sbKey = 'sb_publishable_dvMkwNJpPlryF0KNiaJRfQ_-fR1WW_4';
+            await fetch(`https://xuiszvwfjccvucqpactf.supabase.co/rest/v1/attempts?id=eq.${attemptData.id}`, {
+              method: 'PATCH',
+              headers: {
+                'apikey': sbKey,
+                'Authorization': `Bearer ${sbKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ status: 'auto_submitted', submitted_at: new Date().toISOString() })
+            });
+          } catch (_) {}
+          sessionStorage.setItem('tec_attempt_id', attemptData.id);
+          window.location.href = 'result.html';
+        } else {
+          showToast('Submission failed: ' + e.message, 'error');
+          isExamActive = true;
+        }
+      }
+    }
+
+    async function autoSubmit() {
+      await doSubmit(true);
+    }
+
+    bootExam();
+  </script>
+</body>
+</html>

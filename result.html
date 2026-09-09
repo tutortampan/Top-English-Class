@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Result — TOP ENGLISH CLASS</title>
+  <meta name="description" content="View your exam results and answer breakdown on TOP ENGLISH CLASS." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body class="result-page">
+
+  <div id="toast-container"></div>
+
+  <!-- Header -->
+  <header class="dashboard-header" style="justify-content: center;">
+    <div class="dashboard-header-brand">🎓 TOP ENGLISH CLASS</div>
+  </header>
+
+  <div id="result-loading" class="empty-state" style="padding:var(--space-16);">
+    <div class="spinner"></div>
+    <p>Loading your results…</p>
+  </div>
+
+  <div id="result-content" class="hidden">
+
+    <!-- Result Hero -->
+    <section class="result-hero">
+      <div class="result-grade-display grade-S" id="result-grade-badge">—</div>
+      <div class="result-percentage" id="result-percentage">0%</div>
+      <h1 class="text-gradient mb-2" id="result-headline">Exam Complete!</h1>
+      <p class="text-muted" id="result-exam-name"></p>
+
+      <!-- Summary Grid -->
+      <div class="result-summary-grid">
+        <div class="result-summary-item">
+          <div class="result-summary-val text-success" id="res-correct">0</div>
+          <div class="result-summary-lbl">Correct</div>
+        </div>
+        <div class="result-summary-item">
+          <div class="result-summary-val text-warning" id="res-partial">0</div>
+          <div class="result-summary-lbl">Partial</div>
+        </div>
+        <div class="result-summary-item">
+          <div class="result-summary-val text-danger" id="res-wrong">0</div>
+          <div class="result-summary-lbl">Incorrect</div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-3" style="flex-direction: column; max-width: 300px; margin: 0 auto;">
+        <a href="dashboard.html" class="btn btn-primary">Back to Dashboard</a>
+        <button class="btn btn-primary" id="try-again-btn" style="background:var(--clr-success);border-color:var(--clr-success);">Try Again</button>
+        <button class="btn btn-secondary" id="toggle-answers-btn">View Answer Breakdown</button>
+      </div>
+    </section>
+
+    <!-- Answers Breakdown -->
+    <section class="answers-list hidden" id="answers-section" aria-label="Answer breakdown">
+      <h2 class="text-center mb-6 fw-700">Answer Breakdown</h2>
+      <div id="answers-list-container"></div>
+    </section>
+
+  </div>
+
+  <script type="module">
+    import { fetchAttemptResult, fetchAttemptAnswers, startExam } from './js/api.js';
+    import { requireStudentSession } from './js/session.js';
+    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js';
+
+    const session = requireStudentSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const attemptId = sessionStorage.getItem('tec_attempt_id');
+    if (!attemptId) { window.location.href = 'dashboard.html'; }
+
+    async function loadResult() {
+      try {
+        const [attempt, answers] = await Promise.all([
+          fetchAttemptResult(attemptId),
+          fetchAttemptAnswers(attemptId),
+        ]);
+
+        document.getElementById('result-loading').classList.add('hidden');
+        document.getElementById('result-content').classList.remove('hidden');
+
+        const pct = parseFloat(attempt.percentage || 0);
+        const grade = attempt.grade || getGrade(pct);
+
+        // Grade badge
+        const gradeBadge = document.getElementById('result-grade-badge');
+        gradeBadge.textContent = grade;
+        gradeBadge.className = `result-grade-display grade-${grade}`;
+
+        // Percentage (animated)
+        const pctEl = document.getElementById('result-percentage');
+        pctEl.className = `result-percentage text-grade-${grade}`;
+        animateCount(pctEl, pct);
+        
+        // Headline
+        const headlines = { S: '🏆 Perfect Score!', A: '🌟 Outstanding!', B: '👏 Great Work!', C: '✅ Good Effort!', D: '📚 Keep Practicing!', E: '💪 Keep Going!', F: '🔄 Try Again' };
+        document.getElementById('result-headline').textContent = headlines[grade] || 'Exam Complete!';
+
+        const exam = attempt.exams;
+        document.getElementById('result-exam-name').textContent =
+          `${exam?.subjects?.name || ''} · ${exam?.levels?.name || ''} · ${exam?.exam_type || ''} — ${exam?.exam_title || ''}`;
+
+        // Stats
+        const correct = answers.filter(a => a.evaluation_result === 'correct').length;
+        const partial  = answers.filter(a => a.evaluation_result === 'minor_spelling_error').length;
+        const wrong    = answers.filter(a => a.evaluation_result === 'incorrect').length;
+        document.getElementById('res-correct').textContent = correct;
+        document.getElementById('res-partial').textContent  = partial;
+        document.getElementById('res-wrong').textContent    = wrong;
+
+        // Render answers
+        renderAnswers(answers);
+
+      } catch(e) {
+        showToast('Failed to load results: ' + e.message, 'error');
+        document.getElementById('result-loading').innerHTML = `
+          <div class="empty-state__icon">❌</div>
+          <h3>Could not load results</h3>
+          <p class="text-muted">${e.message}</p>
+          <a href="dashboard.html" class="btn btn-primary mt-4">Back to Dashboard</a>
+        `;
+      }
+    }
+
+    function animateCount(el, target) {
+      let start = 0;
+      const duration = 1200;
+      const startTime = performance.now();
+      function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        start = ease * target;
+        el.textContent = start.toFixed(1) + '%';
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function renderAnswers(answers) {
+      const container = document.getElementById('answers-list-container');
+      container.innerHTML = '';
+
+      answers.forEach((a, idx) => {
+        const snap = a.question_snapshot;
+        const isCorrect = a.evaluation_result === 'correct';
+        const isPartial = a.evaluation_result === 'minor_spelling_error';
+        const isWrong   = a.evaluation_result === 'incorrect';
+
+        const resultIcon = isCorrect ? '✅' : isPartial ? '⚠️' : '❌';
+        const resultText = isCorrect ? 'Correct' : isPartial ? 'Minor Spelling Error' : 'Incorrect';
+        const resultColor = isCorrect ? 'success' : isPartial ? 'warning' : 'danger';
+
+        const item = document.createElement('div');
+        item.className = 'answer-item';
+        item.innerHTML = `
+          <div class="answer-item-header">
+            <div class="fw-700 text-sm">Q${idx + 1}. ${snap?.question_text || 'Question'}</div>
+            <div class="d-flex align-center gap-2">
+              <span class="answer-result-icon">${resultIcon}</span>
+              <span class="badge badge-${resultColor}">${resultText}</span>
+              <span class="text-muted text-xs">${a.score ?? 0} pt</span>
+            </div>
+          </div>
+          ${a.student_answer ? `
+            <div class="p-3 rounded mt-2" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);">
+              <div class="text-xs text-muted mb-1">Your Answer</div>
+              <div class="text-sm">${a.student_answer}</div>
+            </div>
+          ` : '<div class="text-sm text-muted mt-2 p-3">No answer given</div>'}
+          ${!isCorrect ? `
+            <div class="p-3 rounded mt-2" style="background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);">
+              <div class="text-xs text-muted mb-1">Correct Answer</div>
+              <div class="text-sm text-success">${a.correct_answer_snapshot}</div>
+            </div>
+          ` : ''}
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    document.getElementById('toggle-answers-btn').addEventListener('click', () => {
+      const section = document.getElementById('answers-section');
+      const isHidden = section.classList.toggle('hidden');
+      document.getElementById('toggle-answers-btn').textContent =
+        isHidden ? 'View Answer Breakdown' : 'Hide Breakdown';
+    });
+
+    document.getElementById('try-again-btn').addEventListener('click', async () => {
+      try {
+        showLoading('Starting new attempt...');
+        const attemptIdStr = sessionStorage.getItem('tec_attempt_id');
+        const attemptObj = await fetchAttemptResult(attemptIdStr);
+        const newAttemptId = await startExam(attemptObj.exam_id);
+        hideLoading();
+        if (newAttemptId) {
+          sessionStorage.setItem('tec_attempt_id', newAttemptId);
+          sessionStorage.setItem('tec_exam_id', attemptObj.exam_id);
+          window.location.href = 'exam.html';
+        }
+      } catch(e) {
+        hideLoading();
+        showToast(e.message, 'error');
+      }
+    });
+
+    loadResult();
+  </script>
+</body>
+</html>
