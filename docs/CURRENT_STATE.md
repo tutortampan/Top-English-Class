@@ -1,29 +1,43 @@
 # CURRENT STATE
 
-Last Updated: 2026-09-10 07:24 UTC
-Current Phase: Streamlining & Bug Fixes
-Current Task: Streamlining application flows and diagnosing GitHub Pages deployment issues
+Last Updated: 2026-09-10 14:58 UTC
+Current Phase: Phase 20 — Master Command Execution & Verification
+Current Task: Full System Audit, Repair, Data Consistency, Grading Engine & Exam Recalibrator
 Status: COMPLETE
 
 ## Completed
-- **UI & Layout Polish**:
-  - Exam layout redesigned: questions stacked vertically above progress navigation, sizes fitted.
-  - Global "Submit Exam" button added with incomplete-answer warnings.
-  - Exam result page buttons stacked vertically for mobile instead of side-by-side.
-  - Re-enabled anti-cheat warnings.
-- **Universal Grade Color Mapping**:
-  - Implemented exact color mapping across Admin, Dashboard, and Result pages.
-- **Exam Duplication Feature**:
-  - Added a deep clone "Copy" button in the Admin Console's Exams table.
-- **Complete Localization Sweep**:
-  - Replaced all legacy Indonesian text logic with English.
-- **Application Streamlining**:
-  - Added auto-focus to Admin CRUD modals.
-  - Added auto-selection to Admin Import tools for Programs and Classes.
-  - Added 400ms auto-advance to Exam multiple-choice and drop-down questions.
-  - Added global Spacebar hotkey to toggle the microphone during Speech-to-Text questions.
-- **Deployment Diagnosis**:
-  - Diagnosed GitHub Pages login errors as Supabase CORS/Site URL missing configurations.
+- **Independent & Optional Level System (Phases 3 & 4)**:
+  - Decoupled Level selection from forced subject filtering.
+  - Made Level optional and manual across all academic programs.
+  - Fixed disabled Level dropdown bug for non-CEC programs.
+  - Added optional `level_id` to student CRUD forms and student list table.
+  - Added `supabase/migrations/20260910_recalibrator_and_level_fixes.sql` with resilient client schema fallbacks.
+- **Centralized Excel Parser & Aliases (Phases 5, 6, 7)**:
+  - Created `js/excel-parser.js` supporting standardized header aliases (`HEADER_ALIASES`).
+  - Implemented `parseExcelWorkbook`, `processStudentImportRows`, and `processQuestionImportRows`.
+  - Added vocabulary word type extraction (`TYPE` e.g. `1 - VERB`) and preservation in question metadata.
+  - Integrated `level_id` into student import with automatic schema fallback.
+- **Authoritative Centralized Grading Engine (Phases 9, 10, 11)**:
+  - Created `js/grading.js` enforcing passing threshold (`>= minScore`, default 60%), percentage calculation, and centralized grade distribution (S, A, B, C, D, E, F).
+  - Multi-answer vocabulary support with `;` and `|` delimiters.
+  - Hyphen tolerance normalization (e.g. `check-in` vs `checkin` scored as full credit).
+  - Damerau-Levenshtein edit distance for minor spelling errors (<= 2 edits).
+  - Removed all legacy hardcoded 100% threshold rules.
+- **Media & Hardware Compatibility (Phase 12)**:
+  - Built `testMicrophoneCapability` and `getSupportedAudioMimeType` in `js/speech.js`.
+  - Clean stream track disposal to prevent recording indicators remaining active.
+  - Added First-Entry Student Photo & Microphone Setup Modal in `dashboard.html` with live webcam preview, snapshot capture, file upload fallback, and upfront microphone readiness testing.
+  - Added Microphone Status button in dashboard header for instant device diagnostics.
+  - Added subject-level exam fallback (`fetchExamsForStudentSubject`) so non-leveled programs are fully accessible.
+- **Exam Recalibrator Engine & UI (Phases 13, 14, 15, 16, 17)**:
+  - Added dedicated Exam Recalibrator tab in Admin navigation (`admin.html`).
+  - Added `previewRecalibrateExam` and `applyRecalibrateExam` in `js/api.js`.
+  - Recalculates historical scores using updated correct answers and tolerance without modifying original questions.
+  - Audit logging of recalculation events.
+- **Exam Runner Polish (Phase 8)**:
+  - Modern word-type badge (`🏷️ 1 - VERB`) rendered above vocabulary questions in `exam.html`.
+- **Comprehensive Integration Testing (Phase 18)**:
+  - Verified via `scratch/test_master_verification.ps1` (41/41 checks passed, 0 failures).
 
 ## In Progress
 - None.
@@ -32,10 +46,10 @@ Status: COMPLETE
 - None.
 
 ## Current Architecture
-- Static HTML + CSS + modular JS frontend.
-- Supabase PostgreSQL + Auth backend.
-- Admin SPA in dmin.html, Student SPA via cascading login in index.html.
-- Edge Functions are implemented but currently bypassing to client-side DB fallback because they aren't deployed to the Supabase project yet.
+- Static HTML5 + CSS3 + Modular ES6 JavaScript frontend.
+- Supabase PostgreSQL + Storage + REST API backend.
+- Authoritative modules: `js/grading.js`, `js/excel-parser.js`, `js/speech.js`, `js/api.js`, `js/session.js`.
 
-## Next Exact Action
-1. Await user confirmation on the GitHub Pages Supabase fix, or proceed to any requested features.
+## Tests
+- Command: `powershell -ExecutionPolicy Bypass -File "scratch/test_master_verification.ps1"`
+- Result: 41 PASSED, 0 FAILED.

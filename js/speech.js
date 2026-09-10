@@ -5,10 +5,126 @@
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 /**
- * Check browser support.
+ * Check browser speech recognition support.
  */
 export function isSpeechSupported() {
   return !!SpeechRecognition;
+}
+
+/**
+ * Detect supported audio MIME types across Chrome, Safari, iOS, Android, Firefox.
+ * Avoids hardcoding one format.
+ */
+export function getSupportedAudioMimeType() {
+  if (typeof MediaRecorder === 'undefined') return null;
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+    'audio/aac',
+    'audio/ogg;codecs=opus',
+    'audio/wav'
+  ];
+  for (const type of candidates) {
+    if (MediaRecorder.isTypeSupported(type)) return type;
+  }
+  return ''; // Browser default
+}
+
+/**
+ * Comprehensive Microphone Capability & Permission Detection (Phase 12)
+ * Tests HTTPS, device presence, getUserMedia, and cleans up tracks immediately.
+ */
+export async function testMicrophoneCapability() {
+  // 1. Security Context / HTTPS Check
+  if (window.isSecureContext === false && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    return {
+      ok: false,
+      state: 'insecure_context',
+      message: 'Microphone requires a secure HTTPS connection. Please access via HTTPS.'
+    };
+  }
+
+  // 2. API Support Check
+  if (!navigator?.mediaDevices?.getUserMedia) {
+    return {
+      ok: false,
+      state: 'unsupported_browser',
+      message: 'Your browser or device does not support audio recording (getUserMedia is unavailable).'
+    };
+  }
+
+  // 3. Permission Query (if supported by Permissions API)
+  if (navigator.permissions && navigator.permissions.query) {
+    try {
+      const perm = await navigator.permissions.query({ name: 'microphone' });
+      if (perm.state === 'denied') {
+        return {
+          ok: false,
+          state: 'permission_denied',
+          message: 'Microphone access is blocked in your browser settings. Please click the lock/settings icon in the address bar to allow microphone access.'
+        };
+      }
+    } catch (_) {
+      // Permissions API for microphone is not supported in all browsers (e.g. Safari), continue
+    }
+  }
+
+  // 4. Active Device Stream Test & Immediate Cleanup
+  let stream = null;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
+    });
+
+    // Check if audio tracks are active
+    const audioTracks = stream.getAudioTracks();
+    if (!audioTracks.length || !audioTracks[0].enabled) {
+      throw new Error('No active audio tracks received from microphone.');
+    }
+
+    const mimeType = getSupportedAudioMimeType();
+
+    return {
+      ok: true,
+      state: 'granted',
+      mimeType,
+      message: 'Microphone is active and working properly.'
+    };
+  } catch (err) {
+    let state = 'hardware_error';
+    let message = err.message || 'Microphone error.';
+
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      state = 'permission_denied';
+      message = 'Microphone permission was denied. Please allow microphone access to take speech exams.';
+    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      state = 'no_device';
+      message = 'No microphone device was detected on your phone or computer. Please connect a microphone or headset.';
+    } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+      state = 'in_use';
+      message = 'Microphone is already in use by another application. Please close other voice/call apps and try again.';
+    } else if (err.name === 'OverconstrainedError') {
+      state = 'unsupported_constraints';
+      message = 'Requested microphone audio settings are not supported by your hardware.';
+    }
+
+    return { ok: false, state, message, error: err };
+  } finally {
+    // ALWAYS clean up tracks immediately so hardware indicator turns off
+    if (stream) {
+      try {
+        stream.getTracks().forEach(track => {
+          track.stop();
+          stream.removeTrack(track);
+        });
+      } catch (_) {}
+    }
+  }
 }
 
 /**

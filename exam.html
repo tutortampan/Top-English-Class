@@ -115,9 +115,10 @@
   </div>
 
   <script type="module">
-    import { startExam, saveAnswer, submitExam, logCheatingEvent } from './js/api.js?v=1.1';
-    import { requireStudentSession } from './js/session.js?v=1.1';
-    import { showToast, showLoading, hideLoading, formatTime } from './js/app.js?v=1.1';
+    import { startExam, saveAnswer, submitExam, logCheatingEvent } from './js/api.js?v=1.2';
+    import { evaluateAnswer } from './js/grading.js?v=1.2';
+    import { requireStudentSession } from './js/session.js?v=1.2';
+    import { showToast, showLoading, hideLoading, formatTime } from './js/app.js?v=1.2';
     import { startCountdown, isExpired } from './js/timer.js';
     import { createSpeechSession, isSpeechSupported } from './js/speech.js';
 
@@ -487,6 +488,7 @@
       }
       const answerType = snap?.answer_type || row.answer_type || 'written';
       const questionText = snap?.question_text || snap?.questionText || snap?.question || snap?.text || snap?.soal || snap?.indonesia || (typeof row.question_snapshot === 'string' ? row.question_snapshot : '') || 'Question text unavailable';
+      const wordType = snap?.metadata?.type || snap?.type || snap?.word_type || '';
       const savedAnswer = answeredMap[row.id] || '';
 
       const main = document.getElementById('exam-main');
@@ -495,7 +497,10 @@
       const card = document.createElement('div');
       card.className = 'question-card';
       card.innerHTML = `
-        <div class="question-number">Question ${idx + 1} of ${answerRows.length}</div>
+        <div class="d-flex align-center justify-between flex-wrap gap-2 mb-3">
+          <div class="question-number" style="margin-bottom:0;">Question ${idx + 1} of ${answerRows.length}</div>
+          ${wordType ? `<span id="word-type-badge" class="badge badge-info word-type-badge" style="font-size:0.75rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:4px 10px;border-radius:12px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);">🏷️ ${escapeHtml(wordType)}</span>` : ''}
+        </div>
         <div class="question-text">${questionText}</div>
         <div id="answer-area"></div>
         <div class="exam-nav-buttons">

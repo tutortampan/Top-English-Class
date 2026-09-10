@@ -1,6 +1,9 @@
 // TOP ENGLISH CLASS — API Module
 // All server calls are centralized here.
 import { getSupabase, SUPABASE_URL } from './supabase.js';
+import { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCorrectAnswers, stripHyphens } from './grading.js';
+
+export { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCorrectAnswers, stripHyphens };
 
 // ============================================================
 // AUTH / LOGIN
@@ -446,6 +449,70 @@ export async function fetchExamsForStudentLevel(classId, levelId, programId) {
   return examsList;
 }
 
+/** Fetch published exams available for a specific subject (when no levels are defined or level is optional) */
+export async function fetchExamsForStudentSubject(classId, subjectId, programId) {
+  const sb = await getSupabase();
+  let query = sb.from('exams')
+    .select('*')
+    .eq('subject_id', subjectId)
+    .eq('exam_status', 'published')
+    .is('deleted_at', null)
+    .order('exam_title');
+
+  if (programId) {
+    query = query.eq('program_id', programId);
+  }
+
+  let examsList = [];
+  try {
+    const { data, error } = await query;
+    if (!error && data) examsList = data;
+  } catch {
+    // fallback
+  }
+
+  if (!examsList.length) {
+    try {
+      const { data: directExams } = await sb.from('exams')
+        .select('*')
+        .eq('subject_id', subjectId)
+        .eq('exam_status', 'published')
+        .is('deleted_at', null)
+        .order('exam_title');
+      examsList = directExams || [];
+    } catch {
+      examsList = [];
+    }
+  }
+
+  // Hydrate prerequisite_exam_id & exam_order if missing
+  if (examsList.length > 0) {
+    try {
+      const { data: logs } = await sb.from('audit_logs')
+        .select('entity_id, new_value, created_at')
+        .eq('entity_type', 'exam')
+        .eq('action', 'exam_metadata');
+      if (logs && logs.length > 0) {
+        examsList.forEach(ex => {
+          const m = logs.filter(l => l.entity_id === ex.id).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+          if (m.length > 0 && m[0].new_value) {
+            if (!ex.prerequisite_exam_id && m[0].new_value.prerequisite_exam_id) {
+              ex.prerequisite_exam_id = m[0].new_value.prerequisite_exam_id;
+            }
+            if (!ex.exam_order && m[0].new_value.exam_order) {
+              ex.exam_order = m[0].new_value.exam_order;
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Student exam metadata hydration warning:', e.message);
+    }
+  }
+  return examsList;
+}
+
+
 /** Fetch all submitted attempts for a student across all exams */
 export async function fetchAllStudentAttempts(studentId) {
   const sb = await getSupabase();
@@ -665,51 +732,6 @@ export async function submitExam(attemptId, answersMap, options = {}) {
   let totalPoints = 0;
   let maxPoints = attemptAnswers?.length || 0;
 
-  // Helper scoring functions matching server Edge Function (§2.12, §2.13)
-  function damerauLevenshtein(a, b) {
-    const la = a.length, lb = b.length;
-    const dp = Array.from({ length: la + 1 }, (_, i) =>
-      Array.from({ length: lb + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-    );
-    for (let i = 1; i <= la; i++) {
-      for (let j = 1; j <= lb; j++) {
-        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-        dp[i][j] = Math.min(
-          dp[i - 1][j] + 1,
-          dp[i][j - 1] + 1,
-          dp[i - 1][j - 1] + cost
-        );
-        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
-          dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + cost);
-        }
-      }
-    }
-    return dp[la][lb];
-  }
-
-  function normalizeAnswerText(text) {
-    return String(text || '')
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, ' ')
-      .replace(/[^\w\s']/g, '')
-      .replace(/\bi'm\b/g, 'i am');
-  }
-
-  function evaluateAttemptAnswer(studentAnswer, correctAnswer, answerType = 'written') {
-    const s = normalizeAnswerText(studentAnswer);
-    const c = normalizeAnswerText(correctAnswer);
-    if (!s && !c) return { result: 'correct', score: 1.0 };
-    if (!s || !c) return { result: 'incorrect', score: 0.0 };
-    if (s === c) return { result: 'correct', score: 1.0 };
-
-    if (answerType === 'written' || answerType === 'speech_to_text') {
-      const dist = damerauLevenshtein(s, c);
-      if (dist <= 2) return { result: 'minor_spelling_error', score: 0.5 };
-    }
-    return { result: 'incorrect', score: 0.0 };
-  }
-
   const evalTasks = [];
   for (const a of (attemptAnswers || [])) {
     let answerType = 'written';
@@ -719,7 +741,8 @@ export async function submitExam(attemptId, answersMap, options = {}) {
         if (qSnap?.answer_type) answerType = qSnap.answer_type;
       } catch (_) {}
     }
-    const evalRes = evaluateAttemptAnswer(a.student_answer, a.correct_answer_snapshot, answerType);
+    // Authoritative grading with multiple valid answers and hyphen tolerance
+    const evalRes = evaluateAnswer(a.student_answer, a.correct_answer_snapshot, answerType);
     totalPoints += evalRes.score;
     evalTasks.push(
       sb.from('attempt_answers').update({ score: evalRes.score, evaluation_result: evalRes.result }).eq('id', a.id)
@@ -729,22 +752,17 @@ export async function submitExam(attemptId, answersMap, options = {}) {
     await Promise.all(evalTasks);
   }
 
-  const percentage = maxPoints > 0 ? (totalPoints / maxPoints) * 100 : 0;
-  let grade = 'F';
-  if (percentage >= 100) grade = 'S';
-  else if (percentage >= 91) grade = 'A';
-  else if (percentage >= 71) grade = 'B';
-  else if (percentage >= 51) grade = 'C';
-  else if (percentage >= 31) grade = 'D';
-  else if (percentage >= 11) grade = 'E';
+  const percentage = calculatePercentage(totalPoints, maxPoints);
+  const grade = calculateGrade(percentage);
 
   const { data: updatedAttempt, error: updateErr } = await sb.from('attempts')
     .update({
       status: targetStatus,
       submitted_at: new Date().toISOString(),
       score: totalPoints,
-      percentage: Math.round(percentage * 100) / 100,
-      grade
+      percentage,
+      grade,
+      effective_score: percentage
     })
     .eq('id', attemptId)
     .select()
@@ -969,7 +987,7 @@ export async function adminInsert(table, payload) {
     if (res.error) throw res.error;
     data = res.data;
   } catch (error) {
-    const isMissingCol = normTable === 'exams' && (
+    const isMissingCol = (
       error.code === 'PGRST204' ||
       error.code === '42703' ||
       String(error.message || '').toLowerCase().includes('pgrst204') ||
@@ -979,9 +997,14 @@ export async function adminInsert(table, payload) {
     );
     if (isMissingCol) {
       const fallback = { ...insertPayload };
-      delete fallback.class_id;
-      delete fallback.prerequisite_exam_id;
-      delete fallback.exam_order;
+      if (normTable === 'exams') {
+        delete fallback.class_id;
+        delete fallback.prerequisite_exam_id;
+        delete fallback.prerequisite_min_score;
+        delete fallback.exam_order;
+      } else if (normTable === 'students') {
+        delete fallback.level_id;
+      }
       const retry = await sb.from(normTable).insert(fallback).select().single();
       if (retry.error) throw new Error(`DB Error (${normTable}): ${retry.error.message}`);
       data = retry.data;
@@ -1003,6 +1026,7 @@ export async function adminInsert(table, payload) {
         entity_id: data.id,
         new_value: {
           prerequisite_exam_id: payload.prerequisite_exam_id || null,
+          prerequisite_min_score: payload.prerequisite_min_score || 60.0,
           exam_order: payload.exam_order || '1',
           class_id: payload.class_id || null
         }
@@ -1011,6 +1035,29 @@ export async function adminInsert(table, payload) {
       console.warn('Exam metadata auxiliary save notice:', auxErr.message);
     }
   }
+
+  // Sync Student Level to Progress table (Phase 4)
+  if (normTable === 'students' && data?.id && payload.level_id) {
+    try {
+      const { data: cls } = await sb.from('classes').select('program_id').eq('id', data.class_id).single();
+      const progId = cls?.program_id || data.program_id;
+      const { data: subjs } = await sb.from('subjects').select('id').eq('program_id', progId).is('deleted_at', null);
+      if (subjs && subjs.length > 0) {
+        for (const s of subjs) {
+          await sb.from('progress').upsert({
+            student_id: data.id,
+            subject_id: s.id,
+            level_id: payload.level_id,
+            is_unlocked: true,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'student_id,subject_id,level_id' });
+        }
+      }
+    } catch (progErr) {
+      console.warn('Student progress auto-sync notice:', progErr.message);
+    }
+  }
+
   return data;
 }
 
@@ -1029,13 +1076,33 @@ export async function adminUpdate(table, id, payload) {
   let updatePayload = { ...payload };
   if (normTable === 'exams') delete updatePayload.display_name;
 
+  // Question Change Tracking (Phase 13 & 14)
+  if (normTable === 'questions') {
+    try {
+      const { data: oldQ } = await sb.from('questions').select('correct_answer, question_text').eq('id', id).single();
+      if (oldQ && oldQ.correct_answer !== payload.correct_answer) {
+        updatePayload.previous_correct_answer = oldQ.correct_answer;
+        updatePayload.last_edited_at = new Date().toISOString();
+        await sb.from('audit_logs').insert({
+          actor_role: 'admin',
+          action: 'question_updated',
+          entity_type: 'question',
+          entity_id: id,
+          old_value: { correct_answer: oldQ.correct_answer, question_text: oldQ.question_text },
+          new_value: { correct_answer: payload.correct_answer, question_text: payload.question_text },
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (_) {}
+  }
+
   let data = null;
   try {
     const res = await sb.from(normTable).update(updatePayload).eq('id', id).select().single();
     if (res.error) throw res.error;
     data = res.data;
   } catch (error) {
-    const isMissingCol = normTable === 'exams' && (
+    const isMissingCol = (
       error.code === 'PGRST204' ||
       error.code === '42703' ||
       String(error.message || '').toLowerCase().includes('pgrst204') ||
@@ -1045,9 +1112,17 @@ export async function adminUpdate(table, id, payload) {
     );
     if (isMissingCol) {
       const fallback = { ...updatePayload };
-      delete fallback.class_id;
-      delete fallback.prerequisite_exam_id;
-      delete fallback.exam_order;
+      if (normTable === 'exams') {
+        delete fallback.class_id;
+        delete fallback.prerequisite_exam_id;
+        delete fallback.prerequisite_min_score;
+        delete fallback.exam_order;
+      } else if (normTable === 'students') {
+        delete fallback.level_id;
+      } else if (normTable === 'questions') {
+        delete fallback.previous_correct_answer;
+        delete fallback.last_edited_at;
+      }
       const retry = await sb.from(normTable).update(fallback).eq('id', id).select().single();
       if (retry.error) throw new Error(`DB Error (${normTable}): ${retry.error.message}`);
       data = retry.data;
@@ -1070,6 +1145,7 @@ export async function adminUpdate(table, id, payload) {
         entity_id: id,
         new_value: {
           prerequisite_exam_id: payload.prerequisite_exam_id || null,
+          prerequisite_min_score: payload.prerequisite_min_score || 60.0,
           exam_order: payload.exam_order || '1',
           class_id: payload.class_id || null
         }
@@ -1078,6 +1154,30 @@ export async function adminUpdate(table, id, payload) {
       console.warn('Exam metadata auxiliary save notice:', auxErr.message);
     }
   }
+
+  // Sync Student Level to Progress table (Phase 4)
+  if (normTable === 'students' && payload.level_id) {
+    try {
+      const studentClassId = payload.class_id || data?.class_id;
+      const { data: cls } = await sb.from('classes').select('program_id').eq('id', studentClassId).single();
+      const progId = cls?.program_id || payload.program_id;
+      const { data: subjs } = await sb.from('subjects').select('id').eq('program_id', progId).is('deleted_at', null);
+      if (subjs && subjs.length > 0) {
+        for (const s of subjs) {
+          await sb.from('progress').upsert({
+            student_id: id,
+            subject_id: s.id,
+            level_id: payload.level_id,
+            is_unlocked: true,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'student_id,subject_id,level_id' });
+        }
+      }
+    } catch (progErr) {
+      console.warn('Student progress update notice:', progErr.message);
+    }
+  }
+
   return data;
 }
 
@@ -1253,25 +1353,283 @@ export async function logCheatingEvent(studentId, examId, action, detail) {
 // UTILITIES
 // ============================================================
 
-async function callEdgeFunction(fnName, payload) {
-  // Edge Functions not deployed on Supabase project yet — throw immediately to trigger clean DB fallback
-  throw new Error(`EDGE_FN_UNAVAILABLE: ${fnName}`);
+// ============================================================
+// EXAM RECALIBRATOR ENGINE (Phases 15, 16, 17)
+// ============================================================
+
+/**
+ * Preview recalibration of an exam across all submitted attempts.
+ * Pure read-only operation: does not mutate the database.
+ *
+ * @param {string} examId
+ * @returns {Promise<Object>} Detailed comparison and summary
+ */
+export async function previewRecalibrateExam(examId) {
+  const sb = await getSupabase();
+
+  // 1. Load exam
+  const { data: exam, error: examErr } = await sb.from('exams')
+    .select('id, exam_title, display_name, minimum_required_score, subject_id, level_id, program_id')
+    .eq('id', examId)
+    .single();
+  if (examErr || !exam) throw new Error('Exam not found: ' + (examErr?.message || examId));
+
+  const minPassingScore = Number(exam.minimum_required_score) || 60;
+
+  // 2. Load current active questions for this exam
+  const { data: questions, error: qErr } = await sb.from('questions')
+    .select('id, question_order, question_text, correct_answer, answer_type, metadata')
+    .eq('exam_id', examId)
+    .is('deleted_at', null)
+    .order('question_order');
+  if (qErr) throw qErr;
+
+  const questionsMap = new Map();
+  (questions || []).forEach(q => questionsMap.set(q.id, q));
+
+  // 3. Load all submitted attempts for this exam
+  const { data: attempts, error: attErr } = await sb.from('attempts')
+    .select('*, students(id, name, gender, class_id, classes(name))')
+    .eq('exam_id', examId)
+    .in('status', ['submitted', 'auto_submitted', 'expired'])
+    .order('submitted_at', { ascending: false });
+  if (attErr) throw attErr;
+
+  if (!attempts || attempts.length === 0) {
+    return {
+      exam,
+      totalQuestions: questions.length,
+      totalAttempts: 0,
+      affectedAttemptsCount: 0,
+      affectedStudentsCount: 0,
+      passToFailCount: 0,
+      failToPassCount: 0,
+      scoreIncreaseCount: 0,
+      scoreDecreaseCount: 0,
+      noChangeCount: 0,
+      attemptsDiff: []
+    };
+  }
+
+  // 4. Load all attempt answers for these attempts
+  const attemptIds = attempts.map(a => a.id);
+  const { data: allAnswers, error: ansErr } = await sb.from('attempt_answers')
+    .select('*')
+    .in('attempt_id', attemptIds);
+  if (ansErr) throw ansErr;
+
+  const answersByAttempt = new Map();
+  (allAnswers || []).forEach(ans => {
+    if (!answersByAttempt.has(ans.attempt_id)) answersByAttempt.set(ans.attempt_id, []);
+    answersByAttempt.get(ans.attempt_id).push(ans);
+  });
+
+  const attemptsDiff = [];
+  const affectedStudentsSet = new Set();
+  const affectedQuestionsSet = new Set();
+  let passToFailCount = 0;
+  let failToPassCount = 0;
+  let scoreIncreaseCount = 0;
+  let scoreDecreaseCount = 0;
+  let noChangeCount = 0;
+
+  for (const attempt of attempts) {
+    const studentName = attempt.students ? formatStudentName(attempt.students.name, attempt.students.gender) : 'Unknown Student';
+    const className = attempt.students?.classes?.name || '—';
+    const ansList = answersByAttempt.get(attempt.id) || [];
+
+    let newTotalScore = 0;
+    const totalQuestions = ansList.length || questions.length || 1;
+    const questionDiffs = [];
+
+    for (const ans of ansList) {
+      // Find current question definition
+      const curQ = ans.question_id ? questionsMap.get(ans.question_id) : null;
+      const targetCorrect = curQ ? curQ.correct_answer : ans.correct_answer_snapshot;
+      const answerType = curQ?.answer_type || ans.question_snapshot?.answer_type || 'written';
+
+      // Re-evaluate using authoritative centralized grading engine
+      const evalRes = evaluateAnswer(ans.student_answer, targetCorrect, answerType);
+      newTotalScore += evalRes.score;
+
+      const oldScore = Number(ans.score) || 0;
+      const oldRes = ans.evaluation_result || 'incorrect';
+      const isQuestionAffected = (evalRes.score !== oldScore) || (evalRes.result !== oldRes);
+
+      if (isQuestionAffected && curQ) {
+        affectedQuestionsSet.add(curQ.id);
+      }
+
+      questionDiffs.push({
+        answerId: ans.id,
+        questionId: ans.question_id,
+        questionText: curQ?.question_text || ans.question_snapshot?.question_text || 'Question',
+        studentAnswer: ans.student_answer || '—',
+        oldCorrectAnswer: ans.correct_answer_snapshot,
+        newCorrectAnswer: targetCorrect,
+        oldResult: oldRes,
+        newResult: evalRes.result,
+        oldScore,
+        newScore: evalRes.score,
+        isAffected: isQuestionAffected
+      });
+    }
+
+    const oldPct = Number(attempt.percentage) || 0;
+    const newPct = calculatePercentage(newTotalScore, totalQuestions);
+    const oldGrade = attempt.grade || calculateGrade(oldPct);
+    const newGrade = calculateGrade(newPct);
+
+    const oldPassed = isPassing(oldPct, minPassingScore);
+    const newPassed = isPassing(newPct, minPassingScore);
+    const isAttemptAffected = (oldPct !== newPct) || (oldPassed !== newPassed);
+
+    if (isAttemptAffected) {
+      affectedStudentsSet.add(attempt.student_id);
+      if (!oldPassed && newPassed) failToPassCount++;
+      else if (oldPassed && !newPassed) passToFailCount++;
+
+      if (newPct > oldPct) scoreIncreaseCount++;
+      else if (newPct < oldPct) scoreDecreaseCount++;
+    } else {
+      noChangeCount++;
+    }
+
+    attemptsDiff.push({
+      attemptId: attempt.id,
+      studentId: attempt.student_id,
+      studentName,
+      className,
+      submittedAt: attempt.submitted_at,
+      oldScore: Number(attempt.score) || 0,
+      newScore: newTotalScore,
+      oldPercentage: oldPct,
+      newPercentage: newPct,
+      oldGrade,
+      newGrade,
+      oldStatus: oldPassed ? 'PASS' : 'FAIL',
+      newStatus: newPassed ? 'PASS' : 'FAIL',
+      isAffected: isAttemptAffected,
+      questions: questionDiffs
+    });
+  }
+
+  return {
+    exam,
+    totalQuestions: questions.length,
+    totalAttempts: attempts.length,
+    affectedAttemptsCount: attemptsDiff.filter(a => a.isAffected).length,
+    affectedStudentsCount: affectedStudentsSet.size,
+    affectedQuestionsCount: affectedQuestionsSet.size,
+    passToFailCount,
+    failToPassCount,
+    scoreIncreaseCount,
+    scoreDecreaseCount,
+    noChangeCount,
+    attemptsDiff
+  };
 }
 
 /**
- * Test live Supabase connectivity.
- * Returns { connected: true, mode: 'supabase' } or { connected: false, mode: 'demo', error }
+ * Apply recalibration to an exam. Mutates attempt_answers, attempts, and progress.
+ *
+ * @param {string} examId
+ * @param {string} adminIdentifier
+ * @returns {Promise<Object>} Result of execution
  */
-export async function testSupabaseConnection() {
-  if (isPlaceholderUrl()) {
-    return { connected: false, mode: 'demo', error: 'No Supabase URL configured.' };
+export async function applyRecalibrateExam(examId, adminIdentifier = 'admin') {
+  const sb = await getSupabase();
+  const preview = await previewRecalibrateExam(examId);
+
+  const affected = preview.attemptsDiff.filter(a => a.isAffected);
+  if (affected.length === 0) {
+    return {
+      success: true,
+      updatedAttemptsCount: 0,
+      message: 'All attempts already match the latest question definitions. No changes needed.'
+    };
   }
+
+  let updatedAttemptsCount = 0;
+
+  for (const diff of affected) {
+    // 1. Update attempt_answers
+    const ansTasks = diff.questions.filter(q => q.isAffected).map(q => {
+      return sb.from('attempt_answers').update({
+        score: q.newScore,
+        evaluation_result: q.newResult,
+        correct_answer_snapshot: q.newCorrectAnswer,
+        updated_at: new Date().toISOString()
+      }).eq('id', q.answerId);
+    });
+
+    if (ansTasks.length > 0) {
+      await Promise.all(ansTasks);
+    }
+
+    // 2. Update attempt
+    await sb.from('attempts').update({
+      score: diff.newScore,
+      percentage: diff.newPercentage,
+      grade: diff.newGrade,
+      effective_score: diff.newPercentage,
+      updated_at: new Date().toISOString()
+    }).eq('id', diff.attemptId);
+
+    // 3. Update student progress if level progression is affected
+    if (preview.exam.subject_id && preview.exam.level_id) {
+      const isPassed = diff.newStatus === 'PASS';
+      try {
+        await sb.from('progress').upsert({
+          student_id: diff.studentId,
+          subject_id: preview.exam.subject_id,
+          level_id: preview.exam.level_id,
+          is_unlocked: true,
+          is_completed: isPassed,
+          completed_at: isPassed ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'student_id,subject_id,level_id' });
+      } catch (progErr) {
+        console.warn('Progress update warning during recalibration:', progErr.message);
+      }
+    }
+
+    updatedAttemptsCount++;
+  }
+
+  // 4. Record Audit Log (Phase 17)
   try {
-    const sb = await getSupabase();
-    const { data, error } = await sb.from('programs').select('id').limit(1);
-    if (error) return { connected: false, mode: 'error', error: error.message };
-    return { connected: true, mode: 'supabase' };
-  } catch (e) {
-    return { connected: false, mode: 'error', error: e.message };
+    await sb.from('audit_logs').insert({
+      actor_role: 'admin',
+      action: 'exam_recalibrated',
+      entity_type: 'exam',
+      entity_id: examId,
+      old_value: {
+        affectedAttemptsCount: preview.affectedAttemptsCount,
+        passToFailCount: preview.passToFailCount,
+        failToPassCount: preview.failToPassCount
+      },
+      new_value: {
+        recalibratedBy: adminIdentifier,
+        recalibratedAt: new Date().toISOString(),
+        scoreIncreases: preview.scoreIncreaseCount,
+        scoreDecreases: preview.scoreDecreaseCount
+      },
+      created_at: new Date().toISOString()
+    });
+  } catch (auditErr) {
+    console.warn('Audit log notice:', auditErr.message);
   }
+
+  return {
+    success: true,
+    updatedAttemptsCount,
+    summary: {
+      affectedAttemptsCount: preview.affectedAttemptsCount,
+      passToFailCount: preview.passToFailCount,
+      failToPassCount: preview.failToPassCount,
+      scoreIncreaseCount: preview.scoreIncreaseCount,
+      scoreDecreaseCount: preview.scoreDecreaseCount
+    }
+  };
 }

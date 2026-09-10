@@ -213,6 +213,7 @@
           <div class="admin-nav-item" data-sub="results"><span class="nav-icon">📊</span>Exam Results</div>
           <div class="admin-nav-item" data-sub="import-questions"><span class="nav-icon">📥</span>Import Questions</div>
           <div class="admin-nav-item" data-sub="export-questions"><span class="nav-icon">📤</span>Export Questions</div>
+          <div class="admin-nav-item" data-sub="recalibrator"><span class="nav-icon">⚡</span>Exam Recalibrator</div>
         </div>
       </nav>
 
@@ -315,10 +316,15 @@
   </div>
 
   <script type="module">
-    import { adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete, mergeDuplicateStudents, fetchPrograms, fetchClasses, fetchBatches, formatStudentName, testSupabaseConnection } from './js/api.js?v=1.1';
-    import { setAdminSession, getAdminSession, clearAdminSession } from './js/session.js?v=1.1';
-    import { showToast, showLoading, hideLoading, getGrade } from './js/app.js?v=1.1';
-    import { getSupabase } from './js/supabase.js?v=1.1';
+    import {
+      adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete,
+      mergeDuplicateStudents, fetchPrograms, fetchClasses, fetchBatches, formatStudentName,
+      testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
+    } from './js/api.js?v=1.2';
+    import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from './js/excel-parser.js?v=1.2';
+    import { setAdminSession, getAdminSession, clearAdminSession } from './js/session.js?v=1.2';
+    import { showToast, showLoading, hideLoading, getGrade } from './js/app.js?v=1.2';
+    import { getSupabase } from './js/supabase.js?v=1.2';
 
     // ── Primary Tab Switching Variables ──
     const mobileTabs = document.querySelectorAll('.mobile-tab');
@@ -329,7 +335,7 @@
       classes: 'CLASS', batches: 'CLASS',
       students: 'STUDENT', 'import-students': 'STUDENT', 'progress-view': 'STUDENT',
       exams: 'EXAM', questions: 'EXAM', results: 'EXAM',
-      'import-questions': 'EXAM', 'export-questions': 'EXAM'
+      'import-questions': 'EXAM', 'export-questions': 'EXAM', recalibrator: 'EXAM'
     };
 
     // Map: primary domain → which mobile tab panel it corresponds to
@@ -482,6 +488,7 @@
       students: 'Students', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
       exams: 'Exams', questions: 'Questions', results: 'Results',
       'import-questions': 'Import Questions (Excel)', 'export-questions': 'Export Questions (Excel)',
+      recalibrator: 'Exam Recalibrator'
     };
 
     // ── Global String & HTML Utilities ──
@@ -584,7 +591,7 @@
 
       // Set up Add button
       document.getElementById('add-record-btn').onclick = () => openCrudModal(section, null);
-      document.getElementById('add-record-btn').style.display = ['audit', 'results', 'progress-view', 'import-students', 'import-questions', 'export-questions'].includes(section) ? 'none' : '';
+      document.getElementById('add-record-btn').style.display = ['audit', 'results', 'progress-view', 'import-students', 'import-questions', 'export-questions', 'recalibrator'].includes(section) ? 'none' : '';
 
       try {
         switch(section) {
@@ -603,6 +610,7 @@
           case 'import-students': await renderImportStudents(area); break;
           case 'import-questions': renderImportQuestions(area); break;
           case 'export-questions': renderExportQuestions(area); break;
+          case 'recalibrator':    await renderRecalibrator(area); break;
           default: area.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🚧</div><h3>${sectionTitles[section] || section}</h3><p>This section is under development.</p></div>`;
         }
       } catch(e) {
@@ -1016,12 +1024,16 @@
       });
     }
 
-    // ── STUDENTS (With Batch, Overall Score & Global Grade) ──
+    // ── STUDENTS (With Batch, Level, Overall Score & Global Grade) ──
     async function renderStudents(area) {
-      const [rawData, allAttempts] = await Promise.all([
+      const [rawData, allAttempts, allLevels] = await Promise.all([
         adminFetchAll('students', '*, classes(name), programs(name), batches(name)'),
-        adminFetchAll('attempts')
+        adminFetchAll('attempts'),
+        adminFetchAll('levels')
       ]);
+      const levelsMap = new Map();
+      (allLevels || []).forEach(l => levelsMap.set(l.id, l));
+
       // Default: alphabetical by student name
       const data = [...rawData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       // Sort state: { col, dir } — dir is 'asc', 'desc', or null (default)
@@ -1043,7 +1055,7 @@
         <div class="section-header">
           <div>
             <h2 class="section-title">Students <span class="count-chip">${data.length} Total</span></h2>
-            <p class="section-subtitle">Manage enrolled students listed in alphabetical order with Batch, Overall Score &amp; Global Grade</p>
+            <p class="section-subtitle">Manage enrolled students listed in alphabetical order with Batch, Level, Overall Score &amp; Global Grade</p>
           </div>
           <div class="d-flex gap-2">
             ${totalDuplicates > 0 ? `<button class="btn btn-warning btn-sm" id="students-merge-shortcut" style="font-weight:700;">🔄 Merge Duplikat (${totalDuplicates})</button>` : ''}
@@ -1083,6 +1095,7 @@
                 <th class="text-left sortable-th" data-col="program" style="cursor:pointer;user-select:none;">Program <span class="sort-icon" data-col="program"></span></th>
                 <th class="text-left sortable-th" data-col="class" style="cursor:pointer;user-select:none;">Class <span class="sort-icon" data-col="class"></span></th>
                 <th class="text-left sortable-th" data-col="batch" style="cursor:pointer;user-select:none;">Batch <span class="sort-icon" data-col="batch"></span></th>
+                <th class="text-center sortable-th" data-col="level" style="cursor:pointer;user-select:none;">Level <span class="sort-icon" data-col="level"></span></th>
                 <th class="text-center sortable-th" data-col="gender" style="cursor:pointer;user-select:none;">Gender <span class="sort-icon" data-col="gender"></span></th>
                 <th class="text-center">Birth Date / Age</th>
                 <th class="text-center sortable-th" data-col="score" style="cursor:pointer;user-select:none;">Overall Score <span class="sort-icon" data-col="score"></span></th>
@@ -1156,6 +1169,7 @@
             case 'program': va = (a.programs?.name || '').toLowerCase(); vb = (b.programs?.name || '').toLowerCase(); break;
             case 'class':   va = (a.classes?.name || '').toLowerCase(); vb = (b.classes?.name || '').toLowerCase(); break;
             case 'batch':   va = (a.batches?.name || '').toLowerCase(); vb = (b.batches?.name || '').toLowerCase(); break;
+            case 'level':   va = a.level_id ? (levelsMap.get(a.level_id)?.level_number ?? 99) : 99; vb = b.level_id ? (levelsMap.get(b.level_id)?.level_number ?? 99) : 99; return mult * (va - vb);
             case 'gender':  va = (a.gender || '').toLowerCase(); vb = (b.gender || '').toLowerCase(); break;
             case 'score':   va = studentScoreMap.get(a.id)?.score ?? -1; vb = studentScoreMap.get(b.id)?.score ?? -1; return mult * (va - vb);
             case 'grade':   va = GRADE_ORDER[studentScoreMap.get(a.id)?.grade ?? '—'] ?? 0; vb = GRADE_ORDER[studentScoreMap.get(b.id)?.grade ?? '—'] ?? 0; return mult * (va - vb);
@@ -1185,7 +1199,7 @@
       const renderRows = (sourceData) => {
         const sorted = getSortedData(sourceData);
         tbody.innerHTML = '';
-        if (!sorted.length) { tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted p-4">No students found.</td></tr>'; return; }
+        if (!sorted.length) { tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted p-4">No students found.</td></tr>'; return; }
         sorted.forEach(r => {
           const ageDisplay = calculateAgeFromBirthDate(r.birth_date);
           const isDuplicate = duplicateIds.has(r.id);
@@ -1196,6 +1210,8 @@
             overallScoreDisplay = `<span class="fw-700 text-sm text-grade-${scoreInfo.grade}">${scoreInfo.score.toFixed(1)}%</span>`;
             globalGradeDisplay = `<span class="grade-badge grade-${scoreInfo.grade}" style="width:28px;height:28px;font-size:0.8rem;display:inline-flex;">${scoreInfo.grade}</span>`;
           }
+          const lvlRec = r.level_id ? levelsMap.get(r.level_id) : r.levels;
+          const levelBadge = lvlRec ? `<span class="badge badge-primary" style="font-weight:700;">Level ${toLevelLetter(lvlRec.level_number)}</span>` : '<span class="text-muted">—</span>';
           const displayName = formatStudentName(r.name, r.gender);
           const tr = document.createElement('tr');
           tr.innerHTML = `
@@ -1206,6 +1222,7 @@
             <td class="text-muted text-sm">${escapeHtml(r.programs?.name || '—')}</td>
             <td class="text-muted text-sm">${escapeHtml(r.classes?.name || '—')}</td>
             <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(r.batches?.name || '—')}</td>
+            <td class="text-center text-sm">${levelBadge}</td>
             <td class="text-center text-muted text-sm" style="text-transform:capitalize;">${escapeHtml(r.gender || '—')}</td>
             <td class="text-center text-muted text-sm">${escapeHtml(r.birth_date || '—')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${ageDisplay}</span></td>
             <td class="text-center">${overallScoreDisplay}</td>
@@ -2125,8 +2142,278 @@
       });
     }
 
+    // ── EXAM RECALIBRATOR (Phases 15, 16, 17) ──
+    async function renderRecalibrator(area) {
+      showLoading('Loading exams for recalibration…');
+      const allExams = await adminFetchAll('exams');
+      hideLoading();
+      const activeExams = allExams.filter(e => !e.deleted_at).sort((a, b) => (a.exam_title || '').localeCompare(b.exam_title || ''));
+
+      area.innerHTML = `
+        <div class="section-header">
+          <div>
+            <h2 class="section-title text-gradient" style="font-size:1.6rem;">⚡ Exam Recalibrator</h2>
+            <p class="section-subtitle">
+              Recalculate historical submitted student attempts after updating questions, adding multiple correct answers (separated by <code>;</code> or <code>|</code>), or enabling hyphen tolerance.
+            </p>
+          </div>
+        </div>
+
+        <div class="glass-card p-6 mb-6">
+          <div class="d-flex align-center gap-4 flex-wrap">
+            <div style="flex: 1; min-width: 280px;">
+              <label class="form-label">Select Target Exam</label>
+              <select class="form-control" id="recalibrator-exam-select">
+                <option value="">— Choose an Exam to Recalibrate —</option>
+                ${activeExams.map(e => `<option value="${e.id}">[${escapeHtml(e.exam_type || 'Exam')}] ${escapeHtml(e.exam_title || e.display_name || e.id)}</option>`).join('')}
+              </select>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: flex-end; padding-top: 20px;">
+              <button class="btn btn-primary" id="btn-preview-recal" disabled>🔍 Preview Recalibration</button>
+              <button class="btn btn-success" id="btn-apply-recal" disabled style="background:linear-gradient(135deg,#10b981,#059669);font-weight:700;">⚡ Apply Recalibration</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics Overview Panel -->
+        <div id="recal-metrics-panel" class="hidden mb-6">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+            <div class="glass-card p-4 text-center">
+              <div class="text-xs text-muted mb-1">Total Questions</div>
+              <div class="fw-700" style="font-size:1.6rem;" id="recal-metric-questions">0</div>
+            </div>
+            <div class="glass-card p-4 text-center">
+              <div class="text-xs text-muted mb-1">Submitted Attempts</div>
+              <div class="fw-700" style="font-size:1.6rem;" id="recal-metric-attempts">0</div>
+            </div>
+            <div class="glass-card p-4 text-center" style="border-left: 4px solid var(--clr-primary, #6366f1);">
+              <div class="text-xs text-muted mb-1">Affected Attempts</div>
+              <div class="fw-700" style="font-size:1.6rem; color:var(--clr-primary, #a78bfa);" id="recal-metric-affected">0</div>
+            </div>
+            <div class="glass-card p-4 text-center" style="border-left: 4px solid #10b981;">
+              <div class="text-xs text-muted mb-1">Status: FAIL ➔ PASS</div>
+              <div class="fw-700" style="font-size:1.6rem; color: #10b981;" id="recal-metric-fail-pass">0</div>
+            </div>
+            <div class="glass-card p-4 text-center" style="border-left: 4px solid #f43f5e;">
+              <div class="text-xs text-muted mb-1">Status: PASS ➔ FAIL</div>
+              <div class="fw-700" style="font-size:1.6rem; color: #f43f5e;" id="recal-metric-pass-fail">0</div>
+            </div>
+            <div class="glass-card p-4 text-center" style="border-left: 4px solid #38bdf8;">
+              <div class="text-xs text-muted mb-1">Score Increases</div>
+              <div class="fw-700" style="font-size:1.6rem; color: #38bdf8;" id="recal-metric-increases">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Results Table -->
+        <div id="recal-results-wrap" class="hidden">
+          <div class="glass-card p-6">
+            <div class="d-flex align-center justify-between flex-wrap gap-3 mb-4">
+              <div>
+                <h3 class="fw-700 text-lg">Recalibration Preview</h3>
+                <p class="text-sm text-muted">Review exactly what will change for each student before applying.</p>
+              </div>
+              <div class="d-flex align-center gap-2">
+                <label class="text-xs text-muted">Filter:</label>
+                <select class="form-control" id="recal-filter-view" style="width: auto; padding: 4px 10px; font-size: 0.85rem;">
+                  <option value="affected">Affected Students Only</option>
+                  <option value="all">All Students</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table style="width:100%;">
+                <thead>
+                  <tr>
+                    <th class="text-left">Student Name</th>
+                    <th class="text-left">Class</th>
+                    <th class="text-center">Old Score</th>
+                    <th class="text-center">New Score</th>
+                    <th class="text-center">Old %</th>
+                    <th class="text-center">New %</th>
+                    <th class="text-center">Old Grade</th>
+                    <th class="text-center">New Grade</th>
+                    <th class="text-center">Status Change</th>
+                    <th class="text-center">Answers Changed</th>
+                  </tr>
+                </thead>
+                <tbody id="recal-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmation Modal for Recalibration -->
+        <div class="modal-backdrop hidden" id="recal-confirm-modal" role="dialog" aria-modal="true">
+          <div class="modal-box" style="max-width: 480px; text-align: center;">
+            <div style="font-size: 2.8rem; margin-bottom: 1rem;">⚡</div>
+            <h3 class="mb-2">Confirm Exam Recalibration?</h3>
+            <p class="text-muted text-sm mb-4" id="recal-modal-desc">
+              This will safely update historical submitted scores, percentages, grades, and student progression using the authoritative grading engine.
+            </p>
+            <div class="p-4 rounded text-left text-xs mb-6" style="background: rgba(255,255,255,0.04); border: 1px solid var(--clr-border);">
+              <div class="mb-1">• <b>Affected Attempts:</b> <span id="modal-affected-count" class="fw-700 text-primary">0</span></div>
+              <div class="mb-1">• <b>Status Transitions:</b> <span id="modal-status-changes" class="fw-700">0</span></div>
+              <div>• <b>Audit Trail:</b> An audit log entry will be permanently recorded.</div>
+            </div>
+            <div class="d-flex gap-3 justify-between">
+              <button class="btn btn-secondary" id="btn-recal-cancel" style="flex:1;">Cancel</button>
+              <button class="btn btn-primary" id="btn-recal-confirm-run" style="flex:1; background: linear-gradient(135deg,#10b981,#059669); border:none;">✓ Yes, Apply Changes</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      let currentPreviewData = null;
+      const examSelect = document.getElementById('recalibrator-exam-select');
+      const btnPreview = document.getElementById('btn-preview-recal');
+      const btnApply = document.getElementById('btn-apply-recal');
+      const metricsPanel = document.getElementById('recal-metrics-panel');
+      const resultsWrap = document.getElementById('recal-results-wrap');
+      const tableBody = document.getElementById('recal-table-body');
+      const filterSelect = document.getElementById('recal-filter-view');
+      const confirmModal = document.getElementById('recal-confirm-modal');
+
+      examSelect.addEventListener('change', () => {
+        const val = examSelect.value;
+        btnPreview.disabled = !val;
+        btnApply.disabled = true;
+        metricsPanel.classList.add('hidden');
+        resultsWrap.classList.add('hidden');
+        currentPreviewData = null;
+      });
+
+      const renderPreviewRows = () => {
+        if (!currentPreviewData) return;
+        const mode = filterSelect.value;
+        const list = mode === 'affected'
+          ? currentPreviewData.attemptsDiff.filter(a => a.isAffected)
+          : currentPreviewData.attemptsDiff;
+
+        tableBody.innerHTML = '';
+        if (!list.length) {
+          tableBody.innerHTML = `<tr><td colspan="10" class="text-center text-muted p-4">No ${mode === 'affected' ? 'affected ' : ''}student attempts found.</td></tr>`;
+          return;
+        }
+
+        list.forEach(item => {
+          const isScoreUp = item.newPercentage > item.oldPercentage;
+          const isScoreDown = item.newPercentage < item.oldPercentage;
+          const isStatusPass = item.oldStatus === 'FAIL' && item.newStatus === 'PASS';
+          const isStatusFail = item.oldStatus === 'PASS' && item.newStatus === 'FAIL';
+
+          let statusBadge = '<span class="badge badge-neutral">No Change</span>';
+          if (isStatusPass) {
+            statusBadge = '<span class="badge badge-success fw-700">FAIL ➔ PASS ✨</span>';
+          } else if (isStatusFail) {
+            statusBadge = '<span class="badge badge-danger fw-700">PASS ➔ FAIL ⚠️</span>';
+          } else if (item.isAffected) {
+            statusBadge = isScoreUp ? '<span class="badge badge-info">+ Score Up</span>' : '<span class="badge badge-warning">- Score Down</span>';
+          }
+
+          const changedAnswersCount = item.questions.filter(q => q.isAffected).length;
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="fw-600">${escapeHtml(item.studentName)}</td>
+            <td class="text-muted text-sm">${escapeHtml(item.className)}</td>
+            <td class="text-center text-muted">${item.oldScore}</td>
+            <td class="text-center fw-700 ${isScoreUp ? 'text-success' : isScoreDown ? 'text-danger' : ''}">${item.newScore}</td>
+            <td class="text-center text-muted">${item.oldPercentage}%</td>
+            <td class="text-center fw-700 ${isScoreUp ? 'text-success' : isScoreDown ? 'text-danger' : ''}">${item.newPercentage}%</td>
+            <td class="text-center"><span class="grade-badge grade-${item.oldGrade}" style="width:24px;height:24px;font-size:0.75rem;display:inline-flex;">${item.oldGrade}</span></td>
+            <td class="text-center"><span class="grade-badge grade-${item.newGrade}" style="width:24px;height:24px;font-size:0.75rem;display:inline-flex;">${item.newGrade}</span></td>
+            <td class="text-center">${statusBadge}</td>
+            <td class="text-center"><span class="badge ${changedAnswersCount > 0 ? 'badge-primary' : 'badge-neutral'}">${changedAnswersCount} q</span></td>
+          `;
+          tableBody.appendChild(tr);
+        });
+      };
+
+      filterSelect.addEventListener('change', renderPreviewRows);
+
+      btnPreview.addEventListener('click', async () => {
+        const examId = examSelect.value;
+        if (!examId) return;
+
+        showLoading('Calculating recalibration preview across all attempts…');
+        try {
+          currentPreviewData = await previewRecalibrateExam(examId);
+          hideLoading();
+
+          // Update metrics
+          document.getElementById('recal-metric-questions').textContent = currentPreviewData.totalQuestions;
+          document.getElementById('recal-metric-attempts').textContent = currentPreviewData.totalAttempts;
+          document.getElementById('recal-metric-affected').textContent = currentPreviewData.affectedAttemptsCount;
+          document.getElementById('recal-metric-fail-pass').textContent = currentPreviewData.failToPassCount;
+          document.getElementById('recal-metric-pass-fail').textContent = currentPreviewData.passToFailCount;
+          document.getElementById('recal-metric-increases').textContent = currentPreviewData.scoreIncreaseCount;
+
+          metricsPanel.classList.remove('hidden');
+          resultsWrap.classList.remove('hidden');
+          renderPreviewRows();
+
+          if (currentPreviewData.affectedAttemptsCount > 0) {
+            btnApply.disabled = false;
+            showToast(`Found ${currentPreviewData.affectedAttemptsCount} attempts that can be recalibrated.`, 'info');
+          } else {
+            btnApply.disabled = true;
+            showToast('All attempts already match the latest question definitions and grading engine.', 'success');
+          }
+        } catch (err) {
+          hideLoading();
+          showToast('Preview error: ' + err.message, 'error');
+        }
+      });
+
+      btnApply.addEventListener('click', () => {
+        if (!currentPreviewData || currentPreviewData.affectedAttemptsCount === 0) return;
+        document.getElementById('modal-affected-count').textContent = currentPreviewData.affectedAttemptsCount;
+        document.getElementById('modal-status-changes').textContent = (currentPreviewData.failToPassCount + currentPreviewData.passToFailCount);
+        confirmModal.classList.remove('hidden');
+      });
+
+      document.getElementById('btn-recal-cancel')?.addEventListener('click', () => {
+        confirmModal.classList.add('hidden');
+      });
+
+      document.getElementById('btn-recal-confirm-run')?.addEventListener('click', async () => {
+        confirmModal.classList.add('hidden');
+        const examId = examSelect.value;
+        if (!examId) return;
+
+        showLoading('Applying recalibration to historical student results…');
+        try {
+          const res = await applyRecalibrateExam(examId);
+          hideLoading();
+          showToast(`Successfully recalibrated ${res.updatedAttemptsCount} attempts!`, 'success');
+          btnApply.disabled = true;
+          // Refresh preview
+          btnPreview.click();
+        } catch (err) {
+          hideLoading();
+          showToast('Failed to apply recalibration: ' + err.message, 'error');
+        }
+      });
+    }
+
     // ── Student Import Engine ──
     async function renderImportStudents(area) {
+      showLoading('Loading programs & classes…');
+      const [allProgs, allCls, allBatches, allLevels] = await Promise.all([
+        adminFetchAll('programs'),
+        adminFetchAll('classes', '*, programs(name)'),
+        adminFetchAll('batches'),
+        adminFetchAll('levels')
+      ]);
+      hideLoading();
+
+      const sortedPrograms = allProgs.filter(p => !p.deleted_at && p.is_active).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const sortedClasses = allCls.filter(c => !c.deleted_at && c.is_active).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const sortedBatches = allBatches.filter(b => !b.deleted_at && b.is_active).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const sortedLevels = allLevels.filter(l => !l.deleted_at && l.is_active).sort((a, b) => (a.level_number || 0) - (b.level_number || 0));
+
       area.innerHTML = `
         <div style="height: calc(100vh - 80px); display: flex; flex-direction: column; overflow: hidden; margin: -40px; padding: 40px;">
           <div class="section-header" style="flex-shrink: 0;">
@@ -2172,7 +2459,16 @@
                 </div>
 
                 <div class="form-group w-100">
-                  <label class="form-label">4. Select Spreadsheet File (.xlsx / .xls / .csv)</label>
+                  <label class="form-label">4. Target Level (Optional / Override)</label>
+                  <select class="form-control" id="import-student-level">
+                    <option value="">- Use Level from Excel File / None -</option>
+                    ${sortedLevels.map(l => `<option value="${l.id}">Level ${toLevelLetter(l.level_number)} (${escapeHtml(l.name)})</option>`).join('')}
+                  </select>
+                  <span class="text-muted text-xs mt-1">Optional. Level is managed manually.</span>
+                </div>
+
+                <div class="form-group w-100">
+                  <label class="form-label">5. Select Spreadsheet File (.xlsx / .xls / .csv)</label>
                   <input type="file" class="form-control" id="import-students-file" accept=".xlsx,.xls,.csv" />
                 </div>
               </div>
@@ -2379,9 +2675,11 @@
             const selectedProgId = document.getElementById('import-student-program').value;
             const selectedClassId = document.getElementById('import-student-class').value;
             const selectedBatchId = document.getElementById('import-student-batch')?.value;
+            const selectedLevelId = document.getElementById('import-student-level')?.value;
             const selectedProg = sortedPrograms.find(p => p.id === selectedProgId);
             const selectedClass = sortedClasses.find(c => c.id === selectedClassId);
             const selectedBatch = sortedBatches.find(b => b.id === selectedBatchId);
+            const selectedLevel = sortedLevels.find(l => l.id === selectedLevelId);
 
             // Map for deduplicating within the file batch itself
             const batchMap = new Map();
@@ -2534,6 +2832,18 @@
                 existingId = existingDbStudent.id;
               }
 
+              // Optional Level mapping
+              const rowLevelName = getRowVal(row, ['level', 'levelname', 'namalevel', 'tingkat', 'lvl']);
+              let finalLevelId = selectedLevelId || null;
+              let finalLevelName = selectedLevel?.name || '';
+              if (!finalLevelId && rowLevelName) {
+                const matchedL = sortedLevels.find(l => l.name.toLowerCase().trim() === rowLevelName.toLowerCase().trim() || String(l.level_number) === rowLevelName.trim());
+                if (matchedL) {
+                  finalLevelId = matchedL.id;
+                  finalLevelName = matchedL.name;
+                }
+              }
+
               const item = {
                 no: idx + 1,
                 name: formatStudentName(name, gender),
@@ -2547,6 +2857,8 @@
                 className: finalClassName || 'Class',
                 batchId: finalBatchId,
                 batchName: finalBatchName || '—',
+                levelId: finalLevelId,
+                levelName: finalLevelName || '',
                 status,
                 statusMsg,
                 isExisting,
@@ -2700,6 +3012,7 @@
           let _dbHasBatchId = true;  // Assume yes, will be set to false on first schema error
           let _dbHasBirthDate = true;
           let _dbHasProgramId = true;
+          let _dbHasLevelId = true;
 
           async function safeStudentInsert(payload) {
             // Remove null/undefined batch_id if DB doesn't have the column
@@ -2707,9 +3020,15 @@
             if (!_dbHasBatchId) delete p.batch_id;
             if (!_dbHasBirthDate) delete p.birth_date;
             if (!_dbHasProgramId) delete p.program_id;
+            if (!_dbHasLevelId) delete p.level_id;
             try {
               return await adminInsert('students', p);
             } catch (e) {
+              if (e.message && e.message.toLowerCase().includes('level_id')) {
+                _dbHasLevelId = false;
+                delete p.level_id;
+                return await adminInsert('students', p);
+              }
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
                 _dbHasBatchId = false;
                 showToast('⚠️ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
@@ -2735,9 +3054,15 @@
             if (!_dbHasBatchId) delete p.batch_id;
             if (!_dbHasBirthDate) delete p.birth_date;
             if (!_dbHasProgramId) delete p.program_id;
+            if (!_dbHasLevelId) delete p.level_id;
             try {
               return await adminUpdate('students', id, p);
             } catch (e) {
+              if (e.message && e.message.toLowerCase().includes('level_id')) {
+                _dbHasLevelId = false;
+                delete p.level_id;
+                return await adminUpdate('students', id, p);
+              }
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
                 _dbHasBatchId = false;
                 showToast('⚠️ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
@@ -2764,6 +3089,7 @@
                 program_id: s.programId,
                 class_id: s.classId,
                 batch_id: s.batchId || null,
+                level_id: s.levelId || null,
                 birth_date: s.birthDate,
                 is_active: true,
                 deleted_at: null,
@@ -2787,6 +3113,7 @@
                 program_id: s.programId,
                 class_id: s.classId,
                 batch_id: s.batchId || null,
+                level_id: s.levelId || null,
                 gender: s.gender || null,
                 birth_date: s.birthDate,
                 pin_hash: hashed,
@@ -3370,6 +3697,7 @@
         { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: true },
         { id: 'class_id', label: 'Class', type: 'select', source: 'classes', required: true, dependsOn: 'program_id' },
         { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: false, dependsOn: 'class_id' },
+        { id: 'level_id', label: 'Level (Optional)', type: 'select', source: 'levels', required: false },
         { id: 'name', label: 'Full Name', type: 'text', required: true },
         { id: 'gender', label: 'Gender', type: 'select', options: [
           { value: '', label: '— Unassigned (Student will choose) —' },
@@ -3382,13 +3710,15 @@
       ],
       exams: [
         { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: true },
-        { id: 'class_id', label: 'Class (Mandatory)', type: 'select', source: 'classes', required: true, dependsOn: 'program_id' },
+        { id: 'class_id', label: 'Class (Optional / Assigned)', type: 'select', source: 'classes', required: false, dependsOn: 'program_id' },
         { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: true, dependsOn: 'program_id' },
         { id: 'exam_type', label: 'Exam Type', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Final'], required: true, defaultValue: 'Daily' },
-        { id: 'level_id', label: 'Level (A, B, C...)', type: 'select', source: 'levels', required: true, dependsOn: 'class_id' },
+        { id: 'level_id', label: 'Level (Optional)', type: 'select', source: 'levels', required: false },
         { id: 'exam_order', label: 'Order (1, 2, 3...)', type: 'select', options: ['1','2','3','4','5','6','7','8','9','10'], required: true, defaultValue: '1' },
         { id: 'exam_title', label: 'Exam Title (Auto-Generated)', type: 'text', required: true, placeholder: 'Auto-generated as: [Program] [Class] [Subject] [Type] [Level] [Order]' },
-        { id: 'prerequisite_exam_id', label: 'Prerequisite Exam', type: 'select', source: 'exams', required: false },
+        { id: 'prerequisite_exam_id', label: 'Prerequisite Exam (Optional)', type: 'select', source: 'exams', required: false },
+        { id: 'minimum_required_score', label: 'Passing Score % (Default: 60%)', type: 'number', required: true, defaultValue: 60 },
+        { id: 'prerequisite_min_score', label: 'Prerequisite Min % (Default: 60%)', type: 'number', required: false, defaultValue: 60 },
         { id: 'time_limit_minutes', label: 'Time Limit (minutes)', type: 'number', required: true, defaultValue: 60 },
         { id: 'answer_type', label: 'Answer Type', type: 'select', options: [
           {value:'multiple_choice',label:'Multiple Choice'},
@@ -3413,6 +3743,7 @@
         ], required: true },
         { id: 'correct_answer', label: 'Correct Answer', type: 'text', required: true },
         { id: 'options_json', label: 'Options (JSON array)', type: 'textarea', placeholder: '["Option A","Option B","Option C"]' },
+        { id: 'metadata', label: 'Metadata / Word Type', type: 'text', placeholder: 'e.g. 1 - VERB' },
       ],
     };
 
@@ -3449,9 +3780,11 @@
           sel.id = `field-${f.id}`;
           sel.name = f.id;
           if (f.required) sel.required = true;
-          // Skip initial population for dependent dropdowns; custom handle prerequisite
           if (f.id === 'prerequisite_exam_id') {
-            sel.innerHTML = `<option value="">None</option>`;
+            sel.innerHTML = `<option value="">None (Optional)</option>`;
+            sel.disabled = false;
+          } else if (f.id === 'level_id') {
+            sel.innerHTML = `<option value="">— No Level / Optional —</option>`;
             sel.disabled = false;
           } else if (!f.dependsOn) {
             sel.innerHTML = `<option value="">— Select —</option>`;
@@ -3522,7 +3855,6 @@
 
       crudForm.appendChild(formGrid);
 
-      // Program -> Class -> Batch dependency logic (Strict hierarchy: Program -> Class -> Batch)
       const progSelect = crudForm.querySelector('#field-program_id');
       const classSelect = crudForm.querySelector('#field-class_id');
       const batchSelect = crudForm.querySelector('#field-batch_id');
@@ -3534,30 +3866,18 @@
       const examTypeInput = crudForm.querySelector('#field-exam_type');
       const prereqLabel = crudForm.querySelector('label[for="field-prerequisite_exam_id"]');
 
-      // Prerequisite requirement rule:
-      // If Level === 'A' (level_number 1) AND Order === '1': Optional (None allowed).
-      // Otherwise: MANDATORY (must pick a prerequisite exam)!
       const updatePrereqRequirement = () => {
         if (!prereqSelect || _currentSection !== 'exams') return;
-        const selectedOpt = levelSelect && levelSelect.selectedIndex > 0 ? levelSelect.options[levelSelect.selectedIndex] : null;
-        const lvlLetter = selectedOpt ? (selectedOpt.getAttribute('data-level-letter') || selectedOpt.textContent.trim()) : 'A';
-        const ordVal = orderSelect ? orderSelect.value.trim() : '1';
-        
-        const isFirstExam = (lvlLetter === 'A' || lvlLetter === '1') && (ordVal === '1' || ordVal === 'A');
-        if (isFirstExam) {
-          prereqSelect.required = false;
-          if (prereqLabel) prereqLabel.innerHTML = 'Prerequisite Exam <span class="text-muted" style="font-size:0.75rem;font-weight:normal;">(Optional for Level A, Order 1)</span>';
-        } else {
-          prereqSelect.required = true;
-          if (prereqLabel) prereqLabel.innerHTML = 'Prerequisite Exam <span style="color:var(--clr-accent-1,#f43f5e);font-weight:bold;">* (Mandatory — Must Pass First)</span>';
+        prereqSelect.required = false;
+        if (prereqLabel) {
+          prereqLabel.innerHTML = 'Prerequisite Exam <span class="text-muted" style="font-size:0.75rem;font-weight:normal;">(Optional — Leave empty if none)</span>';
         }
       };
 
-      // Prerequisite Exam dropdown population (Selecting None is an option)
       if (prereqSelect) {
         prereqSelect.disabled = false;
         const isNoneSelected = !record || !record.prerequisite_exam_id;
-        prereqSelect.innerHTML = `<option value="" ${isNoneSelected ? 'selected' : ''}>None</option>`;
+        prereqSelect.innerHTML = `<option value="" ${isNoneSelected ? 'selected' : ''}>None (Optional)</option>`;
         const allExams = await adminFetchAll('exams');
         const eligible = allExams.filter(e => !e.deleted_at && e.id !== _editId);
         eligible.sort((a, b) => (a.exam_title || '').localeCompare(b.exam_title || '')).forEach(e => {
@@ -3570,7 +3890,6 @@
         updatePrereqRequirement();
       }
 
-      // Real-time Auto-Generated Exam Title: [Program] [Class] [Subject] [Type] [Level] [Order]
       let _titleManuallyEdited = Boolean(_editId && record?.exam_title);
       const triggerAutoTitle = () => {
         if (_titleManuallyEdited || !titleInput || _currentSection !== 'exams') return;
@@ -3596,52 +3915,42 @@
 
       const populateLevelsForSection = async () => {
         if (!levelSelect) return;
-        levelSelect.innerHTML = `<option value="">— Select Level —</option>`;
-        
-        // In Exam modal, selecting Class is mandatory before Levels
-        if (_currentSection === 'exams') {
-          const selClassId = classSelect ? classSelect.value : null;
-          const selSubjId = subjectSelect ? subjectSelect.value : null;
-          if (!selClassId || !selSubjId) {
-            levelSelect.disabled = true;
-            levelSelect.innerHTML = `<option value="">— Select Class & Subject First —</option>`;
-            return;
-          }
-          levelSelect.disabled = false;
+        levelSelect.innerHTML = `<option value="">— No Level / Optional —</option>`;
+        levelSelect.disabled = false;
+
+        try {
           const allLevels = await adminFetchAll('levels');
-          const filteredLevels = allLevels.filter(l => !l.deleted_at && l.subject_id === selSubjId);
-          // Level Consisted with Letters: A, B, C...
-          filteredLevels.sort((a, b) => a.level_number - b.level_number).forEach(l => {
-            const opt = document.createElement('option');
-            opt.value = l.id;
-            const letter = toLevelLetter(l.level_number);
-            opt.textContent = `${letter}`;
-            opt.setAttribute('data-level-letter', letter);
-            opt.setAttribute('data-level-num', l.level_number);
-            if (record && record.level_id === l.id) opt.selected = true;
-            levelSelect.appendChild(opt);
-          });
-          updatePrereqRequirement();
-          triggerAutoTitle();
-        } else {
-          // Standard level selector
+          let activeLevels = allLevels.filter(l => !l.deleted_at);
+
           const selSubjId = subjectSelect ? subjectSelect.value : null;
-          if (!selSubjId) {
-            levelSelect.disabled = true;
-            levelSelect.innerHTML = `<option value="">— Select Subject First —</option>`;
-            return;
+          if (selSubjId) {
+            const subjectSpecific = activeLevels.filter(l => l.subject_id === selSubjId);
+            if (subjectSpecific.length > 0) {
+              activeLevels = subjectSpecific;
+            }
           }
-          levelSelect.disabled = false;
-          const allLevels = await adminFetchAll('levels');
-          const filteredLevels = allLevels.filter(l => !l.deleted_at && l.subject_id === selSubjId);
-          filteredLevels.sort((a, b) => a.level_number - b.level_number).forEach(l => {
-            const opt = document.createElement('option');
-            opt.value = l.id;
-            opt.textContent = `${l.level_number}`;
-            if (record && record.level_id === l.id) opt.selected = true;
-            levelSelect.appendChild(opt);
+
+          const seen = new Set();
+          activeLevels.sort((a, b) => (Number(a.level_number) || 0) - (Number(b.level_number) || 0)).forEach(l => {
+            if (!seen.has(l.id)) {
+              seen.add(l.id);
+              const opt = document.createElement('option');
+              opt.value = l.id;
+              const letter = toLevelLetter(l.level_number);
+              const displayName = l.name ? (l.name.toLowerCase().includes('level') ? l.name : `Level ${letter} (${l.name})`) : `Level ${letter}`;
+              opt.textContent = displayName;
+              opt.setAttribute('data-level-letter', letter);
+              opt.setAttribute('data-level-num', l.level_number);
+              if (record && record.level_id === l.id) opt.selected = true;
+              levelSelect.appendChild(opt);
+            }
           });
+        } catch (lvlErr) {
+          console.warn('Level population notice:', lvlErr);
         }
+
+        updatePrereqRequirement();
+        triggerAutoTitle();
       };
 
       if (progSelect && classSelect) {
@@ -3724,10 +4033,6 @@
       if (progSelect && subjectSelect) {
         const populateSubjectsForProgram = async (selectedProgId) => {
           subjectSelect.innerHTML = `<option value="">— Select Subject —</option>`;
-          if (levelSelect) {
-            levelSelect.innerHTML = `<option value="">— Select Subject First —</option>`;
-            levelSelect.disabled = true;
-          }
           if (!selectedProgId) {
             subjectSelect.disabled = true;
             return;
