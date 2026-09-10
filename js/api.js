@@ -1633,3 +1633,33 @@ export async function applyRecalibrateExam(examId, adminIdentifier = 'admin') {
     }
   };
 }
+
+// ============================================================
+// SUPABASE CONNECTION HEALTH CHECK
+// ============================================================
+
+/**
+ * Tests whether Supabase is reachable and the database is responsive.
+ * Returns { connected: true } on success.
+ * Returns { connected: false, error: string, mode: 'demo' | 'error' } on failure.
+ */
+export async function testSupabaseConnection() {
+  try {
+    const sb = await getSupabase();
+    // Lightweight query — just check if programs table is reachable
+    const { error } = await sb.from('programs').select('id').limit(1);
+    if (error) {
+      // If error code looks like a demo/local-only mode signal, mark as demo
+      if (error.code === 'PGRST301' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+        return { connected: false, error: error.message, mode: 'error' };
+      }
+      return { connected: false, error: error.message, mode: 'error' };
+    }
+    return { connected: true };
+  } catch (err) {
+    // If getSupabase() itself throws (e.g. network down, CDN unavailable), treat as demo
+    const msg = err?.message || String(err);
+    const isDemo = msg.includes('fetch') || msg.includes('network') || msg.includes('Failed to fetch');
+    return { connected: false, error: msg, mode: isDemo ? 'demo' : 'error' };
+  }
+}

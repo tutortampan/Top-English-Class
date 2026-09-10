@@ -1,6 +1,40 @@
-﻿# CHANGELOG
+# CHANGELOG
 
-## [2026-09-10 14:58] â€” Master Command: Full System Audit, Repair, Data Consistency, Grading Engine & Recalibrator
+## [2026-09-10 21:45] — Admin Login Fix & Mobile Optimization
+
+**Agent/Session:** Antigravity / SESSION-20260910-2145
+**Phase:** Bug Fix
+**Status:** PASS
+
+### Why
+- Admin could not login — the login button was unresponsive.
+- Mobile bottom tab bar was visible BEFORE login (showing database/class/student/exam tabs on the login screen), which was a security UX leak.
+- Mobile layout had `admin-main` width still set to `calc(100vw - 250px)` on mobile, causing content overflow.
+
+### Changed
+- **admin.html**: Added `hidden` class to `mobile-bottom-tabs` nav element (was missing, causing tabs to show before login).
+- **admin.html**: `showConsole()` now removes `hidden` from mobile tabs after successful login.
+- **admin.html**: Logout handler now adds `hidden` back to mobile tabs.
+- **admin.html**: Added Enter key listener on username field (Tab-to-password flow).
+- **admin.html**: Added responsive CSS for login card on small screens (≤480px).
+- **css/admin.css**: Fixed `admin-main` in `@media (max-width: 1024px)` to use `width: 100vw; max-width: 100vw` (was using the desktop 250px sidebar calculation).
+- **css/admin.css**: Added `admin-topbar` height reduction and button size reduction on small mobile screens.
+
+### Files
+- `admin.html`
+- `css/admin.css`
+
+### Tests
+- Manual: Login screen no longer shows mobile tab bar
+- Manual: Login with admin/admin123 works and reveals console + mobile tabs
+- Server: `npx serve . -l 8080` running at http://localhost:8080
+
+### Next Action
+- Test on actual mobile device or DevTools mobile emulation
+
+---
+
+## [2026-09-10 14:58] — Master Command: Full System Audit, Repair, Data Consistency, Grading Engine & Recalibrator
 
 **Agent/Session:** Antigravity / MASTER-COMMAND
 **Phase:** Phases 1â€“20 Complete

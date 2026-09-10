@@ -39,6 +39,17 @@
       position: relative;
       z-index: 10;
       animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      margin: 1rem;
+    }
+    @media (max-width: 480px) {
+      #admin-login-screen .auth-card {
+        padding: 2rem 1.25rem;
+        border-radius: 16px;
+        margin: 0.75rem;
+      }
+      #admin-login-screen h1 {
+        font-size: 1.35rem !important;
+      }
     }
     #admin-login-screen .auth-brand {
       text-align: center;
@@ -267,8 +278,8 @@
   <!-- Mobile sidebar overlay backdrop -->
   <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
 
-  <!-- Mobile bottom tab bar -->
-  <nav class="mobile-bottom-tabs" id="mobile-bottom-tabs" aria-label="Primary navigation">
+  <!-- Mobile bottom tab bar (hidden until logged in) -->
+  <nav class="mobile-bottom-tabs hidden" id="mobile-bottom-tabs" aria-label="Primary navigation">
     <button class="mobile-tab" data-panel="database" aria-label="Database">
       <span class="mobile-tab-icon">🗄️</span>
       <span class="mobile-tab-label">Database</span>
@@ -416,16 +427,25 @@
     document.getElementById('admin-password').addEventListener('keydown', e => {
       if (e.key === 'Enter') document.getElementById('admin-login-btn').click();
     });
+    document.getElementById('admin-username').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('admin-password').focus();
+    });
 
     document.getElementById('admin-logout-btn').addEventListener('click', () => {
       clearAdminSession();
       document.getElementById('admin-console').classList.add('hidden');
       document.getElementById('admin-login-screen').classList.remove('hidden');
+      // Hide mobile tab bar on logout
+      const mobileTabBar = document.getElementById('mobile-bottom-tabs');
+      if (mobileTabBar) mobileTabBar.classList.add('hidden');
     });
 
     function showConsole() {
       document.getElementById('admin-login-screen').classList.add('hidden');
       document.getElementById('admin-console').classList.remove('hidden');
+      // Show mobile tab bar only after login
+      const mobileTabBar = document.getElementById('mobile-bottom-tabs');
+      if (mobileTabBar) mobileTabBar.classList.remove('hidden');
       activatePrimaryTab('exam');
       loadSection('exams');
       initConnectionBanner(); // Check live DB connection and show status banner
