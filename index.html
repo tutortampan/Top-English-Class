@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TOP ENGLISH CLASS — Student Login</title>
+  <meta name="description" content="Login to TOP ENGLISH CLASS to access your English assessments, track your progress, and complete exams." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── One-Page Cascading Login Styles ── */
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem 4rem;
+      background: var(--clr-bg-1, #0a0a1a);
+      font-family: 'Inter', sans-serif;
+      overflow-y: auto;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 540px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+    }
+
+    /* Brand Header */
+    .login-brand {
+      text-align: center;
+      padding: 2.5rem 1.5rem 2rem;
+    }
+
+    .login-brand .brand-icon {
+      font-size: 3.5rem;
+      display: block;
+      margin-bottom: 0.75rem;
+      filter: drop-shadow(0 0 20px rgba(139,92,246,0.5));
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .login-brand h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.9rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+    }
+
+    .login-brand p {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.9rem;
+    }
+
+    /* Remember Me Banner */
+    .remember-me-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 1.2rem;
+      background: rgba(139,92,246,0.12);
+      border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 12px;
+      margin: 0 0 1.5rem;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.85);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .remember-me-banner:hover {
+      background: rgba(139,92,246,0.2);
+      border-color: rgba(139,92,246,0.5);
+    }
+
+    .remember-me-banner .rmb-left {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .remember-me-banner .rmb-icon { font-size: 1.2rem; }
+
+    .remember-me-banner .rmb-text strong {
+      display: block;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .remember-me-banner .rmb-text span {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .rmb-toggle {
+      width: 44px; height: 24px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 100px;
+      border: 1px solid rgba(255,255,255,0.2);
+      position: relative;
+      transition: background 0.2s;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .rmb-toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.5);
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .rmb-toggle.on {
+      background: rgba(139,92,246,0.7);
+      border-color: rgba(139,92,246,0.8);
+    }
+
+    .rmb-toggle.on::after {
+      transform: translateX(20px);
+      background: #fff;
+    }
+
+    /* Clear saved session link */
+    .clear-session-link {
+      display: none;
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.35);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .clear-session-link:hover { color: #f87171; }
+    .clear-session-link.visible { display: block; }
+
+    /* ── Cascading Section ── */
+    .cascade-section {
+      position: relative;
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: max-height 0.45s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease;
+      margin-bottom: 0;
+    }
+
+    .cascade-section.unlocked {
+      max-height: 900px;
+      opacity: 1;
+      pointer-events: all;
+      margin-bottom: 1rem;
+    }
+
+    .cascade-inner {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .cascade-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem 0.85rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .cascade-step-num {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: rgba(139,92,246,0.2);
+      border: 1px solid rgba(139,92,246,0.4);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #a78bfa;
+      flex-shrink: 0;
+    }
+
+    .cascade-step-num.done {
+      background: rgba(52,211,153,0.2);
+      border-color: rgba(52,211,153,0.4);
+      color: #34d399;
+    }
+
+    .cascade-title-wrap { flex: 1; }
+
+    .cascade-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .cascade-selection-label {
+      font-size: 0.78rem;
+      color: #a78bfa;
+      font-weight: 600;
+      margin-top: 0.1rem;
+      display: none;
+    }
+
+    .cascade-selection-label.visible { display: block; }
+
+    .cascade-change-btn {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.35);
+      background: none;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 0.25rem 0.6rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .cascade-change-btn:hover { border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.7); }
+
+    /* Collapsed selected state */
+    .cascade-section.selected .cascade-body { display: none; }
+    .cascade-section.selected .cascade-inner {
+      border-color: rgba(52,211,153,0.2);
+      background: rgba(52,211,153,0.05);
+    }
+    .cascade-section.selected .cascade-step-num { background: rgba(52,211,153,0.2); border-color: rgba(52,211,153,0.4); color: #34d399; }
+    .cascade-section.selected .cascade-title { color: rgba(255,255,255,0.5); }
+
+    .cascade-body { padding: 1rem 1.25rem 1.25rem; }
+
+    /* Search inside cascade */
+    .cascade-search {
+      position: relative;
+      margin-bottom: 0.85rem;
+    }
+    .cascade-search input {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 0.55rem 0.85rem 0.55rem 2.2rem;
+      color: #fff;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    .cascade-search input:focus { border-color: rgba(139,92,246,0.5); }
+    .cascade-search input::placeholder { color: rgba(255,255,255,0.25); }
+    .cascade-search .search-icon {
+      position: absolute;
+      left: 0.7rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+
+    /* Option cards */
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 240px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .options-grid::-webkit-scrollbar { width: 4px; }
+    .options-grid::-webkit-scrollbar-track { background: transparent; }
+    .options-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    .opt-card {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.7rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      transition: all 0.18s;
+      text-align: left;
+      width: 100%;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .opt-card:hover {
+      background: rgba(139,92,246,0.12);
+      border-color: rgba(139,92,246,0.3);
+      color: #fff;
+      transform: translateX(3px);
+    }
+
+    .opt-card.active {
+      background: rgba(139,92,246,0.2);
+      border-color: rgba(139,92,246,0.5);
+      color: #fff;
+    }
+
+    .opt-card-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .opt-card-name { flex: 1; font-weight: 600; }
+    .opt-card-check { color: #34d399; font-size: 1rem; display: none; }
+    .opt-card.active .opt-card-check { display: block; }
+
+    /* Empty & loading states */
+    .opts-empty {
+      text-align: center;
+      padding: 1.5rem 1rem;
+      color: rgba(255,255,255,0.3);
+      font-size: 0.85rem;
+    }
+
+    .opts-spinner {
+      display: flex;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    /* ── PIN Section ── */
+    .pin-section {
+      padding: 1.25rem;
+    }
+
+    .pin-welcome {
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .pin-welcome strong { color: #a78bfa; }
+
+    .pin-row {
+      display: flex;
+      gap: 0.65rem;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .pin-digit {
+      width: 52px; height: 60px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      color: #fff;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      caret-color: transparent;
+      -webkit-text-security: disc;
+    }
+
+    .pin-digit:focus {
+      border-color: rgba(139,92,246,0.7);
+      box-shadow: 0 0 0 3px rgba(139,92,246,0.2);
+    }
+
+    .pin-digit.filled {
+      border-color: rgba(52,211,153,0.5);
+      background: rgba(52,211,153,0.06);
+    }
+
+    .pin-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .btn-signin {
+      width: 100%;
+      padding: 0.9rem;
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.02em;
+      box-shadow: 0 4px 16px rgba(124,58,237,0.35);
+    }
+
+    .btn-signin:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(124,58,237,0.5);
+    }
+
+    .btn-signin:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .forgot-pin-text {
+      text-align: center;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* Footer */
+    .login-footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.25);
+    }
+
+    .login-footer a {
+      color: rgba(139,92,246,0.7);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .login-footer a:hover { color: #a78bfa; }
+
+    /* Orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 { width: 400px; height: 400px; background: rgba(124,58,237,0.15); top: -100px; right: -100px; }
+    .orb-2 { width: 350px; height: 350px; background: rgba(59,130,246,0.1); bottom: -80px; left: -80px; }
+    .orb-3 { width: 300px; height: 300px; background: rgba(16,185,129,0.08); top: 50%; left: 50%; transform: translate(-50%,-50%); }
+
+    body {
+      background: #0a0a1a;
+      margin: 0;
+      padding: 0;
+    }
+    /* Toast */
+    #toast-container {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <!-- ── ONE-PAGE LOGIN ── -->
+  <div class="login-page">
+    <div class="login-wrapper" role="main">
+
+      <!-- Brand -->
+      <div class="login-brand">
+        <span class="brand-icon" aria-hidden="true">🎓</span>
+        <h1>TOP ENGLISH CLASS</h1>
+        <p>Sign in to continue your learning journey</p>
+      </div>
+
+      <!-- Remember Me Banner -->
+      <div class="remember-me-banner" id="remember-me-banner" role="button" tabindex="0" aria-label="Toggle remember login">
+        <div class="rmb-left">
+          <span class="rmb-icon">💾</span>
+          <div class="rmb-text">
+            <strong>Remember me on this device</strong>
+            <span>Save your login selection locally</span>
+          </div>
+        </div>
+        <div class="rmb-toggle" id="rmb-toggle" role="switch" aria-checked="false"></div>
+      </div>
+
+      <div class="clear-session-link" id="clear-session-link" tabindex="0" role="button" aria-label="Clear saved login">
+        🗑 Clear saved login info
+      </div>
+
+      <!-- ── SECTION 1: Program ── -->
+      <div class="cascade-section unlocked" id="sec-program">
+        <div class="cascade-inner">
+          <div class="cascade-header">
+            <div class="cascade-step-num" id="step-num-1">1</div>
+            <div class="cascade-title-wrap">
+              <div class="cascade-title">Select Your Program</div>
+              <div class="cascade-selection-label" id="sel-program-label"></div>
+            </div>
+            <button class="cascade-change-btn hidden" id="change-program-btn">Change</button>
+          </div>
+          <div class="cascade-body" id="body-program">
+            <div class="cascade-search">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="search-program" placeholder="Search program…" autocomplete="off" />
+            </div>
+            <div class="options-grid" id="list-program" role="list" aria-label="Programs">
+              <div class="opts-spinner"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 2: Class ── -->
+      <div class="cascade-section" id="sec-class">
+        <div class="cascade-inner">
+          <div class="cascade-header">
+            <div class="cascade-step-num" id="step-num-2">2</div>
+            <div class="cascade-title-wrap">
+              <div class="cascade-title">Select Your Class</div>
+              <div class="cascade-selection-label" id="sel-class-label"></div>
+            </div>
+            <button class="cascade-change-btn hidden" id="change-class-btn">Change</button>
+          </div>
+          <div class="cascade-body" id="body-class">
+            <div class="cascade-search">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="search-class" placeholder="Search class…" autocomplete="off" />
+            </div>
+            <div class="options-grid" id="list-class" role="list" aria-label="Classes">
+              <div class="opts-empty">Select a program first</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 3: Batch ── -->
+      <div class="cascade-section" id="sec-batch">
+        <div class="cascade-inner">
+          <div class="cascade-header">
+            <div class="cascade-step-num" id="step-num-3">3</div>
+            <div class="cascade-title-wrap">
+              <div class="cascade-title">Select Your Batch</div>
+              <div class="cascade-selection-label" id="sel-batch-label"></div>
+            </div>
+            <button class="cascade-change-btn hidden" id="change-batch-btn">Change</button>
+          </div>
+          <div class="cascade-body" id="body-batch">
+            <div class="cascade-search">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="search-batch" placeholder="Search batch…" autocomplete="off" />
+            </div>
+            <div class="options-grid" id="list-batch" role="list" aria-label="Batches">
+              <div class="opts-empty">Select a class first</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 4: Student Name ── -->
+      <div class="cascade-section" id="sec-student">
+        <div class="cascade-inner">
+          <div class="cascade-header">
+            <div class="cascade-step-num" id="step-num-4">4</div>
+            <div class="cascade-title-wrap">
+              <div class="cascade-title">Select Your Name</div>
+              <div class="cascade-selection-label" id="sel-student-label"></div>
+            </div>
+            <button class="cascade-change-btn hidden" id="change-student-btn">Change</button>
+          </div>
+          <div class="cascade-body" id="body-student">
+            <div class="cascade-search">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="search-student" placeholder="Search your name…" autocomplete="off" />
+            </div>
+            <div class="options-grid" id="list-student" role="list" aria-label="Students">
+              <div class="opts-empty">Select a batch first</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 5: PIN Entry ── -->
+      <div class="cascade-section" id="sec-pin">
+        <div class="cascade-inner">
+          <div class="cascade-header">
+            <div class="cascade-step-num" id="step-num-5">5</div>
+            <div class="cascade-title-wrap">
+              <div class="cascade-title">Enter Your PIN</div>
+            </div>
+          </div>
+          <div class="pin-section">
+            <p class="pin-welcome" id="pin-welcome-text">Welcome! Please enter your 4-digit PIN.</p>
+            <div class="pin-row" role="group" aria-label="4-digit PIN">
+              <input class="pin-digit" id="pin-0" type="tel" inputmode="numeric" maxlength="1" aria-label="PIN digit 1" autocomplete="off" />
+              <input class="pin-digit" id="pin-1" type="tel" inputmode="numeric" maxlength="1" aria-label="PIN digit 2" autocomplete="off" />
+              <input class="pin-digit" id="pin-2" type="tel" inputmode="numeric" maxlength="1" aria-label="PIN digit 3" autocomplete="off" />
+              <input class="pin-digit" id="pin-3" type="tel" inputmode="numeric" maxlength="1" aria-label="PIN digit 4" autocomplete="off" />
+            </div>
+            <div class="pin-actions">
+              <button class="btn-signin" id="login-btn" disabled>
+                <span id="login-btn-text">Sign In</span>
+              </button>
+              <p class="forgot-pin-text">Forgot your PIN? Contact your teacher.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="login-footer">
+        <a href="admin.html" id="admin-portal-link">Admin Portal →</a>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { fetchPrograms, fetchClasses, fetchBatches, fetchStudentsByClass, verifyStudentLogin, formatStudentName } from './js/api.js?v=1.1';
+    import { setStudentSession, getStudentSession } from './js/session.js?v=1.1';
+    import { showToast, showLoading, hideLoading } from './js/app.js?v=1.1';
+
+    // ── Redirect if already logged in ──
+    if (getStudentSession()) {
+      window.location.href = 'dashboard.html';
+    }
+
+    // ── State ──
+    const state = {
+      programId: null, programName: null,
+      classId: null, className: null,
+      batchId: null, batchName: null,
+      studentId: null, studentName: null,
+    };
+
+    // ── Remember Me ──
+    const REMEMBER_KEY = 'tec_saved_login_v2';
+    let rememberEnabled = localStorage.getItem('tec_remember_enabled') === 'true';
+
+    const rmbToggleEl = document.getElementById('rmb-toggle');
+    const clearLinkEl = document.getElementById('clear-session-link');
+    const rmbBanner = document.getElementById('remember-me-banner');
+
+    function updateRememberUI() {
+      rmbToggleEl.classList.toggle('on', rememberEnabled);
+      rmbToggleEl.setAttribute('aria-checked', String(rememberEnabled));
+      const saved = getSavedLogin();
+      if (saved && rememberEnabled) {
+        clearLinkEl.classList.add('visible');
+      } else {
+        clearLinkEl.classList.remove('visible');
+      }
+    }
+
+    function getSavedLogin() {
+      try { return JSON.parse(localStorage.getItem(REMEMBER_KEY)) || null; }
+      catch { return null; }
+    }
+
+    function saveLogin() {
+      if (!rememberEnabled) return;
+      localStorage.setItem(REMEMBER_KEY, JSON.stringify({
+        programId: state.programId, programName: state.programName,
+        classId: state.classId, className: state.className,
+        batchId: state.batchId, batchName: state.batchName,
+        studentId: state.studentId, studentName: state.studentName,
+      }));
+      updateRememberUI();
+    }
+
+    function clearSavedLogin() {
+      localStorage.removeItem(REMEMBER_KEY);
+      updateRememberUI();
+    }
+
+    rmbBanner.addEventListener('click', () => {
+      rememberEnabled = !rememberEnabled;
+      localStorage.setItem('tec_remember_enabled', String(rememberEnabled));
+      updateRememberUI();
+      if (!rememberEnabled) clearSavedLogin();
+    });
+    rmbBanner.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') rmbBanner.click(); });
+
+    clearLinkEl.addEventListener('click', () => {
+      clearSavedLogin();
+      showToast('Saved login cleared.', 'info');
+    });
+
+    updateRememberUI();
+
+    // ── Section helpers ──
+    function unlockSection(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('unlocked');
+        el.classList.remove('selected');
+        // Smooth scroll into view
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+      }
+    }
+
+    function collapseSection(id, label, stepNumId) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('selected');
+        const selLabel = document.getElementById(`sel-${id.replace('sec-','')}-label`);
+        if (selLabel) { selLabel.textContent = label; selLabel.classList.add('visible'); }
+        const changeBtn = el.querySelector('.cascade-change-btn');
+        if (changeBtn) changeBtn.classList.remove('hidden');
+        const numEl = document.getElementById(stepNumId);
+        if (numEl) numEl.classList.add('done');
+      }
+    }
+
+    function reopenSection(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('selected');
+        el.classList.add('unlocked');
+        const selLabel = document.getElementById(`sel-${id.replace('sec-','')}-label`);
+        if (selLabel) selLabel.classList.remove('visible');
+      }
+    }
+
+    // ── Render options helper ──
+    function renderOptions(containerId, searchInputId, items, onSelect, selectedId = null) {
+      const container = document.getElementById(containerId);
+      const searchInput = document.getElementById(searchInputId);
+
+      if (!items.length) {
+        container.innerHTML = `<div class="opts-empty">📭 No options found</div>`;
+        return;
+      }
+
+      const sorted = [...items].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+      function buildCards(filtered) {
+        container.innerHTML = '';
+        if (!filtered.length) {
+          container.innerHTML = `<div class="opts-empty">No results for your search</div>`;
+          return;
+        }
+        filtered.forEach(item => {
+          const btn = document.createElement('button');
+          btn.className = 'opt-card' + (item.id === selectedId ? ' active' : '');
+          btn.setAttribute('role', 'listitem');
+          btn.dataset.id = item.id;
+          btn.innerHTML = `
+            <span class="opt-card-icon">🔷</span>
+            <span class="opt-card-name">${escHtml(item.name)}</span>
+            <span class="opt-card-check">✓</span>
+          `;
+          btn.addEventListener('click', () => {
+            container.querySelectorAll('.opt-card').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            onSelect(item);
+          });
+          container.appendChild(btn);
+        });
+      }
+
+      buildCards(sorted);
+
+      if (searchInput) {
+        searchInput.value = '';
+        // Remove old listener by cloning
+        const newInput = searchInput.cloneNode(true);
+        searchInput.parentNode.replaceChild(newInput, searchInput);
+        newInput.addEventListener('input', () => {
+          const q = newInput.value.toLowerCase();
+          buildCards(sorted.filter(i => (i.name || '').toLowerCase().includes(q)));
+        });
+      }
+    }
+
+    function escHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str || '';
+      return d.innerHTML;
+    }
+
+    // ── Step 1: Load Programs ──
+    async function loadPrograms(autoSelectId = null) {
+      const container = document.getElementById('list-program');
+      container.innerHTML = `<div class="opts-spinner"><div class="spinner"></div></div>`;
+      try {
+        const programs = await fetchPrograms();
+        renderOptions('list-program', 'search-program', programs, (p) => {
+          state.programId = p.id; state.programName = p.name;
+          collapseSection('sec-program', p.name, 'step-num-1');
+          resetFrom('class');
+          loadClasses();
+        }, autoSelectId);
+
+        // Auto-select if restoring saved login, otherwise auto-advance if only 1 option
+        if (autoSelectId) {
+          const match = programs.find(p => p.id === autoSelectId);
+          if (match) {
+            state.programId = match.id; state.programName = match.name;
+          }
+        } else if (programs.length === 1) {
+          setTimeout(() => {
+            const card = document.querySelector('#list-program .opt-card');
+            if (card) card.click();
+          }, 100);
+        }
+      } catch (e) {
+        container.innerHTML = `<div class="opts-empty" style="color:#f87171;">Failed to load programs: ${e.message}</div>`;
+      }
+    }
+
+    // ── Step 2: Load Classes ──
+    async function loadClasses(autoSelectId = null) {
+      unlockSection('sec-class');
+      const container = document.getElementById('list-class');
+      container.innerHTML = `<div class="opts-spinner"><div class="spinner"></div></div>`;
+      try {
+        const classes = await fetchClasses(state.programId);
+        renderOptions('list-class', 'search-class', classes, (c) => {
+          state.classId = c.id; state.className = c.name;
+          collapseSection('sec-class', c.name, 'step-num-2');
+          resetFrom('batch');
+          loadBatches();
+        }, autoSelectId);
+
+        if (autoSelectId) {
+          const match = classes.find(c => c.id === autoSelectId);
+          if (match) { state.classId = match.id; state.className = match.name; }
+        } else if (classes.length === 1) {
+          setTimeout(() => {
+            const card = document.querySelector('#list-class .opt-card');
+            if (card) card.click();
+          }, 100);
+        }
+      } catch (e) {
+        container.innerHTML = `<div class="opts-empty" style="color:#f87171;">Failed to load classes.</div>`;
+      }
+    }
+
+    // ── Step 3: Load Batches ──
+    async function loadBatches(autoSelectId = null) {
+      unlockSection('sec-batch');
+      const container = document.getElementById('list-batch');
+      container.innerHTML = `<div class="opts-spinner"><div class="spinner"></div></div>`;
+      try {
+        const batches = await fetchBatches(state.classId);
+        const displayBatches = batches.length > 0
+          ? [{ id: '__all__', name: 'All Batches' }, ...batches]
+          : [{ id: '__all__', name: 'All Students' }];
+
+        renderOptions('list-batch', 'search-batch', displayBatches, (b) => {
+          state.batchId = b.id === '__all__' ? null : b.id;
+          state.batchName = b.name;
+          collapseSection('sec-batch', b.name, 'step-num-3');
+          resetFrom('student');
+          loadStudents();
+        }, autoSelectId);
+
+        if (autoSelectId) {
+          const effId = autoSelectId === null ? '__all__' : autoSelectId;
+          const match = displayBatches.find(b => b.id === effId);
+          if (match) { state.batchId = match.id === '__all__' ? null : match.id; state.batchName = match.name; }
+        } else if (displayBatches.length === 1) {
+          setTimeout(() => {
+            const card = document.querySelector('#list-batch .opt-card');
+            if (card) card.click();
+          }, 100);
+        }
+      } catch (e) {
+        container.innerHTML = `<div class="opts-empty" style="color:#f87171;">Failed to load batches.</div>`;
+      }
+    }
+
+    // ── Step 4: Load Students ──
+    async function loadStudents(autoSelectId = null) {
+      unlockSection('sec-student');
+      const container = document.getElementById('list-student');
+      container.innerHTML = `<div class="opts-spinner"><div class="spinner"></div></div>`;
+      try {
+        const students = await fetchStudentsByClass(state.classId, state.batchId);
+        renderOptions('list-student', 'search-student', students, (s) => {
+          state.studentId = s.id; state.studentName = s.name;
+          collapseSection('sec-student', s.name, 'step-num-4');
+          document.getElementById('pin-welcome-text').innerHTML = `Welcome, <strong>${escHtml(s.name)}</strong>! Enter your 4-digit PIN.`;
+          unlockSection('sec-pin');
+          setTimeout(() => document.getElementById('pin-0').focus(), 200);
+          saveLogin();
+        }, autoSelectId);
+
+        if (autoSelectId) {
+          const match = students.find(s => s.id === autoSelectId);
+          if (match) { state.studentId = match.id; state.studentName = match.name; }
+        }
+      } catch (e) {
+        container.innerHTML = `<div class="opts-empty" style="color:#f87171;">Failed to load students.</div>`;
+      }
+    }
+
+    // ── Reset cascade from a given step downward ──
+    function resetFrom(from) {
+      const order = ['class', 'batch', 'student', 'pin'];
+      const idx = order.indexOf(from);
+      if (idx < 0) return;
+      for (let i = idx; i < order.length; i++) {
+        const key = order[i];
+        const el = document.getElementById(`sec-${key}`);
+        if (el) { el.classList.remove('unlocked', 'selected'); }
+        if (key === 'class') { state.classId = null; state.className = null; }
+        if (key === 'batch') { state.batchId = null; state.batchName = null; }
+        if (key === 'student') { state.studentId = null; state.studentName = null; }
+        if (key === 'pin') { resetPin(); }
+      }
+    }
+
+    function resetPin() {
+      const pins = [0,1,2,3].map(i => document.getElementById(`pin-${i}`));
+      pins.forEach(p => { p.value = ''; p.classList.remove('filled'); });
+      document.getElementById('login-btn').disabled = true;
+      document.getElementById('login-btn-text').textContent = 'Sign In';
+    }
+
+    // ── Change buttons ──
+    document.getElementById('change-program-btn').addEventListener('click', () => {
+      reopenSection('sec-program');
+      resetFrom('class');
+    });
+    document.getElementById('change-class-btn').addEventListener('click', () => {
+      reopenSection('sec-class');
+      resetFrom('batch');
+    });
+    document.getElementById('change-batch-btn').addEventListener('click', () => {
+      reopenSection('sec-batch');
+      resetFrom('student');
+    });
+    document.getElementById('change-student-btn').addEventListener('click', () => {
+      reopenSection('sec-student');
+      resetFrom('pin');
+    });
+
+    // ── PIN Logic ──
+    const pinInputs = [0,1,2,3].map(i => document.getElementById(`pin-${i}`));
+    const loginBtn = document.getElementById('login-btn');
+
+    pinInputs.forEach((inp, idx) => {
+      inp.addEventListener('input', () => {
+        inp.value = inp.value.replace(/\D/g, '').slice(0, 1);
+        inp.classList.toggle('filled', inp.value.length > 0);
+        if (inp.value && idx < 3) pinInputs[idx + 1].focus();
+        checkPinComplete();
+      });
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !inp.value && idx > 0) {
+          pinInputs[idx - 1].focus();
+          pinInputs[idx - 1].value = '';
+          pinInputs[idx - 1].classList.remove('filled');
+          checkPinComplete();
+        }
+        if (e.key === 'Enter' && !loginBtn.disabled) loginBtn.click();
+      });
+      inp.addEventListener('paste', (e) => {
+        const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+        if (paste.length >= 4) {
+          pinInputs.forEach((p, i) => {
+            p.value = paste[i] || '';
+            p.classList.toggle('filled', p.value.length > 0);
+          });
+          pinInputs[3].focus();
+          checkPinComplete();
+          e.preventDefault();
+        }
+      });
+    });
+
+    function checkPinComplete() {
+      loginBtn.disabled = !pinInputs.every(p => p.value.length === 1);
+    }
+
+    loginBtn.addEventListener('click', async () => {
+      const pin = pinInputs.map(p => p.value).join('');
+      if (pin.length !== 4) return;
+
+      loginBtn.disabled = true;
+      document.getElementById('login-btn-text').textContent = 'Signing in…';
+      showLoading('Verifying credentials…');
+
+      try {
+        const result = await verifyStudentLogin({
+          programId: state.programId,
+          classId: state.classId,
+          batchId: state.batchId,
+          studentId: state.studentId,
+          pin,
+        });
+
+        setStudentSession({
+          student_id: state.studentId,
+          student_name: result.student?.name || state.studentName,
+          gender: result.student?.gender || null,
+          program_id: state.programId,
+          program_name: state.programName,
+          class_id: state.classId,
+          class_name: state.className,
+          batch_id: state.batchId,
+          batch_name: state.batchName,
+        });
+
+        saveLogin();
+        hideLoading();
+        window.location.href = 'dashboard.html';
+      } catch (e) {
+        hideLoading();
+        showToast(e.message || 'Invalid PIN. Please try again.', 'error');
+        pinInputs.forEach(p => { p.value = ''; p.classList.remove('filled'); });
+        pinInputs[0].focus();
+        loginBtn.disabled = true;
+        document.getElementById('login-btn-text').textContent = 'Sign In';
+      }
+    });
+
+    // ── Restore saved login (Remember Me) ──
+    async function restoreSavedLogin() {
+      const saved = getSavedLogin();
+      if (!saved || !rememberEnabled) {
+        await loadPrograms();
+        return;
+      }
+
+      showToast('Restoring your saved login…', 'info');
+
+      // Step 1: Load programs and auto-collapse to saved program
+      await loadPrograms(saved.programId);
+      if (!state.programId) { await loadPrograms(); return; }
+
+      // Collapse program section
+      collapseSection('sec-program', saved.programName || state.programName, 'step-num-1');
+
+      // Step 2: Load classes
+      await loadClasses(saved.classId);
+      if (!state.classId) { unlockSection('sec-class'); return; }
+
+      collapseSection('sec-class', saved.className || state.className, 'step-num-2');
+
+      // Step 3: Load batches
+      const savedBatchEffId = saved.batchId === null ? null : saved.batchId;
+      await loadBatches(savedBatchEffId === null ? '__all__' : savedBatchEffId);
+      if (state.batchName) {
+        collapseSection('sec-batch', saved.batchName || state.batchName, 'step-num-3');
+      } else { unlockSection('sec-batch'); return; }
+
+      // Step 4: Load students
+      await loadStudents(saved.studentId);
+      if (!state.studentId) { unlockSection('sec-student'); return; }
+
+      collapseSection('sec-student', saved.studentName || state.studentName, 'step-num-4');
+      document.getElementById('pin-welcome-text').innerHTML = `Welcome back, <strong>${escHtml(saved.studentName || state.studentName)}</strong>! Enter your PIN.`;
+      unlockSection('sec-pin');
+      clearLinkEl.classList.add('visible');
+      setTimeout(() => document.getElementById('pin-0').focus(), 300);
+    }
+
+    // ── Init ──
+    restoreSavedLogin();
+
+  </script>
+</body>
+</html>
