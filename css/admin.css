@@ -597,9 +597,9 @@
 .exam-hero {
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.85));
   border: 1px solid rgba(99, 102, 241, 0.2);
-  border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  margin-bottom: var(--space-6);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
   backdrop-filter: blur(16px);
   position: relative;
   overflow: hidden;
@@ -621,18 +621,18 @@
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: var(--space-4);
-  margin-top: var(--space-4);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
 }
 
 .kpi-card {
   background: rgba(13, 20, 36, 0.7);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-3) var(--space-4);
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
   transition: all var(--transition-base);
 }
 
@@ -726,9 +726,9 @@
 }
 
 .table-wrap th {
-  padding: 16px 20px;
+  padding: 8px 10px;
   font-family: var(--font-body);
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -740,9 +740,9 @@
 }
 
 .table-wrap td {
-  padding: 16px 20px;
+  padding: 8px 10px;
   font-family: var(--font-body);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: #f1f5f9;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
@@ -771,8 +771,8 @@
 .form-label {
   color: #f1f5f9 !important;
   font-weight: 600 !important;
-  font-size: 0.85rem !important;
-  margin-bottom: 6px !important;
+  font-size: 0.8rem !important;
+  margin-bottom: 4px !important;
   display: block;
 }
 
@@ -780,8 +780,9 @@
   background: #090e1c !important;
   color: #ffffff !important;
   border: 1px solid #334155 !important;
-  border-radius: var(--radius-md) !important;
-  font-size: 0.9rem !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 0.8rem !important;
+  padding: 0.4rem 0.6rem !important;
 }
 
 .form-control:focus {

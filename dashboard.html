@@ -7,6 +7,349 @@
   <meta name="description" content="Your TOP ENGLISH CLASS learning dashboard — track progress, view subjects, and start exams." />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/dashboard.css" />
+  <style>
+    /* ============================================================
+       COMPACT MOBILE-FIRST STUDENT DASHBOARD STYLES
+       ============================================================ */
+    /* Welcome Banner / Student Profile Showcase */
+    .welcome-banner {
+      margin-bottom: var(--space-4);
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: var(--radius-xl);
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.85));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-compact-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+    }
+    .banner-avatar-box {
+      width: 64px;
+      height: 64px;
+      flex-shrink: 0;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(135deg, var(--clr-primary, #6366f1), var(--clr-accent-1, #ec4899));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #ffffff;
+      border: 2px solid var(--clr-accent-1, #ec4899);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25), 0 6px 16px rgba(0,0,0,0.4);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      user-select: none;
+      position: relative;
+    }
+    .banner-avatar-box:hover {
+      transform: scale(1.04);
+      box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.35);
+    }
+    .banner-camera-badge {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      background: var(--clr-accent-1, #ec4899);
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      border: 2px solid var(--clr-base, #090d16);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+    .hero-greeting-box {
+      flex: 1;
+      min-width: 0;
+    }
+    .welcome-name {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin: 0;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .welcome-meta {
+      font-size: 0.78rem;
+      color: var(--clr-text-3);
+      margin: 2px 0 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .session-pill {
+      font-size: 0.68rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+    }
+    .hero-stats-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .hero-stat-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 6px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 56px;
+      text-align: center;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .hero-stat-pill:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    .stat-pill-label {
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: var(--clr-text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+    .stat-pill-val.banner-grade-text {
+      font-size: 1.45rem;
+      line-height: 1;
+      font-family: var(--font-display, sans-serif);
+      font-weight: 800;
+    }
+    .stat-pill-val.banner-score-text {
+      font-size: 1.15rem;
+      line-height: 1;
+      font-family: var(--font-display, sans-serif);
+      font-weight: 800;
+      color: var(--clr-accent-1, #a78bfa);
+    }
+
+    /* Completed Exams Section (Bottom of Dashboard) */
+    .completed-exams-section {
+      margin-top: var(--space-6);
+      margin-bottom: var(--space-8);
+    }
+    /* Compact Single-Row 3-Stat Strip */
+    .completed-summary-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: var(--space-3);
+    }
+    .completed-summary-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--clr-border);
+      background: var(--clr-surface);
+      transition: transform var(--transition-fast), border-color var(--transition-fast);
+    }
+    .completed-summary-card:hover {
+      border-color: var(--clr-accent-1);
+      transform: translateY(-1px);
+    }
+    .completed-summary-icon {
+      font-size: 1.2rem;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--clr-border);
+      flex-shrink: 0;
+    }
+    .completed-summary-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+      font-family: var(--font-display);
+      color: var(--clr-text-1);
+      line-height: 1.1;
+    }
+    .completed-summary-lbl {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--clr-text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-top: 1px;
+    }
+    .completed-table-card {
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      border: 1px solid var(--clr-border);
+      background: var(--clr-surface);
+      padding: 0;
+    }
+
+    /* Desktop Table Styling */
+    .completed-exams-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    .completed-exams-table th {
+      padding: 10px 14px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--clr-text-3);
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--clr-border);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .completed-exams-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.85rem;
+      vertical-align: middle;
+    }
+    .completed-exams-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .completed-exams-table tbody tr {
+      transition: background var(--transition-fast);
+      cursor: pointer;
+    }
+    .completed-exams-table tbody tr:hover {
+      background: rgba(99, 102, 241, 0.07);
+    }
+
+    /* Mobile Cards View for Completed Exams */
+    .completed-exams-mobile-list {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px;
+    }
+    .completed-exam-mobile-card {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+      text-decoration: none;
+      color: inherit;
+    }
+    .completed-exam-mobile-card:hover,
+    .completed-exam-mobile-card:active {
+      background: rgba(99, 102, 241, 0.08);
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-1px);
+    }
+    .exam-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .exam-card-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--clr-text-1);
+      line-height: 1.25;
+    }
+    .exam-card-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .exam-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 0.75rem;
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    @media (max-width: 768px) {
+      .welcome-banner {
+        padding: 10px 12px;
+      }
+      .banner-avatar-box {
+        width: 54px;
+        height: 54px;
+        font-size: 1.5rem;
+        border-radius: 14px;
+      }
+      .welcome-name {
+        font-size: 1rem;
+      }
+      .welcome-meta {
+        font-size: 0.72rem;
+      }
+      .hero-stat-pill {
+        min-width: 48px;
+        padding: 4px 8px;
+      }
+      .stat-pill-val.banner-grade-text {
+        font-size: 1.25rem;
+      }
+      .stat-pill-val.banner-score-text {
+        font-size: 1rem;
+      }
+      .completed-summary-bar {
+        gap: 6px;
+      }
+      .completed-summary-card {
+        padding: 6px 8px;
+        gap: 6px;
+      }
+      .completed-summary-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 0.95rem;
+        border-radius: 8px;
+      }
+      .completed-summary-val {
+        font-size: 0.98rem;
+      }
+      .completed-summary-lbl {
+        font-size: 0.58rem;
+      }
+      .completed-exams-table {
+        display: none !important;
+      }
+      .completed-exams-mobile-list {
+        display: flex !important;
+      }
+    }
+  </style>
 </head>
 <body class="dashboard-page">
 
@@ -36,37 +379,45 @@
   <!-- Main Content -->
   <main class="dashboard-content">
 
-    <!-- Welcome Banner / Profile Card -->
+    <!-- Welcome Banner / Student Profile Showcase (Compact, Mobile-First) -->
     <section class="welcome-banner" aria-labelledby="welcome-heading">
-      <div class="d-flex justify-between align-center" style="flex-wrap:wrap;gap:var(--space-4);">
-        <div>
-          <div class="badge badge-success mb-2">● Active Session</div>
+      <div class="hero-compact-wrap">
+        <!-- Student Avatar (Clickable to view/change profile) -->
+        <div id="banner-avatar-container" class="banner-avatar-box" title="Click to view or change profile">
+          <span id="banner-avatar-initial">S</span>
+          <img id="banner-avatar-img" class="hidden" alt="Profile Photo" style="width:100%;height:100%;object-fit:cover;" />
+          <div class="banner-camera-badge" title="Change photo">📷</div>
+        </div>
+
+        <!-- Student Info & Greeting -->
+        <div class="hero-greeting-box">
+          <div class="d-flex align-center gap-2 mb-1">
+            <span class="badge badge-success session-pill">● Active</span>
+            <span class="text-xs text-muted hidden" id="stat-exams-done">0</span>
+            <span id="overview-exams-count" class="hidden">0</span>
+            <span id="overview-subjects-count" class="hidden">0</span>
+            <span id="overview-mic-status" class="hidden">Ready</span>
+          </div>
           <h1 class="welcome-name" id="welcome-heading">Hello, <span id="welcome-name" class="text-gradient">Student</span>! 👋</h1>
           <p class="welcome-meta" id="welcome-meta">Loading your details…</p>
         </div>
-        
-        <!-- Score & Grade Badges -->
-        <div class="d-flex gap-4 align-center" style="background:rgba(255,255,255,0.04);padding:var(--space-4) var(--space-6);border-radius:var(--radius-lg);border:1px solid var(--clr-border);">
-          <div style="text-align:center;">
-            <div class="text-xs text-muted mb-1">AVERAGE SCORE</div>
-            <div class="fw-800" style="font-size:1.8rem;color:var(--clr-accent-1);font-family:var(--font-display);" id="stat-overall-score">0%</div>
+
+        <!-- Micro Stat Cards: Grade & Score -->
+        <div class="hero-stats-strip">
+          <div class="hero-stat-pill" title="Overall Grade">
+            <span class="stat-pill-label">Grade</span>
+            <span class="stat-pill-val banner-grade-text" id="stat-overall-grade-badge">—</span>
           </div>
-          <div style="width:1px;height:40px;background:var(--clr-border);"></div>
-          <div style="text-align:center;">
-            <div class="text-xs text-muted mb-1">GRADE</div>
-            <div class="fw-800" style="font-size:1.8rem;font-family:var(--font-display);" id="stat-overall-grade-badge">—</div>
-          </div>
-          <div style="width:1px;height:40px;background:var(--clr-border);"></div>
-          <div style="text-align:center;">
-            <div class="text-xs text-muted mb-1">EXAMS TAKEN</div>
-            <div class="fw-800" style="font-size:1.8rem;font-family:var(--font-display);" id="stat-exams-done">0</div>
+          <div class="hero-stat-pill" title="Overall Average Score">
+            <span class="stat-pill-label">Score</span>
+            <span class="stat-pill-val banner-score-text" id="stat-overall-score">0%</span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Subjects Section -->
-    <section aria-labelledby="subjects-heading">
+    <!-- Subjects Section (Right Under the Welcome Banner) -->
+    <section class="subjects-section" aria-labelledby="subjects-heading">
       <div class="section-header">
         <div>
           <h2 class="section-title" id="subjects-heading">My Subjects</h2>
@@ -78,6 +429,54 @@
         <div class="empty-state">
           <div class="spinner"></div>
           <p>Loading subjects…</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Completed Exams Section (Bottom of Dashboard) -->
+    <section class="completed-exams-section" aria-labelledby="completed-exams-heading">
+      <div class="section-header d-flex align-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 class="section-title d-flex align-center gap-2" id="completed-exams-heading" style="margin-bottom:var(--space-1);">
+            <span>📋</span> My Completed Exams
+          </h2>
+          <p class="section-subtitle">Review your past test performance, scores, and grade achievements</p>
+        </div>
+        <span class="badge badge-primary" id="bottom-completed-badge" style="font-size:0.8rem;padding:6px 12px;">0 Exams Completed</span>
+      </div>
+
+      <!-- Completed Exams Summary Bar -->
+      <div class="completed-summary-bar">
+        <div class="completed-summary-card glass-card">
+          <div class="completed-summary-icon">📝</div>
+          <div>
+            <div class="completed-summary-val" id="bottom-stat-total-exams">0</div>
+            <div class="completed-summary-lbl">Completed Exams</div>
+          </div>
+        </div>
+        <div class="completed-summary-card glass-card">
+          <div class="completed-summary-icon">⭐</div>
+          <div>
+            <div class="completed-summary-val" id="bottom-stat-avg-score">0%</div>
+            <div class="completed-summary-lbl">Average Score</div>
+          </div>
+        </div>
+        <div class="completed-summary-card glass-card">
+          <div class="completed-summary-icon">🏆</div>
+          <div>
+            <div class="completed-summary-val" id="bottom-stat-best-score">0%</div>
+            <div class="completed-summary-lbl">Highest Score</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completed Exams Table Container -->
+      <div class="glass-card completed-table-card mt-4">
+        <div class="table-responsive" id="completed-exams-container">
+          <div class="empty-state p-6">
+            <div class="spinner"></div>
+            <p>Loading your exam history…</p>
+          </div>
         </div>
       </div>
     </section>
@@ -308,10 +707,16 @@
     const session = requireStudentSession();
     if (!session) throw new Error('Not authenticated');
 
-    // Populate header
+    // Populate header & Welcome Banner
     document.getElementById('header-student-name').textContent = session.student_name;
     document.getElementById('welcome-name').textContent = session.student_name;
     document.getElementById('welcome-meta').textContent = `${session.program_name} › ${session.class_name}${session.batch_name ? ' › ' + session.batch_name : ''}`;
+
+    // Compute first initial for banner avatar placeholder
+    const cleanStudentName = (session.student_name || 'Student').replace(/^(mr\.?|miss\.?|mrs\.?|ms\.?)\s+/i, '').trim();
+    const firstInitial = cleanStudentName.charAt(0).toUpperCase() || 'S';
+    const bannerInitialEl = document.getElementById('banner-avatar-initial');
+    if (bannerInitialEl) bannerInitialEl.textContent = firstInitial;
 
     document.getElementById('logout-btn').addEventListener('click', () => {
       clearStudentSession();
@@ -325,30 +730,52 @@
       const avatarIcon = document.getElementById('avatar-icon');
       const headerAvatarImg = document.getElementById('header-avatar-img');
       const headerAvatarIcon = document.getElementById('header-avatar-icon');
+      const bannerImg = document.getElementById('banner-avatar-img');
+      const bannerInitial = document.getElementById('banner-avatar-initial');
       if (photoImg) { photoImg.src = url; photoImg.classList.remove('hidden'); }
       if (avatarIcon) avatarIcon.classList.add('hidden');
       if (headerAvatarImg) { headerAvatarImg.src = url; headerAvatarImg.classList.remove('hidden'); }
       if (headerAvatarIcon) headerAvatarIcon.classList.add('hidden');
+      if (bannerImg) { bannerImg.src = url; bannerImg.classList.remove('hidden'); }
+      if (bannerInitial) bannerInitial.classList.add('hidden');
     }
+
+    // Banner avatar click opens profile modal
+    document.getElementById('banner-avatar-container')?.addEventListener('click', () => {
+      applyStudentGenderUI(session.gender);
+      document.getElementById('profile-modal')?.classList.remove('hidden');
+    });
 
     // ── Microphone Capability Detection & Header Indicator ──
     async function updateHeaderMicStatus(res) {
       const icon = document.getElementById('header-mic-icon');
       const text = document.getElementById('header-mic-text');
       const btn = document.getElementById('header-mic-btn');
-      if (!btn) return;
+      const ovMic = document.getElementById('overview-mic-status');
       if (res && res.ok) {
         if (icon) icon.textContent = '✅';
         if (text) text.textContent = 'Mic Ready';
-        btn.style.borderColor = 'rgba(16, 185, 129, 0.5)';
-        btn.style.background = 'rgba(16, 185, 129, 0.12)';
-        btn.title = 'Microphone verified and ready for speaking tests.';
+        if (btn) {
+          btn.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+          btn.style.background = 'rgba(16, 185, 129, 0.12)';
+          btn.title = 'Microphone verified and ready for speaking tests.';
+        }
+        if (ovMic) {
+          ovMic.textContent = 'Ready ✅';
+          ovMic.style.color = '#10b981';
+        }
       } else {
         if (icon) icon.textContent = '⚠️';
         if (text) text.textContent = 'Mic Check';
-        btn.style.borderColor = 'rgba(245, 158, 11, 0.5)';
-        btn.style.background = 'rgba(245, 158, 11, 0.12)';
-        btn.title = res?.message || 'Click to test microphone capability';
+        if (btn) {
+          btn.style.borderColor = 'rgba(245, 158, 11, 0.5)';
+          btn.style.background = 'rgba(245, 158, 11, 0.12)';
+          btn.title = res?.message || 'Click to test microphone capability';
+        }
+        if (ovMic) {
+          ovMic.textContent = 'Check ⚠️';
+          ovMic.style.color = '#f59e0b';
+        }
       }
     }
 
@@ -733,6 +1160,9 @@
     }
 
     function renderSubjects(rawSubjects, progress) {
+      const subjCountEl = document.getElementById('overview-subjects-count');
+      if (subjCountEl) subjCountEl.textContent = rawSubjects.length;
+
       const grid = document.getElementById('subjects-grid');
       if (!rawSubjects.length) {
         grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
@@ -961,11 +1391,15 @@
       });
       const uniqueExams = Object.values(bestAttemptsMap);
       
-      document.getElementById('stat-exams-done').textContent = uniqueExams.length;
+      const examsCountEl = document.getElementById('stat-exams-done');
+      if (examsCountEl) examsCountEl.textContent = uniqueExams.length;
+      const ovCountEl = document.getElementById('overview-exams-count');
+      if (ovCountEl) ovCountEl.textContent = uniqueExams.length;
 
       if (!uniqueExams.length) {
         document.getElementById('stat-overall-score').textContent = '0%';
         document.getElementById('stat-overall-grade-badge').textContent = '—';
+        renderCompletedExamsBottom(attempts);
         return;
       }
 
@@ -975,13 +1409,182 @@
 
       const scoreEl = document.getElementById('stat-overall-score');
       scoreEl.textContent = `${avgPct}%`;
-      scoreEl.className = `stat-value text-grade-${overallGrade}`;
+      scoreEl.className = `fw-800 banner-score-text text-grade-${overallGrade}`;
 
       const gradeBadge = document.getElementById('stat-overall-grade-badge');
       gradeBadge.textContent = overallGrade;
       
       const gradeColors = { S: '#f59e0b', A: '#10b981', B: '#3b82f6', C: '#f59e0b', D: '#ea580c', E: '#ef4444', F: '#94a3b8' };
       gradeBadge.style.color = gradeColors[overallGrade] || 'var(--clr-text-1)';
+
+      renderCompletedExamsBottom(attempts);
+    }
+
+    // ── Render Completed Exams Section (Bottom of Dashboard) ──
+    function renderCompletedExamsBottom(attempts) {
+      const container = document.getElementById('completed-exams-container');
+      const badgeEl = document.getElementById('bottom-completed-badge');
+      const statTotalEl = document.getElementById('bottom-stat-total-exams');
+      const statAvgEl = document.getElementById('bottom-stat-avg-score');
+      const statBestEl = document.getElementById('bottom-stat-best-score');
+
+      if (!attempts || !attempts.length) {
+        if (badgeEl) badgeEl.textContent = '0 Exams Completed';
+        if (statTotalEl) statTotalEl.textContent = '0';
+        if (statAvgEl) statAvgEl.textContent = '0%';
+        if (statBestEl) statBestEl.textContent = '0%';
+        if (container) {
+          container.innerHTML = `
+            <div class="empty-state p-8 text-center" style="padding: 40px 20px;">
+              <div class="empty-state__icon" style="font-size:2.5rem;margin-bottom:12px;">📝</div>
+              <h3 class="fw-700 text-base mb-1" style="color:var(--clr-text-1);">No completed exams yet</h3>
+              <p class="text-sm text-muted" style="max-width:440px;margin:0 auto;">
+                Pick a subject above to start taking your assigned English assessments. Your scores, grades, and completion records will appear here.
+              </p>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      // Calculate summary statistics
+      const bestAttemptsMap = {};
+      let totalPctSum = 0;
+      let highestPct = 0;
+
+      attempts.forEach(att => {
+        const pct = parseFloat(att.percentage || 0);
+        totalPctSum += pct;
+        if (pct > highestPct) highestPct = pct;
+        if (!bestAttemptsMap[att.exam_id] || pct > bestAttemptsMap[att.exam_id]) {
+          bestAttemptsMap[att.exam_id] = pct;
+        }
+      });
+
+      const uniqueExamsCount = Object.keys(bestAttemptsMap).length;
+      const avgScore = (totalPctSum / attempts.length).toFixed(1);
+
+      if (badgeEl) badgeEl.textContent = `${uniqueExamsCount} Exam${uniqueExamsCount === 1 ? '' : 's'} Completed`;
+      if (statTotalEl) statTotalEl.textContent = uniqueExamsCount;
+      if (statAvgEl) statAvgEl.textContent = `${avgScore}%`;
+      if (statBestEl) statBestEl.textContent = `${highestPct.toFixed(1)}%`;
+
+      // Sort attempts by submitted_at desc
+      const sortedAttempts = [...attempts].sort((a, b) => {
+        const dateA = a.submitted_at ? new Date(a.submitted_at).getTime() : 0;
+        const dateB = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
+        return dateB - dateA;
+      });
+
+      const gradeColors = { S: '#f59e0b', A: '#10b981', B: '#3b82f6', C: '#f59e0b', D: '#ea580c', E: '#ef4444', F: '#94a3b8' };
+
+      // Desktop Table
+      let tableHtml = `
+        <div class="table-responsive">
+          <table class="completed-exams-table">
+            <thead>
+              <tr>
+                <th>Exam Title</th>
+                <th>Subject</th>
+                <th>Score</th>
+                <th>Grade</th>
+                <th>Date Completed</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      // Mobile List
+      let mobileListHtml = `
+        <div class="completed-exams-mobile-list">
+      `;
+
+      sortedAttempts.forEach(a => {
+        const examObj = a.exams || {};
+        const examTitle = examObj.exam_title || 'English Assessment';
+        const examType = examObj.exam_type || '';
+        const subjectName = examObj.subjects?.name || 'General English';
+        const pct = parseFloat(a.percentage || 0).toFixed(1);
+        const grade = a.grade || getGrade(pct);
+        const gradeColor = gradeColors[grade] || 'var(--clr-text-1)';
+        const dateStr = a.submitted_at ? new Date(a.submitted_at).toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        }) : '—';
+        const isPassed = parseFloat(pct) >= 60;
+        const statusBadgeDesktop = isPassed
+          ? `<span class="badge badge-success" style="font-size:0.75rem;padding:3px 8px;">✓ Passed</span>`
+          : `<span class="badge badge-warning" style="font-size:0.75rem;padding:3px 8px;">⚠️ Retake Needed</span>`;
+        const statusBadgeMobile = isPassed
+          ? `<span style="color:#10b981;font-weight:700;">✓ Passed</span>`
+          : `<span style="color:#f59e0b;font-weight:700;">⚠️ Retake</span>`;
+
+        const attemptId = escapeHtml(a.id);
+        const navLink = `window.location.href='result.html?attempt_id=${attemptId}'`;
+
+        // Desktop Row
+        tableHtml += `
+          <tr onclick="${navLink}">
+            <td>
+              <div class="fw-700" style="color:var(--clr-text-1);">${escapeHtml(examTitle)}</div>
+              ${examType ? `<div class="text-xs text-muted mt-1" style="font-size:0.75rem;">${escapeHtml(examType)}</div>` : ''}
+            </td>
+            <td>
+              <span class="badge badge-neutral" style="font-size:0.75rem;">${escapeHtml(subjectName)}</span>
+            </td>
+            <td>
+              <span class="fw-700 text-grade-${grade}" style="font-size:1rem;">${pct}%</span>
+            </td>
+            <td>
+              <span class="grade-badge grade-${grade}" style="width:28px;height:28px;font-size:0.82rem;display:inline-flex;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2);color:${gradeColor};border:1.5px solid ${gradeColor};">${grade}</span>
+            </td>
+            <td class="text-muted text-sm">
+              ${escapeHtml(dateStr)}
+            </td>
+            <td>
+              ${statusBadgeDesktop}
+            </td>
+          </tr>
+        `;
+
+        // Mobile Card
+        mobileListHtml += `
+          <div class="completed-exam-mobile-card" onclick="${navLink}">
+            <div class="exam-card-header">
+              <div class="exam-card-title">${escapeHtml(examTitle)}</div>
+              <span class="grade-badge grade-${grade}" style="width:26px;height:26px;font-size:0.75rem;display:inline-flex;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.2);color:${gradeColor};border:1.5px solid ${gradeColor};flex-shrink:0;">${grade}</span>
+            </div>
+            <div class="exam-card-badges">
+              <span class="badge badge-neutral" style="font-size:0.65rem;padding:2px 6px;">${escapeHtml(subjectName)}</span>
+              ${examType ? `<span class="badge badge-neutral" style="font-size:0.65rem;padding:2px 6px;background:rgba(255,255,255,0.02);">${escapeHtml(examType)}</span>` : ''}
+            </div>
+            <div class="exam-card-footer">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="color:var(--clr-text-3);">Score: <strong style="color:var(--clr-text-1);">${pct}%</strong></span>
+                <span style="color:var(--clr-text-3);">&bull;</span>
+                <span>${statusBadgeMobile}</span>
+              </div>
+              <div style="color:var(--clr-text-4);">${escapeHtml(dateStr)}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      tableHtml += `
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      mobileListHtml += `
+        </div>
+      `;
+
+      if (container) {
+        container.innerHTML = tableHtml + mobileListHtml;
+      }
     }
 
     // ── Profile Modal & History ──

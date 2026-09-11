@@ -27,8 +27,10 @@
       ⏱ <span id="timer-display">--:--</span>
     </div>
 
-    <!-- Question counter -->
-    <div class="text-sm text-muted" id="question-counter"></div>
+    <!-- Drawer toggle for mobile -->
+    <button class="btn btn-secondary" id="qnav-toggle-btn" style="padding:4px 8px; font-size:1.1rem; background:rgba(255,255,255,0.05); border:1px solid var(--clr-border);" aria-label="Open questions">
+      ☰
+    </button>
   </header>
 
   <!-- Exam progress bar -->
@@ -39,34 +41,37 @@
   <!-- Exam body -->
   <div class="exam-body">
 
-    <!-- Question navigator sidebar -->
-    <aside class="question-sidebar" aria-label="Question navigator">
-      <div class="q-sidebar-header">
-        <p class="text-xs text-muted mb-0 fw-600" style="text-transform:uppercase;letter-spacing:.06em;">Questions</p>
+    <!-- Question navigator drawer/sidebar -->
+    <aside class="q-nav-drawer" id="qNavDrawer" aria-label="Question navigator">
+      <div class="q-nav-drawer-header">
+        <h3 style="margin:0; font-size:0.9rem; font-weight:700;">Questions</h3>
+        <button id="qnav-close-btn" style="padding:4px 8px; background:transparent; border:none; color:var(--clr-text-2); font-size:1.2rem; cursor:pointer;" aria-label="Close">✕</button>
       </div>
-      <div class="q-nav-grid-wrap">
-        <div class="q-nav-grid" id="q-nav-grid" role="navigation" aria-label="Jump to question"></div>
-      </div>
-
-      <div class="q-nav-legend">
-        <div class="q-nav-legend-item">
-          <div class="q-nav-legend-dot" style="background:rgba(16,185,129,0.3);border:1px solid var(--clr-success);"></div>
-          <span>Answered</span>
+      <div class="q-nav-drawer-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+        <div class="q-nav-grid-wrap">
+          <div class="q-nav-grid" id="q-nav-grid" role="navigation" aria-label="Jump to question"></div>
         </div>
-        <div class="q-nav-legend-item">
-          <div class="q-nav-legend-dot" style="background:rgba(99,102,241,0.2);border:1px solid var(--clr-accent-1);"></div>
-          <span>Current</span>
+  
+        <div class="q-nav-legend">
+          <div class="q-nav-legend-item">
+            <div class="q-nav-legend-dot" style="background:rgba(16,185,129,0.3);border:1px solid var(--clr-success);"></div>
+            <span>Answered</span>
+          </div>
+          <div class="q-nav-legend-item">
+            <div class="q-nav-legend-dot" style="background:var(--clr-accent-1);border:1px solid var(--clr-accent-1);"></div>
+            <span>Current</span>
+          </div>
+          <div class="q-nav-legend-item">
+            <div class="q-nav-legend-dot" style="background:var(--clr-surface);border:1px solid var(--clr-border);"></div>
+            <span>Not answered</span>
+          </div>
         </div>
-        <div class="q-nav-legend-item">
-          <div class="q-nav-legend-dot" style="background:var(--clr-surface);border:1px solid var(--clr-border);"></div>
-          <span>Not answered</span>
+  
+        <div class="mt-4 pt-3" style="border-top:1px solid var(--clr-border); flex-shrink:0;">
+          <button class="btn btn-success w-100" id="global-submit-btn" style="padding:10px;font-weight:600;">
+            Submit Exam 📋
+          </button>
         </div>
-      </div>
-
-      <div class="mt-4 pt-3" style="border-top:1px solid var(--clr-border);">
-        <button class="btn btn-success w-100" id="global-submit-btn" style="padding:10px;font-weight:600;">
-          Submit Exam 📋
-        </button>
       </div>
     </aside>
 
@@ -79,6 +84,13 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Bottom Nav Bar (Mobile) -->
+  <div class="bottom-nav-bar">
+    <button class="btn btn-secondary" id="bottom-prev-btn" style="padding:6px 12px; font-size:0.85rem;" disabled>← Prev</button>
+    <div class="bottom-nav-status" id="question-counter">0/0 answered</div>
+    <button class="btn btn-primary" id="bottom-next-btn" style="padding:6px 12px; font-size:0.85rem;">Next →</button>
   </div>
 
   <!-- Anti-Cheat Flashing Overlay -->
@@ -440,6 +452,9 @@
         btn.addEventListener('click', () => {
           saveCurrentAnswer();
           renderQuestion(idx);
+          if (window.innerWidth <= 768) {
+            document.getElementById('qNavDrawer')?.classList.remove('open');
+          }
         });
         grid.appendChild(btn);
       });
@@ -458,7 +473,8 @@
       const answered = Object.values(answeredMap).filter(v => v?.trim()).length;
       const pct = answerRows.length > 0 ? (answered / answerRows.length) * 100 : 0;
       document.getElementById('exam-progress-fill').style.width = pct + '%';
-      document.getElementById('question-counter').textContent = `${answered}/${answerRows.length} answered`;
+      const counterEl = document.getElementById('question-counter');
+      if(counterEl) counterEl.textContent = `${answered}/${answerRows.length} answered`;
     }
 
     // ── Render Question ──
@@ -512,23 +528,40 @@
         renderSpeech(answerArea, row, savedAnswer);
       }
 
-      // Nav buttons
+      // Nav buttons (desktop)
       document.getElementById('prev-btn')?.addEventListener('click', () => {
         saveCurrentAnswer();
         renderQuestion(idx - 1);
-        updateNavGrid();
       });
 
       document.getElementById('next-btn')?.addEventListener('click', () => {
         saveCurrentAnswer();
         renderQuestion(idx + 1);
-        updateNavGrid();
       });
 
       document.getElementById('submit-exam-btn')?.addEventListener('click', () => {
         saveCurrentAnswer();
         openSubmitModal();
       });
+
+      // Bottom Nav buttons (mobile)
+      const bottomPrev = document.getElementById('bottom-prev-btn');
+      const bottomNext = document.getElementById('bottom-next-btn');
+      if (bottomPrev) {
+        bottomPrev.disabled = idx === 0;
+        bottomPrev.onclick = () => { saveCurrentAnswer(); renderQuestion(idx - 1); };
+      }
+      if (bottomNext) {
+        if (idx === answerRows.length - 1) {
+          bottomNext.textContent = 'Submit 📋';
+          bottomNext.className = 'btn btn-success';
+          bottomNext.onclick = () => { saveCurrentAnswer(); openSubmitModal(); };
+        } else {
+          bottomNext.textContent = 'Next →';
+          bottomNext.className = 'btn btn-primary';
+          bottomNext.onclick = () => { saveCurrentAnswer(); renderQuestion(idx + 1); };
+        }
+      }
 
       updateNavGrid();
     }
@@ -576,8 +609,8 @@
           autoSave(row.id, optText);
 
           // Streamlined UI: Auto-advance to next question
-          const nextBtn = document.getElementById('next-btn');
-          if (nextBtn) {
+          const nextBtn = document.getElementById('next-btn') || document.getElementById('bottom-next-btn');
+          if (nextBtn && nextBtn.textContent.includes('Next')) {
             setTimeout(() => nextBtn.click(), 400);
           }
         });
@@ -608,8 +641,8 @@
         autoSave(row.id, sel.value);
 
         // Streamlined UI: Auto-advance to next question
-        const nextBtn = document.getElementById('next-btn');
-        if (nextBtn) {
+        const nextBtn = document.getElementById('next-btn') || document.getElementById('bottom-next-btn');
+        if (nextBtn && nextBtn.textContent.includes('Next')) {
           setTimeout(() => nextBtn.click(), 400);
         }
       });
@@ -820,6 +853,14 @@
     document.getElementById('global-submit-btn')?.addEventListener('click', () => {
       saveCurrentAnswer();
       openSubmitModal();
+    });
+
+    // Drawer toggles
+    document.getElementById('qnav-toggle-btn')?.addEventListener('click', () => {
+      document.getElementById('qNavDrawer')?.classList.add('open');
+    });
+    document.getElementById('qnav-close-btn')?.addEventListener('click', () => {
+      document.getElementById('qNavDrawer')?.classList.remove('open');
     });
 
     async function doSubmit(isAuto = false) {

@@ -561,7 +561,7 @@ export async function fetchExamsForStudentSubject(classId, subjectId, programId)
 export async function fetchAllStudentAttempts(studentId) {
   const sb = await getSupabase();
   const { data, error } = await sb.from('attempts')
-    .select('id, exam_id, score, percentage, grade, submitted_at, exams(exam_title, exam_type)')
+    .select('id, exam_id, score, percentage, grade, submitted_at, exams(exam_title, exam_type, subjects(name))')
     .eq('student_id', studentId)
     .in('status', ['submitted', 'auto_submitted'])
     .order('submitted_at', { ascending: false });

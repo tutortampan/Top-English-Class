@@ -179,11 +179,11 @@ a:hover { color: var(--clr-accent-3); }
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-6);
-  border-radius: var(--radius-full);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   border: none;
   cursor: pointer;
   transition: all var(--transition-base);
@@ -277,9 +277,9 @@ a:hover { color: var(--clr-accent-3); }
 /* ============================================================
    FORM ELEMENTS
    ============================================================ */
-.form-group { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-5); }
+.form-group { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); }
 .form-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--clr-text-2);
   letter-spacing: 0.05em;
@@ -288,7 +288,7 @@ a:hover { color: var(--clr-accent-3); }
 
 .form-control {
   width: 100%;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   background: rgba(255,255,255,0.04);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-md);

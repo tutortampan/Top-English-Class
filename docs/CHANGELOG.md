@@ -1,6 +1,106 @@
-﻿# CHANGELOG
+# CHANGELOG
 
-## [2026-09-10 14:58] â€” Master Command: Full System Audit, Repair, Data Consistency, Grading Engine & Recalibrator
+## [2026-09-11 13:25] — Subject Box Positioned Directly Under Welcome Banner
+
+**Agent/Session:** Antigravity / SESSION-20260911-1325
+**Phase:** Phase 24 Complete
+**Status:** PASS
+
+### Why
+- User requested that the subject box be placed directly beneath the welcome banner (`my sunject box is right under the welcome banner. move it there`).
+
+### Changed
+- **dashboard.html**:
+  - Removed the unrequested "Academic Overview & Device Readiness" side-card and its duplicate "📚 Subjects" metric tile.
+  - Positioned `<section class="subjects-section">` ("My Subjects") directly beneath `<section class="welcome-banner">`.
+  - Cleaned layout into the requested 3-tier structure:
+    1. Welcome Banner (230px squircle photo + stacked Grade/Score + Greeting card).
+    2. My Subjects box (`.subjects-grid`).
+    3. My Completed Exams section (`.completed-exams-section`).
+  - Retained hidden DOM nodes (`#overview-exams-count`, `#overview-subjects-count`, `#overview-mic-status`, `#stat-exams-done`) to ensure full backward compatibility with any runtime event listeners.
+
+## [2026-09-11 13:15] — Completed Exam Info Relocated & Expanded to Bottom of Dashboard
+
+**Agent/Session:** Antigravity / SESSION-20260911-1315
+**Phase:** Phase 23 Complete
+**Status:** PASS
+
+### Why
+- User requested that the completed exam information be relocated to the bottom of the student dashboard, below "My Subjects", with an expanded view of test performance and scores.
+
+### Changed
+- **dashboard.html**:
+  - Cleaned up top greeting card by removing the redundant `Exams Done:` counter to focus purely on student identity and active session.
+  - Converted tile 1 of the Academic Overview card to `📚 Assigned Subjects` (`#overview-subjects-count`).
+  - Added dedicated `<section class="completed-exams-section">` right below the "My Subjects" section.
+  - Implemented 3 summary metric cards: Completed Exams count (`#bottom-stat-total-exams`), Average Score (`#bottom-stat-avg-score`), and Highest Score (`#bottom-stat-best-score`).
+  - Added interactive completed exams history table displaying: Exam Title & Type, Subject badge, Score %, Grade badge with official tier colors, Date Completed, and Pass/Retake status badge.
+  - Added empty state illustration and guidance message when 0 exams are completed.
+  - Added `renderCompletedExamsBottom(attempts)` function and wired it into `computeOverallStats(attempts)`.
+- **css/dashboard.css**:
+  - Added `.completed-exams-section`, `.completed-summary-bar`, `.completed-summary-card`, `.completed-table-card`, and responsive table styles.
+- **js/api.js**:
+  - Updated `fetchAllStudentAttempts()` query to include nested `subjects(name)` inside the `exams` relation.
+
+## [2026-09-11 12:55] — Uniform Hero Grid, Perfectly Aligned UI & Dashboard Layout Overhaul
+
+**Agent/Session:** Antigravity / SESSION-20260911-1255
+**Phase:** Phase 22 Complete
+**Status:** PASS
+
+### Why
+- User requested that the welcome banner be made uniform with the size of the other boxes on the interface, with perfect alignment across the entire page layout.
+
+### Changed
+- **dashboard.html**:
+  - Replaced the card-in-card `.welcome-banner` container with a balanced 2-column hero grid (`.hero-grid: 386px 1fr`).
+  - Left column (`.hero-showcase-widget`, 386px uniform width):
+    - Top row: 230px squircle student photo on left + stacked Grade and Score stat boxes (140px width) on right matching height.
+    - Bottom row: Student greeting card (`.hero-greeting-card`) with **exact matching width (386px)**, perfectly aligning left and right edges with the top row.
+  - Right column (`.hero-overview-card`):
+    - Uniform height and matching 24px border radius with `.glass-card` elevation.
+    - Contains Academic Overview, completed exams counter, live microphone readiness indicator, and PIN security status.
+  - Synchronized live microphone detection and exam counters to both the showcase and overview widgets.
+- **css/dashboard.css**:
+  - Set `.subject-card` to `display: flex; flex-direction: column; justify-content: space-between; min-height: 190px; border-radius: var(--radius-xl);` for uniform height and radius across all subject cards in the grid.
+  - Removed obsolete media query flex-direction overrides that distorted banner child elements on tablet/mobile.
+- **admin.html**:
+  - Upgraded student profile view (`openStudentProfile`) to the same balanced 2-column hero grid:
+    - Left column (386px): Student Showcase (Photo + Grade/Score on top; Student Name/Active badge on bottom with uniform 386px width).
+    - Right column: Student Enrollment & Demographics card with matching height and quick "✏️ Edit Student" action.
+
+## [2026-09-11 11:45] — Individual Student Profile, Batch-Grouped View & Dashboard Photo Upgrade
+
+**Agent/Session:** Antigravity / SESSION-20260911-1145
+**Phase:** Phase 21 Complete
+**Status:** PASS
+
+### Why
+- Admins requested the ability to drill down into individual student profiles from the admin panel to view detailed exam history, correct/incorrect answer counts, question snapshots, and easily navigate between students within the same batch using arrow buttons and keyboard shortcuts.
+- Students requested a larger profile photo on their dashboard with their overall grade and average score prominently stacked next to the photo.
+
+### Changed
+- **admin.html**:
+  - Grouped students list by Class Batch with clean collapsible headers and student count chips.
+  - Implemented session persistence (`sessionStorage: tec_expanded_batches`) so collapsed/expanded state is remembered per session.
+  - Added "▼ Expand All" and "▲ Collapse All" batch controls in the filter bar.
+  - Automatic expansion of batches matching active search terms.
+  - Added clickable rows and dedicated `👤 Profile` buttons.
+  - Created `openStudentProfile(studentId, batchStudentIds)` view displaying:
+    - Student avatar (photo or first initial) with honorific title, program, class, batch, gender, and age.
+    - 4 KPI cards: Exams Completed, ✅ Correct Answers, ❌ Incorrect Answers (plus minor spelling errors), and Average Score with Global Grade badge (calculated strictly from best attempts).
+    - Exam history table with expandable accordion rows revealing question-by-question student answers vs. correct answers and evaluation badges.
+    - Top batch navigation bar with previous/next student buttons and `ArrowLeft` / `ArrowRight` keyboard navigation.
+- **dashboard.html**:
+  - Restructured welcome banner to feature an extra-large, responsive profile photo (230px desktop / 140px mobile) with double-ring accent border, glowing shadow, and camera badge.
+  - Added gradient avatar fallback displaying the student's first initial (5.5rem font) when no photo is set.
+  - Positioned 2 separate vertically stacked rounded cards (top = Grade letter, bottom = Average score, with no label text) directly next to the photo matching its full height.
+  - Moved student greeting and session status into a dedicated card below the photo + stats row.
+  - Applied the exact same photo + stacked grade/score layout to individual student profiles in `admin.html`.
+  - Clicking the banner avatar opens the student profile / photo upload modal.
+  - Updated `applyPhotoEverywhere()` to synchronize webcam snapshots, uploaded files, and stored photos to the banner photo.
+
+## [2026-09-10 14:58] — Master Command: Full System Audit, Repair, Data Consistency, Grading Engine & Recalibrator
 
 **Agent/Session:** Antigravity / MASTER-COMMAND
 **Phase:** Phases 1â€“20 Complete
@@ -808,3 +908,52 @@
 
 ### Files
 - dashboard.html`n- exam.html`n- js/app.js`n
+# #   [ 2 0 2 6 - 0 9 - 1 2   0 0 : 1 5 ]      M o b i l e - F i r s t   U I   O v e r h a u l   &   C o m p a c t   L a y o u t   R e f a c t o r i n g 
+ 
+ * * A g e n t / S e s s i o n : * *   A n t i g r a v i t y   /   S E S S I O N - 2 0 2 6 0 9 1 2 - 0 0 1 5 
+ * * P h a s e : * *   U I   R e f a c t o r i n g 
+ * * S t a t u s : * *   P A S S 
+ 
+ # # #   W h y 
+ -   T h e   u s e r   r e q u e s t e d   a   c o m p l e t e   U I / U X   o v e r h a u l   o f   t h e   C E C   V o c a b u l a r y   E x a m i n a t i o n   S y s t e m   t o   m a x i m i z e   i n f o r m a t i o n   d e n s i t y ,   e l i m i n a t e   w a s t e d   s p a c e ,   a n d   o p t i m i z e   f o r   m o b i l e   d e v i c e s   w i t h o u t   e x c e s s i v e   s c r o l l i n g . 
+ 
+ # # #   C h a n g e d 
+ -   * * S t u d e n t   E x a m   P a g e   ( \ e x a m . h t m l \ ) : * * 
+     -   D e s i g n e d   a   s t i c k y ,   s l i m   t o p b a r   w i t h   a   h a m b u r g e r   d r a w e r   t o g g l e   a n d   p r o g r e s s   i n d i c a t o r s . 
+     -   I m p l e m e n t e d   a   s l i d e - u p / s l i d e - i n   m o b i l e   d r a w e r   f o r   q u e s t i o n   n a v i g a t i o n   t o   r e p l a c e   t h e   s t a t i c   w i d e   s i d e b a r . 
+     -   A d d e d   a   p e r s i s t e n t   b o t t o m   n a v i g a t i o n   b a r   f o r   q u i c k   P r e v i o u s / N e x t   a n d   S u b m i t   a c t i o n s   o n   m o b i l e . 
+     -   S l i m m e d   d o w n   a l l   e l e m e n t s   ( s m a l l e r   h e a d i n g s ,   i n p u t   f i e l d s ,   a n d   a n s w e r   c a r d s ) . 
+ -   * * S t u d e n t   R e s u l t   P a g e   ( \  e s u l t . h t m l \ ) : * * 
+     -   M i n i m i z e d   h e r o   s e c t i o n   p a d d i n g   a n d   g r a d e   d i s p l a y   s i z i n g . 
+     -   C o m p a c t e d   t h e   a n s w e r   b r e a k d o w n   s u m m a r y   g r i d   b y   d r a s t i c a l l y   r e d u c i n g   c a r d   p a d d i n g   ( \ p - 3 \   t o   \ p - 2 \ )   a n d   m a r g i n s . 
+ -   * * A d m i n   C o n s o l e   ( \  d m i n . h t m l \   &   \ c s s / a d m i n . c s s \ ) : * * 
+     -   R e d u c e d   t a b l e   c e l l   p a d d i n g   ( \ 	 h \ ,   \ 	 d \ )   a n d   f o r m   i n p u t   s i z e s   f o r   d e n s e r   d a t a   l a y o u t . 
+     -   A p p l i e d   a   s t r i c t   5 0 - r o w   r e n d e r i n g   l i m i t   t o   t h e   E x c e l   I m p o r t   P r e v i e w s   f o r   b o t h   S t u d e n t s   a n d   Q u e s t i o n s ,   a p p e n d i n g   a   \  
+ +  
+ X  
+ m o r e  
+ r o w s \   f o o t e r   t o   p r e v e n t   U I   l a g   o n   m a s s i v e   d a t a s e t   i m p o r t s . 
+ -   * * G l o b a l   S t y l i n g s   ( \ c s s / s t y l e . c s s \   &   \ c s s / d a s h b o a r d . c s s \ ) : * * 
+     -   O v e r h a u l e d   b r e a k p o i n t s   ( < =   7 6 8 p x )   a n d   m e d i a   q u e r i e s   t o   s u p p o r t   t h e   n e w   d r a w e r   a n d   m o b i l e - f i r s t   l a y o u t s . 
+ 
+ # # #   F i l e s 
+ -   \ c s s / s t y l e . c s s \ 
+ -   \ c s s / d a s h b o a r d . c s s \ 
+ -   \ c s s / a d m i n . c s s \ 
+ -   \ e x a m . h t m l \ 
+ -   \  e s u l t . h t m l \ 
+ -   \  d m i n . h t m l \ 
+ 
+ # # #   D a t a b a s e 
+ -   N o   s c h e m a   c h a n g e s . 
+ 
+ # # #   T e s t s 
+ -   L o c a l   s t a t i c   v e r i f i c a t i o n   a p p l i e d . 
+ 
+ # # #   R i s k s   /   F o l l o w - u p 
+ -   V a l i d a t e   t h a t   t h e   5 0 - r o w   l i m i t   o n   p r e v i e w s   c o v e r s   a l l   e d g e   c a s e s   p r o p e r l y . 
+ 
+ # # #   N e x t   A c t i o n 
+ -   A w a i t   u s e r   f e e d b a c k   o n   t h e   n e w   c o m p a c t   l a y o u t . 
+  
+ 

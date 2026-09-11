@@ -167,13 +167,13 @@
             </div>
           </div>
           ${a.student_answer ? `
-            <div class="p-3 rounded mt-2" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);">
+            <div class="p-2 rounded mt-1" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);">
               <div class="text-xs text-muted mb-1">Your Answer</div>
               <div class="text-sm">${a.student_answer}</div>
             </div>
-          ` : '<div class="text-sm text-muted mt-2 p-3">No answer given</div>'}
+          ` : '<div class="text-sm text-muted mt-1 p-2">No answer given</div>'}
           ${!isCorrect ? `
-            <div class="p-3 rounded mt-2" style="background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);">
+            <div class="p-2 rounded mt-1" style="background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);">
               <div class="text-xs text-muted mb-1">Correct Answer</div>
               <div class="text-sm text-success">${a.correct_answer_snapshot}</div>
             </div>
