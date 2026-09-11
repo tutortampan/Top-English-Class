@@ -7,10 +7,10 @@
    ============================================================ */
 .admin-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
   width: 100vw;
   max-width: 100vw;
-  overflow-x: hidden; /* CRITICAL: Prevent horizontal scroll */
+  overflow: hidden; /* CRITICAL: Prevent body scroll */
 }
 
 /* Sidebar */
@@ -266,10 +266,12 @@
   flex: 1;
   margin-left: clamp(200px, 18vw, 240px);
   width: calc(100vw - clamp(200px, 18vw, 240px));
-  max-width: calc(100vw - clamp(200px, 18vw, 240px)); /* CRITICAL: Prevent table overflow pushing page */
+  max-width: calc(100vw - clamp(200px, 18vw, 240px));
+  height: 100vh;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  overflow-y: auto; /* Allow scrolling inside the container */
 }
 
 .admin-topbar {

@@ -279,8 +279,11 @@
    Dashboard Page
    ============================================================ */
 .dashboard-page {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .dashboard-header {
@@ -333,6 +336,10 @@
   padding: clamp(1rem, 4vw, 2.5rem) clamp(1rem, 5vw, 3rem);
   max-width: 1200px;
   margin-inline: auto;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 /* Welcome banner */
@@ -429,8 +436,9 @@
    EXAM PAGE
    ============================================================ */
 .exam-page {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -754,9 +762,11 @@
    RESULT PAGE
    ============================================================ */
 .result-page {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   padding: var(--space-6);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .result-hero {
