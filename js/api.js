@@ -21,12 +21,27 @@ const MOCK_CLASSES = [
 ];
 
 /**
+ * Clean student name by stripping pre-existing honorific titles.
+ */
+export function cleanStudentName(name) {
+  if (!name) return '';
+  let cleaned = String(name).trim().replace(/^(mr\.?|miss\.?|mrs\.?|ms\.?)\s+/i, '').trim();
+  
+  // Apply Proper Capitalization (Title Case)
+  cleaned = cleaned.toLowerCase().split(' ').map(word => {
+    if (!word) return '';
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+  
+  return cleaned;
+}
+
+/**
  * Format student name with honorific title: Miss for female, Mr. for male.
  * Strips pre-existing titles to avoid duplication.
  */
 export function formatStudentName(name, gender) {
-  if (!name) return '';
-  const clean = String(name).trim().replace(/^(mr\.?|miss\.?|mrs\.?|ms\.?)\s+/i, '').trim();
+  const clean = cleanStudentName(name);
   const g = String(gender || '').toLowerCase().trim();
   if (g === 'female' || g === 'f' || g === 'perempuan' || g === 'p') return `Miss ${clean}`;
   if (g === 'male' || g === 'm' || g === 'laki-laki' || g === 'l') return `Mr. ${clean}`;
@@ -295,7 +310,7 @@ export async function updateStudentGender(studentId, gender) {
 
   if (fetchErr) throw fetchErr;
 
-  const rawClean = (st?.name || '').replace(/^(mr\.?|miss\.?|mrs\.?|ms\.?)\s+/i, '').trim();
+  const rawClean = cleanStudentName(st?.name);
   const formattedName = formatStudentName(rawClean, g);
 
   const { error } = await sb
@@ -309,6 +324,24 @@ export async function updateStudentGender(studentId, gender) {
 
   if (error) throw error;
   return { success: true, gender: g, formattedName };
+}
+
+/** Update Student Birthday */
+export async function updateStudentBirthday(studentId, birthDate) {
+  if (!birthDate) throw new Error('Birth date is required');
+  if (isPlaceholderUrl()) return { success: true };
+
+  const sb = await getSupabase();
+  const { error } = await sb
+    .from('students')
+    .update({ 
+      birth_date: birthDate,
+      updated_at: new Date().toISOString() 
+    })
+    .eq('id', studentId);
+  
+  if (error) throw error;
+  return { success: true };
 }
 
 /** Upload/Update Student Photo (photo_url & photo_status) */
@@ -616,7 +649,8 @@ export async function startExam(studentId, examId) {
           answer_type: q.answer_type || exam.answer_type || 'written',
           correct_answer: q.correct_answer || '',
           options_json: q.options_json,
-          question_order: q.question_order ?? (idx + 1)
+          question_order: q.question_order ?? (idx + 1),
+          metadata: q.metadata
         },
         options_snapshot: q.options_json,
         correct_answer_snapshot: q.correct_answer || '',
@@ -650,7 +684,8 @@ export async function startExam(studentId, examId) {
           answer_type: q.answer_type || exam.answer_type || 'written',
           correct_answer: q.correct_answer || '',
           options_json: q.options_json,
-          question_order: q.question_order ?? (idx + 1)
+          question_order: q.question_order ?? (idx + 1),
+          metadata: q.metadata
         },
         options_snapshot: q.options_json,
         correct_answer_snapshot: q.correct_answer || '',

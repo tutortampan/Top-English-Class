@@ -274,8 +274,23 @@
 
   </main>
 
+  <!-- Birthday Setup Modal -->
+  <div id="birthday-setup-modal" class="modal-backdrop hidden" style="z-index: 100000; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; position: fixed; inset: 0;">
+    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+      <h2 style="margin-top: 0; color: #1e293b; font-size: 1.5rem; font-weight: 700;">Complete Your Profile</h2>
+      <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1.5rem;">
+        Please enter your date of birth to continue. This is required for your student profile.
+      </p>
+      <div style="margin-bottom: 1.5rem; text-align: left;">
+        <label style="display: block; font-size: 0.85rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">Date of Birth</label>
+        <input type="date" id="onboard-birth-date" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;">
+      </div>
+      <button id="btn-confirm-birthday-setup" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 8px;">✓ Save & Continue</button>
+    </div>
+  </div>
+
   <script type="module">
-    import { fetchStudentSubjects, fetchLevels, fetchStudentProgress, fetchExamsForStudentLevel, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, formatStudentName, toLevelLetter } from './js/api.js?v=1.2';
+    import { fetchStudentSubjects, fetchLevels, fetchStudentProgress, fetchExamsForStudentLevel, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, formatStudentName, toLevelLetter } from './js/api.js?v=1.2';
     import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=1.2';
     import { showToast, showLoading, hideLoading, getGrade } from './js/app.js?v=1.2';
     import { testMicrophoneCapability } from './js/speech.js?v=1.2';
@@ -638,6 +653,59 @@
       modal.classList.remove('hidden');
       await startOnboardWebcam();
       await checkMicrophoneOnEntry();
+
+      return new Promise((resolve) => {
+        const interval = setInterval(() => {
+          if (modal.classList.contains('hidden')) {
+            clearInterval(interval);
+            resolve();
+          }
+        }, 500);
+      });
+    }
+
+    async function checkAndPromptBirthday() {
+      let hasBirthday = false;
+      try {
+        const sb = await (await import('./js/supabase.js')).getSupabase();
+        const { data: st } = await sb.from('students').select('birth_date').eq('id', session.student_id).single();
+        if (st && st.birth_date) {
+          hasBirthday = true;
+        }
+      } catch (err) {
+        console.warn('Could not check birthday status from DB:', err);
+      }
+
+      if (hasBirthday) return;
+
+      const modal = document.getElementById('birthday-setup-modal');
+      modal.classList.remove('hidden');
+
+      return new Promise((resolve) => {
+        document.getElementById('btn-confirm-birthday-setup').addEventListener('click', async () => {
+          const bdInput = document.getElementById('onboard-birth-date');
+          const bd = bdInput.value;
+          if (!bd) {
+            showToast('Please select a valid date of birth.', 'warning');
+            return;
+          }
+
+          const btn = document.getElementById('btn-confirm-birthday-setup');
+          btn.disabled = true;
+          btn.textContent = 'Saving...';
+          
+          try {
+            await updateStudentBirthday(session.student_id, bd);
+            modal.classList.add('hidden');
+            showToast('Birthday registered successfully!', 'success');
+            resolve();
+          } catch (err) {
+            btn.disabled = false;
+            btn.textContent = '✓ Save & Continue';
+            showToast('Error saving birthday: ' + err.message, 'error');
+          }
+        });
+      });
     }
 
     // ── Load Subjects & Dashboard ──
@@ -646,6 +714,7 @@
       try {
         await checkAndPromptGender();
         await checkAndPromptPhoto();
+        await checkAndPromptBirthday();
 
         const [subjects, progress, attempts] = await Promise.all([
           fetchStudentSubjects(session.class_id, session.program_id),

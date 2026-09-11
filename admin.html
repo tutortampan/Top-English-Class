@@ -1055,11 +1055,12 @@
         <div class="section-header">
           <div>
             <h2 class="section-title">Students <span class="count-chip">${data.length} Total</span></h2>
-            <p class="section-subtitle">Manage enrolled students listed in alphabetical order with Batch, Level, Overall Score &amp; Global Grade</p>
+            <p class="section-subtitle">Manage enrolled students listed in alphabetical order with Batch, Overall Score &amp; Global Grade</p>
           </div>
           <div class="d-flex gap-2">
             ${totalDuplicates > 0 ? `<button class="btn btn-warning btn-sm" id="students-merge-shortcut" style="font-weight:700;">🔄 Merge Duplikat (${totalDuplicates})</button>` : ''}
             <button class="btn btn-secondary btn-sm" id="students-import-shortcut">📥 Import Students</button>
+            <button class="btn btn-success btn-sm" id="students-export-btn" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;">📊 Export to CSV</button>
             <button class="btn btn-primary btn-sm" id="students-add-shortcut">+ Add Student</button>
           </div>
         </div>
@@ -1095,7 +1096,6 @@
                 <th class="text-left sortable-th" data-col="program" style="cursor:pointer;user-select:none;">Program <span class="sort-icon" data-col="program"></span></th>
                 <th class="text-left sortable-th" data-col="class" style="cursor:pointer;user-select:none;">Class <span class="sort-icon" data-col="class"></span></th>
                 <th class="text-left sortable-th" data-col="batch" style="cursor:pointer;user-select:none;">Batch <span class="sort-icon" data-col="batch"></span></th>
-                <th class="text-center sortable-th" data-col="level" style="cursor:pointer;user-select:none;">Level <span class="sort-icon" data-col="level"></span></th>
                 <th class="text-center sortable-th" data-col="gender" style="cursor:pointer;user-select:none;">Gender <span class="sort-icon" data-col="gender"></span></th>
                 <th class="text-center">Birth Date / Age</th>
                 <th class="text-center sortable-th" data-col="score" style="cursor:pointer;user-select:none;">Overall Score <span class="sort-icon" data-col="score"></span></th>
@@ -1169,7 +1169,6 @@
             case 'program': va = (a.programs?.name || '').toLowerCase(); vb = (b.programs?.name || '').toLowerCase(); break;
             case 'class':   va = (a.classes?.name || '').toLowerCase(); vb = (b.classes?.name || '').toLowerCase(); break;
             case 'batch':   va = (a.batches?.name || '').toLowerCase(); vb = (b.batches?.name || '').toLowerCase(); break;
-            case 'level':   va = a.level_id ? (levelsMap.get(a.level_id)?.level_number ?? 99) : 99; vb = b.level_id ? (levelsMap.get(b.level_id)?.level_number ?? 99) : 99; return mult * (va - vb);
             case 'gender':  va = (a.gender || '').toLowerCase(); vb = (b.gender || '').toLowerCase(); break;
             case 'score':   va = studentScoreMap.get(a.id)?.score ?? -1; vb = studentScoreMap.get(b.id)?.score ?? -1; return mult * (va - vb);
             case 'grade':   va = GRADE_ORDER[studentScoreMap.get(a.id)?.grade ?? '—'] ?? 0; vb = GRADE_ORDER[studentScoreMap.get(b.id)?.grade ?? '—'] ?? 0; return mult * (va - vb);
@@ -1199,7 +1198,7 @@
       const renderRows = (sourceData) => {
         const sorted = getSortedData(sourceData);
         tbody.innerHTML = '';
-        if (!sorted.length) { tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted p-4">No students found.</td></tr>'; return; }
+        if (!sorted.length) { tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted p-4">No students found.</td></tr>'; return; }
         sorted.forEach(r => {
           const ageDisplay = calculateAgeFromBirthDate(r.birth_date);
           const isDuplicate = duplicateIds.has(r.id);
@@ -1210,8 +1209,6 @@
             overallScoreDisplay = `<span class="fw-700 text-sm text-grade-${scoreInfo.grade}">${scoreInfo.score.toFixed(1)}%</span>`;
             globalGradeDisplay = `<span class="grade-badge grade-${scoreInfo.grade}" style="width:28px;height:28px;font-size:0.8rem;display:inline-flex;">${scoreInfo.grade}</span>`;
           }
-          const lvlRec = r.level_id ? levelsMap.get(r.level_id) : r.levels;
-          const levelBadge = lvlRec ? `<span class="badge badge-primary" style="font-weight:700;">Level ${toLevelLetter(lvlRec.level_number)}</span>` : '<span class="text-muted">—</span>';
           const displayName = formatStudentName(r.name, r.gender);
           const tr = document.createElement('tr');
           tr.innerHTML = `
@@ -1222,7 +1219,6 @@
             <td class="text-muted text-sm">${escapeHtml(r.programs?.name || '—')}</td>
             <td class="text-muted text-sm">${escapeHtml(r.classes?.name || '—')}</td>
             <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(r.batches?.name || '—')}</td>
-            <td class="text-center text-sm">${levelBadge}</td>
             <td class="text-center text-muted text-sm" style="text-transform:capitalize;">${escapeHtml(r.gender || '—')}</td>
             <td class="text-center text-muted text-sm">${escapeHtml(r.birth_date || '—')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${ageDisplay}</span></td>
             <td class="text-center">${overallScoreDisplay}</td>
@@ -1296,6 +1292,52 @@
         th.style.transition = 'background 0.15s';
         th.addEventListener('mouseenter', () => th.style.background = 'rgba(255,255,255,0.04)');
         th.addEventListener('mouseleave', () => th.style.background = '');
+      });
+
+      // ── Export Students to CSV ──
+      document.getElementById('students-export-btn')?.addEventListener('click', () => {
+        const exportData = getSortedData(getFilteredData());
+        if (!exportData.length) { showToast('No students to export.', 'warning'); return; }
+
+        const escCsv = (v) => {
+          const s = String(v ?? '').replace(/"/g, '""');
+          return /[,"\n\r]/.test(s) ? `"${s}"` : s;
+        };
+
+        const headers = [
+          'Name', 'Title', 'Gender', 'Birth Date', 'Age',
+          'Program', 'Class', 'Batch',
+          'Overall Score (%)', 'Global Grade', 'Status'
+        ];
+
+        const rows = exportData.map(r => {
+          const scoreInfo = studentScoreMap.get(r.id);
+          const title = (r.gender || '').toLowerCase() === 'male' ? 'Mr.' : (r.gender || '').toLowerCase() === 'female' ? 'Miss' : '';
+          const age = calculateAgeFromBirthDate(r.birth_date);
+          return [
+            r.name || '',
+            title,
+            r.gender || '',
+            r.birth_date || '',
+            age,
+            r.programs?.name || '',
+            r.classes?.name || '',
+            r.batches?.name || '',
+            scoreInfo ? scoreInfo.score.toFixed(1) : '',
+            scoreInfo ? scoreInfo.grade : '',
+            r.is_active ? 'Active' : 'Inactive'
+          ].map(escCsv).join(',');
+        });
+
+        const csvContent = [headers.map(escCsv).join(','), ...rows].join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `Students_Export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       });
     }
 

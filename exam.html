@@ -484,7 +484,7 @@
       card.innerHTML = `
         <div class="d-flex align-center justify-between flex-wrap gap-2 mb-3">
           <div class="question-number" style="margin-bottom:0;">Question ${idx + 1} of ${answerRows.length}</div>
-          ${wordType ? `<span id="word-type-badge" class="badge badge-info word-type-badge" style="font-size:0.75rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:4px 10px;border-radius:12px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);">🏷️ ${escapeHtml(wordType)}</span>` : ''}
+          ${wordType ? `<span id="word-type-badge" class="badge badge-info word-type-badge" style="font-size:0.75rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:4px 10px;border-radius:12px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);"># ${escapeHtml(wordType)}</span>` : ''}
         </div>
         <div class="question-text">${questionText}</div>
         <div id="answer-area"></div>
@@ -492,7 +492,7 @@
           <button class="btn btn-secondary" id="prev-btn" ${idx === 0 ? 'disabled' : ''}>← Previous</button>
           <div class="d-flex gap-3">
             ${idx === answerRows.length - 1
-              ? `<button class="btn btn-success" id="submit-exam-btn">Submit Exam ✓</button>`
+              ? `<button class="btn btn-success" id="submit-exam-btn">Submit Exam</button>`
               : `<button class="btn btn-primary" id="next-btn">Next →</button>`
             }
           </div>
