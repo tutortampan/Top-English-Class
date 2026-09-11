@@ -284,7 +284,7 @@
 }
 
 .dashboard-header {
-  padding: var(--space-6) var(--space-6) var(--space-4);
+  padding: clamp(1rem, 3vw, 1.5rem) clamp(1.25rem, 4vw, 2rem) clamp(0.75rem, 2vw, 1rem);
   border-bottom: 1px solid var(--clr-border);
   display: flex;
   align-items: center;
@@ -330,7 +330,7 @@
 }
 
 .dashboard-content {
-  padding: var(--space-8) var(--space-6);
+  padding: clamp(1rem, 4vw, 2.5rem) clamp(1rem, 5vw, 3rem);
   max-width: 1200px;
   margin-inline: auto;
 }

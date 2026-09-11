@@ -15,8 +15,8 @@
 
 /* Sidebar */
 .admin-sidebar {
-  width: 250px;
-  min-width: 250px;
+  width: clamp(200px, 18vw, 240px);
+  min-width: 200px;
   height: 100vh;
   max-height: 100vh;
   background: rgba(10, 15, 28, 0.98); /* Sleeker dark shade */
@@ -264,9 +264,9 @@
    ============================================================ */
 .admin-main {
   flex: 1;
-  margin-left: 250px;
-  width: calc(100vw - 250px);
-  max-width: calc(100vw - 250px); /* CRITICAL: Prevent table overflow pushing page */
+  margin-left: clamp(200px, 18vw, 240px);
+  width: calc(100vw - clamp(200px, 18vw, 240px));
+  max-width: calc(100vw - clamp(200px, 18vw, 240px)); /* CRITICAL: Prevent table overflow pushing page */
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
@@ -301,7 +301,7 @@
 
 .admin-content {
   flex: 1;
-  padding: var(--space-8) var(--space-6);
+  padding: clamp(1.25rem, 3.5vw, 2.5rem) clamp(1.25rem, 4vw, 3rem);
 }
 
 /* ============================================================
