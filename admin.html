@@ -3814,11 +3814,6 @@
             try {
               return await adminInsert('students', p);
             } catch (e) {
-
-                _dbHasLevelId = false;
-
-                return await adminInsert('students', p);
-              }
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
                 _dbHasBatchId = false;
                 showToast('⚠️ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
@@ -3848,11 +3843,6 @@
             try {
               return await adminUpdate('students', id, p);
             } catch (e) {
-
-                _dbHasLevelId = false;
-
-                return await adminUpdate('students', id, p);
-              }
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
                 _dbHasBatchId = false;
                 showToast('⚠️ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
