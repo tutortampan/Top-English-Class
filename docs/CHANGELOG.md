@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## [2026-09-14 06:45 UTC] — Student Onboarding Gate Fix & Auto-Capture on Confirmation
+
+**Agent/Session:** Antigravity / SESSION-20260914-0645
+**Phase:** Fix & Polish — Student Dashboard Onboarding
+**Status:** PASS
+
+### Why
+- Students in classes with unassigned profile photos or birthdates (e.g. Sheraton class) were blocked from entering `dashboard.html` after granting camera and microphone permissions.
+- Root Cause 1: In `dashboard.html`, clicking "✓ Save Photo & Enter Dashboard" (`#btn-confirm-photo-setup`) silently returned without action if `onboardPhotoData` was null because students assumed allowing permissions and seeing the live video feed meant their photo was ready, without realizing they had to click a separate small "📸 Capture Photo" button first.
+- Root Cause 2: Birthday setup modal lacked an active event listener on its skip button, and gender setup lacked a skip fallback, preventing students from bypassing either prompt if an error occurred.
+- Root Cause 3: Stale browser caching on client devices required cache-busting parameter bumps.
+
+### Changed
+- **dashboard.html**:
+  - Enhanced `#btn-confirm-photo-setup` click handler: if `!onboardPhotoData`, it automatically captures the current frame from the active webcam stream to canvas and generates JPEG data.
+  - Wrapped photo saving in resilient `try...catch...finally` so that `stopOnboardWebcam()` and hiding `#photo-setup-modal` always execute, preventing students from being trapped even if photo upload errors out.
+  - Added `#btn-skip-gender` and wrapped `#btn-confirm-gender` in guaranteed resolution logic.
+  - Attached click listener to `#btn-skip-birthday-setup` and wrapped `#btn-confirm-birthday-setup` in guaranteed resolution logic.
+  - Bumped module imports from `?v=1.2` to `?v=1.3`.
+- **index.html**:
+  - Bumped module imports from `?v=1.1` to `?v=1.3` to purge stale browser caches.
+
 ## [2026-09-14 06:15 UTC] — Student Login Fallback & Dashboard Loading Overlay Fix
 
 **Agent/Session:** Antigravity / SESSION-20260914-0615

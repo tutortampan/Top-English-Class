@@ -615,6 +615,9 @@
           <button class="btn btn-primary btn-block" id="btn-confirm-gender" disabled style="padding:var(--space-3) var(--space-6);font-size:1rem;font-weight:700;">
             Confirm &amp; Continue →
           </button>
+          <button type="button" class="btn btn-ghost btn-block" id="btn-skip-gender" style="margin-top:var(--space-2);font-size:0.85rem;color:var(--clr-text-3);">
+            Skip for now &amp; Continue →
+          </button>
         </div>
       </div>
     </div>
@@ -664,7 +667,7 @@
             </div>
           </div>
 
-          <button class="btn btn-primary btn-block" id="btn-confirm-photo-setup" disabled style="padding:var(--space-3) var(--space-6);font-size:1rem;font-weight:700;">
+          <button class="btn btn-primary btn-block" id="btn-confirm-photo-setup" style="padding:var(--space-3) var(--space-6);font-size:1rem;font-weight:700;">
             ✓ Save Photo &amp; Enter Dashboard
           </button>
           <button type="button" class="btn btn-ghost btn-block" id="btn-skip-photo-setup" style="margin-top:var(--space-2);font-size:0.85rem;color:var(--clr-text-3);">
@@ -677,7 +680,7 @@
   </main>
 
   <!-- Birthday Setup Modal -->
-  <div id="birthday-setup-modal" class="modal-backdrop hidden" style="z-index: 100000; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; position: fixed; inset: 0;">
+  <div id="birthday-setup-modal" class="modal-backdrop hidden" style="z-index: 100000; background: rgba(0,0,0,0.85); position: fixed; inset: 0;">
     <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
       <h2 style="margin-top: 0; color: #1e293b; font-size: 1.5rem; font-weight: 700;">Complete Your Profile</h2>
       <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1.5rem;">
@@ -687,15 +690,18 @@
         <label style="display: block; font-size: 0.85rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">Date of Birth</label>
         <input type="date" id="onboard-birth-date" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;">
       </div>
-      <button id="btn-confirm-birthday-setup" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 8px;">✓ Save & Continue</button>
+      <button id="btn-confirm-birthday-setup" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 8px;">✓ Save &amp; Continue</button>
+      <button type="button" id="btn-skip-birthday-setup" class="btn btn-ghost" style="width: 100%; margin-top: 0.5rem; font-size: 0.85rem; color: #64748b;">
+        Skip for now &amp; Continue →
+      </button>
     </div>
   </div>
 
   <script type="module">
-    import { fetchStudentSubjects, fetchLevels, fetchStudentProgress, fetchExamsForStudentLevel, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, formatStudentName, toLevelLetter } from './js/api.js?v=1.2';
-    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=1.2';
-    import { showToast, showLoading, hideLoading, getGrade } from './js/app.js?v=1.2';
-    import { testMicrophoneCapability } from './js/speech.js?v=1.2';
+    import { fetchStudentSubjects, fetchLevels, fetchStudentProgress, fetchExamsForStudentLevel, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, formatStudentName, toLevelLetter } from './js/api.js?v=1.3';
+    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=1.3';
+    import { showToast, showLoading, hideLoading, getGrade } from './js/app.js?v=1.3';
+    import { testMicrophoneCapability } from './js/speech.js?v=1.3';
 
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
@@ -866,45 +872,58 @@
       modal.classList.remove('hidden');
 
       return new Promise((resolve) => {
+        let isResolved = false;
+        const doResolve = () => {
+          if (!isResolved) {
+            isResolved = true;
+            modal.classList.add('hidden');
+            resolve();
+          }
+        };
+
+        document.getElementById('btn-skip-gender')?.addEventListener('click', () => {
+          doResolve();
+        });
+
         optMale.onclick = () => {
-        selectedGender = 'male';
-        optMale.style.borderColor = 'var(--clr-primary)';
-        optMale.style.background = 'rgba(99, 102, 241, 0.15)';
-        optMale.style.boxShadow = '0 0 0 2px var(--clr-primary)';
-        optFemale.style.borderColor = 'var(--clr-border)';
-        optFemale.style.background = 'rgba(255, 255, 255, 0.03)';
-        optFemale.style.boxShadow = 'none';
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Confirm as Male (Mr.) →';
-      };
-
-      optFemale.onclick = () => {
-        selectedGender = 'female';
-        optFemale.style.borderColor = 'var(--clr-accent-1)';
-        optFemale.style.background = 'rgba(236, 72, 153, 0.15)';
-        optFemale.style.boxShadow = '0 0 0 2px var(--clr-accent-1)';
-        optMale.style.borderColor = 'var(--clr-border)';
-        optMale.style.background = 'rgba(255, 255, 255, 0.03)';
-        optMale.style.boxShadow = 'none';
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Confirm as Female (Miss) →';
-      };
-
-      confirmBtn.onclick = async () => {
-        if (!selectedGender) return;
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = 'Saving…';
-        try {
-          await updateStudentGender(session.student_id, selectedGender);
-          applyStudentGenderUI(selectedGender);
-          modal.classList.add('hidden');
-          showToast(`Welcome, ${session.student_name}! Your title has been personalized.`, 'success');
-          resolve();
-        } catch (err) {
+          selectedGender = 'male';
+          optMale.style.borderColor = 'var(--clr-primary)';
+          optMale.style.background = 'rgba(99, 102, 241, 0.15)';
+          optMale.style.boxShadow = '0 0 0 2px var(--clr-primary)';
+          optFemale.style.borderColor = 'var(--clr-border)';
+          optFemale.style.background = 'rgba(255, 255, 255, 0.03)';
+          optFemale.style.boxShadow = 'none';
           confirmBtn.disabled = false;
-          showToast('Failed to save gender: ' + err.message, 'error');
-        }
-      };
+          confirmBtn.textContent = 'Confirm as Male (Mr.) →';
+        };
+
+        optFemale.onclick = () => {
+          selectedGender = 'female';
+          optFemale.style.borderColor = 'var(--clr-accent-1)';
+          optFemale.style.background = 'rgba(236, 72, 153, 0.15)';
+          optFemale.style.boxShadow = '0 0 0 2px var(--clr-accent-1)';
+          optMale.style.borderColor = 'var(--clr-border)';
+          optMale.style.background = 'rgba(255, 255, 255, 0.03)';
+          optMale.style.boxShadow = 'none';
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Confirm as Female (Miss) →';
+        };
+
+        confirmBtn.onclick = async () => {
+          if (!selectedGender) return;
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Saving…';
+          try {
+            await updateStudentGender(session.student_id, selectedGender);
+            applyStudentGenderUI(selectedGender);
+            showToast(`Welcome, ${session.student_name}! Your title has been personalized.`, 'success');
+          } catch (err) {
+            console.warn('Failed to save gender:', err);
+            showToast('Continuing to dashboard: ' + err.message, 'warning');
+          } finally {
+            doResolve();
+          }
+        };
       });
     }
 
@@ -915,6 +934,7 @@
     async function startOnboardWebcam() {
       const video = document.getElementById('webcam-stream');
       const overlay = document.getElementById('camera-loading-overlay');
+      const confirmBtn = document.getElementById('btn-confirm-photo-setup');
       if (!video) return;
 
       if (overlay) overlay.classList.remove('hidden');
@@ -926,13 +946,21 @@
           video.srcObject = webcamStream;
           video.classList.remove('hidden');
           if (overlay) overlay.classList.add('hidden');
+          if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = '✓ Save Photo & Enter Dashboard';
+          }
         } else {
           throw new Error('Webcam not supported.');
         }
       } catch (err) {
         console.warn('Webcam initialization notice:', err.message);
         if (overlay) {
-          overlay.innerHTML = `<span style="text-align:center;padding:10px;">📷 Camera preview unavailable.<br><span class="text-xs text-muted">Please use "Upload Image File" below.</span></span>`;
+          overlay.innerHTML = `<span style="text-align:center;padding:10px;">📷 Camera preview unavailable.<br><span class="text-xs text-muted">Please use "Upload Image File" below or click Skip.</span></span>`;
+        }
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Continue to Dashboard →';
         }
       }
     }
@@ -1044,20 +1072,47 @@
 
     // Save and enter dashboard
     document.getElementById('btn-confirm-photo-setup')?.addEventListener('click', async () => {
-      if (!onboardPhotoData) return;
       const btn = document.getElementById('btn-confirm-photo-setup');
       btn.disabled = true;
-      btn.textContent = 'Saving photo…';
+      btn.textContent = 'Entering dashboard…';
+      
       try {
-        await uploadStudentPhoto(session.student_id, onboardPhotoData);
-        applyPhotoEverywhere(onboardPhotoData);
+        // If student did not manually click "Capture Photo", auto-capture from active webcam stream!
+        if (!onboardPhotoData) {
+          const video = document.getElementById('webcam-stream');
+          const canvas = document.getElementById('webcam-canvas');
+          if (video && canvas && webcamStream) {
+            try {
+              canvas.width = 320;
+              canvas.height = 320;
+              const ctx = canvas.getContext('2d');
+              ctx.translate(320, 0);
+              ctx.scale(-1, 1);
+              ctx.drawImage(video, 0, 0, 320, 320);
+              onboardPhotoData = canvas.toDataURL('image/jpeg', 0.85);
+            } catch (snapErr) {
+              console.warn('Auto-snapshot capture failed:', snapErr);
+            }
+          }
+        }
+
+        if (onboardPhotoData) {
+          btn.textContent = 'Saving photo…';
+          try {
+            await uploadStudentPhoto(session.student_id, onboardPhotoData);
+            applyPhotoEverywhere(onboardPhotoData);
+            showToast('Profile photo registered successfully! Welcome to your dashboard.', 'success');
+          } catch (uploadErr) {
+            console.warn('Photo upload warning:', uploadErr);
+            applyPhotoEverywhere(onboardPhotoData);
+            showToast('Photo captured! Continuing to dashboard.', 'info');
+          }
+        }
+      } catch (err) {
+        console.warn('Photo setup flow error:', err);
+      } finally {
         stopOnboardWebcam();
         document.getElementById('photo-setup-modal').classList.add('hidden');
-        showToast('Profile photo registered successfully! Welcome to your dashboard.', 'success');
-      } catch (err) {
-        btn.disabled = false;
-        btn.textContent = '✓ Save Photo & Enter Dashboard';
-        showToast('Failed to save photo: ' + err.message, 'error');
       }
     });
 
@@ -1122,11 +1177,24 @@
       modal.classList.remove('hidden');
 
       return new Promise((resolve) => {
-        document.getElementById('btn-confirm-birthday-setup').addEventListener('click', async () => {
+        let isResolved = false;
+        const doResolve = () => {
+          if (!isResolved) {
+            isResolved = true;
+            modal.classList.add('hidden');
+            resolve();
+          }
+        };
+
+        document.getElementById('btn-skip-birthday-setup')?.addEventListener('click', () => {
+          doResolve();
+        });
+
+        document.getElementById('btn-confirm-birthday-setup')?.addEventListener('click', async () => {
           const bdInput = document.getElementById('onboard-birth-date');
-          const bd = bdInput.value;
+          const bd = bdInput?.value;
           if (!bd) {
-            showToast('Please select a valid date of birth.', 'warning');
+            showToast('Please select your date of birth, or click Skip.', 'warning');
             return;
           }
 
@@ -1136,13 +1204,12 @@
           
           try {
             await updateStudentBirthday(session.student_id, bd);
-            modal.classList.add('hidden');
             showToast('Birthday registered successfully!', 'success');
-            resolve();
           } catch (err) {
-            btn.disabled = false;
-            btn.textContent = '✓ Save & Continue';
-            showToast('Error saving birthday: ' + err.message, 'error');
+            console.warn('Error saving birthday:', err);
+            showToast('Could not save birthday, continuing: ' + err.message, 'warning');
+          } finally {
+            doResolve();
           }
         });
       });
