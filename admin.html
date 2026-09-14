@@ -509,10 +509,30 @@
     function showConsole() {
       document.getElementById('admin-login-screen').classList.add('hidden');
       document.getElementById('admin-console').classList.remove('hidden');
-      activatePrimaryTab('exam');
-      loadSection('exams');
+      const hash = window.location.hash.substring(1);
+      if (hash && (sectionTitles[hash] || hash === 'students')) {
+        loadSection(hash, true);
+      } else if (hash && hash.startsWith('profile-')) {
+        const studentId = hash.replace('profile-', '');
+        activatePrimaryTab('student');
+        openStudentProfile(studentId, [], true);
+      } else {
+        activatePrimaryTab('exam');
+        loadSection('exams', true);
+      }
       initConnectionBanner(); // Check live DB connection and show status banner
     }
+    
+    window.addEventListener('popstate', (e) => {
+      const hash = window.location.hash.substring(1);
+      if (hash && (sectionTitles[hash] || hash === 'students')) {
+        loadSection(hash, true);
+      } else if (hash && hash.startsWith('profile-')) {
+        const studentId = hash.replace('profile-', '');
+        const batchStudentIds = e.state?.batchStudentIds || [];
+        openStudentProfile(studentId, batchStudentIds, true);
+      }
+    });
 
     function activatePrimaryTab(panel) {
       // Update mobile bottom tabs (these exist in the DOM)
@@ -658,7 +678,13 @@
       return atype.replace('_', ' ');
     }
 
-    async function loadSection(section) {
+    let _currentSection = null;
+    async function loadSection(section, skipHistory = false) {
+      if (!section) return;
+      if (!skipHistory && window.location.hash.substring(1) !== section) {
+        window.history.pushState(null, '', \`#\${section}\`);
+      }
+      _currentSection = section;
       if (typeof window._cleanupProfileView === 'function') {
         window._cleanupProfileView();
         window._cleanupProfileView = null;
@@ -1561,7 +1587,13 @@
     }
 
     // ── INDIVIDUAL STUDENT PROFILE (Detailed Progress, Correct/Incorrect Counts, Batch Navigation) ──
-    async function openStudentProfile(studentId, batchStudentIds = []) {
+    async function openStudentProfile(studentId, batchStudentIds = [], skipHistory = false) {
+      if (!skipHistory) {
+         const hashState = \`profile-\${studentId}\`;
+         if (window.location.hash.substring(1) !== hashState) {
+            window.history.pushState({ batchStudentIds }, '', \`#\${hashState}\`);
+         }
+      }
       if (typeof window._cleanupProfileView === 'function') {
         window._cleanupProfileView();
         window._cleanupProfileView = null;
