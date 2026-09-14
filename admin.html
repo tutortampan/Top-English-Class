@@ -1202,17 +1202,7 @@
 
       // Wire merge duplicates buttons
       const runMergeDuplicates = async () => {
-        if (!confirm(`Merge ${totalDuplicates} duplicate student profiles into primary profiles? All exam histories and progress will be unified.`)) return;
-        showLoading('Merging duplicate student data...');
-        try {
-          const res = await mergeDuplicateStudents();
-          hideLoading();
-          showToast(`Successfully merged ${res.mergedCount} duplicate student records from ${res.groupsCount} groups!`, 'success');
-          loadSection('students');
-        } catch(err) {
-          hideLoading();
-          showToast(`Gagal merge siswa: ${err.message}`, 'error');
-        }
+        openDuplicateStudentsModal();
       };
 
       document.getElementById('students-merge-shortcut')?.addEventListener('click', runMergeDuplicates);
@@ -2044,6 +2034,7 @@
               <button class="btn btn-primary btn-sm" id="hub-add-exam">+ Create Exam</button>
               <button class="btn btn-secondary btn-sm" id="hub-import-q">📥 Import Questions</button>
               <button class="btn btn-secondary btn-sm" id="hub-export-q">📤 Export Questions</button>
+              <button class="btn btn-warning btn-sm" id="hub-resolve-q" style="font-weight:700;">⚡ Resolve Duplicates</button>
             </div>
           </div>
 
@@ -2116,6 +2107,7 @@
       document.getElementById('hub-add-exam')?.addEventListener('click', () => openCrudModal('exams', null));
       document.getElementById('hub-import-q')?.addEventListener('click', () => loadSection('import-questions'));
       document.getElementById('hub-export-q')?.addEventListener('click', () => loadSection('export-questions'));
+      document.getElementById('hub-resolve-q')?.addEventListener('click', () => openDuplicateQuestionsModal());
 
       const tbody = document.getElementById('tbl-exams');
       window._examRecords = {};
@@ -5048,6 +5040,270 @@
     // Modal close handlers
     ['close-crud-modal','crud-cancel-btn'].forEach(id => document.getElementById(id).addEventListener('click', () => crudModal.classList.add('hidden')));
     ['delete-cancel-btn'].forEach(id => document.getElementById(id).addEventListener('click', () => document.getElementById('delete-modal').classList.add('hidden')));
+
+    // --- DUPLICATE STUDENTS MODAL LOGIC ---
+    const dupStudModal = document.getElementById('duplicate-students-modal');
+    const dupStudContent = document.getElementById('dup-students-content');
+    let currentDupStudScope = 'same_class';
+    let dupStudentGroups = [];
+
+    async function openDuplicateStudentsModal() {
+      dupStudModal.classList.remove('hidden');
+      await loadDuplicateStudents(currentDupStudScope);
+    }
+
+    document.getElementById('close-dup-students-modal')?.addEventListener('click', () => {
+      dupStudModal.classList.add('hidden');
+      loadSection('students'); // Refresh list when closed
+    });
+
+    document.querySelectorAll('.dup-stud-tab-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        document.querySelectorAll('.dup-stud-tab-btn').forEach(b => {
+          b.classList.remove('btn-primary');
+          b.classList.add('btn-secondary');
+        });
+        const target = e.currentTarget;
+        target.classList.remove('btn-secondary');
+        target.classList.add('btn-primary');
+        currentDupStudScope = target.dataset.scope;
+        await loadDuplicateStudents(currentDupStudScope);
+      });
+    });
+
+    async function loadDuplicateStudents(scope) {
+      dupStudContent.innerHTML = '<div class="empty-state p-6 text-center"><div class="spinner"></div><p>Scanning for duplicates...</p></div>';
+      try {
+        const data = await detectDuplicateStudents(scope);
+        dupStudentGroups = data.groups;
+        
+        // Update counters
+        if (scope === 'same_class') document.getElementById('dup-stud-same-count').textContent = data.totalDuplicates;
+        else document.getElementById('dup-stud-cross-count').textContent = data.totalDuplicates;
+
+        if (dupStudentGroups.length === 0) {
+          dupStudContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No duplicate students found.</p></div>';
+          return;
+        }
+
+        let html = '';
+        dupStudentGroups.forEach((group, gIdx) => {
+          html += `
+            <div class="card p-4" style="border-left:4px solid var(--clr-primary);">
+              <div class="fw-700 mb-2">Duplicate Group ${gIdx + 1} — Name: "${escapeHtml(group[0].name)}"</div>
+              <table class="table-sm w-100 mb-3 text-sm">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Class</th>
+                    <th>Program</th>
+                    <th>Created At</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+          `;
+          group.forEach((student, sIdx) => {
+            html += `
+                  <tr style="${sIdx === 0 ? 'background:rgba(74, 222, 128, 0.1);' : ''}">
+                    <td>${student.id.substring(0,8)}...</td>
+                    <td>${escapeHtml(student.classes?.name || '-')}</td>
+                    <td>${escapeHtml(student.programs?.name || '-')}</td>
+                    <td>${new Date(student.created_at).toLocaleString()}</td>
+                    <td>${sIdx === 0 ? '<span class="badge badge-success">Primary Target</span>' : `<button class="btn btn-warning btn-sm btn-merge-student" data-primary="${group[0].id}" data-secondary="${student.id}">Merge to Primary</button>`}</td>
+                  </tr>
+            `;
+          });
+          html += `
+                </tbody>
+              </table>
+            </div>
+          `;
+        });
+        dupStudContent.innerHTML = html;
+
+        // Attach merge listeners
+        document.querySelectorAll('.btn-merge-student').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const primaryId = e.currentTarget.dataset.primary;
+            const secondaryId = e.currentTarget.dataset.secondary;
+            if(!confirm('Merge this student into the primary? All exam attempts and progress will be transferred, and this duplicate profile will be soft-deleted. This cannot be undone.')) return;
+            
+            e.currentTarget.disabled = true;
+            e.currentTarget.innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
+            try {
+              const res = await mergeStudentPair(primaryId, secondaryId);
+              showToast(`Successfully merged student! Transferred ${res.transferredAttempts} attempts and ${res.transferredProgress} progress records.`, 'success');
+              await loadDuplicateStudents(currentDupStudScope); // Refresh
+            } catch(err) {
+              showToast(`Merge failed: ${err.message}`, 'error');
+              e.currentTarget.disabled = false;
+              e.currentTarget.textContent = 'Merge to Primary';
+            }
+          });
+        });
+
+      } catch(err) {
+        dupStudContent.innerHTML = `<div class="empty-state p-6 text-center text-danger"><p>Error loading duplicates: ${err.message}</p></div>`;
+      }
+    }
+
+    document.getElementById('btn-merge-all-visible-students')?.addEventListener('click', async () => {
+      if (dupStudentGroups.length === 0) return;
+      if (!confirm(`Are you sure you want to quick-merge ALL ${dupStudentGroups.length} visible groups into their respective primary profiles?`)) return;
+      
+      showLoading('Batch merging duplicate students...');
+      try {
+        let successCount = 0;
+        for (const group of dupStudentGroups) {
+          const primaryId = group[0].id;
+          for (let i = 1; i < group.length; i++) {
+            await mergeStudentPair(primaryId, group[i].id);
+            successCount++;
+          }
+        }
+        hideLoading();
+        showToast(`Successfully processed batch merge (${successCount} records merged).`, 'success');
+        await loadDuplicateStudents(currentDupStudScope);
+      } catch (err) {
+        hideLoading();
+        showToast(`Batch merge interrupted: ${err.message}`, 'error');
+        await loadDuplicateStudents(currentDupStudScope);
+      }
+    });
+
+    // --- DUPLICATE QUESTIONS MODAL LOGIC ---
+    const dupQModal = document.getElementById('duplicate-questions-modal');
+    const dupQContent = document.getElementById('dup-questions-content');
+    const dupQExamSelect = document.getElementById('dup-q-exam-select');
+
+    async function openDuplicateQuestionsModal() {
+      dupQModal.classList.remove('hidden');
+      
+      // Populate exam select
+      try {
+        const exams = await adminFetchAll('exams', 'id, exam_title, exam_status');
+        const sortedExams = exams.sort((a, b) => a.exam_title.localeCompare(b.exam_title));
+        dupQExamSelect.innerHTML = '<option value="">— All Exams (Global Search) —</option>' + 
+          sortedExams.map(e => `<option value="${e.id}">${escapeHtml(e.exam_title)} (${e.exam_status})</option>`).join('');
+      } catch(e) { console.error("Could not load exams for duplicate select:", e); }
+        
+      await loadDuplicateQuestions();
+    }
+
+    document.getElementById('close-dup-questions-modal')?.addEventListener('click', () => {
+      dupQModal.classList.add('hidden');
+    });
+
+    dupQExamSelect?.addEventListener('change', () => loadDuplicateQuestions());
+
+    async function loadDuplicateQuestions() {
+      dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><div class="spinner"></div><p>Scanning for duplicate questions...</p></div>';
+      try {
+        const examId = dupQExamSelect.value || null;
+        const data = await detectDuplicateQuestions(examId);
+        
+        document.getElementById('dup-q-same-count').textContent = data.totalDuplicates;
+
+        if (data.groups.length === 0) {
+          dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No duplicate questions found.</p></div>';
+          return;
+        }
+
+        let html = '';
+        data.groups.forEach((group, gIdx) => {
+          // Group by exam
+          const examTitle = group[0].exams?.exam_title || 'Unknown Exam';
+          html += `
+            <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-warning);">
+              <div class="d-flex justify-between align-center mb-2 flex-wrap gap-2">
+                <div class="fw-700">Duplicate Question in: ${escapeHtml(examTitle)}</div>
+                <button class="btn btn-warning btn-sm btn-resolve-q-group" data-primary="${group[0].id}">Auto-Resolve Group</button>
+              </div>
+              <div class="text-sm mb-3 px-3 py-2 rounded" style="background:var(--clr-surface-2); border:1px solid var(--clr-border);">
+                <strong>Text:</strong> ${escapeHtml(group[0].question_text)}
+              </div>
+              <table class="table-sm w-100 text-xs">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Order</th>
+                    <th>Answer Type</th>
+                    <th>Created At</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+          `;
+          group.forEach((q, qIdx) => {
+            html += `
+                  <tr style="${qIdx === 0 ? 'background:rgba(74, 222, 128, 0.1);' : 'background:rgba(239, 68, 68, 0.05);'}">
+                    <td>${q.id.substring(0,8)}...</td>
+                    <td>${q.question_order}</td>
+                    <td>${escapeHtml(q.answer_type)}</td>
+                    <td>${new Date(q.created_at).toLocaleString()}</td>
+                    <td>${qIdx === 0 ? '<span class="badge badge-success">Primary (Kept)</span>' : '<span class="badge badge-error">Duplicate (Will Remove)</span>'}</td>
+                  </tr>
+            `;
+          });
+          html += `
+                </tbody>
+              </table>
+            </div>
+          `;
+        });
+        dupQContent.innerHTML = html;
+
+        // Attach resolve listeners
+        document.querySelectorAll('.btn-resolve-q-group').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const primaryId = e.currentTarget.dataset.primary;
+            // Find the group based on primaryId
+            const group = data.groups.find(g => g[0].id === primaryId);
+            if(!group) return;
+            
+            if(!confirm('Resolve this duplicate question group? All student answers tied to the duplicates will be repointed to the primary question, and the duplicates will be hard-deleted. Finally, the exam questions will be re-sequenced.')) return;
+            
+            e.currentTarget.disabled = true;
+            e.currentTarget.innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
+            try {
+              const res = await resolveDuplicateQuestionGroup(group);
+              showToast(`Resolved! Repointed ${res.repointedAnswersCount} answers. Duplicates removed.`, 'success');
+              await loadDuplicateQuestions(); // Refresh
+            } catch(err) {
+              showToast(`Resolve failed: ${err.message}`, 'error');
+              e.currentTarget.disabled = false;
+              e.currentTarget.textContent = 'Auto-Resolve Group';
+            }
+          });
+        });
+
+      } catch(err) {
+        dupQContent.innerHTML = `<div class="empty-state p-6 text-center text-danger"><p>Error loading duplicates: ${err.message}</p></div>`;
+      }
+    }
+
+    document.getElementById('btn-resolve-all-visible-questions')?.addEventListener('click', async () => {
+      const examId = dupQExamSelect.value || null;
+      if (!examId) {
+        alert("Please select a specific Exam from the filter to perform Batch Auto-Resolve.");
+        return;
+      }
+      
+      if (!confirm(`Are you sure you want to batch resolve ALL duplicate questions for this exam? This is irreversible.`)) return;
+      
+      showLoading('Batch resolving duplicate questions...');
+      try {
+        const res = await batchResolveExamDuplicateQuestions(examId);
+        hideLoading();
+        showToast(`Successfully processed exam: repointed ${res.totalRepointedAnswers} answers across ${res.groupsResolved} duplicate groups.`, 'success');
+        await loadDuplicateQuestions();
+      } catch (err) {
+        hideLoading();
+        showToast(`Batch resolve failed: ${err.message}`, 'error');
+        await loadDuplicateQuestions();
+      }
+    });
 
     // Sidebar toggle for mobile
     document.getElementById('sidebar-toggle').addEventListener('click', () => {

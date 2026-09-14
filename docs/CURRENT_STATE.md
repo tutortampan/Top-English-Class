@@ -1,11 +1,15 @@
 # CURRENT STATE
  
 Last Updated: 2026-09-14 08:08 UTC
-Current Phase: Phase 26 -- Multi-Answer & Option Delimiters (/ and ;) + Admin Student Profile & Results
-Current Task: Verification complete. All 14 delimiter/profile tests and 41 master audit tests pass.
+Current Phase: Phase 27 -- Post-Import Duplicate Detection & Resolution (Students & Questions)
+Current Task: UI connected and logic implemented.
 Status: COMPLETE
 
 ## Completed
+- **Post-Import Duplicate Detection & Resolution UI (Phase 27)**:
+  - `admin.html`: Connected JS event listeners and modal rendering logic to `duplicate-students-modal` and `duplicate-questions-modal`.
+  - Added "Resolve Duplicates" buttons to Student Management and Exam Management hubs.
+  - Implemented logic for Single Merge and Batch Auto-Resolve within the frontend.
 - **Multi-Answer & Option Delimiter Support ('/' and ';') (Phase 26)**:
   - `js/grading.js`: `parseCorrectAnswers` regex updated to `/[;|/]/`, fully supporting `/`, `;`, and `|` as equivalent OR answer delimiters for written, speaking, and choice evaluation.
   - `js/grading.js`: `stripHyphens` enhanced to strip both hyphens and spaces `/[-\s]/g` for compound words (e.g. `vacuum-clean` matches `vacuum clean`).
