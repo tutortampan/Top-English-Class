@@ -682,7 +682,7 @@
     async function loadSection(section, skipHistory = false) {
       if (!section) return;
       if (!skipHistory && window.location.hash.substring(1) !== section) {
-        window.history.pushState(null, '', \`#\${section}\`);
+        window.history.pushState(null, '', `#${section}`);
       }
       _currentSection = section;
       if (typeof window._cleanupProfileView === 'function') {
@@ -1589,9 +1589,9 @@
     // ── INDIVIDUAL STUDENT PROFILE (Detailed Progress, Correct/Incorrect Counts, Batch Navigation) ──
     async function openStudentProfile(studentId, batchStudentIds = [], skipHistory = false) {
       if (!skipHistory) {
-         const hashState = \`profile-\${studentId}\`;
+         const hashState = `profile-${studentId}`;
          if (window.location.hash.substring(1) !== hashState) {
-            window.history.pushState({ batchStudentIds }, '', \`#\${hashState}\`);
+            window.history.pushState({ batchStudentIds }, '', `#${hashState}`);
          }
       }
       if (typeof window._cleanupProfileView === 'function') {
