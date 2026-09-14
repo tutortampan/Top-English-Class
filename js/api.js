@@ -435,7 +435,7 @@ export async function fetchExamsForStudentLevel(classId, levelId, programId) {
   const sb = await getSupabase();
   let query = sb.from('exams')
     .select('*')
-    .eq('level_id', levelId)
+    
     .eq('exam_status', 'published')
     .is('deleted_at', null)
     .order('exam_title');
@@ -456,7 +456,7 @@ export async function fetchExamsForStudentLevel(classId, levelId, programId) {
     try {
       const { data: directExams } = await sb.from('exams')
         .select('*')
-        .eq('level_id', levelId)
+        
         .eq('exam_status', 'published')
         .is('deleted_at', null)
         .order('exam_title');
@@ -884,8 +884,8 @@ const MOCK_ADMIN_STORE = {
     { id: '55555555-5555-5555-5555-666666666666', program_id: '11111111-1111-1111-1111-111111111111', class_id: '22222222-2222-2222-2222-222222222222', batch_id: 'bbbbbbbb-1111-1111-1111-111111111111', name: 'Jane Smith', gender: 'female', birth_date: '2009-08-21', is_active: true, created_at: '2026-02-03T08:00:00Z' }
   ],
   exams: [
-    { id: '66666666-6666-6666-6666-666666666666', program_id: '11111111-1111-1111-1111-111111111111', subject_id: '33333333-3333-3333-3333-333333333333', level_id: '44444444-4444-4444-4444-444444444444', exam_type: 'MIDTERM', exam_title: 'Grammar Basics Exam', answer_type: 'multiple_choice', exam_status: 'published', question_order: 'sequential', time_limit_minutes: 15, minimum_required_score: 60, retake_allowed: true, created_at: '2026-02-05T08:00:00Z' },
-    { id: '66666666-6666-6666-6666-777777777777', program_id: '11111111-1111-1111-1111-111111111111', subject_id: '33333333-3333-3333-3333-333333333333', level_id: '44444444-4444-4444-4444-444444444444', exam_type: 'QUIZ', exam_title: 'Vocabulary Weekly Sprint', answer_type: 'written', exam_status: 'published', question_order: 'sequential', time_limit_minutes: 20, minimum_required_score: 60, retake_allowed: true, created_at: '2026-02-08T08:00:00Z' }
+    { id: '66666666-6666-6666-6666-666666666666', program_id: '11111111-1111-1111-1111-111111111111', subject_id: '33333333-3333-3333-3333-333333333333', exam_type: 'MIDTERM', exam_title: 'Grammar Basics Exam', answer_type: 'multiple_choice', exam_status: 'published', question_order: 'sequential', time_limit_minutes: 15, minimum_required_score: 60, retake_allowed: true, created_at: '2026-02-05T08:00:00Z' },
+    { id: '66666666-6666-6666-6666-777777777777', program_id: '11111111-1111-1111-1111-111111111111', subject_id: '33333333-3333-3333-3333-333333333333', exam_type: 'QUIZ', exam_title: 'Vocabulary Weekly Sprint', answer_type: 'written', exam_status: 'published', question_order: 'sequential', time_limit_minutes: 20, minimum_required_score: 60, retake_allowed: true, created_at: '2026-02-08T08:00:00Z' }
   ],
   exam_classes: [
     { exam_id: '66666666-6666-6666-6666-666666666666', class_id: '22222222-2222-2222-2222-222222222222', created_at: '2026-02-06T08:00:00Z' },
@@ -900,8 +900,8 @@ const MOCK_ADMIN_STORE = {
     { id: '99999999-9999-9999-9999-111111111111', student_id: '55555555-5555-5555-5555-555555555555', exam_id: '66666666-6666-6666-6666-666666666666', status: 'submitted', score: 10, percentage: 100, grade: 'S', effective_score: 100, submitted_at: '2026-02-10T10:30:00Z', created_at: '2026-02-10T10:00:00Z' }
   ],
   progress: [
-    { id: 'aaaa1111-aaaa-1111-aaaa-111111111111', student_id: '55555555-5555-5555-5555-555555555555', subject_id: '33333333-3333-3333-3333-333333333333', level_id: '44444444-4444-4444-4444-444444444444', is_unlocked: true, is_completed: true, completed_at: '2026-02-10T10:30:00Z', created_at: '2026-02-01T08:00:00Z' },
-    { id: 'aaaa1111-aaaa-1111-aaaa-222222222222', student_id: '55555555-5555-5555-5555-555555555555', subject_id: '33333333-3333-3333-3333-333333333333', level_id: '44444444-4444-4444-4444-555555555555', is_unlocked: true, is_completed: false, created_at: '2026-02-10T10:31:00Z' }
+    { id: 'aaaa1111-aaaa-1111-aaaa-111111111111', student_id: '55555555-5555-5555-5555-555555555555', subject_id: '33333333-3333-3333-3333-333333333333', is_unlocked: true, is_completed: true, completed_at: '2026-02-10T10:30:00Z', created_at: '2026-02-01T08:00:00Z' },
+    { id: 'aaaa1111-aaaa-1111-aaaa-222222222222', student_id: '55555555-5555-5555-5555-555555555555', subject_id: '33333333-3333-3333-3333-333333333333', is_unlocked: true, is_completed: false, created_at: '2026-02-10T10:31:00Z' }
   ],
   audit_logs: [
     { id: '77777777-7777-7777-7777-777777777777', actor_role: 'ADMIN', action: 'LOGIN', entity_type: 'auth', ip_address: '127.0.0.1', created_at: new Date().toISOString() }
@@ -930,8 +930,7 @@ function hydrateMockRelations(table, item) {
   } else if (table === 'exams') {
     clone.programs = store.programs.find(p => p.id === clone.program_id) || null;
     clone.subjects = store.subjects.find(s => s.id === clone.subject_id) || null;
-    clone.levels = store.levels.find(l => l.id === clone.level_id) || null;
-  } else if (table === 'questions') {
+      } else if (table === 'questions') {
     clone.exams = store.exams.find(e => e.id === clone.exam_id) || null;
   } else if (table === 'class_subjects') {
     const cls = store.classes.find(c => c.id === clone.class_id);
@@ -949,8 +948,7 @@ function hydrateMockRelations(table, item) {
     const st = store.students.find(s => s.id === clone.student_id);
     clone.students = st ? { ...st, classes: store.classes.find(c => c.id === st.class_id) } : null;
     clone.subjects = store.subjects.find(s => s.id === clone.subject_id) || null;
-    clone.levels = store.levels.find(l => l.id === clone.level_id) || null;
-  }
+      }
   return clone;
 }
 
@@ -1049,7 +1047,7 @@ export async function adminInsert(table, payload) {
         delete fallback.prerequisite_min_score;
         delete fallback.exam_order;
       } else if (normTable === 'students') {
-        delete fallback.level_id;
+        
       }
       const retry = await sb.from(normTable).insert(fallback).select().single();
       if (retry.error) throw new Error(`DB Error (${normTable}): ${retry.error.message}`);
@@ -1093,10 +1091,9 @@ export async function adminInsert(table, payload) {
           await sb.from('progress').upsert({
             student_id: data.id,
             subject_id: s.id,
-            level_id: payload.level_id,
             is_unlocked: true,
             updated_at: new Date().toISOString()
-          }, { onConflict: 'student_id,subject_id,level_id' });
+          }, { onConflict: 'student_id,subject_id' });
         }
       }
     } catch (progErr) {
@@ -1164,7 +1161,7 @@ export async function adminUpdate(table, id, payload) {
         delete fallback.prerequisite_min_score;
         delete fallback.exam_order;
       } else if (normTable === 'students') {
-        delete fallback.level_id;
+        
       } else if (normTable === 'questions') {
         delete fallback.previous_correct_answer;
         delete fallback.last_edited_at;
@@ -1213,10 +1210,9 @@ export async function adminUpdate(table, id, payload) {
           await sb.from('progress').upsert({
             student_id: id,
             subject_id: s.id,
-            level_id: payload.level_id,
             is_unlocked: true,
             updated_at: new Date().toISOString()
-          }, { onConflict: 'student_id,subject_id,level_id' });
+          }, { onConflict: 'student_id,subject_id' });
         }
       }
     } catch (progErr) {
@@ -1570,7 +1566,7 @@ export async function detectDuplicateStudents(scope = 'same_class') {
   const [students, attempts, progress] = await Promise.all([
     adminFetchAll('students', '*, classes(id, name, program_id, programs(name)), batches(id, name)'),
     adminFetchAll('attempts', 'id, student_id, score, percentage, grade, status'),
-    adminFetchAll('progress', 'id, student_id, subject_id, level_id')
+    adminFetchAll('progress', 'id, student_id, subject_id')
   ]);
 
   const activeStudents = (students || []).filter(s => !s.deleted_at);
@@ -1740,7 +1736,7 @@ export async function previewRecalibrateExam(examId) {
 
   // 1. Load exam
   const { data: exam, error: examErr } = await sb.from('exams')
-    .select('id, exam_title, display_name, minimum_required_score, subject_id, level_id, program_id')
+    .select('id, exam_title, display_name, minimum_required_score, subject_id, program_id')
     .eq('id', examId)
     .single();
   if (examErr || !exam) throw new Error('Exam not found: ' + (examErr?.message || examId));
@@ -1953,13 +1949,12 @@ export async function applyRecalibrateExam(examId, adminIdentifier = 'admin') {
       try {
         await sb.from('progress').upsert({
           student_id: diff.studentId,
-          subject_id: preview.exam.subject_id,
-          level_id: preview.exam.level_id,
+          subject_id: preview.exam.subject_id: preview.exam.level_id,
           is_unlocked: true,
           is_completed: isPassed,
           completed_at: isPassed ? new Date().toISOString() : null,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'student_id,subject_id,level_id' });
+        }, { onConflict: 'student_id,subject_id' });
       } catch (progErr) {
         console.warn('Progress update warning during recalibration:', progErr.message);
       }

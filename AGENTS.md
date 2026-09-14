@@ -52,15 +52,14 @@ PROGRAM
   │     └── STUDENT
   │
   └── SUBJECT
-        └── LEVEL
-              └── EXAM
-                    └── QUESTION
+        └── EXAM
+              └── QUESTION
 
 STUDENT + EXAM
   └── ATTEMPT
         └── ATTEMPT ANSWER
 
-STUDENT + SUBJECT + LEVEL
+STUDENT + SUBJECT
   └── PROGRESS
 ```
 

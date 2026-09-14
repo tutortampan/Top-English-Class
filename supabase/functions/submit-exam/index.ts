@@ -187,67 +187,46 @@ Deno.serve(async (req) => {
 async function updateProgression(supabase: any, studentId: string, examId: string) {
   try {
     // Get exam details
-    const { data: exam } = await supabase.from("exams").select("subject_id, level_id, minimum_required_score").eq("id", examId).single();
-    if (!exam) return;
+    const { data: exam } = await supabase.from("exams").select("subject_id, minimum_required_score").eq("id", examId).single();
+    if (!exam || !exam.subject_id) return;
 
-    // Get all exams in this level
-    const { data: levelExams } = await supabase.from("exams")
+    // Get all exams in this subject
+    const { data: subjectExams } = await supabase.from("exams")
       .select("id, minimum_required_score")
-      .eq("level_id", exam.level_id)
+      .eq("subject_id", exam.subject_id)
       .eq("exam_status", "published")
       .is("deleted_at", null);
 
-    if (!levelExams?.length) return;
+    if (!subjectExams?.length) return;
 
     // Get student's highest scores per exam
     let allPassed = true;
-    for (const lExam of levelExams) {
+    for (const sExam of subjectExams) {
       const { data: bestAttempt } = await supabase
         .from("attempts")
         .select("percentage")
         .eq("student_id", studentId)
-        .eq("exam_id", lExam.id)
+        .eq("exam_id", sExam.id)
         .in("status", ["submitted", "auto_submitted"])
         .order("percentage", { ascending: false })
         .limit(1)
         .single();
 
-      if (!bestAttempt || bestAttempt.percentage < (lExam.minimum_required_score || 60)) {
+      if (!bestAttempt || bestAttempt.percentage < (sExam.minimum_required_score || 60)) {
         allPassed = false;
         break;
       }
     }
 
-    // Update current level completion
+    // Update subject completion
     await supabase.from("progress").upsert({
       student_id: studentId,
       subject_id: exam.subject_id,
-      level_id: exam.level_id,
       is_unlocked: true,
       is_completed: allPassed,
       completed_at: allPassed ? new Date().toISOString() : null,
-    }, { onConflict: "student_id,subject_id,level_id" });
+    }, { onConflict: "student_id,subject_id" });
 
-    // If passed, unlock next level
-    if (allPassed) {
-      const { data: currentLevel } = await supabase.from("levels").select("level_number").eq("id", exam.level_id).single();
-      if (!currentLevel) return;
-
-      const { data: nextLevel } = await supabase.from("levels")
-        .select("id")
-        .eq("subject_id", exam.subject_id)
-        .eq("level_number", currentLevel.level_number + 1)
-        .single();
-
-      if (nextLevel) {
-        await supabase.from("progress").upsert({
-          student_id: studentId,
-          subject_id: exam.subject_id,
-          level_id: nextLevel.id,
-          is_unlocked: true,
-          unlocked_at: new Date().toISOString(),
-        }, { onConflict: "student_id,subject_id,level_id" });
-      }
     }
   } catch (err) {
     console.error("Progression update error:", err);

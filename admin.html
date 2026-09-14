@@ -3775,13 +3775,13 @@
             if (!_dbHasBatchId) delete p.batch_id;
             if (!_dbHasBirthDate) delete p.birth_date;
             if (!_dbHasProgramId) delete p.program_id;
-            if (!_dbHasLevelId) delete p.level_id;
+            
             try {
               return await adminInsert('students', p);
             } catch (e) {
-              if (e.message && e.message.toLowerCase().includes('level_id')) {
+
                 _dbHasLevelId = false;
-                delete p.level_id;
+
                 return await adminInsert('students', p);
               }
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
@@ -3809,13 +3809,13 @@
             if (!_dbHasBatchId) delete p.batch_id;
             if (!_dbHasBirthDate) delete p.birth_date;
             if (!_dbHasProgramId) delete p.program_id;
-            if (!_dbHasLevelId) delete p.level_id;
+            
             try {
               return await adminUpdate('students', id, p);
             } catch (e) {
-              if (e.message && e.message.toLowerCase().includes('level_id')) {
+
                 _dbHasLevelId = false;
-                delete p.level_id;
+
                 return await adminUpdate('students', id, p);
               }
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
@@ -3844,7 +3844,7 @@
                 program_id: s.programId,
                 class_id: s.classId,
                 batch_id: s.batchId || null,
-                level_id: s.levelId || null,
+                || null,
                 birth_date: s.birthDate,
                 is_active: true,
                 deleted_at: null,
@@ -3868,7 +3868,7 @@
                 program_id: s.programId,
                 class_id: s.classId,
                 batch_id: s.batchId || null,
-                level_id: s.levelId || null,
+                || null,
                 gender: s.gender || null,
                 birth_date: s.birthDate,
                 pin_hash: hashed,
@@ -4459,7 +4459,7 @@
         { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: true },
         { id: 'class_id', label: 'Class', type: 'select', source: 'classes', required: true, dependsOn: 'program_id' },
         { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: false, dependsOn: 'class_id' },
-        { id: 'level_id', label: 'Level (Optional)', type: 'select', source: 'levels', required: false },
+        
         { id: 'name', label: 'Full Name', type: 'text', required: true },
         { id: 'gender', label: 'Gender', type: 'select', options: [
           { value: '', label: '— Unassigned (Student will choose) —' },
@@ -4475,7 +4475,7 @@
         { id: 'class_id', label: 'Class (Optional / Assigned)', type: 'select', source: 'classes', required: false, dependsOn: 'program_id' },
         { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: true, dependsOn: 'program_id' },
         { id: 'exam_type', label: 'Exam Type', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Final'], required: true, defaultValue: 'Daily' },
-        { id: 'level_id', label: 'Level (Optional)', type: 'select', source: 'levels', required: false },
+        
         { id: 'exam_order', label: 'Order (1, 2, 3...)', type: 'select', options: ['1','2','3','4','5','6','7','8','9','10'], required: true, defaultValue: '1' },
         { id: 'exam_title', label: 'Exam Title (Auto-Generated)', type: 'text', required: true, placeholder: 'Auto-generated as: [Program] [Class] [Subject] [Type] [Level] [Order]' },
         { id: 'prerequisite_exam_id', label: 'Prerequisite Exam (Optional)', type: 'select', source: 'exams', required: false },
@@ -4545,7 +4545,7 @@
           if (f.id === 'prerequisite_exam_id') {
             sel.innerHTML = `<option value="">None (Optional)</option>`;
             sel.disabled = false;
-          } else if (f.id === 'level_id') {
+
             sel.innerHTML = `<option value="">— No Level / Optional —</option>`;
             sel.disabled = false;
           } else if (!f.dependsOn) {
@@ -4621,20 +4621,7 @@
       const classSelect = crudForm.querySelector('#field-class_id');
       const batchSelect = crudForm.querySelector('#field-batch_id');
       const subjectSelect = crudForm.querySelector('#field-subject_id');
-      const levelSelect = crudForm.querySelector('#field-level_id');
-      const orderSelect = crudForm.querySelector('#field-exam_order');
-      const prereqSelect = crudForm.querySelector('#field-prerequisite_exam_id');
-      const titleInput = crudForm.querySelector('#field-exam_title');
-      const examTypeInput = crudForm.querySelector('#field-exam_type');
-      const prereqLabel = crudForm.querySelector('label[for="field-prerequisite_exam_id"]');
-
-      const updatePrereqRequirement = () => {
-        if (!prereqSelect || _currentSection !== 'exams') return;
-        prereqSelect.required = false;
-        if (prereqLabel) {
-          prereqLabel.innerHTML = 'Prerequisite Exam <span class="text-muted" style="font-size:0.75rem;font-weight:normal;">(Optional — Leave empty if none)</span>';
-        }
-      };
+            };
 
       if (prereqSelect) {
         prereqSelect.disabled = false;
@@ -4703,7 +4690,7 @@
               opt.textContent = displayName;
               opt.setAttribute('data-level-letter', letter);
               opt.setAttribute('data-level-num', l.level_number);
-              if (record && record.level_id === l.id) opt.selected = true;
+
               levelSelect.appendChild(opt);
             }
           });
@@ -4847,7 +4834,7 @@
         examTypeInput.addEventListener('input', triggerAutoTitle);
       }
 
-      if (record?.level_id) {
+
         await populateLevelsForSection();
       }
 
@@ -4899,22 +4886,7 @@
 
       // Prerequisite Exam Validation: Must fill if level and order are not Level A and Order 1
       if (_currentSection === 'exams') {
-        const levelSelect = crudForm.querySelector('#field-level_id');
-        const orderSelect = crudForm.querySelector('#field-exam_order');
-        const prereqSelect = crudForm.querySelector('#field-prerequisite_exam_id');
-        const selectedLvlOpt = levelSelect && levelSelect.selectedIndex > 0 ? levelSelect.options[levelSelect.selectedIndex] : null;
-        const lvlLetter = selectedLvlOpt ? (selectedLvlOpt.getAttribute('data-level-letter') || selectedLvlOpt.textContent.trim()) : 'A';
-        const ordVal = payload.exam_order || (orderSelect ? orderSelect.value.trim() : '1');
-        const isFirstExam = (lvlLetter === 'A' || lvlLetter === '1') && (ordVal === '1' || ordVal === 'A');
-
-        if (!isFirstExam && !payload.prerequisite_exam_id) {
-          showToast('This is not a Level A Order 1 exam. You MUST select a Prerequisite Exam that students have to complete first!', 'error');
-          if (prereqSelect) {
-            prereqSelect.focus();
-            prereqSelect.style.borderColor = 'var(--clr-accent-1, #f43f5e)';
-            setTimeout(() => { if (prereqSelect) prereqSelect.style.borderColor = ''; }, 3000);
-          }
-          return;
+                  return;
         }
       }
 

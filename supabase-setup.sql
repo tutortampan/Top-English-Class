@@ -100,7 +100,7 @@ CREATE TABLE students (
   program_id UUID NOT NULL REFERENCES programs(id),
   class_id UUID NOT NULL REFERENCES classes(id),
   batch_id UUID REFERENCES batches(id) ON DELETE SET NULL,
-  level_id UUID REFERENCES levels(id) ON DELETE SET NULL,
+
   name TEXT NOT NULL,
   gender TEXT CHECK (gender IN ('male', 'female')),
   birth_date DATE,
@@ -119,7 +119,7 @@ CREATE TABLE exams (
   program_id UUID NOT NULL REFERENCES programs(id),
   class_id UUID REFERENCES classes(id) ON DELETE SET NULL,
   subject_id UUID NOT NULL REFERENCES subjects(id),
-  level_id UUID REFERENCES levels(id) ON DELETE SET NULL,
+
   prerequisite_exam_id UUID REFERENCES exams(id) ON DELETE SET NULL,
   prerequisite_min_score NUMERIC(5,2) DEFAULT 60.0,
   exam_type TEXT NOT NULL CHECK (exam_type IN ('Daily', 'Weekly', 'Monthly', 'Final')),
@@ -139,12 +139,12 @@ CREATE TABLE exams (
 );
 
 -- Idempotent migrations for existing installations:
-ALTER TABLE students ADD COLUMN IF NOT EXISTS level_id UUID REFERENCES levels(id) ON DELETE SET NULL;
+
 ALTER TABLE exams ADD COLUMN IF NOT EXISTS class_id UUID REFERENCES classes(id) ON DELETE SET NULL;
 ALTER TABLE exams ADD COLUMN IF NOT EXISTS prerequisite_exam_id UUID REFERENCES exams(id) ON DELETE SET NULL;
 ALTER TABLE exams ADD COLUMN IF NOT EXISTS prerequisite_min_score NUMERIC(5,2) DEFAULT 60.0;
 ALTER TABLE exams ADD COLUMN IF NOT EXISTS exam_order TEXT DEFAULT '1';
-ALTER TABLE exams ALTER COLUMN level_id DROP NOT NULL;
+
 
 -- EXAM_CLASSES (Many-to-Many: Exam <-> Class)
 CREATE TABLE exam_classes (
@@ -214,7 +214,7 @@ CREATE TABLE progress (
   completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (student_id, subject_id, level_id)
+  UNIQUE (student_id, subject_id)
 );
 
 -- SITE_SETTINGS
@@ -271,7 +271,7 @@ CREATE INDEX idx_students_class_id ON students(class_id);
 CREATE INDEX idx_students_batch_id ON students(batch_id);
 CREATE INDEX idx_students_program_id ON students(program_id);
 CREATE INDEX idx_exams_subject_id ON exams(subject_id);
-CREATE INDEX idx_exams_level_id ON exams(level_id);
+
 CREATE INDEX idx_questions_exam_id ON questions(exam_id);
 CREATE INDEX idx_attempts_student_id ON attempts(student_id);
 CREATE INDEX idx_attempts_exam_id ON attempts(exam_id);
