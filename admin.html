@@ -1810,7 +1810,8 @@
                         <th class="text-center">Score</th>
                         <th class="text-center">Grade</th>
                         <th class="text-center">✅ Correct</th>
-                        <th class="text-center">❌ Wrong</th>
+                        <th class="text-center">⚠️ Half</th>
+                        <th class="text-center">❌ Incorrect</th>
                         <th class="text-center">Submitted At</th>
                         <th class="text-center" style="width:110px;">Details</th>
                       </tr>
@@ -1848,10 +1849,8 @@
                             <td class="text-center fw-700 text-grade-${grade}">${pct}%</td>
                             <td class="text-center"><span class="grade-badge grade-${grade}" style="width:26px; height:26px; font-size:0.75rem; display:inline-flex;">${grade}</span></td>
                             <td class="text-center"><span class="badge badge-success" style="font-size:0.75rem;">${attCorrect}</span></td>
-                            <td class="text-center">
-                              <span class="badge badge-danger" style="font-size:0.75rem;">${attIncorrect}</span>
-                              ${attMinor > 0 ? `<span class="badge badge-warning ml-1" style="font-size:0.7rem;">+${attMinor}</span>` : ''}
-                            </td>
+                            <td class="text-center"><span class="badge badge-warning" style="font-size:0.75rem;">${attMinor}</span></td>
+                            <td class="text-center"><span class="badge badge-danger" style="font-size:0.75rem;">${attIncorrect}</span></td>
                             <td class="text-center text-xs text-muted">${submitDate}</td>
                             <td class="text-center">
                               <button class="btn btn-ghost btn-sm" style="font-size:0.75rem; padding:2px 8px;">
