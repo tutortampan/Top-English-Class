@@ -315,10 +315,93 @@
     </div>
   </div>
 
+  <!-- ═══ DUPLICATE STUDENTS REVIEW & RESOLVER MODAL ═══ -->
+  <div class="modal-backdrop hidden" id="duplicate-students-modal" role="dialog" aria-modal="true" aria-labelledby="dup-students-modal-title" style="z-index:var(--z-modal,1000);">
+    <div class="modal-box" style="max-width:960px; max-height:88vh; display:flex; flex-direction:column; padding:24px;">
+      <div class="modal-header" style="padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--clr-border);">
+        <div>
+          <h3 id="dup-students-modal-title" style="margin:0; font-size:1.25rem;">🔍 Duplicate Students Review &amp; Resolver</h3>
+          <p class="text-xs text-muted" style="margin:4px 0 0;">Compare duplicate student profiles side-by-side and safely unify their exam attempts and progress.</p>
+        </div>
+        <button class="btn btn-ghost btn-icon" id="close-dup-students-modal" aria-label="Close">✕</button>
+      </div>
+
+      <!-- Scope Switcher Tabs & Bulk Action -->
+      <div class="d-flex align-center justify-between flex-wrap gap-3 mb-4">
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm dup-stud-tab-btn" data-scope="same_class" id="tab-btn-same-class">
+            🏫 Same Class Duplicates (<span id="dup-stud-same-count">0</span>)
+          </button>
+          <button class="btn btn-secondary btn-sm dup-stud-tab-btn" data-scope="cross_class" id="tab-btn-cross-class">
+            🌐 Cross-Class Same Name (<span id="dup-stud-cross-count">0</span>)
+          </button>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-warning btn-sm" id="btn-merge-all-visible-students" style="font-weight:700;">
+            ⚡ Quick Merge All Groups
+          </button>
+        </div>
+      </div>
+
+      <!-- Content Area with Groups -->
+      <div id="dup-students-content" style="flex:1; overflow-y:auto; padding-right:6px; display:flex; flex-direction:column; gap:20px;">
+        <div class="empty-state p-6 text-center"><div class="spinner"></div><p>Scanning for duplicate students…</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DUPLICATE QUESTIONS REVIEW & RESOLVER MODAL ═══ -->
+  <div class="modal-backdrop hidden" id="duplicate-questions-modal" role="dialog" aria-modal="true" aria-labelledby="dup-questions-modal-title" style="z-index:var(--z-modal,1000);">
+    <div class="modal-box" style="max-width:960px; max-height:88vh; display:flex; flex-direction:column; padding:24px;">
+      <div class="modal-header" style="padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--clr-border);">
+        <div>
+          <h3 id="dup-questions-modal-title" style="margin:0; font-size:1.25rem;">🔍 Duplicate Questions Review &amp; Resequencer</h3>
+          <p class="text-xs text-muted" style="margin:4px 0 0;">Detect duplicate question texts within exams and auto-resequence question orders seamlessly.</p>
+        </div>
+        <button class="btn btn-ghost btn-icon" id="close-dup-questions-modal" aria-label="Close">✕</button>
+      </div>
+
+      <!-- Scope / Filter Bar -->
+      <div class="d-flex align-center justify-between flex-wrap gap-3 mb-4 p-3 rounded" style="background:var(--clr-surface-2); border:1px solid var(--clr-border);">
+        <div class="d-flex align-center gap-3 flex-wrap" style="flex:1;">
+          <div style="min-width:240px; flex:1;">
+            <label class="text-xs text-muted d-block mb-1">Filter by Exam</label>
+            <select id="dup-q-exam-select" class="form-control" style="font-size:0.85rem; padding:6px 10px;">
+              <option value="">— All Exams —</option>
+            </select>
+          </div>
+          <div class="d-flex gap-2" style="padding-top:16px;">
+            <button class="btn btn-primary btn-sm dup-q-tab-btn" data-qtab="same_exam" id="tab-btn-q-same">
+              ⚠️ Same-Exam Duplicates (<span id="dup-q-same-count">0</span>)
+            </button>
+            <button class="btn btn-secondary btn-sm dup-q-tab-btn" data-qtab="order_conflicts" id="tab-btn-q-order">
+              🔢 Order Conflicts (<span id="dup-q-order-count">0</span>)
+            </button>
+            <button class="btn btn-secondary btn-sm dup-q-tab-btn" data-qtab="cross_exam" id="tab-btn-q-cross">
+              🌐 Cross-Exam Duplicates (<span id="dup-q-cross-count">0</span>)
+            </button>
+          </div>
+        </div>
+        <div class="d-flex align-end" style="padding-top:16px;">
+          <button class="btn btn-danger btn-sm" id="btn-batch-clean-exam-questions" style="font-weight:700; white-space:nowrap;">
+            ⚡ Clean All &amp; Resequence (1..N)
+          </button>
+        </div>
+      </div>
+
+      <!-- Content Container -->
+      <div id="dup-questions-content" style="flex:1; overflow-y:auto; padding-right:6px; display:flex; flex-direction:column; gap:16px;">
+        <div class="empty-state p-6 text-center"><div class="spinner"></div><p>Scanning for duplicate questions…</p></div>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import {
       adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete,
-      mergeDuplicateStudents, fetchPrograms, fetchClasses, fetchBatches, formatStudentName,
+      mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
+      detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions,
+      fetchPrograms, fetchClasses, fetchBatches, formatStudentName,
       testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
     } from './js/api.js?v=1.4';
     import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from './js/excel-parser.js?v=1.4';

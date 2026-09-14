@@ -1370,6 +1370,331 @@ export async function mergeDuplicateStudents() {
   return { groupsCount, mergedCount };
 }
 
+/**
+ * Detect duplicate questions within an exam or across exams
+ * @param {string|null} examId - Optional filter by exam
+ */
+export async function detectDuplicateQuestions(examId = null) {
+  const [questions, exams] = await Promise.all([
+    adminFetchAll('questions', 'id, exam_id, question_order, question_text, correct_answer, answer_type, created_at, deleted_at'),
+    adminFetchAll('exams', 'id, exam_title, exam_type')
+  ]);
+
+  const examMap = new Map();
+  (exams || []).forEach(e => examMap.set(e.id, e));
+
+  let activeQuestions = (questions || []).filter(q => !q.deleted_at);
+  if (examId) {
+    activeQuestions = activeQuestions.filter(q => q.exam_id === examId);
+  }
+
+  // 1. Same-Exam Duplicate Text Groups (Critical duplicate bug)
+  const sameExamTextMap = new Map();
+  activeQuestions.forEach(q => {
+    const textNorm = String(q.question_text || '').trim().toLowerCase();
+    if (!textNorm) return;
+    const key = `${q.exam_id}::${textNorm}`;
+    if (!sameExamTextMap.has(key)) sameExamTextMap.set(key, []);
+    sameExamTextMap.get(key).push(q);
+  });
+
+  const sameExamDuplicates = [];
+  for (const [key, candidates] of sameExamTextMap.entries()) {
+    if (candidates.length <= 1) continue;
+    candidates.sort((a, b) => (Number(a.question_order) || 0) - (Number(b.question_order) || 0) || new Date(a.created_at || 0) - new Date(b.created_at || 0));
+    const e = examMap.get(candidates[0].exam_id);
+    sameExamDuplicates.push({
+      key,
+      examId: candidates[0].exam_id,
+      examTitle: e ? `${e.exam_type ? e.exam_type + ' — ' : ''}${e.exam_title}` : 'Unknown Exam',
+      questionText: candidates[0].question_text,
+      recommendedPrimaryId: candidates[0].id,
+      candidates
+    });
+  }
+
+  // 2. Same-Exam Order Conflicts (duplicate order numbers in same exam)
+  const sameExamOrderMap = new Map();
+  activeQuestions.forEach(q => {
+    if (q.question_order == null) return;
+    const key = `${q.exam_id}::${Number(q.question_order)}`;
+    if (!sameExamOrderMap.has(key)) sameExamOrderMap.set(key, []);
+    sameExamOrderMap.get(key).push(q);
+  });
+
+  const sameExamOrderConflicts = [];
+  for (const [key, candidates] of sameExamOrderMap.entries()) {
+    if (candidates.length <= 1) continue;
+    const e = examMap.get(candidates[0].exam_id);
+    sameExamOrderConflicts.push({
+      key,
+      examId: candidates[0].exam_id,
+      examTitle: e ? `${e.exam_type ? e.exam_type + ' — ' : ''}${e.exam_title}` : 'Unknown Exam',
+      order: Number(candidates[0].question_order),
+      candidates
+    });
+  }
+
+  // 3. Cross-Exam Duplicates (identical question text appearing across multiple exams)
+  const crossExamTextMap = new Map();
+  (questions || []).filter(q => !q.deleted_at).forEach(q => {
+    const textNorm = String(q.question_text || '').trim().toLowerCase();
+    if (!textNorm) return;
+    if (!crossExamTextMap.has(textNorm)) crossExamTextMap.set(textNorm, []);
+    crossExamTextMap.get(textNorm).push(q);
+  });
+
+  const crossExamDuplicates = [];
+  for (const [textNorm, candidates] of crossExamTextMap.entries()) {
+    const uniqueExams = new Set(candidates.map(c => c.exam_id));
+    if (uniqueExams.size <= 1) continue;
+    crossExamDuplicates.push({
+      questionText: candidates[0].question_text,
+      examCount: uniqueExams.size,
+      candidatesCount: candidates.length,
+      exams: Array.from(uniqueExams).map(eid => {
+        const e = examMap.get(eid);
+        return {
+          id: eid,
+          title: e ? `${e.exam_type ? e.exam_type + ' — ' : ''}${e.exam_title}` : 'Unknown Exam'
+        };
+      })
+    });
+  }
+
+  return {
+    sameExamDuplicates,
+    sameExamOrderConflicts,
+    crossExamDuplicates,
+    totalSameExamDupCount: sameExamDuplicates.reduce((acc, g) => acc + (g.candidates.length - 1), 0)
+  };
+}
+
+/**
+ * Re-sequence question_order sequentially (1, 2, 3... N) for an exam
+ * @param {string} examId
+ */
+export async function resequenceExamQuestions(examId) {
+  const allQ = await adminFetchAll('questions', '*', { exam_id: examId });
+  const activeQ = (allQ || []).filter(q => !q.deleted_at);
+  activeQ.sort((a, b) => {
+    const orderDiff = (Number(a.question_order) || 0) - (Number(b.question_order) || 0);
+    if (orderDiff !== 0) return orderDiff;
+    return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+  });
+
+  let resequencedCount = 0;
+  const updatePromises = [];
+  activeQ.forEach((q, idx) => {
+    const newOrder = idx + 1;
+    if (Number(q.question_order) !== newOrder) {
+      updatePromises.push(adminUpdate('questions', q.id, { question_order: newOrder, updated_at: new Date().toISOString() }));
+      resequencedCount++;
+    }
+  });
+
+  if (updatePromises.length > 0) {
+    await Promise.all(updatePromises);
+  }
+
+  return { examId, totalQuestions: activeQ.length, resequencedCount };
+}
+
+/**
+ * Resolve a single duplicate question pair
+ * Safely re-links any attempt_answers from duplicateQId to primaryQId,
+ * deletes duplicateQId, and re-sequences questions.
+ */
+export async function resolveDuplicateQuestionGroup(primaryQId, duplicateQId, autoResequence = true) {
+  const sb = await getSupabase();
+
+  let examId = null;
+  if (!isPlaceholderUrl()) {
+    try {
+      const { data: qData } = await sb.from('questions').select('exam_id').eq('id', duplicateQId).single();
+      if (qData) examId = qData.exam_id;
+    } catch (_) {}
+
+    try {
+      // Re-link attempt_answers pointing to duplicateQId to primaryQId
+      await sb.from('attempt_answers')
+        .update({ question_id: primaryQId, updated_at: new Date().toISOString() })
+        .eq('question_id', duplicateQId);
+    } catch (err) {
+      console.warn('Could not re-link attempt_answers for question:', err.message);
+    }
+  }
+
+  await adminHardDelete('questions', duplicateQId);
+
+  let reseqResult = null;
+  if (autoResequence && examId) {
+    reseqResult = await resequenceExamQuestions(examId);
+  }
+
+  return { success: true, primaryQId, duplicateQId, examId, reseqResult };
+}
+
+/**
+ * Batch resolve all same-exam duplicate questions within an exam
+ */
+export async function batchResolveExamDuplicateQuestions(examId) {
+  const dups = await detectDuplicateQuestions(examId);
+  const groups = dups.sameExamDuplicates;
+  let deletedQuestions = 0;
+
+  for (const group of groups) {
+    const primary = group.candidates[0]; // lowest order
+    const duplicates = group.candidates.slice(1);
+    for (const dup of duplicates) {
+      await resolveDuplicateQuestionGroup(primary.id, dup.id, false);
+      deletedQuestions++;
+    }
+  }
+
+  const reseqResult = await resequenceExamQuestions(examId);
+
+  return {
+    examId,
+    resolvedGroups: groups.length,
+    deletedQuestions,
+    remainingQuestions: reseqResult.totalQuestions
+  };
+}
+
+/**
+ * Detect duplicate students with rich comparison metadata
+ * @param {'same_class'|'cross_class'} scope
+ */
+export async function detectDuplicateStudents(scope = 'same_class') {
+  const [students, attempts, progress] = await Promise.all([
+    adminFetchAll('students', '*, classes(id, name, program_id, programs(name)), batches(id, name)'),
+    adminFetchAll('attempts', 'id, student_id, score, percentage, grade, status'),
+    adminFetchAll('progress', 'id, student_id, subject_id, level_id')
+  ]);
+
+  const activeStudents = (students || []).filter(s => !s.deleted_at);
+
+  const groups = new Map();
+  activeStudents.forEach(s => {
+    const nameNorm = String(s.name || '').toLowerCase().trim();
+    if (!nameNorm) return;
+    const key = scope === 'same_class' ? `${s.class_id}::${nameNorm}` : nameNorm;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(s);
+  });
+
+  const duplicateGroups = [];
+  for (const [key, rawCandidates] of groups.entries()) {
+    if (rawCandidates.length <= 1) continue;
+
+    if (scope === 'cross_class') {
+      const distinctClasses = new Set(rawCandidates.map(c => c.class_id));
+      if (distinctClasses.size <= 1) continue; // Same class already covered in other scope
+    }
+
+    const candidates = rawCandidates.map(c => {
+      const studentAttempts = (attempts || []).filter(a => a.student_id === c.id);
+      const studentProgress = (progress || []).filter(p => p.student_id === c.id);
+      const bestAttempt = [...studentAttempts].sort((a, b) => (Number(b.percentage) || 0) - (Number(a.percentage) || 0))[0];
+      return {
+        ...c,
+        attemptsCount: studentAttempts.length,
+        progressCount: studentProgress.length,
+        bestScore: bestAttempt ? parseFloat(bestAttempt.percentage || 0).toFixed(1) : null,
+        globalGrade: bestAttempt ? bestAttempt.grade : null,
+        className: c.classes?.name || '—',
+        programName: c.classes?.programs?.name || '—',
+        batchName: c.batches?.name || 'Unassigned'
+      };
+    });
+
+    // Recommendation logic:
+    // 1. Has photo
+    // 2. Most attempts
+    // 3. Most progress
+    // 4. Has birth date
+    // 5. Earliest created
+    const sorted = [...candidates].sort((a, b) => {
+      if (b.photo_url && !a.photo_url) return 1;
+      if (!b.photo_url && a.photo_url) return -1;
+      if (b.attemptsCount !== a.attemptsCount) return b.attemptsCount - a.attemptsCount;
+      if (b.progressCount !== a.progressCount) return b.progressCount - a.progressCount;
+      if (b.birth_date && !a.birth_date) return 1;
+      if (!b.birth_date && a.birth_date) return -1;
+      return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+    });
+
+    duplicateGroups.push({
+      key,
+      name: candidates[0].name,
+      recommendedPrimaryId: sorted[0].id,
+      candidates
+    });
+  }
+
+  return duplicateGroups;
+}
+
+/**
+ * Merge a specific duplicate student into a primary student
+ * @param {string} primaryId
+ * @param {string} duplicateId
+ * @param {boolean} softDelete
+ */
+export async function mergeStudentPair(primaryId, duplicateId, softDelete = true) {
+  const [primaryList, dupList, allAttempts, allProgress] = await Promise.all([
+    adminFetchAll('students', '*', { id: primaryId }),
+    adminFetchAll('students', '*', { id: duplicateId }),
+    adminFetchAll('attempts', '*', { student_id: duplicateId }),
+    adminFetchAll('progress', '*', { student_id: duplicateId })
+  ]);
+
+  const primary = primaryList[0];
+  const dup = dupList[0];
+
+  if (!primary || !dup) throw new Error('Primary or duplicate student not found.');
+
+  // 1. Merge missing demographic / profile fields into primary
+  const primaryUpdates = {};
+  if (!primary.birth_date && dup.birth_date) primaryUpdates.birth_date = dup.birth_date;
+  if (!primary.gender && dup.gender) primaryUpdates.gender = dup.gender;
+  if (!primary.batch_id && dup.batch_id) primaryUpdates.batch_id = dup.batch_id;
+  if (!primary.pin_hash && dup.pin_hash) primaryUpdates.pin_hash = dup.pin_hash;
+  if (!primary.photo_url && dup.photo_url) primaryUpdates.photo_url = dup.photo_url;
+  if (!primary.is_active && dup.is_active) primaryUpdates.is_active = true;
+
+  if (Object.keys(primaryUpdates).length > 0) {
+    primaryUpdates.updated_at = new Date().toISOString();
+    await adminUpdate('students', primary.id, primaryUpdates);
+  }
+
+  // 2. Re-link all attempts from duplicate to primary
+  for (const att of allAttempts) {
+    await adminUpdate('attempts', att.id, { student_id: primary.id, updated_at: new Date().toISOString() });
+  }
+
+  // 3. Re-link progress
+  const primaryProgress = await adminFetchAll('progress', '*', { student_id: primary.id });
+  for (const dp of allProgress) {
+    const exists = primaryProgress.some(p => p.subject_id === dp.subject_id);
+    if (!exists) {
+      await adminUpdate('progress', dp.id, { student_id: primary.id, updated_at: new Date().toISOString() });
+    } else {
+      await adminHardDelete('progress', dp.id);
+    }
+  }
+
+  // 4. Delete or soft-delete duplicate student
+  if (softDelete) {
+    await adminUpdate('students', dup.id, { deleted_at: new Date().toISOString(), is_active: false });
+  } else {
+    await adminHardDelete('students', dup.id);
+  }
+
+  return { success: true, primaryId, duplicateId };
+}
+
 // ============================================================
 // CHEATING LOG
 // ============================================================
