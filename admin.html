@@ -2484,7 +2484,8 @@
                 <th class="text-center">Score</th>
                 <th class="text-center">Grade</th>
                 <th class="text-center">✅ Correct</th>
-                <th class="text-center">❌ Wrong</th>
+                <th class="text-center">⚠️ Half</th>
+                <th class="text-center">❌ Incorrect</th>
                 <th class="text-center">Submitted At</th>
                 <th class="text-center" style="width:100px;">Profile</th>
               </tr>
@@ -2567,7 +2568,7 @@
         countChip.textContent = `${deduplicated.length} attempts (Merged)`;
 
         if (!deduplicated.length) {
-          tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted p-5">No submitted results match the selected filters.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted p-5">No submitted results match the selected filters.</td></tr>';
           return;
         }
 
@@ -2584,7 +2585,10 @@
           });
           const total = answers.length;
           const correctLabel = total > 0
-            ? `<span class="badge badge-success" style="font-size:0.75rem;">${attCorrect}</span>${attMinor > 0 ? ` <span class="badge badge-warning" style="font-size:0.7rem;" title="Minor Spelling Error">+${attMinor}½</span>` : ''}`
+            ? `<span class="badge badge-success" style="font-size:0.75rem;">${attCorrect}</span>`
+            : '<span class="text-muted text-xs">—</span>';
+          const halfLabel = total > 0
+            ? `<span class="badge badge-warning" style="font-size:0.75rem;">${attMinor}</span>`
             : '<span class="text-muted text-xs">—</span>';
           const wrongLabel  = total > 0
             ? `<span class="badge badge-danger" style="font-size:0.75rem;">${attWrong}</span>`
