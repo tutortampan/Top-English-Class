@@ -413,6 +413,16 @@
     const mobileTabs = document.querySelectorAll('.mobile-tab');
 
     // Map: sidebar sub-section → primary domain label shown in breadcrumb
+    // ── Section Titles ──
+    const sectionTitles = {
+      programs: 'Programs', subjects: 'Subjects', levels: 'Levels', audit: 'Audit Log', settings: 'Site Settings',
+      classes: 'Classes', batches: 'Batches',
+      students: 'Students', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
+      exams: 'Exams', questions: 'Questions', results: 'Results',
+      'import-questions': 'Import Questions (Excel)', 'export-questions': 'Export Questions (Excel)',
+      recalibrator: 'Exam Recalibrator'
+    };
+
     const sectionDomainMap = {
       programs: 'DATABASE', subjects: 'DATABASE', levels: 'DATABASE', audit: 'DATABASE', settings: 'DATABASE',
       classes: 'CLASS', batches: 'CLASS',
@@ -583,16 +593,6 @@
         if (window.innerWidth <= 1024) closeSidebar();
       });
     });
-
-    // ── Section Titles ──
-    const sectionTitles = {
-      programs: 'Programs', subjects: 'Subjects', levels: 'Levels', audit: 'Audit Log', settings: 'Site Settings',
-      classes: 'Classes', batches: 'Batches',
-      students: 'Students', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
-      exams: 'Exams', questions: 'Questions', results: 'Results',
-      'import-questions': 'Import Questions (Excel)', 'export-questions': 'Export Questions (Excel)',
-      recalibrator: 'Exam Recalibrator'
-    };
 
     // ── Global String & HTML Utilities ──
     function escapeHtml(str) {
