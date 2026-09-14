@@ -853,6 +853,7 @@
       }
 
       // Gender is unassigned — trigger First-Entry Gender Setup Modal
+      hideLoading();
       const modal = document.getElementById('gender-setup-modal');
       const optMale = document.getElementById('opt-gender-male');
       const optFemale = document.getElementById('opt-gender-female');
@@ -861,7 +862,8 @@
 
       modal.classList.remove('hidden');
 
-      optMale.onclick = () => {
+      return new Promise((resolve) => {
+        optMale.onclick = () => {
         selectedGender = 'male';
         optMale.style.borderColor = 'var(--clr-primary)';
         optMale.style.background = 'rgba(99, 102, 241, 0.15)';
@@ -894,13 +896,13 @@
           applyStudentGenderUI(selectedGender);
           modal.classList.add('hidden');
           showToast(`Welcome, ${session.student_name}! Your title has been personalized.`, 'success');
-          // Proceed to check photo onboarding
-          checkAndPromptPhoto();
+          resolve();
         } catch (err) {
           confirmBtn.disabled = false;
           showToast('Failed to save gender: ' + err.message, 'error');
         }
       };
+      });
     }
 
     // ── First-Entry Photo & Microphone Onboarding (Phase 12) ──
@@ -1076,6 +1078,7 @@
       }
 
       // No photo registered! Show Photo & Mic Setup Modal
+      hideLoading();
       const modal = document.getElementById('photo-setup-modal');
       modal.classList.remove('hidden');
       await startOnboardWebcam();
@@ -1105,6 +1108,7 @@
 
       if (hasBirthday) return;
 
+      hideLoading();
       const modal = document.getElementById('birthday-setup-modal');
       modal.classList.remove('hidden');
 
@@ -1143,6 +1147,7 @@
         await checkAndPromptPhoto();
         await checkAndPromptBirthday();
 
+        showLoading('Loading your dashboard…');
         const [subjects, progress, attempts] = await Promise.all([
           fetchStudentSubjects(session.class_id, session.program_id),
           fetchStudentProgress(session.student_id),
