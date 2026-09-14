@@ -468,6 +468,7 @@
       gap: 0.5rem;
     }
   </style>
+  <meta name="view-transition" content="same-origin" />
 </head>
 <body>
 
@@ -512,7 +513,7 @@
           <div class="cascade-header">
             <div class="cascade-step-num" id="step-num-1">1</div>
             <div class="cascade-title-wrap">
-              <div class="cascade-title">Select Your Program</div>
+              <div class="cascade-title">Select Your Institution</div>
               <div class="cascade-selection-label" id="sel-program-label"></div>
             </div>
             <button class="cascade-change-btn hidden" id="change-program-btn">Change</button>
@@ -535,7 +536,7 @@
           <div class="cascade-header">
             <div class="cascade-step-num" id="step-num-2">2</div>
             <div class="cascade-title-wrap">
-              <div class="cascade-title">Select Your Class</div>
+              <div class="cascade-title">Select Your Program</div>
               <div class="cascade-selection-label" id="sel-class-label"></div>
             </div>
             <button class="cascade-change-btn hidden" id="change-class-btn">Change</button>
@@ -546,7 +547,7 @@
               <input type="text" id="search-class" placeholder="Search class…" autocomplete="off" />
             </div>
             <div class="options-grid" id="list-class" role="list" aria-label="Programs">
-              <div class="opts-empty">Select a program first</div>
+              <div class="opts-empty">Select an institution first</div>
             </div>
           </div>
         </div>
@@ -569,7 +570,7 @@
               <input type="text" id="search-batch" placeholder="Search batch…" autocomplete="off" />
             </div>
             <div class="options-grid" id="list-batch" role="list" aria-label="Batches">
-              <div class="opts-empty">Select a class first</div>
+              <div class="opts-empty">Select a program first</div>
             </div>
           </div>
         </div>
@@ -835,7 +836,7 @@
       try {
         const programs = await fetchPrograms(state.institutionId);
         renderOptions('list-class', 'search-class', programs, (c) => {
-          state.programId = c.id; state.className = c.name;
+          state.programId = c.id; state.programName = c.name;
           collapseSection('sec-class', c.name, 'step-num-2');
           resetFrom('batch');
           loadBatches();
@@ -843,7 +844,7 @@
 
         if (autoSelectId) {
           const match = programs.find(c => c.id === autoSelectId);
-          if (match) { state.programId = match.id; state.className = match.name; }
+          if (match) { state.programId = match.id; state.programName = match.name; }
         } else if (programs.length === 1) {
           setTimeout(() => {
             const card = document.querySelector('#list-class .opt-card');
@@ -923,7 +924,7 @@
         const key = order[i];
         const el = document.getElementById(`sec-${key}`);
         if (el) { el.classList.remove('unlocked', 'selected'); }
-        if (key === 'class') { state.programId = null; state.className = null; }
+        if (key === 'class') { state.programId = null; state.programName = null; }
         if (key === 'batch') { state.batchId = null; state.batchName = null; }
         if (key === 'student') { state.studentId = null; state.studentName = null; }
         if (key === 'pin') { resetPin(); }
@@ -1082,3 +1083,6 @@
   </script>
 </body>
 </html>
+
+
+
