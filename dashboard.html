@@ -667,6 +667,9 @@
           <button class="btn btn-primary btn-block" id="btn-confirm-photo-setup" disabled style="padding:var(--space-3) var(--space-6);font-size:1rem;font-weight:700;">
             ✓ Save Photo &amp; Enter Dashboard
           </button>
+          <button type="button" class="btn btn-ghost btn-block" id="btn-skip-photo-setup" style="margin-top:var(--space-2);font-size:0.85rem;color:var(--clr-text-3);">
+            Skip for now &amp; Continue to Dashboard →
+          </button>
         </div>
       </div>
     </div>
@@ -1058,6 +1061,12 @@
       }
     });
 
+    // Skip photo setup fallback
+    document.getElementById('btn-skip-photo-setup')?.addEventListener('click', () => {
+      stopOnboardWebcam();
+      document.getElementById('photo-setup-modal').classList.add('hidden');
+    });
+
     async function checkAndPromptPhoto() {
       let photoUrl = null;
       try {
@@ -1090,7 +1099,7 @@
             clearInterval(interval);
             resolve();
           }
-        }, 500);
+        }, 300);
       });
     }
 
@@ -1141,8 +1150,8 @@
 
     // ── Load Subjects & Dashboard ──
     async function loadDashboard() {
-      showLoading('Loading your dashboard…');
       try {
+        hideLoading();
         await checkAndPromptGender();
         await checkAndPromptPhoto();
         await checkAndPromptBirthday();

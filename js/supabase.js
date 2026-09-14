@@ -31,3 +31,15 @@ export async function getSupabase() {
 
   return _initPromise;
 }
+
+// Add callEdgeFunction to easily invoke Edge Functions
+export async function callEdgeFunction(functionName, payload) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.functions.invoke(functionName, {
+    body: payload
+  });
+  if (error) {
+    throw new Error(error.message || `Edge function ${functionName} failed`);
+  }
+  return data;
+}

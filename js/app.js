@@ -41,9 +41,12 @@ let _overlay = null;
 
 export function showLoading(message = 'Loading…') {
   if (!_overlay) {
-    _overlay = document.createElement('div');
-    _overlay.className = 'loading-overlay';
-    document.body.appendChild(_overlay);
+    _overlay = document.querySelector('.loading-overlay');
+    if (!_overlay) {
+      _overlay = document.createElement('div');
+      _overlay.className = 'loading-overlay';
+      document.body.appendChild(_overlay);
+    }
   }
   _overlay.innerHTML = `
     <div class="spinner"></div>
@@ -53,7 +56,15 @@ export function showLoading(message = 'Loading…') {
 }
 
 export function hideLoading() {
-  if (_overlay) _overlay.style.display = 'none';
+  if (_overlay) {
+    _overlay.style.display = 'none';
+    _overlay.remove();
+    _overlay = null;
+  }
+  document.querySelectorAll('.loading-overlay').forEach(el => {
+    el.style.display = 'none';
+    el.remove();
+  });
 }
 
 // TOP ENGLISH CLASS — Scoring & Grade (client-display only, NOT authoritative)

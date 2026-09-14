@@ -1,6 +1,6 @@
 // TOP ENGLISH CLASS — API Module
 // All server calls are centralized here.
-import { getSupabase, SUPABASE_URL } from './supabase.js';
+import { getSupabase, SUPABASE_URL, callEdgeFunction } from './supabase.js';
 import { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCorrectAnswers, stripHyphens } from './grading.js';
 
 export { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCorrectAnswers, stripHyphens };

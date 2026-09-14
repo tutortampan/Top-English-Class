@@ -1,4 +1,30 @@
-﻿# CHANGELOG
+# CHANGELOG
+
+## [2026-09-14 06:15 UTC] — Student Login Fallback & Dashboard Loading Overlay Fix
+
+**Agent/Session:** Antigravity / SESSION-20260914-0615
+**Phase:** Fix & Polish
+**Status:** PASS
+
+### Why
+- Student login was encountering an issue where `callEdgeFunction` was not defined/imported in `js/api.js`, preventing graceful fallback to Direct DB authentication when the `student-login` Edge Function was not deployed.
+- After logging in, the student was blocked on `dashboard.html` by the "Loading your dashboard..." overlay because `showLoading` was called prior to onboarding modal prompts (`checkAndPromptPhoto`, `checkAndPromptGender`), `--z-modal` (200) was lower than `.loading-overlay` (999), and `hideLoading()` did not reliably remove all overlay elements from the DOM.
+
+### Changed
+- **js/supabase.js**:
+  - Implemented and exported `callEdgeFunction(functionName, payload)` using `supabase.functions.invoke`.
+- **js/api.js**:
+  - Imported `callEdgeFunction` from `./supabase.js` so edge function calls safely catch errors and seamlessly fall back to Direct DB verification.
+- **js/app.js**:
+  - Updated `showLoading` to reuse existing overlay element if present.
+  - Enhanced `hideLoading()` to aggressively remove all `.loading-overlay` elements from the DOM and reset the internal `_overlay` variable.
+- **css/style.css**:
+  - Adjusted z-index stacking hierarchy: `--z-loading: 500;`, `--z-modal: 1000;`, `--z-toast: 2000;` so modals and toasts always render above loading screens.
+  - Changed `.loading-overlay` z-index from hardcoded 999 to `var(--z-loading, 500)`.
+- **dashboard.html**:
+  - In `loadDashboard()`, removed pre-check `showLoading('Loading your dashboard…')` and ensured `hideLoading()` runs before onboarding prompts so modals are never obscured.
+  - Added a "Skip for now & Continue to Dashboard →" button to the photo setup modal with click handler so students without webcams or files can immediately enter their dashboard.
+
 
 ## [2026-09-10 14:58] â€” Master Command: Full System Audit, Repair, Data Consistency, Grading Engine & Recalibrator
 

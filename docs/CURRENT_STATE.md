@@ -1,11 +1,19 @@
 # CURRENT STATE
 
-Last Updated: 2026-09-14 03:16 UTC
-Current Phase: Phase 25 -- Exam Results Correct/Wrong Counts + Profile Button
-Current Task: Verification and documentation complete.
+Last Updated: 2026-09-14 06:15 UTC
+Current Phase: Fix & Polish -- Student Login Fallback & Dashboard Loading Overlay
+Current Task: Verification and documentation complete. Ready for commit & push.
 Status: COMPLETE
 
 ## Completed
+- **Student Login Edge Function Fallback**:
+  - Implemented `callEdgeFunction` in `js/supabase.js` and imported into `js/api.js`.
+  - Enables clean fallback to Direct DB authentication without `ReferenceError`.
+- **Dashboard Loading Overlay & Modal Hierarchy**:
+  - Adjusted z-index stacking: `--z-loading: 500`, `--z-modal: 1000`, `--z-toast: 2000`.
+  - Made `hideLoading()` forcefully purge all `.loading-overlay` elements.
+  - Removed pre-check `showLoading` in `dashboard.html` `loadDashboard()`.
+  - Added "Skip for now" option to photo setup modal.
 - **Exam Results Correct/Wrong Counts + Profile Button (Phase 25 - Admin)**:
   - Updated `renderResults` in `admin.html` to fetch `attempt_answers` alongside each attempt.
   - Added two new columns to the Results table: `Correct` and `Wrong` (with minor-error half-point badge).
