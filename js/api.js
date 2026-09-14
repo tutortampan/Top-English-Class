@@ -1949,7 +1949,7 @@ export async function applyRecalibrateExam(examId, adminIdentifier = 'admin') {
       try {
         await sb.from('progress').upsert({
           student_id: diff.studentId,
-          subject_id: preview.exam.subject_id: preview.exam.level_id,
+          subject_id: preview.exam.subject_id,
           is_unlocked: true,
           is_completed: isPassed,
           completed_at: isPassed ? new Date().toISOString() : null,
