@@ -5081,12 +5081,13 @@
     async function loadDuplicateStudents(scope) {
       dupStudContent.innerHTML = '<div class="empty-state p-6 text-center"><div class="spinner"></div><p>Scanning for duplicates...</p></div>';
       try {
-        const data = await detectDuplicateStudents(scope);
-        dupStudentGroups = data.groups;
+        const duplicateGroups = await detectDuplicateStudents(scope);
+        dupStudentGroups = duplicateGroups;
         
         // Update counters
-        if (scope === 'same_class') document.getElementById('dup-stud-same-count').textContent = data.totalDuplicates;
-        else document.getElementById('dup-stud-cross-count').textContent = data.totalDuplicates;
+        const totalDups = duplicateGroups.reduce((acc, g) => acc + (g.candidates.length - 1), 0);
+        if (scope === 'same_class') document.getElementById('dup-stud-same-count').textContent = totalDups;
+        else document.getElementById('dup-stud-cross-count').textContent = totalDups;
 
         if (dupStudentGroups.length === 0) {
           dupStudContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No duplicate students found.</p></div>';
@@ -5096,8 +5097,8 @@
         let html = '';
         dupStudentGroups.forEach((group, gIdx) => {
           html += `
-            <div class="card p-4" style="border-left:4px solid var(--clr-primary);">
-              <div class="fw-700 mb-2">Duplicate Group ${gIdx + 1} — Name: "${escapeHtml(group[0].name)}"</div>
+            <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-primary);">
+              <div class="fw-700 mb-2">Duplicate Group ${gIdx + 1} — Name: "${escapeHtml(group.name)}"</div>
               <table class="table-sm w-100 mb-3 text-sm">
                 <thead>
                   <tr>
@@ -5110,14 +5111,14 @@
                 </thead>
                 <tbody>
           `;
-          group.forEach((student, sIdx) => {
+          group.candidates.forEach((student, sIdx) => {
             html += `
                   <tr style="${sIdx === 0 ? 'background:rgba(74, 222, 128, 0.1);' : ''}">
                     <td>${student.id.substring(0,8)}...</td>
                     <td>${escapeHtml(student.classes?.name || '-')}</td>
                     <td>${escapeHtml(student.programs?.name || '-')}</td>
                     <td>${new Date(student.created_at).toLocaleString()}</td>
-                    <td>${sIdx === 0 ? '<span class="badge badge-success">Primary Target</span>' : `<button class="btn btn-warning btn-sm btn-merge-student" data-primary="${group[0].id}" data-secondary="${student.id}">Merge to Primary</button>`}</td>
+                    <td>${sIdx === 0 ? '<span class="badge badge-success">Primary Target</span>' : `<button class="btn btn-warning btn-sm btn-merge-student" data-primary="${group.recommendedPrimaryId}" data-secondary="${student.id}">Merge to Primary</button>`}</td>
                   </tr>
             `;
           });
@@ -5140,7 +5141,7 @@
             e.currentTarget.innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
             try {
               const res = await mergeStudentPair(primaryId, secondaryId);
-              showToast(`Successfully merged student! Transferred ${res.transferredAttempts} attempts and ${res.transferredProgress} progress records.`, 'success');
+              showToast(`Successfully merged student! Transferred ${res.transferredAttempts || 0} attempts and ${res.transferredProgress || 0} progress records.`, 'success');
               await loadDuplicateStudents(currentDupStudScope); // Refresh
             } catch(err) {
               showToast(`Merge failed: ${err.message}`, 'error');
@@ -5210,25 +5211,26 @@
         const examId = dupQExamSelect.value || null;
         const data = await detectDuplicateQuestions(examId);
         
-        document.getElementById('dup-q-same-count').textContent = data.totalDuplicates;
+        document.getElementById('dup-q-same-count').textContent = data.totalSameExamDupCount;
 
-        if (data.groups.length === 0) {
+        if (data.sameExamDuplicates.length === 0) {
           dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No duplicate questions found.</p></div>';
           return;
         }
 
         let html = '';
-        data.groups.forEach((group, gIdx) => {
+        data.sameExamDuplicates.forEach((group, gIdx) => {
           // Group by exam
-          const examTitle = group[0].exams?.exam_title || 'Unknown Exam';
+          const examTitle = group.examTitle || 'Unknown Exam';
+          const primaryQ = group.candidates[0];
           
           let optsDisplay = '';
-          if (group[0].options_json) {
+          if (primaryQ.options_json) {
             try {
-              const opts = typeof group[0].options_json === 'string' ? JSON.parse(group[0].options_json) : group[0].options_json;
-              optsDisplay = Array.isArray(opts) ? opts.join(' | ') : String(group[0].options_json);
+              const opts = typeof primaryQ.options_json === 'string' ? JSON.parse(primaryQ.options_json) : primaryQ.options_json;
+              optsDisplay = Array.isArray(opts) ? opts.join(' | ') : String(primaryQ.options_json);
             } catch(e) {
-              optsDisplay = String(group[0].options_json);
+              optsDisplay = String(primaryQ.options_json);
             }
           }
 
@@ -5236,12 +5238,12 @@
             <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-warning);">
               <div class="d-flex justify-between align-center mb-2 flex-wrap gap-2">
                 <div class="fw-700">Duplicate Question in: ${escapeHtml(examTitle)}</div>
-                <button class="btn btn-warning btn-sm btn-resolve-q-group" data-primary="${group[0].id}">Auto-Resolve Group</button>
+                <button class="btn btn-warning btn-sm btn-resolve-q-group" data-primary="${primaryQ.id}">Auto-Resolve Group</button>
               </div>
               <div class="text-sm mb-3 px-3 py-2 rounded" style="background:var(--clr-surface-2); border:1px solid var(--clr-border);">
-                <div class="mb-2"><strong>Text:</strong> ${escapeHtml(group[0].question_text)}</div>
+                <div class="mb-2"><strong>Text:</strong> ${escapeHtml(primaryQ.question_text)}</div>
                 ${optsDisplay ? `<div class="mb-2 text-muted"><strong>Options:</strong> ${escapeHtml(optsDisplay)}</div>` : ''}
-                <div class="text-muted"><strong>Correct Answer:</strong> ${escapeHtml(group[0].correct_answer || '-')}</div>
+                <div class="text-muted"><strong>Correct Answer:</strong> ${escapeHtml(primaryQ.correct_answer || '-')}</div>
               </div>
               <table class="table-sm w-100 text-xs">
                 <thead>
@@ -5256,7 +5258,7 @@
                 </thead>
                 <tbody>
           `;
-          group.forEach((q, qIdx) => {
+          group.candidates.forEach((q, qIdx) => {
             html += `
                   <tr style="${qIdx === 0 ? 'background:rgba(74, 222, 128, 0.1);' : 'background:rgba(239, 68, 68, 0.05);'}">
                     <td>${q.id.substring(0,8)}...</td>
@@ -5281,7 +5283,7 @@
           btn.addEventListener('click', async (e) => {
             const primaryId = e.currentTarget.dataset.primary;
             // Find the group based on primaryId
-            const group = data.groups.find(g => g[0].id === primaryId);
+            const group = data.sameExamDuplicates.find(g => g.recommendedPrimaryId === primaryId);
             if(!group) return;
             
             if(!confirm('Resolve this duplicate question group? All student answers tied to the duplicates will be repointed to the primary question, and the duplicates will be hard-deleted. Finally, the exam questions will be re-sequenced.')) return;
@@ -5289,8 +5291,13 @@
             e.currentTarget.disabled = true;
             e.currentTarget.innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
             try {
-              const res = await resolveDuplicateQuestionGroup(group);
-              showToast(`Resolved! Repointed ${res.repointedAnswersCount} answers. Duplicates removed.`, 'success');
+              let count = 0;
+              for (let i = 1; i < group.candidates.length; i++) {
+                await resolveDuplicateQuestionGroup(group.recommendedPrimaryId, group.candidates[i].id, false);
+                count++;
+              }
+              await resequenceExamQuestions(group.examId);
+              showToast(`Resolved! Repointed answers. ${count} duplicates removed.`, 'success');
               await loadDuplicateQuestions(); // Refresh
             } catch(err) {
               showToast(`Resolve failed: ${err.message}`, 'error');
