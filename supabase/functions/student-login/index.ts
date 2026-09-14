@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { programId, classId, studentId, pin } = await req.json();
+    const { programId, classId, batchId, studentId, pin } = await req.json();
 
     if (!programId || !classId || !studentId || !pin) {
       return new Response(JSON.stringify({ error: "Missing required fields." }), {

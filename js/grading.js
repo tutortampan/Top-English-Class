@@ -50,14 +50,15 @@ export function stripHyphens(text) {
 }
 
 /**
- * Parse correct answers from raw string supporting ; and | delimiters.
- * e.g. "run;jog|sprint" -> ["run", "jog", "sprint"]
+ * Parse correct answers from raw string supporting ; | and / delimiters.
+ * e.g. "run;jog|sprint/dash" -> ["run", "jog", "sprint", "dash"]
+ * All three delimiters are treated as equivalent "OR" separators.
  */
 export function parseCorrectAnswers(rawAnswer) {
   if (rawAnswer === null || rawAnswer === undefined) return [];
   if (Array.isArray(rawAnswer)) return rawAnswer.map(s => String(s).trim()).filter(Boolean);
   return String(rawAnswer)
-    .split(/[;|]/)
+    .split(/[;|/]/)
     .map(s => s.trim())
     .filter(Boolean);
 }

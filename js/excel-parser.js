@@ -208,7 +208,7 @@ export function processQuestionImportRows(normalizedRows, defaultContext = {}) {
       rowIndex: rowNum,
       order: Number(row.no) || (idx + 1),
       question_text: questionText,
-      correct_answer: rawAnswer, // Preserves multiple delimiters like ; and |
+      correct_answer: rawAnswer, // Preserves multiple delimiters: / ; and | all work as OR separators
       options_json: options.length > 0 ? options : null,
       metadata: wordType ? { type: wordType } : null,
       programName: String(row.program || defaultContext.programName || '').trim(),

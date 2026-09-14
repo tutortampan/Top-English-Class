@@ -1,5 +1,63 @@
 # CHANGELOG
 
+## [2026-09-14 03:25 UTC] -- Multi-Answer Delimiter: Added '/' Support
+
+**Agent/Session:** Antigravity / SESSION-20260914-0325
+**Phase:** Phase 26 Complete
+**Status:** PASS
+
+### Why
+- Admin requested that '/' (slash) be recognized as a valid separator for multiple correct answers in the Correct Answer field.
+- Previously only ';' and '|' were supported.
+- Example: `run / jog / sprint` should now be equivalent to `run;jog;sprint`.
+
+### Changed
+- **js/grading.js** -- `parseCorrectAnswers()`:
+  - Updated split regex from `/[;|]/` to `/[;|/]/`.
+  - Updated JSDoc comment to document all three delimiters.
+  - This is the single source of truth -- change propagates to exam submission, recalibration, and admin profile answer inspection automatically.
+- **admin.html** -- Question form field `correct_answer`:
+  - Added `placeholder` hint: `e.g. run / jog / sprint  (use / ; or | to separate multiple accepted answers)`.
+- **js/excel-parser.js**:
+  - Updated comment on `correct_answer` preservation line to mention '/' as a valid delimiter.
+
+### Files
+- `js/grading.js`
+- `admin.html`
+- `js/excel-parser.js`
+
+### Tests
+- PowerShell regex test: 6/6 PASS
+- Inputs tested: '/', ';', '|', mixed (run;jog/sprint|dash), single, whitespace-padded
+
+## [2026-09-14 03:16 UTC] -- Exam Results: Correct/Wrong Counts + Profile Button
+
+**Agent/Session:** Antigravity / SESSION-20260914-0316
+**Phase:** Phase 25 Complete
+**Status:** PASS
+
+### Why
+- Admin user requested that the Exam Results view show how many answers are correct and how many are wrong per attempt, not just score percentage and grade.
+- Also requested the ability to navigate directly to a student's full profile from the Results table.
+
+### Changed
+- **admin.html** -- `renderResults` function:
+  - Updated `adminFetchAll` query to include `attempt_answers(id, evaluation_result, score)` so correct/wrong counts can be computed client-side.
+  - Added two new table columns: Correct and Wrong (with minor-error half-point badge where applicable).
+  - Added a Profile button column that opens `openStudentProfile()` for the selected student, with full batch navigation support.
+  - Updated empty-state colspan from 8 to 11.
+  - Added `tbody` event delegation to handle Profile button clicks even after filter re-renders.
+
+### Files
+- `admin.html`
+
+### Tests
+- Manual verification: Results table columns render correctly; Profile button opens student profile.
+
+### Next Action
+- No further action required.
+
+
 ## [2026-09-11 13:25] — Subject Box Positioned Directly Under Welcome Banner
 
 **Agent/Session:** Antigravity / SESSION-20260911-1325

@@ -2339,7 +2339,7 @@
     // ── RESULTS (Student Submissions with Batch Grouping) ──
     async function renderResults(area) {
       const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
-        adminFetchAll('attempts', '*, students(name, gender, batch_id, batches(name), class_id, classes(name, program_id, programs(name))), exams(exam_title, exam_type)'),
+        adminFetchAll('attempts', '*, students(name, gender, batch_id, batches(name), class_id, classes(name, program_id, programs(name))), exams(exam_title, exam_type), attempt_answers(id, evaluation_result, score)'),
         adminFetchAll('programs'),
         adminFetchAll('classes'),
         adminFetchAll('batches')
@@ -2409,7 +2409,10 @@
                 <th class="text-left">Exam Title</th>
                 <th class="text-center">Score</th>
                 <th class="text-center">Grade</th>
+                <th class="text-center">✅ Correct</th>
+                <th class="text-center">❌ Wrong</th>
                 <th class="text-center">Submitted At</th>
+                <th class="text-center" style="width:100px;">Profile</th>
               </tr>
             </thead>
             <tbody id="tbl-results-body"></tbody>
@@ -2490,11 +2493,32 @@
         countChip.textContent = `${deduplicated.length} attempts (Merged)`;
 
         if (!deduplicated.length) {
-          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted p-5">No submitted results match the selected filters.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted p-5">No submitted results match the selected filters.</td></tr>';
           return;
         }
 
-        tbody.innerHTML = deduplicated.map(r => `
+        tbody.innerHTML = deduplicated.map(r => {
+          // Compute correct / minor / wrong from attempt_answers
+          const answers = r.attempt_answers || [];
+          let attCorrect = 0, attMinor = 0, attWrong = 0;
+          answers.forEach(a => {
+            const res = (a.evaluation_result || '').toLowerCase();
+            const sc  = parseFloat(a.score || 0);
+            if (res === 'correct' || sc >= 1)          attCorrect++;
+            else if (res.includes('minor') || (sc > 0 && sc < 1)) attMinor++;
+            else                                        attWrong++;
+          });
+          const total = answers.length;
+          const correctLabel = total > 0
+            ? `<span class="badge badge-success" style="font-size:0.75rem;">${attCorrect}</span>${attMinor > 0 ? ` <span class="badge badge-warning" style="font-size:0.7rem;" title="Minor Spelling Error">+${attMinor}½</span>` : ''}`
+            : '<span class="text-muted text-xs">—</span>';
+          const wrongLabel  = total > 0
+            ? `<span class="badge badge-danger" style="font-size:0.75rem;">${attWrong}</span>`
+            : '<span class="text-muted text-xs">—</span>';
+
+          const studentId = r.student_id;
+
+          return `
           <tr>
             <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || '—'}</td>
             <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.programs?.name || '—')}</td>
@@ -2503,9 +2527,17 @@
             <td class="text-sm fw-600">${r.exams?.exam_type ? escapeHtml(r.exams.exam_type) + ' — ' : ''}${escapeHtml(r.exams?.exam_title || '—')}</td>
             <td class="text-center fw-700 text-grade-${r.grade || 'F'}">${parseFloat(r.percentage || 0).toFixed(1)}%</td>
             <td class="text-center"><span class="grade-badge grade-${r.grade || 'F'}" style="width:30px;height:30px;font-size:0.85rem;">${r.grade || '—'}</span></td>
+            <td class="text-center">${correctLabel}</td>
+            <td class="text-center">${wrongLabel}</td>
             <td class="text-center text-muted text-xs">${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '—'}</td>
+            <td class="text-center">
+              <button class="btn btn-ghost btn-sm results-view-profile-btn" data-sid="${studentId}" style="font-size:0.75rem; padding:3px 10px; display:inline-flex; align-items:center; gap:4px;" title="View full student profile">
+                👤 Profile
+              </button>
+            </td>
           </tr>
-        `).join('');
+        `;
+        }).join('');
       };
 
       progSelect.addEventListener('change', () => { updateClassOptions(); renderTable(); });
@@ -2522,6 +2554,19 @@
       });
 
       renderTable();
+
+      // Event delegation: Profile buttons (re-rendered on each filter change)
+      tbody.addEventListener('click', e => {
+        const btn = e.target.closest('.results-view-profile-btn');
+        if (!btn) return;
+        const sid = btn.getAttribute('data-sid');
+        if (!sid) return;
+        // Collect all currently visible student IDs (deduplicated order) for batch nav
+        const allSids = Array.from(tbody.querySelectorAll('.results-view-profile-btn'))
+          .map(b => b.getAttribute('data-sid'))
+          .filter((v, i, arr) => arr.indexOf(v) === i); // unique
+        openStudentProfile(sid, allSids);
+      });
     }
 
     // ── STUDENT PROGRESS (Level Progression with Batch Grouping) ──
@@ -4383,7 +4428,7 @@
           {value:'speech_to_text',label:'Speaking Test'},
           {value:'written',label:'Written Test'}
         ], required: true },
-        { id: 'correct_answer', label: 'Correct Answer', type: 'text', required: true },
+        { id: 'correct_answer', label: 'Correct Answer', type: 'text', required: true, placeholder: 'e.g. run / jog / sprint  (use / ; or | to separate multiple accepted answers)' },
         { id: 'options_json', label: 'Options (JSON array)', type: 'textarea', placeholder: '["Option A","Option B","Option C"]' },
         { id: 'metadata', label: 'Metadata / Word Type', type: 'text', placeholder: 'e.g. 1 - VERB' },
       ],
