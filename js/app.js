@@ -57,14 +57,23 @@ export function showLoading(message = 'Loading…') {
 
 export function hideLoading() {
   if (_overlay) {
-    _overlay.style.display = 'none';
-    _overlay.remove();
+    try { _overlay.style.display = 'none'; } catch(e) {}
+    try { _overlay.remove(); } catch(e) {}
     _overlay = null;
   }
-  document.querySelectorAll('.loading-overlay').forEach(el => {
-    el.style.display = 'none';
-    el.remove();
-  });
+  try {
+    document.querySelectorAll('.loading-overlay').forEach(el => {
+      try { el.style.display = 'none'; } catch(e) {}
+      try { el.remove(); } catch(e) {}
+    });
+  } catch(e) {}
+}
+
+export function withTimeout(promise, ms, actionName = 'Operation') {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`${actionName} timed out after ${ms/1000}s. Please check your network connection.`)), ms))
+  ]);
 }
 
 // TOP ENGLISH CLASS — Scoring & Grade (client-display only, NOT authoritative)

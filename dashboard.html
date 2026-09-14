@@ -700,7 +700,7 @@
   <script type="module">
     import { fetchStudentSubjects, fetchLevels, fetchStudentProgress, fetchExamsForStudentLevel, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, formatStudentName, toLevelLetter } from './js/api.js?v=1.4';
     import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=1.4';
-    import { showToast, showLoading, hideLoading, getGrade } from './js/app.js?v=1.4';
+    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=1.4';
     import { testMicrophoneCapability } from './js/speech.js?v=1.4';
 
     function escapeHtml(str) {
@@ -1224,11 +1224,15 @@
         await checkAndPromptBirthday();
 
         showLoading('Loading your dashboard…');
-        const [subjects, progress, attempts] = await Promise.all([
-          fetchStudentSubjects(session.class_id, session.program_id),
-          fetchStudentProgress(session.student_id),
-          fetchAllStudentAttempts(session.student_id)
-        ]);
+        const [subjects, progress, attempts] = await withTimeout(
+          Promise.all([
+            fetchStudentSubjects(session.class_id, session.program_id),
+            fetchStudentProgress(session.student_id),
+            fetchAllStudentAttempts(session.student_id)
+          ]),
+          15000, 
+          'Fetching dashboard data'
+        );
 
         hideLoading();
         renderSubjects(subjects, progress);
