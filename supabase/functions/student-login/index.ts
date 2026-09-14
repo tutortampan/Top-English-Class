@@ -1,4 +1,4 @@
-// TOP ENGLISH CLASS — Edge Function: student-login
+// TOP ENGLISH CLASS â€” Edge Function: student-login
 // Server verifies: program/class relationship, student membership, active status, PIN hash.
 // Never stores or returns plaintext PINs.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -19,9 +19,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { programId, classId, batchId, studentId, pin } = await req.json();
+    const { institutionId, programId, batchId, studentId, pin } = await req.json();
 
-    if (!programId || !classId || !studentId || !pin) {
+    if (!institutionId || !programId || !studentId || !pin) {
       return new Response(JSON.stringify({ error: "Missing required fields." }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -34,10 +34,10 @@ Deno.serve(async (req) => {
     );
 
     // Validate class belongs to program
-    const { data: classData } = await supabase.from("classes")
-      .select("id, program_id, is_active")
-      .eq("id", classId)
-      .eq("program_id", programId)
+    const { data: classData } = await supabase.from("programs")
+      .select("id, institution_id, is_active")
+      .eq("id", programId)
+      .eq("institution_id", institutionId)
       .eq("is_active", true)
       .is("deleted_at", null)
       .single();
@@ -50,10 +50,10 @@ Deno.serve(async (req) => {
 
     // Validate student belongs to class and is active
     let query = supabase.from("students")
-      .select("id, name, pin_hash, is_active, class_id, program_id, gender, batch_id")
+      .select("id, name, pin_hash, is_active, program_id, institution_id, gender, batch_id")
       .eq("id", studentId)
-      .eq("class_id", classId)
       .eq("program_id", programId)
+      .eq("institution_id", institutionId)
       .eq("is_active", true)
       .is("deleted_at", null);
 
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify PIN (compare hashes — never plaintext comparison)
+    // Verify PIN (compare hashes â€” never plaintext comparison)
     const pinHash = await sha256(pin);
     if (pinHash !== student.pin_hash) {
       // Log failed attempt (without PIN)

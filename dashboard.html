@@ -719,7 +719,7 @@
     // Populate header & Welcome Banner
     document.getElementById('header-student-name').textContent = session.student_name;
     document.getElementById('welcome-name').textContent = session.student_name;
-    document.getElementById('welcome-meta').textContent = `${session.program_name} › ${session.class_name}${session.batch_name ? ' › ' + session.batch_name : ''}`;
+    document.getElementById('welcome-meta').textContent = `${session.institution_name} › ${session.program_name}${session.batch_name ? ' › ' + session.batch_name : ''}`;
 
     // Compute first initial for banner avatar placeholder
     const cleanStudentName = (session.student_name || 'Student').replace(/^(mr\.?|miss\.?|mrs\.?|ms\.?)\s+/i, '').trim();
@@ -1226,7 +1226,7 @@
         showLoading('Loading your dashboard…');
         const [subjects, progress, attempts] = await withTimeout(
           Promise.all([
-            fetchStudentSubjects(session.class_id, session.program_id),
+            fetchStudentSubjects(session.program_id, session.institution_id),
             fetchStudentProgress(session.student_id),
             fetchAllStudentAttempts(session.student_id)
           ]),
@@ -1572,8 +1572,8 @@
       const closeBtn = document.getElementById('close-profile-modal');
 
       document.getElementById('prof-student-name').textContent = session.student_name;
-      document.getElementById('prof-student-prog').textContent = `Program: ${session.program_name}`;
-      document.getElementById('prof-student-class').textContent = `Class: ${session.class_name}`;
+      document.getElementById('prof-student-prog').textContent = `Program: ${session.institution_name}`;
+      document.getElementById('prof-student-class').textContent = `Class: ${session.program_name}`;
       const batchEl = document.getElementById('prof-student-batch');
       if (batchEl) {
         if (session.batch_name) {
@@ -1727,7 +1727,31 @@
       if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
     });
 
+    // ── Gamification: Show Level Up Popup ──
+    window.showLevelUpPopup = function(newLevel) {
+      const overlay = document.getElementById('level-up-overlay');
+      const badgeText = document.getElementById('lu-badge-text');
+      badgeText.textContent = newLevel;
+      
+      // Make it visible
+      overlay.classList.add('active');
+
+      // Trigger Confetti (using Canvas Confetti library if included, otherwise skip or use a custom one)
+      if (window.confetti) {
+        window.confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          zIndex: 10000
+        });
+      }
+    };
+
+    // Close Gamification Popup
+    document.getElementById('close-levelup-btn').addEventListener('click', () => {
+      document.getElementById('level-up-overlay').classList.remove('active');
+    });
+
     loadDashboard();
-  </script>
-</body>
+  </script></body>
 </html>

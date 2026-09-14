@@ -522,7 +522,7 @@
               <span class="search-icon">🔍</span>
               <input type="text" id="search-program" placeholder="Search program…" autocomplete="off" />
             </div>
-            <div class="options-grid" id="list-program" role="list" aria-label="Programs">
+            <div class="options-grid" id="list-program" role="list" aria-label="Institutions">
               <div class="opts-spinner"><div class="spinner"></div></div>
             </div>
           </div>
@@ -545,7 +545,7 @@
               <span class="search-icon">🔍</span>
               <input type="text" id="search-class" placeholder="Search class…" autocomplete="off" />
             </div>
-            <div class="options-grid" id="list-class" role="list" aria-label="Classes">
+            <div class="options-grid" id="list-class" role="list" aria-label="Programs">
               <div class="opts-empty">Select a program first</div>
             </div>
           </div>
@@ -634,7 +634,7 @@
   </div>
 
   <script type="module">
-    import { fetchPrograms, fetchClasses, fetchBatches, fetchStudentsByClass, verifyStudentLogin, formatStudentName } from './js/api.js?v=1.4';
+    import { fetchInstitutions, fetchPrograms, fetchBatches, fetchStudentsByProgram, verifyStudentLogin, formatStudentName } from './js/api.js?v=1.4';
     import { setStudentSession, getStudentSession } from './js/session.js?v=1.4';
     import { showToast, showLoading, hideLoading } from './js/app.js?v=1.4';
 
@@ -645,8 +645,8 @@
 
     // ── State ──
     const state = {
+      institutionId: null, institutionName: null,
       programId: null, programName: null,
-      classId: null, className: null,
       batchId: null, batchName: null,
       studentId: null, studentName: null,
     };
@@ -678,8 +678,8 @@
     function saveLogin() {
       if (!rememberEnabled) return;
       localStorage.setItem(REMEMBER_KEY, JSON.stringify({
+        institutionId: state.institutionId, institutionName: state.institutionName,
         programId: state.programId, programName: state.programName,
-        classId: state.classId, className: state.className,
         batchId: state.batchId, batchName: state.batchName,
         studentId: state.studentId, studentName: state.studentName,
       }));
@@ -797,14 +797,14 @@
       return d.innerHTML;
     }
 
-    // ── Step 1: Load Programs ──
+    // ── Step 1: Load Institutions ──
     async function loadPrograms(autoSelectId = null) {
       const container = document.getElementById('list-program');
       container.innerHTML = `<div class="opts-spinner"><div class="spinner"></div></div>`;
       try {
-        const programs = await fetchPrograms();
-        renderOptions('list-program', 'search-program', programs, (p) => {
-          state.programId = p.id; state.programName = p.name;
+        const institutions = await fetchInstitutions();
+        renderOptions('list-program', 'search-program', institutions, (p) => {
+          state.institutionId = p.id; state.institutionName = p.name;
           collapseSection('sec-program', p.name, 'step-num-1');
           resetFrom('class');
           loadClasses();
@@ -812,46 +812,46 @@
 
         // Auto-select if restoring saved login, otherwise auto-advance if only 1 option
         if (autoSelectId) {
-          const match = programs.find(p => p.id === autoSelectId);
+          const match = institutions.find(p => p.id === autoSelectId);
           if (match) {
-            state.programId = match.id; state.programName = match.name;
+            state.institutionId = match.id; state.institutionName = match.name;
           }
-        } else if (programs.length === 1) {
+        } else if (institutions.length === 1) {
           setTimeout(() => {
             const card = document.querySelector('#list-program .opt-card');
             if (card) card.click();
           }, 100);
         }
       } catch (e) {
-        container.innerHTML = `<div class="opts-empty" style="color:#f87171;">Failed to load programs: ${e.message}</div>`;
+        container.innerHTML = `<div class="opts-empty" style="color:#f87171;">Failed to load institutions: ${e.message}</div>`;
       }
     }
 
-    // ── Step 2: Load Classes ──
+    // ── Step 2: Load Programs ──
     async function loadClasses(autoSelectId = null) {
       unlockSection('sec-class');
       const container = document.getElementById('list-class');
       container.innerHTML = `<div class="opts-spinner"><div class="spinner"></div></div>`;
       try {
-        const classes = await fetchClasses(state.programId);
-        renderOptions('list-class', 'search-class', classes, (c) => {
-          state.classId = c.id; state.className = c.name;
+        const programs = await fetchPrograms(state.institutionId);
+        renderOptions('list-class', 'search-class', programs, (c) => {
+          state.programId = c.id; state.className = c.name;
           collapseSection('sec-class', c.name, 'step-num-2');
           resetFrom('batch');
           loadBatches();
         }, autoSelectId);
 
         if (autoSelectId) {
-          const match = classes.find(c => c.id === autoSelectId);
-          if (match) { state.classId = match.id; state.className = match.name; }
-        } else if (classes.length === 1) {
+          const match = programs.find(c => c.id === autoSelectId);
+          if (match) { state.programId = match.id; state.className = match.name; }
+        } else if (programs.length === 1) {
           setTimeout(() => {
             const card = document.querySelector('#list-class .opt-card');
             if (card) card.click();
           }, 100);
         }
       } catch (e) {
-        container.innerHTML = `<div class="opts-empty" style="color:#f87171;">Failed to load classes.</div>`;
+        container.innerHTML = `<div class="opts-empty" style="color:#f87171;">Failed to load programs.</div>`;
       }
     }
 
@@ -861,7 +861,7 @@
       const container = document.getElementById('list-batch');
       container.innerHTML = `<div class="opts-spinner"><div class="spinner"></div></div>`;
       try {
-        const batches = await fetchBatches(state.classId);
+        const batches = await fetchBatches(state.programId);
         const displayBatches = batches.length > 0
           ? [{ id: '__all__', name: 'All Batches' }, ...batches]
           : [{ id: '__all__', name: 'All Students' }];
@@ -895,7 +895,7 @@
       const container = document.getElementById('list-student');
       container.innerHTML = `<div class="opts-spinner"><div class="spinner"></div></div>`;
       try {
-        const students = await fetchStudentsByClass(state.classId, state.batchId);
+        const students = await fetchStudentsByProgram(state.programId, state.batchId);
         renderOptions('list-student', 'search-student', students, (s) => {
           state.studentId = s.id; state.studentName = s.name;
           collapseSection('sec-student', s.name, 'step-num-4');
@@ -923,7 +923,7 @@
         const key = order[i];
         const el = document.getElementById(`sec-${key}`);
         if (el) { el.classList.remove('unlocked', 'selected'); }
-        if (key === 'class') { state.classId = null; state.className = null; }
+        if (key === 'class') { state.programId = null; state.className = null; }
         if (key === 'batch') { state.batchId = null; state.batchName = null; }
         if (key === 'student') { state.studentId = null; state.studentName = null; }
         if (key === 'pin') { resetPin(); }
@@ -1003,8 +1003,8 @@
 
       try {
         const result = await verifyStudentLogin({
+          institutionId: state.institutionId,
           programId: state.programId,
-          classId: state.classId,
           batchId: state.batchId,
           studentId: state.studentId,
           pin,
@@ -1014,10 +1014,10 @@
           student_id: state.studentId,
           student_name: result.student?.name || state.studentName,
           gender: result.student?.gender || null,
+          institution_id: state.institutionId,
+          institution_name: state.institutionName,
           program_id: state.programId,
           program_name: state.programName,
-          class_id: state.classId,
-          class_name: state.className,
           batch_id: state.batchId,
           batch_name: state.batchName,
         });
@@ -1045,18 +1045,18 @@
 
       showToast('Restoring your saved login…', 'info');
 
-      // Step 1: Load programs and auto-collapse to saved program
-      await loadPrograms(saved.programId);
-      if (!state.programId) { await loadPrograms(); return; }
+      // Step 1: Load institutions and auto-collapse to saved program
+      await loadPrograms(saved.institutionId);
+      if (!state.institutionId) { await loadPrograms(); return; }
 
       // Collapse program section
-      collapseSection('sec-program', saved.programName || state.programName, 'step-num-1');
+      collapseSection('sec-program', saved.institutionName || state.institutionName, 'step-num-1');
 
-      // Step 2: Load classes
-      await loadClasses(saved.classId);
-      if (!state.classId) { unlockSection('sec-class'); return; }
+      // Step 2: Load programs
+      await loadClasses(saved.programId);
+      if (!state.programId) { unlockSection('sec-class'); return; }
 
-      collapseSection('sec-class', saved.className || state.className, 'step-num-2');
+      collapseSection('sec-class', saved.programName || state.programName, 'step-num-2');
 
       // Step 3: Load batches
       const savedBatchEffId = saved.batchId === null ? null : saved.batchId;

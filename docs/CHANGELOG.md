@@ -1,3 +1,47 @@
+## [2026-09-15 02:12] - Terminology Cleanup and Gamification Cancelled
+
+**Agent/Session:** Antigravity
+**Phase:** Phase 4
+**Status:** COMPLETE
+
+### Why
+- The user's Supabase database was inadvertently reset by running the 'Clean Setup' SQL script which dropped tables.
+- The user requested to cancel the Gamification implementation completely to restore their old database state.
+- The user requested to keep the terminology refactoring (Institutions/Programs) in the codebase.
+
+### Changed
+- Reverted all Gamification UI overlays, CSS animations, and JS logic from dashboard.html and css/style.css.
+- Removed Gamification tables (student_xp, chievements) from supabase-setup.sql.
+- Fixed a regex replacement bug where .className was inadvertently renamed to .programName.
+- Provided a safe-terminology-migration.sql script to allow the user to migrate their restored database data to the new terminology schema without dropping tables.
+
+### Files
+- css/style.css
+- dashboard.html
+- js/api.js, dmin.html, index.html, exam.html, esult.html
+- supabase-setup.sql
+- safe-terminology-migration.sql
+
+
+## [2026-09-14 23:38 UTC] - Phase 4: Gamification System Implementation & Cleanup
+
+**Agent/Session:** Antigravity / SESSION-20260914-2338
+**Phase:** Phase 4 Complete
+**Status:** PASS
+
+### Why
+- User requested Phase 4 (Gamification System) implementation, requiring Level Up popups and confetti.
+- Found a bug where .className was incorrectly replaced with .programName across HTML files during the database terminology schema rename.
+
+### Changed
+- **css/style.css**:
+  - Added Level Up popup styling, Glassmorphism, and animations.
+- **dashboard.html**:
+  - Injected Level Up popup HTML overlay and canvas for confetti.
+  - Added JavaScript triggerLevelUp function to fire confetti and show the modal.
+- **Across entire codebase**:
+  - Automatically reverted .programName = back to .className = for DOM elements in admin.html, dashboard.html, exam.html, index.html, result.html, and js/app.js using a PowerShell script to prevent massive styling breakages.
+
 # CHANGELOG
 
 ## [2026-09-14 08:10 UTC] â€” Phase 26: Multi-Answer & Option Delimiters ('/' and ';') + Admin Results & Profile Verification
@@ -1134,4 +1178,24 @@
  # # #   N e x t   A c t i o n 
  -   A w a i t   u s e r   f e e d b a c k   o n   t h e   n e w   c o m p a c t   l a y o u t . 
   
- 
+ ## [2026-09-14 22:11] - Simplified Exam Creation and Hidden Locked Exams
+
+**Agent/Session:** Antigravity
+**Phase:** Phase 25 — Exam Creation & Locked Exams
+**Status:** PASS
+
+### Why
+- The user requested that exams with unmet prerequisites be completely hidden from the student dashboard, rather than shown as locked buttons.
+- The user requested a simplified exam creation form requiring only Program and Class fields, to speed up exam creation.
+
+### Changed
+- dashboard.html: Updated enderExamsIntoContainer to completely skip rendering exams that have an unmet prerequisite.
+- dmin.html: Modified the exams form fields to make all fields except Program and Class optional. Added auto-default logic in the crudForm submit handler to inject safe defaults for missing fields (e.g., auto-picking the first subject, defaulting to 'Daily', 'Untitled Exam', etc.).
+
+### Files
+- dashboard.html
+- dmin.html
+
+### Next Action
+- Discuss gamification implementation plan with the user.
+

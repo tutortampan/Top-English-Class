@@ -370,8 +370,8 @@
         let examDisplayName = examData?.display_name || examData?.name || '';
         if (!examDisplayName && examData) {
           const parts = [
+            session.institution_name || '',
             session.program_name || '',
-            session.class_name || '',
             examData.subjects?.name || '',
             examData.levels?.name ? (String(examData.levels.name).toLowerCase().includes('level') ? examData.levels.name : `Level ${examData.levels.name}`) : '',
             examData.exam_type || '',

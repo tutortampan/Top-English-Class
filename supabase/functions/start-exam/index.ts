@@ -1,4 +1,4 @@
-// TOP ENGLISH CLASS — Edge Function: start-exam
+// TOP ENGLISH CLASS â€” Edge Function: start-exam
 // Server-authoritative exam start. Creates or resumes an attempt.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -35,13 +35,13 @@ Deno.serve(async (req) => {
 
     // 2. Check student is in an eligible class for this exam
     const { data: examClass } = await supabase
-      .from("exam_classes")
-      .select("class_id")
+      .from("exam_programs")
+      .select("program_id")
       .eq("exam_id", exam_id);
 
     const { data: student } = await supabase
       .from("students")
-      .select("id, class_id, is_active")
+      .select("id, program_id, is_active")
       .eq("id", student_id)
       .is("deleted_at", null)
       .single();
@@ -52,11 +52,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    const eligibleClassIds = (examClass || []).map((ec: any) => ec.class_id);
-    if (!eligibleClassIds.includes(student.class_id)) {
+    const eligibleprogramIds = (examClass || []).map((ec: any) => ec.program_id);
+    if (!eligibleprogramIds.includes(student.program_id)) {
       return new Response(JSON.stringify({ error: "Student not eligible for this exam." }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
+    }
+
+    // 2.5 Check Prerequisite Exam
+    if (exam.prerequisite_exam_id) {
+      const { data: prereqAttempts } = await supabase
+        .from("attempts")
+        .select("effective_score, status")
+        .eq("student_id", student_id)
+        .eq("exam_id", exam.prerequisite_exam_id)
+        .in("status", ["submitted", "auto_submitted"]);
+
+      const reqScore = exam.prerequisite_min_score || 60;
+      const hasPassed = prereqAttempts && prereqAttempts.some((a: any) => a.effective_score >= reqScore);
+
+      if (!hasPassed) {
+        return new Response(JSON.stringify({ error: `Prerequisite exam not passed. You must score at least ${reqScore}% on the prerequisite exam.` }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
     }
 
     // 3. Check for existing in-progress attempt (resume)

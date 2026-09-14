@@ -10,14 +10,14 @@ export { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCo
 // ============================================================
 
 // Mock data for development / offline / demo environment
-const MOCK_PROGRAMS = [
+const MOCK_INSTITUTIONS = [
   { id: '11111111-1111-1111-1111-111111111111', name: 'General English Program' },
   { id: '11111111-1111-1111-1111-222222222222', name: 'Academic English Program' }
 ];
 
-const MOCK_CLASSES = [
-  { id: '22222222-2222-2222-2222-222222222222', program_id: '11111111-1111-1111-1111-111111111111', name: 'Class A' },
-  { id: '22222222-2222-2222-2222-333333333333', program_id: '11111111-1111-1111-1111-111111111111', name: 'Class B' }
+const MOCK_PROGRAMS = [
+  { id: '22222222-2222-2222-2222-222222222222', institution_id: '11111111-1111-1111-1111-111111111111', name: 'Class A' },
+  { id: '22222222-2222-2222-2222-333333333333', institution_id: '11111111-1111-1111-1111-111111111111', name: 'Class B' }
 ];
 
 /**
@@ -65,14 +65,14 @@ export function toLevelLetter(num) {
 }
 
 const MOCK_BATCHES = [
-  { id: 'bbbbbbbb-1111-1111-1111-111111111111', class_id: '22222222-2222-2222-2222-222222222222', name: 'Batch 2026-A' },
-  { id: 'bbbbbbbb-1111-1111-1111-111111111112', class_id: '22222222-2222-2222-2222-222222222222', name: 'Batch 2026-B' },
-  { id: 'bbbbbbbb-2222-2222-2222-111111111111', class_id: '22222222-2222-2222-2222-333333333333', name: 'Batch 2026-A' }
+  { id: 'bbbbbbbb-1111-1111-1111-111111111111', program_id: '22222222-2222-2222-2222-222222222222', name: 'Batch 2026-A' },
+  { id: 'bbbbbbbb-1111-1111-1111-111111111112', program_id: '22222222-2222-2222-2222-222222222222', name: 'Batch 2026-B' },
+  { id: 'bbbbbbbb-2222-2222-2222-111111111111', program_id: '22222222-2222-2222-2222-333333333333', name: 'Batch 2026-A' }
 ];
 
 const MOCK_STUDENTS = [
-  { id: '55555555-5555-5555-5555-555555555555', program_id: '11111111-1111-1111-1111-111111111111', class_id: '22222222-2222-2222-2222-222222222222', batch_id: 'bbbbbbbb-1111-1111-1111-111111111111', name: 'John Doe', gender: 'male', is_active: true, pin_hash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4' }, // PIN: 1234
-  { id: '55555555-5555-5555-5555-666666666666', program_id: '11111111-1111-1111-1111-111111111111', class_id: '22222222-2222-2222-2222-222222222222', batch_id: 'bbbbbbbb-1111-1111-1111-111111111111', name: 'Jane Smith', gender: 'female', is_active: true, pin_hash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4' }
+  { id: '55555555-5555-5555-5555-555555555555', institution_id: '11111111-1111-1111-1111-111111111111', program_id: '22222222-2222-2222-2222-222222222222', batch_id: 'bbbbbbbb-1111-1111-1111-111111111111', name: 'John Doe', gender: 'male', is_active: true, pin_hash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4' }, // PIN: 1234
+  { id: '55555555-5555-5555-5555-666666666666', institution_id: '11111111-1111-1111-1111-111111111111', program_id: '22222222-2222-2222-2222-222222222222', batch_id: 'bbbbbbbb-1111-1111-1111-111111111111', name: 'Jane Smith', gender: 'female', is_active: true, pin_hash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4' }
 ];
 
 
@@ -89,20 +89,20 @@ export async function testSupabaseConnection() {
   if (isPlaceholderUrl()) return { connected: false, error: 'Placeholder URL' };
   try {
     const sb = await getSupabase();
-    const { error } = await sb.from('programs').select('id').limit(1);
+    const { error } = await sb.from('institutions').select('id').limit(1);
     return { connected: !error, error };
   } catch (e) {
     return { connected: false, error: e.message };
   }
 }
 
-/** Fetch all active programs for login step 1 (alphabetical order) */
-export async function fetchPrograms() {
-  let list = MOCK_PROGRAMS;
+/** Fetch all active institutions for login step 1 (alphabetical order) */
+export async function fetchInstitutions() {
+  let list = MOCK_INSTITUTIONS;
   if (!isPlaceholderUrl()) {
     try {
       const sb = await getSupabase();
-      const { data, error } = await sb.from('programs')
+      const { data, error } = await sb.from('institutions')
         .select('id, name')
         .eq('is_active', true)
         .is('deleted_at', null)
@@ -116,15 +116,15 @@ export async function fetchPrograms() {
   return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
 
-/** Fetch all active classes for a program (alphabetical order) */
-export async function fetchClasses(programId) {
-  let list = MOCK_CLASSES.filter(c => c.program_id === programId);
+/** Fetch all active programs for a program (alphabetical order) */
+export async function fetchPrograms(institutionId) {
+  let list = MOCK_PROGRAMS.filter(c => c.institution_id === institutionId);
   if (!isPlaceholderUrl()) {
     try {
       const sb = await getSupabase();
-      const { data, error } = await sb.from('classes')
-        .select('id, name, program_id')
-        .eq('program_id', programId)
+      const { data, error } = await sb.from('programs')
+        .select('id, name, institution_id')
+        .eq('institution_id', institutionId)
         .eq('is_active', true)
         .is('deleted_at', null)
         .order('name');
@@ -138,14 +138,14 @@ export async function fetchClasses(programId) {
 }
 
 /** Fetch all active batches for a class (alphabetical order) */
-export async function fetchBatches(classId) {
-  let list = MOCK_BATCHES.filter(b => b.class_id === classId);
+export async function fetchBatches(programId) {
+  let list = MOCK_BATCHES.filter(b => b.program_id === programId);
   if (!isPlaceholderUrl()) {
     try {
       const sb = await getSupabase();
       const { data, error } = await sb.from('batches')
-        .select('id, name, class_id')
-        .eq('class_id', classId)
+        .select('id, name, program_id')
+        .eq('program_id', programId)
         .eq('is_active', true)
         .is('deleted_at', null)
         .order('name');
@@ -159,14 +159,14 @@ export async function fetchBatches(classId) {
 }
 
 /** Fetch students by class and optional batch — formatted with Miss/Mr. titles in alphabetical order */
-export async function fetchStudentsByClass(classId, batchId = null) {
-  let list = MOCK_STUDENTS.filter(s => s.class_id === classId && (!batchId || s.batch_id === batchId));
+export async function fetchStudentsByProgram(programId, batchId = null) {
+  let list = MOCK_STUDENTS.filter(s => s.program_id === programId && (!batchId || s.batch_id === batchId));
   if (!isPlaceholderUrl()) {
     try {
       const sb = await getSupabase();
       let query = sb.from('students')
-        .select('id, name, gender, class_id, batch_id')
-        .eq('class_id', classId)
+        .select('id, name, gender, program_id, batch_id')
+        .eq('program_id', programId)
         .eq('is_active', true)
         .is('deleted_at', null);
       if (batchId) {
@@ -186,7 +186,7 @@ export async function fetchStudentsByClass(classId, batchId = null) {
 }
 
 /** Verify student PIN — calls Edge Function, falls back to direct DB check if not deployed */
-export async function verifyStudentLogin({ programId, classId, batchId, studentId, pin }) {
+export async function verifyStudentLogin({ institutionId, programId, batchId, studentId, pin }) {
   if (isPlaceholderUrl()) {
     const student = MOCK_STUDENTS.find(s => s.id === studentId);
     if (!student) throw new Error('Student not found.');
@@ -205,7 +205,7 @@ export async function verifyStudentLogin({ programId, classId, batchId, studentI
 
   // Try Edge Function first (server-authoritative path)
   try {
-    const edgeRes = await callEdgeFunction('student-login', { programId, classId, batchId, studentId, pin });
+    const edgeRes = await callEdgeFunction('student-login', { institutionId, programId, batchId, studentId, pin });
     if (edgeRes) {
       const studentObj = edgeRes.student || {
         id: edgeRes.student_id,
@@ -227,14 +227,14 @@ export async function verifyStudentLogin({ programId, classId, batchId, studentI
     const sb = await getSupabase();
     const { data: student, error } = await sb
       .from('students')
-      .select('id, name, gender, pin_hash, is_active, class_id, program_id, batch_id')
+      .select('id, name, gender, pin_hash, is_active, program_id, institution_id, batch_id')
       .eq('id', studentId)
       .single();
 
     if (error || !student) throw new Error('Student not found.');
     if (!student.is_active) throw new Error('This student account is inactive.');
-    if (student.class_id !== classId) throw new Error('Student does not belong to the selected class.');
-    if (student.program_id !== programId) throw new Error('Student does not belong to the selected program.');
+    if (student.program_id !== programId) throw new Error('Student does not belong to the selected class.');
+    if (student.institution_id !== institutionId) throw new Error('Student does not belong to the selected program.');
     if (batchId && student.batch_id && student.batch_id !== batchId) {
       throw new Error('Student does not belong to the selected batch.');
     }
@@ -366,39 +366,39 @@ export async function uploadStudentPhoto(studentId, photoBase64OrUrl) {
 // STUDENT DASHBOARD
 // ============================================================
 
-/** Fetch subjects accessible by the student (directly by program_id or class) */
-export async function fetchStudentSubjects(classId, programId) {
+/** Fetch subjects accessible by the student (directly by institution_id or class) */
+export async function fetchStudentSubjects(programId, institutionId) {
   const sb = await getSupabase();
   // 1. Direct program lookup (recommended: subjects inherit from program)
-  if (programId) {
+  if (institutionId) {
     const { data, error } = await sb.from('subjects')
       .select('id, name')
-      .eq('program_id', programId)
+      .eq('institution_id', institutionId)
       .eq('is_active', true)
       .is('deleted_at', null)
       .order('name');
     if (!error && data && data.length > 0) return data;
   }
-  // 2. Class lookup to resolve program_id
-  if (classId) {
-    const { data: cls } = await sb.from('classes')
-      .select('program_id')
-      .eq('id', classId)
+  // 2. Class lookup to resolve institution_id
+  if (programId) {
+    const { data: cls } = await sb.from('programs')
+      .select('institution_id')
+      .eq('id', programId)
       .single();
-    if (cls?.program_id) {
+    if (cls?.institution_id) {
       const { data, error } = await sb.from('subjects')
         .select('id, name')
-        .eq('program_id', cls.program_id)
+        .eq('institution_id', cls.institution_id)
         .eq('is_active', true)
         .is('deleted_at', null)
         .order('name');
       if (!error && data && data.length > 0) return data;
     }
-    // 3. Fallback: class_subjects junction table if it exists
+    // 3. Fallback: program_subjects junction table if it exists
     try {
-      const { data, error } = await sb.from('class_subjects')
+      const { data, error } = await sb.from('program_subjects')
         .select('subjects(id, name)')
-        .eq('class_id', classId);
+        .eq('program_id', programId);
       if (!error && data && data.length > 0) {
         return data.map(r => r.subjects).filter(Boolean);
       }
@@ -431,7 +431,7 @@ export async function fetchStudentProgress(studentId) {
 }
 
 /** Fetch published exams available for a specific level */
-export async function fetchExamsForStudentLevel(classId, levelId, programId) {
+export async function fetchExamsForStudentLevel(programId, levelId, institutionId) {
   const sb = await getSupabase();
   let query = sb.from('exams')
     .select('*')
@@ -440,8 +440,8 @@ export async function fetchExamsForStudentLevel(classId, levelId, programId) {
     .is('deleted_at', null)
     .order('exam_title');
 
-  if (programId) {
-    query = query.eq('program_id', programId);
+  if (institutionId) {
+    query = query.eq('institution_id', institutionId);
   }
 
   let examsList = [];
@@ -494,7 +494,7 @@ export async function fetchExamsForStudentLevel(classId, levelId, programId) {
 }
 
 /** Fetch published exams available for a specific subject (when no levels are defined or level is optional) */
-export async function fetchExamsForStudentSubject(classId, subjectId, programId) {
+export async function fetchExamsForStudentSubject(programId, subjectId, institutionId) {
   const sb = await getSupabase();
   let query = sb.from('exams')
     .select('*')
@@ -503,8 +503,8 @@ export async function fetchExamsForStudentSubject(classId, subjectId, programId)
     .is('deleted_at', null)
     .order('exam_title');
 
-  if (programId) {
-    query = query.eq('program_id', programId);
+  if (institutionId) {
+    query = query.eq('institution_id', institutionId);
   }
 
   let examsList = [];
@@ -848,48 +848,48 @@ export async function fetchAttemptAnswers(attemptId) {
 }
 
 // ============================================================
-// ADMIN — Programs, Classes, Subjects, Levels
+// ADMIN — Institutions, Programs, Subjects, Levels
 // ============================================================
 
 // In-memory mock store for admin console demo when Supabase is not connected
 const MOCK_ADMIN_STORE = {
-  programs: [
+  institutions: [
     { id: '11111111-1111-1111-1111-111111111111', name: 'General English Program', is_active: true, created_at: '2026-01-10T08:00:00Z' },
     { id: '11111111-1111-1111-1111-222222222222', name: 'Academic English Program', is_active: true, created_at: '2026-01-15T08:00:00Z' }
   ],
-  classes: [
-    { id: '22222222-2222-2222-2222-222222222222', program_id: '11111111-1111-1111-1111-111111111111', name: 'Class A', is_active: true, created_at: '2026-01-20T08:00:00Z' },
-    { id: '22222222-2222-2222-2222-333333333333', program_id: '11111111-1111-1111-1111-111111111111', name: 'Class B', is_active: true, created_at: '2026-01-22T08:00:00Z' },
-    { id: '22222222-2222-2222-2222-444444444444', program_id: '11111111-1111-1111-1111-222222222222', name: 'Class C (IELTS Prep)', is_active: true, created_at: '2026-01-25T08:00:00Z' }
+  programs: [
+    { id: '22222222-2222-2222-2222-222222222222', institution_id: '11111111-1111-1111-1111-111111111111', name: 'Class A', is_active: true, created_at: '2026-01-20T08:00:00Z' },
+    { id: '22222222-2222-2222-2222-333333333333', institution_id: '11111111-1111-1111-1111-111111111111', name: 'Class B', is_active: true, created_at: '2026-01-22T08:00:00Z' },
+    { id: '22222222-2222-2222-2222-444444444444', institution_id: '11111111-1111-1111-1111-222222222222', name: 'Class C (IELTS Prep)', is_active: true, created_at: '2026-01-25T08:00:00Z' }
   ],
   subjects: [
-    { id: '33333333-3333-3333-3333-333333333333', program_id: '11111111-1111-1111-1111-111111111111', name: 'English Grammar & Vocabulary', is_active: true, created_at: '2026-01-12T08:00:00Z' },
-    { id: '33333333-3333-3333-3333-444444444444', program_id: '11111111-1111-1111-1111-111111111111', name: 'Conversational Speaking', is_active: true, created_at: '2026-01-14T08:00:00Z' }
+    { id: '33333333-3333-3333-3333-333333333333', institution_id: '11111111-1111-1111-1111-111111111111', name: 'English Grammar & Vocabulary', is_active: true, created_at: '2026-01-12T08:00:00Z' },
+    { id: '33333333-3333-3333-3333-444444444444', institution_id: '11111111-1111-1111-1111-111111111111', name: 'Conversational Speaking', is_active: true, created_at: '2026-01-14T08:00:00Z' }
   ],
   levels: [
     { id: '44444444-4444-4444-4444-444444444444', subject_id: '33333333-3333-3333-3333-333333333333', name: 'Level 1 - Beginner', level_number: 1, is_active: true, created_at: '2026-01-16T08:00:00Z' },
     { id: '44444444-4444-4444-4444-555555555555', subject_id: '33333333-3333-3333-3333-333333333333', name: 'Level 2 - Intermediate', level_number: 2, is_active: true, created_at: '2026-01-18T08:00:00Z' }
   ],
-  class_subjects: [
-    { class_id: '22222222-2222-2222-2222-222222222222', subject_id: '33333333-3333-3333-3333-333333333333', created_at: '2026-02-01T08:00:00Z' },
-    { class_id: '22222222-2222-2222-2222-333333333333', subject_id: '33333333-3333-3333-3333-333333333333', created_at: '2026-02-01T08:00:00Z' }
+  program_subjects: [
+    { program_id: '22222222-2222-2222-2222-222222222222', subject_id: '33333333-3333-3333-3333-333333333333', created_at: '2026-02-01T08:00:00Z' },
+    { program_id: '22222222-2222-2222-2222-333333333333', subject_id: '33333333-3333-3333-3333-333333333333', created_at: '2026-02-01T08:00:00Z' }
   ],
   batches: [
-    { id: 'bbbbbbbb-1111-1111-1111-111111111111', class_id: '22222222-2222-2222-2222-222222222222', name: 'Batch 2026-A', is_active: true, created_at: '2026-01-26T08:00:00Z' },
-    { id: 'bbbbbbbb-1111-1111-1111-111111111112', class_id: '22222222-2222-2222-2222-222222222222', name: 'Batch 2026-B', is_active: true, created_at: '2026-01-28T08:00:00Z' },
-    { id: 'bbbbbbbb-2222-2222-2222-111111111111', class_id: '22222222-2222-2222-2222-333333333333', name: 'Batch 2026-A', is_active: true, created_at: '2026-01-29T08:00:00Z' }
+    { id: 'bbbbbbbb-1111-1111-1111-111111111111', program_id: '22222222-2222-2222-2222-222222222222', name: 'Batch 2026-A', is_active: true, created_at: '2026-01-26T08:00:00Z' },
+    { id: 'bbbbbbbb-1111-1111-1111-111111111112', program_id: '22222222-2222-2222-2222-222222222222', name: 'Batch 2026-B', is_active: true, created_at: '2026-01-28T08:00:00Z' },
+    { id: 'bbbbbbbb-2222-2222-2222-111111111111', program_id: '22222222-2222-2222-2222-333333333333', name: 'Batch 2026-A', is_active: true, created_at: '2026-01-29T08:00:00Z' }
   ],
   students: [
-    { id: '55555555-5555-5555-5555-555555555555', program_id: '11111111-1111-1111-1111-111111111111', class_id: '22222222-2222-2222-2222-222222222222', batch_id: 'bbbbbbbb-1111-1111-1111-111111111111', name: 'John Doe', gender: 'male', birth_date: '2008-05-14', is_active: true, created_at: '2026-02-02T08:00:00Z' },
-    { id: '55555555-5555-5555-5555-666666666666', program_id: '11111111-1111-1111-1111-111111111111', class_id: '22222222-2222-2222-2222-222222222222', batch_id: 'bbbbbbbb-1111-1111-1111-111111111111', name: 'Jane Smith', gender: 'female', birth_date: '2009-08-21', is_active: true, created_at: '2026-02-03T08:00:00Z' }
+    { id: '55555555-5555-5555-5555-555555555555', institution_id: '11111111-1111-1111-1111-111111111111', program_id: '22222222-2222-2222-2222-222222222222', batch_id: 'bbbbbbbb-1111-1111-1111-111111111111', name: 'John Doe', gender: 'male', birth_date: '2008-05-14', is_active: true, created_at: '2026-02-02T08:00:00Z' },
+    { id: '55555555-5555-5555-5555-666666666666', institution_id: '11111111-1111-1111-1111-111111111111', program_id: '22222222-2222-2222-2222-222222222222', batch_id: 'bbbbbbbb-1111-1111-1111-111111111111', name: 'Jane Smith', gender: 'female', birth_date: '2009-08-21', is_active: true, created_at: '2026-02-03T08:00:00Z' }
   ],
   exams: [
-    { id: '66666666-6666-6666-6666-666666666666', program_id: '11111111-1111-1111-1111-111111111111', subject_id: '33333333-3333-3333-3333-333333333333', exam_type: 'MIDTERM', exam_title: 'Grammar Basics Exam', answer_type: 'multiple_choice', exam_status: 'published', question_order: 'sequential', time_limit_minutes: 15, minimum_required_score: 60, retake_allowed: true, created_at: '2026-02-05T08:00:00Z' },
-    { id: '66666666-6666-6666-6666-777777777777', program_id: '11111111-1111-1111-1111-111111111111', subject_id: '33333333-3333-3333-3333-333333333333', exam_type: 'QUIZ', exam_title: 'Vocabulary Weekly Sprint', answer_type: 'written', exam_status: 'published', question_order: 'sequential', time_limit_minutes: 20, minimum_required_score: 60, retake_allowed: true, created_at: '2026-02-08T08:00:00Z' }
+    { id: '66666666-6666-6666-6666-666666666666', institution_id: '11111111-1111-1111-1111-111111111111', subject_id: '33333333-3333-3333-3333-333333333333', exam_type: 'MIDTERM', exam_title: 'Grammar Basics Exam', answer_type: 'multiple_choice', exam_status: 'published', question_order: 'sequential', time_limit_minutes: 15, minimum_required_score: 60, retake_allowed: true, created_at: '2026-02-05T08:00:00Z' },
+    { id: '66666666-6666-6666-6666-777777777777', institution_id: '11111111-1111-1111-1111-111111111111', subject_id: '33333333-3333-3333-3333-333333333333', exam_type: 'QUIZ', exam_title: 'Vocabulary Weekly Sprint', answer_type: 'written', exam_status: 'published', question_order: 'sequential', time_limit_minutes: 20, minimum_required_score: 60, retake_allowed: true, created_at: '2026-02-08T08:00:00Z' }
   ],
-  exam_classes: [
-    { exam_id: '66666666-6666-6666-6666-666666666666', class_id: '22222222-2222-2222-2222-222222222222', created_at: '2026-02-06T08:00:00Z' },
-    { exam_id: '66666666-6666-6666-6666-777777777777', class_id: '22222222-2222-2222-2222-222222222222', created_at: '2026-02-09T08:00:00Z' }
+  exam_programs: [
+    { exam_id: '66666666-6666-6666-6666-666666666666', program_id: '22222222-2222-2222-2222-222222222222', created_at: '2026-02-06T08:00:00Z' },
+    { exam_id: '66666666-6666-6666-6666-777777777777', program_id: '22222222-2222-2222-2222-222222222222', created_at: '2026-02-09T08:00:00Z' }
   ],
   questions: [
     { id: '88888888-8888-8888-8888-111111111111', exam_id: '66666666-6666-6666-6666-666666666666', question_order: 1, question_text: 'Choose the correct form: She ___ to school every morning.', correct_answer: 'walks', answer_type: 'multiple_choice', options_json: ['walks', 'walk', 'walking', 'walked'], created_at: '2026-02-06T09:00:00Z' },
@@ -914,39 +914,39 @@ function hydrateMockRelations(table, item) {
   const store = MOCK_ADMIN_STORE;
   
   if (table === 'subjects') {
-    clone.programs = store.programs.find(p => p.id === clone.program_id) || null;
+    clone.institutions = store.institutions.find(p => p.id === clone.institution_id) || null;
   } else if (table === 'levels') {
     const subj = store.subjects.find(s => s.id === clone.subject_id);
-    clone.subjects = subj ? { ...subj, program_id: subj.program_id } : null;
-  } else if (table === 'classes') {
-    clone.programs = store.programs.find(p => p.id === clone.program_id) || null;
+    clone.subjects = subj ? { ...subj, institution_id: subj.institution_id } : null;
+  } else if (table === 'programs') {
+    clone.institutions = store.institutions.find(p => p.id === clone.institution_id) || null;
   } else if (table === 'batches') {
-    const cls = store.classes.find(c => c.id === clone.class_id);
-    clone.classes = cls ? { ...cls, programs: store.programs.find(p => p.id === cls.program_id) } : null;
+    const cls = store.programs.find(c => c.id === clone.program_id);
+    clone.programs = cls ? { ...cls, institutions: store.institutions.find(p => p.id === cls.institution_id) } : null;
   } else if (table === 'students') {
-    clone.classes = store.classes.find(c => c.id === clone.class_id) || null;
-    clone.programs = store.programs.find(p => p.id === clone.program_id) || null;
+    clone.programs = store.programs.find(c => c.id === clone.program_id) || null;
+    clone.institutions = store.institutions.find(p => p.id === clone.institution_id) || null;
     clone.batches = store.batches.find(b => b.id === clone.batch_id) || null;
   } else if (table === 'exams') {
-    clone.programs = store.programs.find(p => p.id === clone.program_id) || null;
+    clone.institutions = store.institutions.find(p => p.id === clone.institution_id) || null;
     clone.subjects = store.subjects.find(s => s.id === clone.subject_id) || null;
       } else if (table === 'questions') {
     clone.exams = store.exams.find(e => e.id === clone.exam_id) || null;
-  } else if (table === 'class_subjects') {
-    const cls = store.classes.find(c => c.id === clone.class_id);
-    clone.classes = cls ? { ...cls, programs: store.programs.find(p => p.id === cls.program_id) } : null;
+  } else if (table === 'program_subjects') {
+    const cls = store.programs.find(c => c.id === clone.program_id);
+    clone.programs = cls ? { ...cls, institutions: store.institutions.find(p => p.id === cls.institution_id) } : null;
     clone.subjects = store.subjects.find(s => s.id === clone.subject_id) || null;
-  } else if (table === 'exam_classes') {
-    const cls = store.classes.find(c => c.id === clone.class_id);
-    clone.classes = cls ? { ...cls, programs: store.programs.find(p => p.id === cls.program_id) } : null;
+  } else if (table === 'exam_programs') {
+    const cls = store.programs.find(c => c.id === clone.program_id);
+    clone.programs = cls ? { ...cls, institutions: store.institutions.find(p => p.id === cls.institution_id) } : null;
     clone.exams = store.exams.find(e => e.id === clone.exam_id) || null;
   } else if (table === 'attempts') {
     const st = store.students.find(s => s.id === clone.student_id);
-    clone.students = st ? { ...st, classes: store.classes.find(c => c.id === st.class_id) } : null;
+    clone.students = st ? { ...st, programs: store.programs.find(c => c.id === st.program_id) } : null;
     clone.exams = store.exams.find(e => e.id === clone.exam_id) || null;
   } else if (table === 'progress') {
     const st = store.students.find(s => s.id === clone.student_id);
-    clone.students = st ? { ...st, classes: store.classes.find(c => c.id === st.class_id) } : null;
+    clone.students = st ? { ...st, programs: store.programs.find(c => c.id === st.program_id) } : null;
     clone.subjects = store.subjects.find(s => s.id === clone.subject_id) || null;
       }
   return clone;
@@ -965,7 +965,7 @@ export async function adminFetchAll(table, select = '*', filters = {}) {
     const sb = await getSupabase();
     let query = sb.from(normTable).select(select);
     // Only filter by deleted_at if the table supports soft delete
-    if (!['class_subjects', 'exam_classes', 'attempts', 'attempt_answers', 'progress', 'audit_logs', 'site_settings'].includes(normTable)) {
+    if (!['program_subjects', 'exam_programs', 'attempts', 'attempt_answers', 'progress', 'audit_logs', 'site_settings'].includes(normTable)) {
       query = query.is('deleted_at', null);
     }
     for (const [key, val] of Object.entries(filters)) {
@@ -975,26 +975,26 @@ export async function adminFetchAll(table, select = '*', filters = {}) {
     if (error) throw error;
     let list = data || [];
 
-    // Hydrate exams with class_id, prerequisite_exam_id, exam_order
+    // Hydrate exams with program_id, prerequisite_exam_id, exam_order
     if (normTable === 'exams' && list.length > 0) {
       try {
         const [ecRes, auditRes] = await Promise.all([
-          sb.from('exam_classes').select('*'),
+          sb.from('exam_programs').select('*'),
           sb.from('audit_logs').select('entity_id, new_value, created_at').eq('entity_type', 'exam').eq('action', 'exam_metadata')
         ]);
         const ecList = ecRes.data || [];
         const logsList = auditRes.data || [];
         list.forEach(r => {
-          if (!r.class_id) {
+          if (!r.program_id) {
             const match = ecList.find(c => c.exam_id === r.id);
-            if (match) r.class_id = match.class_id;
+            if (match) r.program_id = match.program_id;
           }
           const examLogs = logsList.filter(l => l.entity_id === r.id).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
           if (examLogs.length > 0 && examLogs[0].new_value) {
             const nv = examLogs[0].new_value;
             if (!r.prerequisite_exam_id && nv.prerequisite_exam_id) r.prerequisite_exam_id = nv.prerequisite_exam_id;
             if (!r.exam_order && nv.exam_order) r.exam_order = nv.exam_order;
-            if (!r.class_id && nv.class_id) r.class_id = nv.class_id;
+            if (!r.program_id && nv.program_id) r.program_id = nv.program_id;
           }
           if (!r.exam_order) r.exam_order = '1';
         });
@@ -1042,7 +1042,7 @@ export async function adminInsert(table, payload) {
     if (isMissingCol) {
       const fallback = { ...insertPayload };
       if (normTable === 'exams') {
-        delete fallback.class_id;
+        delete fallback.program_id;
         delete fallback.prerequisite_exam_id;
         delete fallback.prerequisite_min_score;
         delete fallback.exam_order;
@@ -1060,8 +1060,8 @@ export async function adminInsert(table, payload) {
   // Persist auxiliary metadata for exams
   if (normTable === 'exams' && data?.id) {
     try {
-      if (payload.class_id) {
-        await sb.from('exam_classes').insert({ exam_id: data.id, class_id: payload.class_id });
+      if (payload.program_id) {
+        await sb.from('exam_programs').insert({ exam_id: data.id, program_id: payload.program_id });
       }
       await sb.from('audit_logs').insert({
         actor_role: 'admin',
@@ -1072,7 +1072,7 @@ export async function adminInsert(table, payload) {
           prerequisite_exam_id: payload.prerequisite_exam_id || null,
           prerequisite_min_score: payload.prerequisite_min_score || 60.0,
           exam_order: payload.exam_order || '1',
-          class_id: payload.class_id || null
+          program_id: payload.program_id || null
         }
       });
     } catch (auxErr) {
@@ -1083,9 +1083,9 @@ export async function adminInsert(table, payload) {
   // Sync Student Level to Progress table (Phase 4)
   if (normTable === 'students' && data?.id && payload.level_id) {
     try {
-      const { data: cls } = await sb.from('classes').select('program_id').eq('id', data.class_id).single();
-      const progId = cls?.program_id || data.program_id;
-      const { data: subjs } = await sb.from('subjects').select('id').eq('program_id', progId).is('deleted_at', null);
+      const { data: cls } = await sb.from('programs').select('institution_id').eq('id', data.program_id).single();
+      const progId = cls?.institution_id || data.institution_id;
+      const { data: subjs } = await sb.from('subjects').select('id').eq('institution_id', progId).is('deleted_at', null);
       if (subjs && subjs.length > 0) {
         for (const s of subjs) {
           await sb.from('progress').upsert({
@@ -1156,7 +1156,7 @@ export async function adminUpdate(table, id, payload) {
     if (isMissingCol) {
       const fallback = { ...updatePayload };
       if (normTable === 'exams') {
-        delete fallback.class_id;
+        delete fallback.program_id;
         delete fallback.prerequisite_exam_id;
         delete fallback.prerequisite_min_score;
         delete fallback.exam_order;
@@ -1177,9 +1177,9 @@ export async function adminUpdate(table, id, payload) {
   // Persist auxiliary metadata for exams
   if (normTable === 'exams') {
     try {
-      if (payload.class_id) {
-        await sb.from('exam_classes').delete().eq('exam_id', id);
-        await sb.from('exam_classes').insert({ exam_id: id, class_id: payload.class_id });
+      if (payload.program_id) {
+        await sb.from('exam_programs').delete().eq('exam_id', id);
+        await sb.from('exam_programs').insert({ exam_id: id, program_id: payload.program_id });
       }
       await sb.from('audit_logs').insert({
         actor_role: 'admin',
@@ -1190,7 +1190,7 @@ export async function adminUpdate(table, id, payload) {
           prerequisite_exam_id: payload.prerequisite_exam_id || null,
           prerequisite_min_score: payload.prerequisite_min_score || 60.0,
           exam_order: payload.exam_order || '1',
-          class_id: payload.class_id || null
+          program_id: payload.program_id || null
         }
       });
     } catch (auxErr) {
@@ -1201,10 +1201,10 @@ export async function adminUpdate(table, id, payload) {
   // Sync Student Level to Progress table (Phase 4)
   if (normTable === 'students' && payload.level_id) {
     try {
-      const studentClassId = payload.class_id || data?.class_id;
-      const { data: cls } = await sb.from('classes').select('program_id').eq('id', studentClassId).single();
-      const progId = cls?.program_id || payload.program_id;
-      const { data: subjs } = await sb.from('subjects').select('id').eq('program_id', progId).is('deleted_at', null);
+      const studentClassId = payload.program_id || data?.program_id;
+      const { data: cls } = await sb.from('programs').select('institution_id').eq('id', studentClassId).single();
+      const progId = cls?.institution_id || payload.institution_id;
+      const { data: subjs } = await sb.from('subjects').select('id').eq('institution_id', progId).is('deleted_at', null);
       if (subjs && subjs.length > 0) {
         for (const s of subjs) {
           await sb.from('progress').upsert({
@@ -1273,7 +1273,7 @@ export async function mergeDuplicateStudents() {
   const groups = new Map();
   for (const s of allStudents) {
     if (s.deleted_at) continue;
-    const key = `${s.class_id}::${(s.name || '').toLowerCase().trim()}`;
+    const key = `${s.program_id}::${(s.name || '').toLowerCase().trim()}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(s);
   }
@@ -1564,7 +1564,7 @@ export async function batchResolveExamDuplicateQuestions(examId) {
  */
 export async function detectDuplicateStudents(scope = 'same_class') {
   const [students, attempts, progress] = await Promise.all([
-    adminFetchAll('students', '*, classes(id, name, program_id, programs(name)), batches(id, name)'),
+    adminFetchAll('students', '*, programs(id, name, institution_id, institutions(name)), batches(id, name)'),
     adminFetchAll('attempts', 'id, student_id, score, percentage, grade, status'),
     adminFetchAll('progress', 'id, student_id, subject_id')
   ]);
@@ -1575,7 +1575,7 @@ export async function detectDuplicateStudents(scope = 'same_class') {
   activeStudents.forEach(s => {
     const nameNorm = String(s.name || '').toLowerCase().trim();
     if (!nameNorm) return;
-    const key = scope === 'same_class' ? `${s.class_id}::${nameNorm}` : nameNorm;
+    const key = scope === 'same_class' ? `${s.program_id}::${nameNorm}` : nameNorm;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(s);
   });
@@ -1585,7 +1585,7 @@ export async function detectDuplicateStudents(scope = 'same_class') {
     if (rawCandidates.length <= 1) continue;
 
     if (scope === 'cross_class') {
-      const distinctClasses = new Set(rawCandidates.map(c => c.class_id));
+      const distinctClasses = new Set(rawCandidates.map(c => c.program_id));
       if (distinctClasses.size <= 1) continue; // Same class already covered in other scope
     }
 
@@ -1599,8 +1599,8 @@ export async function detectDuplicateStudents(scope = 'same_class') {
         progressCount: studentProgress.length,
         bestScore: bestAttempt ? parseFloat(bestAttempt.percentage || 0).toFixed(1) : null,
         globalGrade: bestAttempt ? bestAttempt.grade : null,
-        className: c.classes?.name || '—',
-        programName: c.classes?.programs?.name || '—',
+        programName: c.programs?.name || '—',
+        institutionName: c.programs?.institutions?.name || '—',
         batchName: c.batches?.name || 'Unassigned'
       };
     });
@@ -1736,7 +1736,7 @@ export async function previewRecalibrateExam(examId) {
 
   // 1. Load exam
   const { data: exam, error: examErr } = await sb.from('exams')
-    .select('id, exam_title, display_name, minimum_required_score, subject_id, program_id')
+    .select('id, exam_title, display_name, minimum_required_score, subject_id, institution_id')
     .eq('id', examId)
     .single();
   if (examErr || !exam) throw new Error('Exam not found: ' + (examErr?.message || examId));
@@ -1756,7 +1756,7 @@ export async function previewRecalibrateExam(examId) {
 
   // 3. Load all submitted attempts for this exam
   const { data: attempts, error: attErr } = await sb.from('attempts')
-    .select('*, students(id, name, gender, class_id, classes(name))')
+    .select('*, students(id, name, gender, program_id, programs(name))')
     .eq('exam_id', examId)
     .in('status', ['submitted', 'auto_submitted', 'expired'])
     .order('submitted_at', { ascending: false });
@@ -1802,7 +1802,7 @@ export async function previewRecalibrateExam(examId) {
 
   for (const attempt of attempts) {
     const studentName = attempt.students ? formatStudentName(attempt.students.name, attempt.students.gender) : 'Unknown Student';
-    const className = attempt.students?.classes?.name || '—';
+    const programName = attempt.students?.programs?.name || '—';
     const ansList = answersByAttempt.get(attempt.id) || [];
 
     let newTotalScore = 0;
@@ -1866,7 +1866,7 @@ export async function previewRecalibrateExam(examId) {
       attemptId: attempt.id,
       studentId: attempt.student_id,
       studentName,
-      className,
+      programName,
       submittedAt: attempt.submitted_at,
       oldScore: Number(attempt.score) || 0,
       newScore: newTotalScore,

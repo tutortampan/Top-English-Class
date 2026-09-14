@@ -1,4 +1,4 @@
-// TOP ENGLISH CLASS — Edge Function: submit-exam
+// TOP ENGLISH CLASS â€” Edge Function: submit-exam
 // Server-authoritative scoring, grading, and level progression calculation.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -57,7 +57,7 @@ function evaluateExact(studentAnswer: string, correctAnswer: string): { result: 
 }
 
 // ============================================================
-// Authoritative Grade Calculation (AGENTS.md §2.10)
+// Authoritative Grade Calculation (AGENTS.md Â§2.10)
 // ============================================================
 function calculateGrade(pct: number): string {
   if (pct === 100) return "S";
@@ -69,7 +69,7 @@ function calculateGrade(pct: number): string {
   return "F";
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
@@ -162,16 +162,13 @@ Deno.serve(async (req) => {
       effective_score: percentage,
     }).eq("id", attempt_id);
 
-    // Update progression
-    await updateProgression(supabase, attempt.student_id, attempt.exam_id);
-
     return new Response(JSON.stringify({
       attempt_id,
       status: finalStatus,
       score: totalScore,
       total_questions: totalQuestions,
       percentage: percentage.toFixed(2),
-      grade,
+      grade
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
@@ -184,51 +181,3 @@ Deno.serve(async (req) => {
   }
 });
 
-async function updateProgression(supabase: any, studentId: string, examId: string) {
-  try {
-    // Get exam details
-    const { data: exam } = await supabase.from("exams").select("subject_id, minimum_required_score").eq("id", examId).single();
-    if (!exam || !exam.subject_id) return;
-
-    // Get all exams in this subject
-    const { data: subjectExams } = await supabase.from("exams")
-      .select("id, minimum_required_score")
-      .eq("subject_id", exam.subject_id)
-      .eq("exam_status", "published")
-      .is("deleted_at", null);
-
-    if (!subjectExams?.length) return;
-
-    // Get student's highest scores per exam
-    let allPassed = true;
-    for (const sExam of subjectExams) {
-      const { data: bestAttempt } = await supabase
-        .from("attempts")
-        .select("percentage")
-        .eq("student_id", studentId)
-        .eq("exam_id", sExam.id)
-        .in("status", ["submitted", "auto_submitted"])
-        .order("percentage", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (!bestAttempt || bestAttempt.percentage < (sExam.minimum_required_score || 60)) {
-        allPassed = false;
-        break;
-      }
-    }
-
-    // Update subject completion
-    await supabase.from("progress").upsert({
-      student_id: studentId,
-      subject_id: exam.subject_id,
-      is_unlocked: true,
-      is_completed: allPassed,
-      completed_at: allPassed ? new Date().toISOString() : null,
-    }, { onConflict: "student_id,subject_id" });
-
-    }
-  } catch (err) {
-    console.error("Progression update error:", err);
-  }
-}

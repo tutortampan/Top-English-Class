@@ -1,6 +1,6 @@
-# TOP ENGLISH CLASS — AGENTS.md
+﻿# TOP ENGLISH PROGRAM â€” AGENTS.md
 
-> **Purpose:** This file is the execution contract for an AI coding agent (including Antigravity) that builds, modifies, tests, and maintains the TOP ENGLISH CLASS application.
+> **Purpose:** This file is the execution contract for an AI coding agent (including Antigravity) that builds, modifies, tests, and maintains the TOP ENGLISH PROGRAM application.
 >
 > **Primary requirement:** The project must remain restartable. Every meaningful change must be documented so a new or returning agent can continue from the exact known state without relying on conversation history.
 >
@@ -38,7 +38,7 @@ The user has granted standing, unconditional permission to execute all `powershe
 
 ## 1.1 Name
 
-**TOP ENGLISH CLASS**
+**TOP ENGLISH PROGRAM**
 
 ## 1.2 Product Type
 
@@ -47,20 +47,20 @@ Online English assessment/testing platform.
 ## 1.3 Core hierarchy
 
 ```text
-PROGRAM
-  ├── CLASS
-  │     └── STUDENT
-  │
-  └── SUBJECT
-        └── EXAM
-              └── QUESTION
+INSTITUTION
+  â”œâ”€â”€ PROGRAM
+  â”‚     â””â”€â”€ STUDENT
+  â”‚
+  â””â”€â”€ SUBJECT
+        â””â”€â”€ EXAM
+              â””â”€â”€ QUESTION
 
 STUDENT + EXAM
-  └── ATTEMPT
-        └── ATTEMPT ANSWER
+  â””â”€â”€ ATTEMPT
+        â””â”€â”€ ATTEMPT ANSWER
 
 STUDENT + SUBJECT
-  └── PROGRESS
+  â””â”€â”€ PROGRESS
 ```
 
 ## 1.4 Roles
@@ -68,14 +68,14 @@ STUDENT + SUBJECT
 ### ADMIN
 
 Can manage:
+- Institutions
 - Programs
-- Classes
 - Subjects
 - Levels
 - Students
 - Student imports
 - Exams
-- Exam/class assignment
+- Exam/PROGRAM assignment
 - Questions
 - Question imports/exports
 - Exam publishing/unpublishing
@@ -87,7 +87,7 @@ Can manage:
 ### STUDENT
 
 Can:
-- log in using Program + Class + Name + personal PIN
+- log in using INSTITUTION + PROGRAM + Name + personal PIN
 - complete first-login photo setup when required
 - select assigned Subjects
 - view unlocked Levels
@@ -112,11 +112,11 @@ These are implementation rules, not suggestions.
 Exactly four primary product tabs:
 
 1. `DATABASE`
-2. `CLASS`
+2. `PROGRAM`
 3. `STUDENT`
 4. `EXAM`
 
-Do not merge CLASS and STUDENT into one primary tab.
+Do not merge PROGRAM and STUDENT into one primary tab.
 
 ## 2.2 Student business ID
 
@@ -135,20 +135,20 @@ Never request or display Student ID in:
 ## 2.3 Student login
 
 ```text
+INSTITUTION
+  â†“
 PROGRAM
-  ↓
-CLASS
-  ↓
+  â†“
 STUDENT NAME
-  ↓
+  â†“
 PERSONAL PIN
-  ↓
+  â†“
 LOGIN
 ```
 
 Server MUST verify that:
-- the selected Class belongs to the selected Program;
-- the Student belongs to the selected Class;
+- the selected PROGRAM belongs to the selected INSTITUTION;
+- the Student belongs to the selected PROGRAM;
 - the Student is active;
 - the PIN is valid.
 
@@ -157,13 +157,13 @@ Never put plaintext PINs in logs or audit records.
 
 ## 2.4 Subject assignment
 
-Admin assigns Subjects to Classes.
+Admin assigns Subjects to Programs.
 
-A Student inherits the Subjects assigned to their Class unless a future explicitly approved rule says otherwise.
+A Student inherits the Subjects assigned to their PROGRAM unless a future explicitly approved rule says otherwise.
 
-## 2.5 Exam reuse across Classes
+## 2.5 Exam reuse across Programs
 
-An Exam may be assigned to **many Classes within the same Program**.
+An Exam may be assigned to **many Programs within the same INSTITUTION**.
 
 Use a separate many-to-many relation such as:
 
@@ -177,13 +177,13 @@ Do NOT encode exam availability in a single `class_id` column on Exam.
 
 ### Important naming note
 
-The approved display-name formula includes Class:
+The approved display-name formula includes PROGRAM:
 
 ```text
-PROGRAM + CLASS + SUBJECT + LEVEL + EXAM TYPE + EXAM TITLE
+INSTITUTION + PROGRAM + SUBJECT + LEVEL + EXAM TYPE + EXAM TITLE
 ```
 
-Because a single Exam can be available to multiple Classes, the Class text in the name is a **display/name component**, not the authorization mechanism. The many-to-many `exam_classes` relation is authoritative for availability.
+Because a single Exam can be available to multiple Programs, the PROGRAM text in the name is a **display/name component**, not the authorization mechanism. The many-to-many `exam_classes` relation is authoritative for availability.
 
 Do not silently redesign this naming decision. If the product owner later changes it, update this file + decision log + tests.
 
@@ -192,12 +192,12 @@ Do not silently redesign this naming decision. If the product owner later change
 Approved formula:
 
 ```text
-PROGRAM + CLASS + SUBJECT + LEVEL + EXAM TYPE + EXAM TITLE
+INSTITUTION + PROGRAM + SUBJECT + LEVEL + EXAM TYPE + EXAM TITLE
 ```
 
 Rules:
-- `PROGRAM` comes from Program data.
-- `CLASS` is the approved display/name component described above.
+- `INSTITUTION` comes from INSTITUTION data.
+- `PROGRAM` is the approved display/name component described above.
 - `SUBJECT` comes from Subject data.
 - `LEVEL` comes from Level data.
 - `EXAM TYPE` is imported/provided from the approved Excel workflow.
@@ -215,7 +215,7 @@ Rules:
 - A Student unlocks the next Level only when **ALL Exams in the current Level required for that Student are completed AND every one of those Exams has a score >= 60%.**
 - Retakes are allowed only when configured by the Exam.
 - Effective score for progression is the **highest score** across valid attempts for that Exam.
-- Example: 55%, 68%, 81% → effective score = 81%.
+- Example: 55%, 68%, 81% â†’ effective score = 81%.
 - Historical attempts MUST remain preserved.
 
 ## 2.8 Overall score
@@ -242,12 +242,12 @@ Centralized authoritative grading:
 
 | Percentage | Grade |
 |---:|:---:|
-| 0–10 | F |
-| 11–30 | E |
-| 31–50 | D |
-| 51–70 | C |
-| 71–90 | B |
-| 91–99 | A |
+| 0â€“10 | F |
+| 11â€“30 | E |
+| 31â€“50 | D |
+| 51â€“70 | C |
+| 71â€“90 | B |
+| 91â€“99 | A |
 | 100 | S |
 
 No frontend page may independently implement a competing grading algorithm.
@@ -295,9 +295,9 @@ Required result labels:
 - `Incorrect`
 
 Default tolerance:
-- 0 errors → full point
-- 1–2 errors → half point
-- 3+ errors → zero
+- 0 errors â†’ full point
+- 1â€“2 errors â†’ half point
+- 3+ errors â†’ zero
 
 The tolerance engine must be deterministic, tested, and server-authoritative.
 
@@ -343,7 +343,7 @@ Server authoritative timer model:
 ```text
 server started_at
 server expected_end_at
-        ↓
+        â†“
 client visual countdown
 ```
 
@@ -418,8 +418,8 @@ Audit examples:
 - publish/unpublish exam
 - import questions
 - import students
-- assign exam to class
-- modify class/subject/level
+- assign exam to PROGRAM
+- modify PROGRAM/subject/level
 - security changes
 - admin authentication events where appropriate
 
@@ -431,20 +431,20 @@ Audit examples:
 
 ```text
                          NETLIFY / VERCEL
-                               │
-                               ▼
+                               â”‚
+                               â–¼
                   Static HTML / CSS / JS
-                               │
+                               â”‚
                  Supabase JS client / HTTPS
-                               │
-                 ┌─────────────┴─────────────┐
-                 ▼                           ▼
+                               â”‚
+                 â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                 â–¼                           â–¼
          Supabase Auth              Supabase Edge Functions
-                                             │
-                                             ▼
+                                             â”‚
+                                             â–¼
                                      Supabase PostgreSQL
-                                             │
-                                             └── Supabase Storage
+                                             â”‚
+                                             â””â”€â”€ Supabase Storage
 ```
 
 ## 3.2 Explicitly out of scope for the current architecture
@@ -494,95 +494,95 @@ Critical operations SHOULD go through Edge Functions, especially:
 Target structure:
 
 ```text
-TOP-ENGLISH-CLASS/
-│
-├── .vscode/
-│
-├── assets/
-│   ├── images/
-│   └── icons/
-│
-├── css/
-│   ├── style.css
-│   ├── auth.css
-│   ├── admin.css
-│   ├── dashboard.css
-│   ├── exam.css
-│   └── result.css
-│
-├── js/
-│   ├── app.js
-│   ├── api.js
-│   ├── auth.js
-│   ├── session.js
-│   ├── validation.js
-│   ├── storage.js
-│   ├── timer.js
-│   ├── speech.js
-│   ├── scoring.js
-│   ├── progress.js
-│   ├── result.js
-│   │
-│   └── admin/
-│       ├── dashboard.js
-│       ├── database.js
-│       ├── class-management.js
-│       ├── student-management.js
-│       ├── exam-management.js
-│       └── imports.js
-│
-├── supabase/
-│   ├── functions/
-│   │   ├── admin-auth-check/
-│   │   │   └── index.ts
-│   │   ├── start-exam/
-│   │   │   └── index.ts
-│   │   ├── save-answer/
-│   │   │   └── index.ts
-│   │   ├── submit-exam/
-│   │   │   └── index.ts
-│   │   ├── calculate-result/
-│   │   │   └── index.ts
-│   │   ├── import-students/
-│   │   │   └── index.ts
-│   │   ├── import-questions/
-│   │   │   └── index.ts
-│   │   └── ...
-│   │
-│   ├── migrations/
-│   └── config.toml
-│
-├── docs/
-│   ├── PRODUCT_SPEC.md
-│   ├── ARCHITECTURE.md
-│   ├── DATABASE.md
-│   ├── API.md
-│   ├── SECURITY.md
-│   ├── TESTING.md
-│   ├── DEPLOYMENT.md
-│   ├── CHANGELOG.md
-│   ├── DECISIONS.md
-│   ├── SESSION_LOG.md
-│   ├── CURRENT_STATE.md
-│   ├── TODO.md
-│   └── BLOCKERS.md
-│
-├── admin.html
-├── dashboard.html
-├── exam.html
-├── result.html
-├── class-management.html
-├── student-management.html
-├── exam-management.html
-├── management.html
-├── index.html
-│
-├── .env.example
-├── .gitignore
-├── netlify.toml
-├── supabase-setup.sql
-├── README.md
-└── AGENTS.md
+TOP-ENGLISH-PROGRAM/
+â”‚
+â”œâ”€â”€ .vscode/
+â”‚
+â”œâ”€â”€ assets/
+â”‚   â”œâ”€â”€ images/
+â”‚   â””â”€â”€ icons/
+â”‚
+â”œâ”€â”€ css/
+â”‚   â”œâ”€â”€ style.css
+â”‚   â”œâ”€â”€ auth.css
+â”‚   â”œâ”€â”€ admin.css
+â”‚   â”œâ”€â”€ dashboard.css
+â”‚   â”œâ”€â”€ exam.css
+â”‚   â””â”€â”€ result.css
+â”‚
+â”œâ”€â”€ js/
+â”‚   â”œâ”€â”€ app.js
+â”‚   â”œâ”€â”€ api.js
+â”‚   â”œâ”€â”€ auth.js
+â”‚   â”œâ”€â”€ session.js
+â”‚   â”œâ”€â”€ validation.js
+â”‚   â”œâ”€â”€ storage.js
+â”‚   â”œâ”€â”€ timer.js
+â”‚   â”œâ”€â”€ speech.js
+â”‚   â”œâ”€â”€ scoring.js
+â”‚   â”œâ”€â”€ progress.js
+â”‚   â”œâ”€â”€ result.js
+â”‚   â”‚
+â”‚   â””â”€â”€ admin/
+â”‚       â”œâ”€â”€ dashboard.js
+â”‚       â”œâ”€â”€ database.js
+â”‚       â”œâ”€â”€ PROGRAM-management.js
+â”‚       â”œâ”€â”€ student-management.js
+â”‚       â”œâ”€â”€ exam-management.js
+â”‚       â””â”€â”€ imports.js
+â”‚
+â”œâ”€â”€ supabase/
+â”‚   â”œâ”€â”€ functions/
+â”‚   â”‚   â”œâ”€â”€ admin-auth-check/
+â”‚   â”‚   â”‚   â””â”€â”€ index.ts
+â”‚   â”‚   â”œâ”€â”€ start-exam/
+â”‚   â”‚   â”‚   â””â”€â”€ index.ts
+â”‚   â”‚   â”œâ”€â”€ save-answer/
+â”‚   â”‚   â”‚   â””â”€â”€ index.ts
+â”‚   â”‚   â”œâ”€â”€ submit-exam/
+â”‚   â”‚   â”‚   â””â”€â”€ index.ts
+â”‚   â”‚   â”œâ”€â”€ calculate-result/
+â”‚   â”‚   â”‚   â””â”€â”€ index.ts
+â”‚   â”‚   â”œâ”€â”€ import-students/
+â”‚   â”‚   â”‚   â””â”€â”€ index.ts
+â”‚   â”‚   â”œâ”€â”€ import-questions/
+â”‚   â”‚   â”‚   â””â”€â”€ index.ts
+â”‚   â”‚   â””â”€â”€ ...
+â”‚   â”‚
+â”‚   â”œâ”€â”€ migrations/
+â”‚   â””â”€â”€ config.toml
+â”‚
+â”œâ”€â”€ docs/
+â”‚   â”œâ”€â”€ PRODUCT_SPEC.md
+â”‚   â”œâ”€â”€ ARCHITECTURE.md
+â”‚   â”œâ”€â”€ DATABASE.md
+â”‚   â”œâ”€â”€ API.md
+â”‚   â”œâ”€â”€ SECURITY.md
+â”‚   â”œâ”€â”€ TESTING.md
+â”‚   â”œâ”€â”€ DEPLOYMENT.md
+â”‚   â”œâ”€â”€ CHANGELOG.md
+â”‚   â”œâ”€â”€ DECISIONS.md
+â”‚   â”œâ”€â”€ SESSION_LOG.md
+â”‚   â”œâ”€â”€ CURRENT_STATE.md
+â”‚   â”œâ”€â”€ TODO.md
+â”‚   â””â”€â”€ BLOCKERS.md
+â”‚
+â”œâ”€â”€ admin.html
+â”œâ”€â”€ dashboard.html
+â”œâ”€â”€ exam.html
+â”œâ”€â”€ result.html
+â”œâ”€â”€ PROGRAM-management.html
+â”œâ”€â”€ student-management.html
+â”œâ”€â”€ exam-management.html
+â”œâ”€â”€ management.html
+â”œâ”€â”€ index.html
+â”‚
+â”œâ”€â”€ .env.example
+â”œâ”€â”€ .gitignore
+â”œâ”€â”€ netlify.toml
+â”œâ”€â”€ supabase-setup.sql
+â”œâ”€â”€ README.md
+â””â”€â”€ AGENTS.md
 ```
 
 The project may start with fewer files, but the logical separation above must remain recognizable.
@@ -659,7 +659,7 @@ Record every meaningful code/schema/config/documentation change.
 Format:
 
 ```markdown
-## [YYYY-MM-DD HH:mm] — <short title>
+## [YYYY-MM-DD HH:mm] â€” <short title>
 
 **Agent/Session:** <identifier>
 **Phase:** <phase>
@@ -696,7 +696,7 @@ Record durable architecture/product decisions.
 Format:
 
 ```markdown
-## DECISION-001 — <title>
+## DECISION-001 â€” <title>
 
 Date: YYYY-MM-DD
 Status: ACCEPTED | SUPERSEDED | PROPOSED
@@ -817,15 +817,15 @@ Preferred unit:
 
 ```text
 ONE TASK
-  ↓
+  â†“
 IMPLEMENT
-  ↓
+  â†“
 TEST
-  ↓
+  â†“
 DOCUMENT
-  ↓
+  â†“
 MARK COMPLETE
-  ↓
+  â†“
 NEXT TASK
 ```
 
@@ -849,7 +849,7 @@ Git SHOULD be used.
 Preferred commit granularity:
 
 ```text
-feat(db): create program/class/student schema
+feat(db): create INSTITUTION/PROGRAM/student schema
 feat(auth): implement student pin login
 feat(exam): implement attempt snapshot
 fix(timer): enforce server deadline
@@ -882,8 +882,8 @@ The schema must preserve relational integrity and historical data.
 Recommended core entities:
 
 ```text
-programs
-classes
+Institutions
+Programs
 subjects
 levels
 class_subjects
@@ -907,32 +907,32 @@ Additional support tables may be created when required, but do not duplicate bus
 ## 9.2 Suggested relationships
 
 ```text
-programs 1 ─── N classes
-programs 1 ─── N subjects
-subjects 1 ─── N levels
-classes N ─── N subjects       via class_subjects
+Institutions 1 â”€â”€â”€ N Programs
+Institutions 1 â”€â”€â”€ N subjects
+subjects 1 â”€â”€â”€ N levels
+Programs N â”€â”€â”€ N subjects       via class_subjects
 
-programs 1 ─── N exams
-subjects 1 ─── N exams
-levels 1 ─── N exams
-exams N ─── N classes           via exam_classes
-exams 1 ─── N questions
+Institutions 1 â”€â”€â”€ N exams
+subjects 1 â”€â”€â”€ N exams
+levels 1 â”€â”€â”€ N exams
+exams N â”€â”€â”€ N Programs           via exam_classes
+exams 1 â”€â”€â”€ N questions
 
-students N ─── 1 classes
-students N ─── 1 programs       direct column allowed for integrity/query convenience
-students N ─── N? subjects     normally derived via class_subjects
+students N â”€â”€â”€ 1 Programs
+students N â”€â”€â”€ 1 Institutions       direct column allowed for integrity/query convenience
+students N â”€â”€â”€ N? subjects     normally derived via class_subjects
 
-students 1 ─── N attempts
-exams 1 ─── N attempts
-attempts 1 ─── N attempt_answers
-students 1 ─── N progress
+students 1 â”€â”€â”€ N attempts
+exams 1 â”€â”€â”€ N attempts
+attempts 1 â”€â”€â”€ N attempt_answers
+students 1 â”€â”€â”€ N progress
 ```
 
 The exact cardinalities and constraints must be reflected in SQL migrations and RLS policies.
 
 ## 9.3 Recommended critical fields
 
-### programs
+### Institutions
 
 ```text
 id
@@ -943,7 +943,7 @@ updated_at
 deleted_at
 ```
 
-### classes
+### Programs
 
 ```text
 id
@@ -1040,7 +1040,7 @@ created_at
 ```
 
 Constraint:
-- class.program_id MUST match exam.program_id.
+- PROGRAM.program_id MUST match exam.program_id.
 
 ### questions
 
@@ -1136,7 +1136,7 @@ Examples:
 - own profile
 - own attempts
 - own answers/results
-- exams available to their class/program/subject/level
+- exams available to their PROGRAM/INSTITUTION/subject/level
 - progress belonging to self
 
 ## 10.2 Admin access
@@ -1237,23 +1237,23 @@ Flow:
 
 ```text
 Student selects Exam
-       ↓
+       â†“
 verify authentication
-       ↓
+       â†“
 verify exam published
-       ↓
-verify program/class/subject access
-       ↓
+       â†“
+verify INSTITUTION/PROGRAM/subject access
+       â†“
 verify level eligibility
-       ↓
+       â†“
 verify prerequisite
-       ↓
+       â†“
 verify retake rules
-       ↓
+       â†“
 create Attempt
-       ↓
+       â†“
 create immutable question snapshots
-       ↓
+       â†“
 return attempt data
 ```
 
@@ -1269,11 +1269,11 @@ When Student reloads:
 
 ```text
 find active IN_PROGRESS attempt
-      ↓
+      â†“
 return same attempt
-      ↓
+      â†“
 restore answers
-      ↓
+      â†“
 recalculate remaining time from server timestamp
 ```
 
@@ -1287,28 +1287,28 @@ Conceptual flow:
 
 ```text
 POST submit-exam
-      ↓
+      â†“
 load attempt
-      ↓
+      â†“
 if already completed:
     return stored result
-      ↓
+      â†“
 validate ownership
-      ↓
+      â†“
 validate server time
-      ↓
+      â†“
 evaluate snapshot answers
-      ↓
+      â†“
 calculate percentage
-      ↓
+      â†“
 calculate grade
-      ↓
+      â†“
 persist result atomically
-      ↓
+      â†“
 recalculate relevant progress
-      ↓
+      â†“
 write audit event if applicable
-      ↓
+      â†“
 return result
 ```
 
@@ -1355,17 +1355,17 @@ Required sequence:
 
 ```text
 SELECT EXAM
-   ↓
+   â†“
 DETECT ANSWER TYPE
-   ↓
+   â†“
 UPLOAD
-   ↓
+   â†“
 VALIDATE
-   ↓
+   â†“
 PREVIEW
-   ↓
+   â†“
 CONFIRM
-   ↓
+   â†“
 INSERT
 ```
 
@@ -1447,8 +1447,8 @@ The exact workbook shape must be documented in `docs/API.md` and/or `docs/DATABA
 Recommended columns:
 
 ```text
-Program
-Class
+INSTITUTION
+PROGRAM
 Name
 Gender
 Age
@@ -1461,19 +1461,19 @@ Workflow:
 
 ```text
 UPLOAD
- ↓
+ â†“
 VALIDATE
- ↓
+ â†“
 RELATION CHECK
- ↓
+ â†“
 DUPLICATE CHECK
- ↓
+ â†“
 PREVIEW
- ↓
+ â†“
 CONFIRM
- ↓
+ â†“
 IMPORT
- ↓
+ â†“
 SUMMARY
 ```
 
@@ -1485,22 +1485,22 @@ First login:
 
 ```text
 Student has no photo?
-        ↓ yes
+        â†“ yes
 require photo setup
-        ↓
+        â†“
 camera preferred
-        ↓
+        â†“
 upload fallback
-        ↓
+        â†“
 validate
-        ↓
+        â†“
 store canonical image
-        ↓
+        â†“
 continue to dashboard
 ```
 
 Target display/canonical processing:
-- approximately 300×300 square
+- approximately 300Ã—300 square
 - face-centered where possible
 - object-fit cover
 
@@ -1515,11 +1515,11 @@ Do not make camera permission failure equal to authentication failure. Provide a
 At minimum:
 
 ```text
-index.html            → login
-admin.html             → admin shell/dashboard entry
-Dashboard              → student overview
-exam.html              → attempt runner
-result.html            → result detail
+index.html            â†’ login
+admin.html             â†’ admin shell/dashboard entry
+Dashboard              â†’ student overview
+exam.html              â†’ attempt runner
+result.html            â†’ result detail
 ```
 
 Existing project files may be retained/adapted, but each page must have one clear responsibility.
@@ -1530,7 +1530,7 @@ Primary navigation:
 
 ```text
 DATABASE
-CLASS
+PROGRAM
 STUDENT
 EXAM
 ```
@@ -1609,7 +1609,7 @@ Do not sacrifice exam usability for decorative UI.
 The AI agent MUST explicitly test for:
 
 1. IDOR / ownership bypass
-2. Student → Admin privilege escalation
+2. Student â†’ Admin privilege escalation
 3. Student accessing another student's result
 4. Client score manipulation
 5. Client timer manipulation
@@ -1618,7 +1618,7 @@ The AI agent MUST explicitly test for:
 8. Retake limit bypass
 9. Level progression bypass
 10. Exam unpublished access
-11. Cross-program exam/class access
+11. Cross-INSTITUTION exam/PROGRAM access
 12. Service-role key leakage
 13. PIN/password leakage
 14. Unsafe file upload
@@ -1677,7 +1677,7 @@ Cover at minimum:
 Cover:
 - student login
 - admin authorization
-- class/subject assignment
+- PROGRAM/subject assignment
 - exam access
 - attempt creation
 - snapshot creation
@@ -1695,30 +1695,30 @@ Minimum critical journeys:
 
 ```text
 login
- → select subject
- → view level
- → start exam
- → answer
- → refresh
- → resume
- → submit
- → result
- → progress
+ â†’ select subject
+ â†’ view level
+ â†’ start exam
+ â†’ answer
+ â†’ refresh
+ â†’ resume
+ â†’ submit
+ â†’ result
+ â†’ progress
 ```
 
 ### Admin
 
 ```text
 login
- → create class
- → create student
- → import students
- → create exam
- → assign exam to class
- → download question format
- → upload questions
- → validate/preview
- → publish exam
+ â†’ create PROGRAM
+ â†’ create student
+ â†’ import students
+ â†’ create exam
+ â†’ assign exam to PROGRAM
+ â†’ download question format
+ â†’ upload questions
+ â†’ validate/preview
+ â†’ publish exam
 ```
 
 ## 21.4 Regression principle
@@ -1734,9 +1734,9 @@ At minimum, maintain a matrix in `docs/TESTING.md` covering:
 | Area | Scenario | Expected |
 |---|---|---|
 | Login | wrong PIN | denied |
-| Login | wrong class/student relationship | denied |
+| Login | wrong PROGRAM/student relationship | denied |
 | Access | unpublished exam | denied |
-| Access | wrong program | denied |
+| Access | wrong INSTITUTION | denied |
 | Retake | limit exceeded | denied |
 | Retake | highest score | used for progression |
 | Progress | one current-level exam failed | next level locked |
@@ -1759,7 +1759,7 @@ Expand this matrix as implementation proceeds.
 
 Use these phases as the default build sequence. A phase may be split into smaller tasks, but phases must remain traceable.
 
-## PHASE 0 — Repository bootstrap
+## PHASE 0 â€” Repository bootstrap
 
 Deliver:
 - base folder structure
@@ -1776,7 +1776,7 @@ Exit criteria:
 - no secrets committed
 - documentation system exists
 
-## PHASE 1 — Supabase foundation
+## PHASE 1 â€” Supabase foundation
 
 Deliver:
 - project connection
@@ -1791,14 +1791,14 @@ Exit criteria:
 - schema inspectable
 - RLS policies documented
 
-## PHASE 2 — Core master data
+## PHASE 2 â€” Core master data
 
 Implement:
-- Program
-- Class
+- INSTITUTION
+- PROGRAM
 - Subject
 - Level
-- Class-Subject assignment
+- PROGRAM-Subject assignment
 - Student
 
 Exit criteria:
@@ -1806,11 +1806,11 @@ Exit criteria:
 - relational integrity enforced
 - soft delete/restore works where applicable
 
-## PHASE 3 — Authentication and role control
+## PHASE 3 â€” Authentication and role control
 
 Implement:
 - Admin auth
-- Student login with Program/Class/Name/PIN
+- Student login with INSTITUTION/PROGRAM/Name/PIN
 - session management
 - authorization
 - first-login photo requirement
@@ -1819,7 +1819,7 @@ Exit criteria:
 - unauthorized access denied server-side
 - no plaintext PIN
 
-## PHASE 4 — Exam management
+## PHASE 4 â€” Exam management
 
 Implement:
 - create/edit exam
@@ -1831,7 +1831,7 @@ Implement:
 - minimum score
 - retake settings
 - publish/unpublish
-- exam/class many-to-many assignment
+- exam/PROGRAM many-to-many assignment
 - name generation
 
 Exit criteria:
@@ -1840,7 +1840,7 @@ Exit criteria:
 - assignment works
 - published state works
 
-## PHASE 5 — Question management/import
+## PHASE 5 â€” Question management/import
 
 Implement:
 - question CRUD
@@ -1856,7 +1856,7 @@ Exit criteria:
 - all four answer types supported
 - invalid rows never silently skipped
 
-## PHASE 6 — Attempt engine
+## PHASE 6 â€” Attempt engine
 
 Implement:
 - eligibility
@@ -1873,7 +1873,7 @@ Exit criteria:
 - client cannot extend time
 - double submit safe
 
-## PHASE 7 — Scoring and results
+## PHASE 7 â€” Scoring and results
 
 Implement:
 - all answer evaluators
@@ -1887,7 +1887,7 @@ Exit criteria:
 - all score boundaries tested
 - snapshots prevent historical drift
 
-## PHASE 8 — Progression
+## PHASE 8 â€” Progression
 
 Implement:
 - highest attempt score
@@ -1898,11 +1898,11 @@ Implement:
 Exit criteria:
 - progression tests pass
 
-## PHASE 9 — Admin UI
+## PHASE 9 â€” Admin UI
 
 Complete:
 - DATABASE
-- CLASS
+- PROGRAM
 - STUDENT
 - EXAM
 
@@ -1910,7 +1910,7 @@ Exit criteria:
 - primary navigation matches specification
 - CRUD/import/publish workflows usable
 
-## PHASE 10 — Student UI
+## PHASE 10 â€” Student UI
 
 Complete:
 - login
@@ -1923,7 +1923,7 @@ Complete:
 Exit criteria:
 - critical journey complete
 
-## PHASE 11 — Security hardening
+## PHASE 11 â€” Security hardening
 
 Perform:
 - RLS audit
@@ -1934,7 +1934,7 @@ Perform:
 - secret scan
 - client manipulation tests
 
-## PHASE 12 — Testing / regression
+## PHASE 12 â€” Testing / regression
 
 Run:
 - unit
@@ -1943,7 +1943,7 @@ Run:
 - migration tests
 - manual acceptance
 
-## PHASE 13 — Deployment
+## PHASE 13 â€” Deployment
 
 Implement:
 - Netlify/Vercel frontend deployment configuration
@@ -1953,7 +1953,7 @@ Implement:
 - storage rules
 - production smoke test
 
-## PHASE 14 — Final handoff
+## PHASE 14 â€” Final handoff
 
 Deliver:
 - README
@@ -2032,8 +2032,8 @@ Example:
 ```markdown
 ## Resume Point
 
-Phase: 6 — Attempt Engine
-Task: EXAM-014 — implement idempotent submit
+Phase: 6 â€” Attempt Engine
+Task: EXAM-014 â€” implement idempotent submit
 
 Completed:
 - attempt table created
@@ -2129,7 +2129,7 @@ When bootstrapping a new project, create `docs/CURRENT_STATE.md` with:
 # CURRENT STATE
 
 Last Updated: <timestamp>
-Current Phase: 0 — Repository bootstrap
+Current Phase: 0 â€” Repository bootstrap
 Status: IN_PROGRESS
 
 ## Completed
@@ -2217,7 +2217,7 @@ Preserve attempt history using immutable snapshots.
 
 # 31. FINAL DEFINITION OF DONE
 
-TOP ENGLISH CLASS is ready for production only when:
+TOP ENGLISH PROGRAM is ready for production only when:
 
 - business rules are implemented and tested;
 - PostgreSQL schema and RLS are verified;
@@ -2253,24 +2253,24 @@ Every agent should behave like this:
 
 ```text
 READ STATE
-   ↓
+   â†“
 UNDERSTAND TASK
-   ↓
+   â†“
 INSPECT EXISTING CODE
-   ↓
+   â†“
 PLAN SMALLEST SAFE CHANGE
-   ↓
+   â†“
 IMPLEMENT
-   ↓
+   â†“
 TEST
-   ↓
+   â†“
 DOCUMENT
-   ↓
+   â†“
 UPDATE CURRENT STATE
-   ↓
+   â†“
 REPORT EXACT RESULT
-   ↓
+   â†“
 CONTINUE
 ```
 
-The primary objective is not merely to generate code. It is to maintain a **correct, testable, auditable, and restartable application state** throughout the lifetime of TOP ENGLISH CLASS.
+The primary objective is not merely to generate code. It is to maintain a **correct, testable, auditable, and restartable application state** throughout the lifetime of TOP ENGLISH PROGRAM.

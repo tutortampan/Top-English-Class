@@ -4,7 +4,7 @@
     import { showToast, showLoading, hideLoading, getGrade } from './js/app.js';
     import { getSupabase } from './js/supabase.js';
 
-    // ── Primary Tab Switching Variables ──
+    // â”€â”€ Primary Tab Switching Variables â”€â”€
     const primaryTabs = document.querySelectorAll('.primary-tab');
     const mobileTabs = document.querySelectorAll('.mobile-tab');
     const domainPills = document.querySelectorAll('.domain-pill');
@@ -19,7 +19,7 @@
       'import-questions': 'exam', 'export-questions': 'exam'
     };
 
-    // ── Auth ──
+    // â”€â”€ Auth â”€â”€
     const session = getAdminSession();
     if (session) showConsole();
 
@@ -28,7 +28,7 @@
       const pass = document.getElementById('admin-password').value;
       if (!user || !pass) { showToast('Please enter credentials.', 'warning'); return; }
 
-      showLoading('Authenticating…');
+      showLoading('Authenticatingâ€¦');
       try {
         // 1. Primary Check: Master credentials (admin / admin123) or custom saved password
         const savedCustomPass = localStorage.getItem('tec_admin_custom_password');
@@ -117,7 +117,7 @@
       });
     });
 
-    // ── Topbar Domain Switcher Click ──
+    // â”€â”€ Topbar Domain Switcher Click â”€â”€
     domainPills.forEach(pill => {
       pill.addEventListener('click', () => {
         const panel = pill.dataset.panel;
@@ -126,7 +126,7 @@
       });
     });
 
-    // ── Mobile Bottom Tab Switching ──
+    // â”€â”€ Mobile Bottom Tab Switching â”€â”€
     mobileTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         const panel = tab.dataset.panel;
@@ -135,7 +135,7 @@
       });
     });
 
-    // ── Sidebar Toggle for Mobile ──
+    // â”€â”€ Sidebar Toggle for Mobile â”€â”€
     const sidebarToggleBtn = document.getElementById('sidebar-toggle');
     const adminSidebar = document.getElementById('admin-sidebar');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -156,7 +156,7 @@
     });
     sidebarOverlay?.addEventListener('click', closeSidebar);
 
-    // ── Sub-nav item click ──
+    // â”€â”€ Sub-nav item click â”€â”€
     document.querySelectorAll('.admin-nav-item').forEach(item => {
       item.addEventListener('click', () => {
         document.querySelectorAll('.admin-nav-item').forEach(i => i.classList.remove('active'));
@@ -166,7 +166,7 @@
       });
     });
 
-    // ── Section Titles ──
+    // â”€â”€ Section Titles â”€â”€
     const sectionTitles = {
       programs: 'Programs', subjects: 'Subjects', levels: 'Levels', audit: 'Audit Log', settings: 'Site Settings',
       classes: 'Classes', batches: 'Batches',
@@ -175,7 +175,7 @@
       'import-questions': 'Import Questions (Excel)', 'export-questions': 'Export Questions (Excel)',
     };
 
-    // ── Global String & HTML Utilities ──
+    // â”€â”€ Global String & HTML Utilities â”€â”€
     function escapeHtml(str) {
       return String(str || '')
         .replace(/&/g, '&amp;')
@@ -203,7 +203,7 @@
     }
 
     function formatExamDisplayName(exam, classContext = '') {
-      if (!exam) return '—';
+      if (!exam) return 'â€”';
       const parts = [];
       if (exam.programs?.name) parts.push(`[${exam.programs.name}]`);
       if (classContext) parts.push(`[${classContext}]`);
@@ -214,10 +214,10 @@
       }
       if (exam.exam_type) parts.push(exam.exam_type);
       if (exam.exam_title) parts.push(exam.exam_title);
-      return parts.length > 0 ? parts.join(' · ') : (exam.exam_title || 'Exam');
+      return parts.length > 0 ? parts.join(' Â· ') : (exam.exam_title || 'Exam');
     }
 
-    // ── DB Connection Status Banner ──
+    // â”€â”€ DB Connection Status Banner â”€â”€
     async function initConnectionBanner() {
       const banner = document.getElementById('db-connection-banner');
       const statusDot = document.getElementById('db-status-dot');
@@ -226,13 +226,13 @@
 
       // Show checking state
       statusDot.style.background = '#facc15';
-      statusText.textContent = 'Checking database connection…';
+      statusText.textContent = 'Checking database connectionâ€¦';
 
       const result = await testSupabaseConnection();
       if (result.connected) {
         statusDot.style.background = '#34d399';
         statusDot.style.boxShadow = '0 0 6px #34d399';
-        statusText.innerHTML = `<strong>Connected to Supabase</strong> — data is saved permanently to the cloud`;
+        statusText.innerHTML = `<strong>Connected to Supabase</strong> â€” data is saved permanently to the cloud`;
         banner.style.borderColor = 'rgba(52,211,153,0.3)';
         banner.style.background = 'rgba(52,211,153,0.07)';
         setTimeout(() => banner.style.display = 'none', 4000); // Auto-hide when connected
@@ -241,9 +241,9 @@
         statusDot.style.boxShadow = '0 0 8px #f87171';
         statusDot.style.animation = 'pulse 1.5s infinite';
         if (result.mode === 'demo') {
-          statusText.innerHTML = `<strong>Demo / Offline Mode</strong> — data is in-memory only and will be lost on page reload`;
+          statusText.innerHTML = `<strong>Demo / Offline Mode</strong> â€” data is in-memory only and will be lost on page reload`;
         } else {
-          statusText.innerHTML = `<strong>Database Error</strong> — ${result.error}. <a href="docs/DATABASE.md" target="_blank" style="color:#f87171;">Check setup guide</a>`;
+          statusText.innerHTML = `<strong>Database Error</strong> â€” ${result.error}. <a href="docs/DATABASE.md" target="_blank" style="color:#f87171;">Check setup guide</a>`;
         }
         banner.style.borderColor = 'rgba(248,113,113,0.4)';
         banner.style.background = 'rgba(248,113,113,0.08)';
@@ -261,7 +261,7 @@
 
       document.getElementById('topbar-title').textContent = sectionTitles[section] || section;
       const area = document.getElementById('admin-content-area');
-      area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loading…</p></div>';
+      area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loadingâ€¦</p></div>';
 
       // Set up Add button
       document.getElementById('add-record-btn').onclick = () => openCrudModal(section, null);
@@ -284,14 +284,14 @@
           case 'import-students': await renderImportStudents(area); break;
           case 'import-questions': renderImportQuestions(area); break;
           case 'export-questions': renderExportQuestions(area); break;
-          default: area.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🚧</div><h3>${sectionTitles[section] || section}</h3><p>This section is under development.</p></div>`;
+          default: area.innerHTML = `<div class="empty-state"><div class="empty-state__icon">ðŸš§</div><h3>${sectionTitles[section] || section}</h3><p>This section is under development.</p></div>`;
         }
       } catch(e) {
         area.innerHTML = `<div class="empty-state"><p class="text-danger">Failed to load: ${e.message}</p></div>`;
       }
     }
 
-    // ── PROGRAMS ──
+    // â”€â”€ PROGRAMS â”€â”€
     async function renderPrograms(area) {
       const rawData = await adminFetchAll('programs');
       // Enforce strict alphabetical ordering
@@ -319,7 +319,7 @@
         </div>
       `;
       const tbody = document.getElementById('tbl-programs');
-      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state__icon">🏢</div><p>No programs yet.</p></div></td></tr>'; return; }
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state__icon">ðŸ¢</div><p>No programs yet.</p></div></td></tr>'; return; }
       window._progRecords = {};
       data.forEach(r => {
         window._progRecords[r.id] = r;
@@ -354,7 +354,7 @@
       });
     }
 
-    // ── SUBJECTS ──
+    // â”€â”€ SUBJECTS â”€â”€
     async function renderSubjects(area) {
       const [rawData, programs] = await Promise.all([adminFetchAll('subjects', '*, programs(name)'), adminFetchAll('programs')]);
       // Sort by Program Name (A-Z), then Subject Name (A-Z)
@@ -392,7 +392,7 @@
         window._subjRecords[r.id] = r;
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="text-muted fw-600">${escapeHtml(r.programs?.name || '—')}</td>
+          <td class="text-muted fw-600">${escapeHtml(r.programs?.name || 'â€”')}</td>
           <td class="fw-600" style="color:var(--clr-text-1);">${escapeHtml(r.name)}</td>
           <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-neutral'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
           <td class="text-right">
@@ -421,7 +421,7 @@
       });
     }
 
-    // ── LEVELS ──
+    // â”€â”€ LEVELS â”€â”€
     async function renderLevels(area) {
       const [rawData, allClasses] = await Promise.all([
         adminFetchAll('levels', '*, subjects(name, program_id, programs(name))'),
@@ -477,13 +477,13 @@
       });
 
       data.forEach(r => {
-        const progName = r.subjects?.programs?.name || '—';
+        const progName = r.subjects?.programs?.name || 'â€”';
         const className = (r.class_id && classMap[r.class_id]?.name) ? classMap[r.class_id].name : 'All Classes';
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><span class="badge badge-neutral">${escapeHtml(progName)}</span></td>
           <td><span class="badge badge-neutral">${escapeHtml(className)}</span></td>
-          <td class="text-muted fw-600">${escapeHtml(r.subjects?.name || '—')}</td>
+          <td class="text-muted fw-600">${escapeHtml(r.subjects?.name || 'â€”')}</td>
           <td class="text-center"><span class="badge badge-primary">Level ${r.level_number}</span></td>
           <td class="fw-600">${escapeHtml(r.name)}</td>
           <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-neutral'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
@@ -513,7 +513,7 @@
       });
     }
 
-    // ── CLASSES ──
+    // â”€â”€ CLASSES â”€â”€
     async function renderClasses(area) {
       const rawData = await adminFetchAll('classes', '*, programs(name)');
       // Sort by Program Name (A-Z), then Class Name (A-Z)
@@ -551,7 +551,7 @@
         window._classRecords[r.id] = r;
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="text-muted fw-600">${escapeHtml(r.programs?.name || '—')}</td>
+          <td class="text-muted fw-600">${escapeHtml(r.programs?.name || 'â€”')}</td>
           <td class="fw-600">${escapeHtml(r.name)}</td>
           <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-neutral'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
           <td class="text-right">
@@ -582,19 +582,19 @@
 
     // Helper function to calculate age from birth date string (YYYY-MM-DD)
     function calculateAgeFromBirthDate(birthDateStr) {
-      if (!birthDateStr) return '—';
+      if (!birthDateStr) return 'â€”';
       const birthDate = new Date(birthDateStr);
-      if (isNaN(birthDate.getTime())) return '—';
+      if (isNaN(birthDate.getTime())) return 'â€”';
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
       }
-      return age >= 0 ? `${age} yrs` : '—';
+      return age >= 0 ? `${age} yrs` : 'â€”';
     }
 
-    // ── BATCHES (Hierarchy: Program -> Class -> Batch) ──
+    // â”€â”€ BATCHES (Hierarchy: Program -> Class -> Batch) â”€â”€
     async function renderBatches(area) {
       const [rawData, allStudents] = await Promise.all([
         adminFetchAll('batches', '*, classes(name, program_id, programs(name))'),
@@ -616,15 +616,15 @@
         <div class="section-header">
           <div>
             <h2 class="section-title">Batches <span class="count-chip">${data.length} Total</span></h2>
-            <p class="section-subtitle">Manage class batches in the hierarchy: Program › Class › Batch</p>
+            <p class="section-subtitle">Manage class batches in the hierarchy: Program â€º Class â€º Batch</p>
           </div>
           <button class="btn btn-primary btn-sm" id="batches-add-shortcut">+ Add Batch</button>
         </div>
 
         <div class="filter-bar mb-4">
           <div class="search-bar" style="max-width:420px;">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="batch-filter" placeholder="Search by batch, class, or program…" />
+            <span class="search-icon">ðŸ”</span>
+            <input type="text" id="batch-filter" placeholder="Search by batch, class, or programâ€¦" />
           </div>
         </div>
 
@@ -659,8 +659,8 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td class="fw-600" style="color:var(--clr-text-1);">${escapeHtml(r.name)}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.classes?.programs?.name || '—')}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.classes?.name || '—')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.classes?.programs?.name || 'â€”')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.classes?.name || 'â€”')}</td>
             <td class="text-center"><span class="badge badge-info">${studentCount} students</span></td>
             <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-danger'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
             <td class="text-right">
@@ -696,7 +696,7 @@
       });
     }
 
-    // ── STUDENTS (With Batch, Overall Score & Global Grade) ──
+    // â”€â”€ STUDENTS (With Batch, Overall Score & Global Grade) â”€â”€
     async function renderStudents(area) {
       const [rawData, allAttempts] = await Promise.all([
         adminFetchAll('students', '*, classes(name), programs(name), batches(name)'),
@@ -704,7 +704,7 @@
       ]);
       // Default: alphabetical by student name
       const data = [...rawData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      // Sort state: { col, dir } — dir is 'asc', 'desc', or null (default)
+      // Sort state: { col, dir } â€” dir is 'asc', 'desc', or null (default)
       let sortState = { col: 'name', dir: 'asc' };
 
       // Detect duplicate students within the same class
@@ -726,8 +726,8 @@
             <p class="section-subtitle">Manage enrolled students listed in alphabetical order with Batch, Overall Score &amp; Global Grade</p>
           </div>
           <div class="d-flex gap-2">
-            ${totalDuplicates > 0 ? `<button class="btn btn-warning btn-sm" id="students-merge-shortcut" style="font-weight:700;">🔄 Merge Duplikat (${totalDuplicates})</button>` : ''}
-            <button class="btn btn-secondary btn-sm" id="students-import-shortcut">📥 Import Students</button>
+            ${totalDuplicates > 0 ? `<button class="btn btn-warning btn-sm" id="students-merge-shortcut" style="font-weight:700;">ðŸ”„ Merge Duplikat (${totalDuplicates})</button>` : ''}
+            <button class="btn btn-secondary btn-sm" id="students-import-shortcut">ðŸ“¥ Import Students</button>
             <button class="btn btn-primary btn-sm" id="students-add-shortcut">+ Add Student</button>
           </div>
         </div>
@@ -735,7 +735,7 @@
         ${totalDuplicates > 0 ? `
           <div class="mb-4 p-3 rounded d-flex align-center justify-between" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:#fef3c7;">
             <div class="d-flex align-center gap-3">
-              <span style="font-size:1.4rem;">⚠️</span>
+              <span style="font-size:1.4rem;">âš ï¸</span>
               <div>
                 <div class="fw-700 text-sm">Terdeteksi ${totalDuplicates} Data Siswa Kembar / Duplikat!</div>
                 <div class="text-xs text-muted" style="color:rgba(255,255,255,0.85)!important;">
@@ -744,15 +744,15 @@
               </div>
             </div>
             <button class="btn btn-warning btn-sm" id="btn-banner-merge-duplicates" style="background:#f59e0b;color:#000;font-weight:700;border:none;white-space:nowrap;">
-              🔄 Gabungkan Semua Duplikat
+              ðŸ”„ Gabungkan Semua Duplikat
             </button>
           </div>
         ` : ''}
 
         <div class="filter-bar mb-4">
           <div class="search-bar" style="max-width:420px;">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="student-filter" placeholder="Search by student name, class, batch…" />
+            <span class="search-icon">ðŸ”</span>
+            <input type="text" id="student-filter" placeholder="Search by student name, class, batchâ€¦" />
           </div>
         </div>
         <div class="table-wrap">
@@ -779,7 +779,7 @@
       // Wire merge duplicates buttons
       const runMergeDuplicates = async () => {
         if (!confirm(`Gabungkan ${totalDuplicates} profil siswa kembar ke dalam profil utama? Seluruh riwayat ujian dan progres akan disatukan.`)) return;
-        showLoading('Menggabungkan data siswa kembar…');
+        showLoading('Menggabungkan data siswa kembarâ€¦');
         try {
           const res = await mergeDuplicateStudents();
           hideLoading();
@@ -802,7 +802,7 @@
       window._studentRecords = {};
       data.forEach(r => { window._studentRecords[r.id] = r; });
 
-      // ── Pre-compute scores for each student (needed for sorting too) ──
+      // â”€â”€ Pre-compute scores for each student (needed for sorting too) â”€â”€
       const studentScoreMap = new Map(); // id -> { score: number, grade: string }
       data.forEach(r => {
         const studentAttempts = allAttempts.filter(a => a.student_id === r.id && ['submitted', 'auto_submitted'].includes(a.status));
@@ -822,9 +822,9 @@
       });
 
       // Grade order for sort: S > A > B > C > D > E > F
-      const GRADE_ORDER = { S: 7, A: 6, B: 5, C: 4, D: 3, E: 2, F: 1, '—': 0 };
+      const GRADE_ORDER = { S: 7, A: 6, B: 5, C: 4, D: 3, E: 2, F: 1, 'â€”': 0 };
 
-      // ── Sort function ──
+      // â”€â”€ Sort function â”€â”€
       function getSortedData(baseData) {
         const { col, dir } = sortState;
         if (!dir) return baseData; // null = default (already alphabetical by name)
@@ -838,7 +838,7 @@
             case 'batch':   va = (a.batches?.name || '').toLowerCase(); vb = (b.batches?.name || '').toLowerCase(); break;
             case 'gender':  va = (a.gender || '').toLowerCase(); vb = (b.gender || '').toLowerCase(); break;
             case 'score':   va = studentScoreMap.get(a.id)?.score ?? -1; vb = studentScoreMap.get(b.id)?.score ?? -1; return mult * (va - vb);
-            case 'grade':   va = GRADE_ORDER[studentScoreMap.get(a.id)?.grade ?? '—'] ?? 0; vb = GRADE_ORDER[studentScoreMap.get(b.id)?.grade ?? '—'] ?? 0; return mult * (va - vb);
+            case 'grade':   va = GRADE_ORDER[studentScoreMap.get(a.id)?.grade ?? 'â€”'] ?? 0; vb = GRADE_ORDER[studentScoreMap.get(b.id)?.grade ?? 'â€”'] ?? 0; return mult * (va - vb);
             case 'status':  va = a.is_active ? 1 : 0; vb = b.is_active ? 1 : 0; return mult * (va - vb);
             default:        return 0;
           }
@@ -846,15 +846,15 @@
         });
       }
 
-      // ── Update sort header icons ──
+      // â”€â”€ Update sort header icons â”€â”€
       function updateSortIcons() {
         document.querySelectorAll('#students-table .sort-icon').forEach(el => {
           const col = el.dataset.col;
           if (col === sortState.col) {
-            el.textContent = sortState.dir === 'asc' ? ' ▲' : sortState.dir === 'desc' ? ' ▼' : '';
+            el.textContent = sortState.dir === 'asc' ? ' â–²' : sortState.dir === 'desc' ? ' â–¼' : '';
             el.style.color = 'var(--clr-accent-1, #a78bfa)';
           } else {
-            el.textContent = ' ⇅';
+            el.textContent = ' â‡…';
             el.style.color = 'rgba(255,255,255,0.2)';
           }
         });
@@ -870,8 +870,8 @@
           const ageDisplay = calculateAgeFromBirthDate(r.birth_date);
           const isDuplicate = duplicateIds.has(r.id);
           const scoreInfo = studentScoreMap.get(r.id);
-          let overallScoreDisplay = '<span class="text-muted">—</span>';
-          let globalGradeDisplay = '<span class="text-muted">—</span>';
+          let overallScoreDisplay = '<span class="text-muted">â€”</span>';
+          let globalGradeDisplay = '<span class="text-muted">â€”</span>';
           if (scoreInfo) {
             overallScoreDisplay = `<span class="fw-700 text-sm" style="color:var(--clr-accent-1);">${scoreInfo.score.toFixed(1)}%</span>`;
             globalGradeDisplay = `<span class="grade-badge grade-${scoreInfo.grade}" style="width:28px;height:28px;font-size:0.8rem;display:inline-flex;">${scoreInfo.grade}</span>`;
@@ -883,11 +883,11 @@
               ${escapeHtml(displayName)}
               ${isDuplicate ? `<span class="badge badge-warning ml-2" style="font-size:0.65rem;" title="Duplicate student in this class">Duplikat</span>` : ''}
             </td>
-            <td class="text-muted text-sm">${escapeHtml(r.programs?.name || '—')}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.classes?.name || '—')}</td>
-            <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(r.batches?.name || '—')}</td>
-            <td class="text-center text-muted text-sm" style="text-transform:capitalize;">${escapeHtml(r.gender || '—')}</td>
-            <td class="text-center text-muted text-sm">${escapeHtml(r.birth_date || '—')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${ageDisplay}</span></td>
+            <td class="text-muted text-sm">${escapeHtml(r.programs?.name || 'â€”')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.classes?.name || 'â€”')}</td>
+            <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(r.batches?.name || 'â€”')}</td>
+            <td class="text-center text-muted text-sm" style="text-transform:capitalize;">${escapeHtml(r.gender || 'â€”')}</td>
+            <td class="text-center text-muted text-sm">${escapeHtml(r.birth_date || 'â€”')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${ageDisplay}</span></td>
             <td class="text-center">${overallScoreDisplay}</td>
             <td class="text-center">${globalGradeDisplay}</td>
             <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-danger'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
@@ -939,12 +939,12 @@
         renderRows(getFilteredData());
       });
 
-      // ── Sortable header clicks ──
+      // â”€â”€ Sortable header clicks â”€â”€
       document.querySelectorAll('#students-table .sortable-th').forEach(th => {
         th.addEventListener('click', () => {
           const col = th.dataset.col;
           if (sortState.col === col) {
-            // Cycle: asc → desc → null (default = asc)
+            // Cycle: asc â†’ desc â†’ null (default = asc)
             if (sortState.dir === 'asc') sortState.dir = 'desc';
             else if (sortState.dir === 'desc') { sortState.col = 'name'; sortState.dir = 'asc'; }
             else sortState.dir = 'asc';
@@ -962,7 +962,7 @@
       });
     }
 
-    // ── EXAM MANAGEMENT HUB (Restored & Elevated) ──
+    // â”€â”€ EXAM MANAGEMENT HUB (Restored & Elevated) â”€â”€
     async function renderExams(area) {
       const [rawData, allQuestions] = await Promise.all([
         adminFetchAll('exams', '*, subjects(name), levels(name, level_number), programs(name)'),
@@ -988,36 +988,36 @@
             </div>
             <div class="d-flex gap-2 flex-wrap">
               <button class="btn btn-primary btn-sm" id="hub-add-exam">+ Create Exam</button>
-              <button class="btn btn-secondary btn-sm" id="hub-import-q">📥 Import Questions</button>
-              <button class="btn btn-secondary btn-sm" id="hub-export-q">📤 Export Questions</button>
+              <button class="btn btn-secondary btn-sm" id="hub-import-q">ðŸ“¥ Import Questions</button>
+              <button class="btn btn-secondary btn-sm" id="hub-export-q">ðŸ“¤ Export Questions</button>
             </div>
           </div>
 
           <!-- KPI Cards -->
           <div class="kpi-grid">
             <div class="kpi-card">
-              <div class="kpi-icon">📝</div>
+              <div class="kpi-icon">ðŸ“</div>
               <div>
                 <div class="kpi-val">${totalExams}</div>
                 <div class="kpi-lbl">Total Exams</div>
               </div>
             </div>
             <div class="kpi-card">
-              <div class="kpi-icon" style="color:var(--clr-success,#4ade80);">✓</div>
+              <div class="kpi-icon" style="color:var(--clr-success,#4ade80);">âœ“</div>
               <div>
                 <div class="kpi-val" style="color:var(--clr-success,#4ade80);">${publishedCount}</div>
                 <div class="kpi-lbl">Published Exams</div>
               </div>
             </div>
             <div class="kpi-card">
-              <div class="kpi-icon" style="color:var(--clr-warning,#fbbf24);">⏳</div>
+              <div class="kpi-icon" style="color:var(--clr-warning,#fbbf24);">â³</div>
               <div>
                 <div class="kpi-val" style="color:var(--clr-warning,#fbbf24);">${draftCount}</div>
                 <div class="kpi-lbl">Draft / Inactive</div>
               </div>
             </div>
             <div class="kpi-card">
-              <div class="kpi-icon" style="color:var(--clr-accent-1);">❓</div>
+              <div class="kpi-icon" style="color:var(--clr-accent-1);">â“</div>
               <div>
                 <div class="kpi-val">${totalQuestions}</div>
                 <div class="kpi-lbl">Questions in Bank</div>
@@ -1036,8 +1036,8 @@
             <button class="pill-filter-btn" data-status="archived">Archived</button>
           </div>
           <div class="search-bar" style="max-width:320px;">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="exam-search-input" placeholder="Search exams by title, subject…" />
+            <span class="search-icon">ðŸ”</span>
+            <input type="text" id="exam-search-input" placeholder="Search exams by title, subjectâ€¦" />
           </div>
         </div>
 
@@ -1104,13 +1104,13 @@
             <td>
               <div class="fw-700" style="color:var(--clr-text-1);font-size:0.95rem;">${escapeHtml(r.exam_title)}</div>
               <div class="text-xs text-gradient mt-1" style="font-size:0.75rem;">${escapeHtml(fullDisplayName)}</div>
-              <div class="text-muted text-xs mt-1">⏱ ${r.time_limit_minutes || 30} min · Pass: ${r.minimum_required_score || 60}%</div>
+              <div class="text-muted text-xs mt-1">â± ${r.time_limit_minutes || 30} min Â· Pass: ${r.minimum_required_score || 60}%</div>
             </td>
-            <td class="text-muted fw-600">${escapeHtml(r.subjects?.name || '—')}</td>
+            <td class="text-muted fw-600">${escapeHtml(r.subjects?.name || 'â€”')}</td>
             <td class="text-center"><span class="badge badge-primary">L${r.levels?.level_number || ''} ${escapeHtml(r.levels?.name || '')}</span></td>
-            <td class="text-center"><span class="badge badge-neutral text-xs">${escapeHtml(r.exam_type || '—')}</span></td>
+            <td class="text-center"><span class="badge badge-neutral text-xs">${escapeHtml(r.exam_type || 'â€”')}</span></td>
             <td class="text-center text-sm"><span class="badge badge-info text-xs">${(r.answer_type || '').replace('_',' ')}</span></td>
-            <td class="text-center"><span class="badge ${r.question_order === 'random' ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${r.question_order === 'random' ? '🔀 Random' : '🔢 Sequential'}</span></td>
+            <td class="text-center"><span class="badge ${r.question_order === 'random' ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${r.question_order === 'random' ? 'ðŸ”€ Random' : 'ðŸ”¢ Sequential'}</span></td>
             <td class="text-center">
               <span class="status-dot ${r.exam_status}"></span>
               <span class="badge ${statusColors[r.exam_status] || 'badge-neutral'}">${r.exam_status}</span>
@@ -1171,7 +1171,7 @@
       } catch(e) { showToast(e.message, 'error'); }
     };
 
-    // ── QUESTIONS ──
+    // â”€â”€ QUESTIONS â”€â”€
     async function renderQuestions(area) {
       const [questions, exams] = await Promise.all([
         adminFetchAll('questions', '*, exams(exam_title, exam_type, programs(name), subjects(name), levels(name, level_number))'),
@@ -1196,8 +1196,8 @@
             </select>
           </div>
           <div class="search-bar" style="max-width:320px;">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="question-search-filter" placeholder="Search question text…" />
+            <span class="search-icon">ðŸ”</span>
+            <input type="text" id="question-search-filter" placeholder="Search question textâ€¦" />
           </div>
         </div>
         <div class="table-wrap">
@@ -1245,11 +1245,11 @@
 
         filtered.forEach(q => {
           const tr = document.createElement('tr');
-          const answerDisplay = (q.correct_answer || '—').slice(0, 40) + ((q.correct_answer?.length > 40) ? '…' : '');
+          const answerDisplay = (q.correct_answer || 'â€”').slice(0, 40) + ((q.correct_answer?.length > 40) ? 'â€¦' : '');
           const examDisplay = formatExamDisplayName(q.exams);
           tr.innerHTML = `
             <td class="text-center text-muted fw-700">${q.question_order}</td>
-            <td class="fw-600">${escapeHtml(q.question_text?.slice(0,70))}${q.question_text?.length > 70 ? '…' : ''}</td>
+            <td class="fw-600">${escapeHtml(q.question_text?.slice(0,70))}${q.question_text?.length > 70 ? 'â€¦' : ''}</td>
             <td class="text-sm" style="color:var(--clr-success,#4ade80);font-family:monospace;">${escapeHtml(answerDisplay)}</td>
             <td class="text-center"><span class="badge badge-info">${(q.answer_type||'').replace('_',' ')}</span></td>
             <td class="text-muted text-sm">${escapeHtml(examDisplay)}</td>
@@ -1285,7 +1285,7 @@
       searchInput.addEventListener('input', renderList);
     }
 
-    // ── RESULTS (Student Submissions with Batch Grouping) ──
+    // â”€â”€ RESULTS (Student Submissions with Batch Grouping) â”€â”€
     async function renderResults(area) {
       const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
         adminFetchAll('attempts', '*, students(name, gender, batch_id, batches(name), class_id, classes(name, program_id, programs(name))), exams(exam_title, exam_type)'),
@@ -1316,7 +1316,7 @@
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Program</label>
             <select id="res-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Programs —</option>
+              <option value="">â€” All Programs â€”</option>
               ${(allPrograms || []).filter(p => !p.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
             </select>
           </div>
@@ -1324,7 +1324,7 @@
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Class</label>
             <select id="res-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Classes —</option>
+              <option value="">â€” All Classes â€”</option>
               ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.program_id}">${escapeHtml(c.name)}</option>`).join('')}
             </select>
           </div>
@@ -1332,18 +1332,18 @@
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
             <select id="res-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Batches —</option>
+              <option value="">â€” All Batches â€”</option>
               ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.class_id}">${escapeHtml(b.name)}</option>`).join('')}
             </select>
           </div>
 
           <div style="flex:1;min-width:220px;">
             <label class="text-xs text-muted d-block mb-1">Search Student / Exam</label>
-            <input type="text" id="res-filter-search" class="form-control" placeholder="Type student name or exam title…" style="padding:6px 10px;font-size:0.85rem;">
+            <input type="text" id="res-filter-search" class="form-control" placeholder="Type student name or exam titleâ€¦" style="padding:6px 10px;font-size:0.85rem;">
           </div>
 
           <div class="d-flex align-end" style="padding-top:18px;">
-            <button class="btn btn-ghost btn-sm" id="res-btn-reset" title="Reset all filters">✕ Reset</button>
+            <button class="btn btn-ghost btn-sm" id="res-btn-reset" title="Reset all filters">âœ• Reset</button>
           </div>
         </div>
 
@@ -1427,14 +1427,14 @@
 
         tbody.innerHTML = filtered.map(r => `
           <tr>
-            <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || '—'}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.programs?.name || '—')}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.name || '—')}</td>
+            <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || 'â€”'}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.programs?.name || 'â€”')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.name || 'â€”')}</td>
             <td><span class="badge ${r.students?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.students?.batches?.name || 'Unassigned')}</span></td>
-            <td class="text-sm fw-600">${r.exams?.exam_type ? escapeHtml(r.exams.exam_type) + ' — ' : ''}${escapeHtml(r.exams?.exam_title || '—')}</td>
+            <td class="text-sm fw-600">${r.exams?.exam_type ? escapeHtml(r.exams.exam_type) + ' â€” ' : ''}${escapeHtml(r.exams?.exam_title || 'â€”')}</td>
             <td class="text-center fw-700" style="color:var(--clr-primary);">${parseFloat(r.percentage || 0).toFixed(1)}%</td>
-            <td class="text-center"><span class="grade-badge grade-${r.grade || 'F'}" style="width:30px;height:30px;font-size:0.85rem;">${r.grade || '—'}</span></td>
-            <td class="text-center text-muted text-xs">${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '—'}</td>
+            <td class="text-center"><span class="grade-badge grade-${r.grade || 'F'}" style="width:30px;height:30px;font-size:0.85rem;">${r.grade || 'â€”'}</span></td>
+            <td class="text-center text-muted text-xs">${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'â€”'}</td>
           </tr>
         `).join('');
       };
@@ -1455,7 +1455,7 @@
       renderTable();
     }
 
-    // ── STUDENT PROGRESS (Level Progression with Batch Grouping) ──
+    // â”€â”€ STUDENT PROGRESS (Level Progression with Batch Grouping) â”€â”€
     async function renderProgressView(area) {
       const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
         adminFetchAll('progress', '*, students(name, gender, batch_id, batches(name), class_id, classes(name, program_id, programs(name))), subjects(name), levels(name, level_number)'),
@@ -1480,7 +1480,7 @@
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Program</label>
             <select id="prog-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Programs —</option>
+              <option value="">â€” All Programs â€”</option>
               ${(allPrograms || []).filter(p => !p.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
             </select>
           </div>
@@ -1488,7 +1488,7 @@
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Class</label>
             <select id="prog-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Classes —</option>
+              <option value="">â€” All Classes â€”</option>
               ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.program_id}">${escapeHtml(c.name)}</option>`).join('')}
             </select>
           </div>
@@ -1496,18 +1496,18 @@
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
             <select id="prog-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Batches —</option>
+              <option value="">â€” All Batches â€”</option>
               ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.class_id}">${escapeHtml(b.name)}</option>`).join('')}
             </select>
           </div>
 
           <div style="flex:1;min-width:220px;">
             <label class="text-xs text-muted d-block mb-1">Search Student / Subject</label>
-            <input type="text" id="prog-filter-search" class="form-control" placeholder="Type student name or subject…" style="padding:6px 10px;font-size:0.85rem;">
+            <input type="text" id="prog-filter-search" class="form-control" placeholder="Type student name or subjectâ€¦" style="padding:6px 10px;font-size:0.85rem;">
           </div>
 
           <div class="d-flex align-end" style="padding-top:18px;">
-            <button class="btn btn-ghost btn-sm" id="prog-btn-reset" title="Reset all filters">✕ Reset</button>
+            <button class="btn btn-ghost btn-sm" id="prog-btn-reset" title="Reset all filters">âœ• Reset</button>
           </div>
         </div>
 
@@ -1590,15 +1590,15 @@
 
         tbody.innerHTML = filtered.map(r => `
           <tr>
-            <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || '—'}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.programs?.name || '—')}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.name || '—')}</td>
+            <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || 'â€”'}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.programs?.name || 'â€”')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.name || 'â€”')}</td>
             <td><span class="badge ${r.students?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.students?.batches?.name || 'Unassigned')}</span></td>
-            <td class="fw-600 text-sm">${escapeHtml(r.subjects?.name || '—')}</td>
+            <td class="fw-600 text-sm">${escapeHtml(r.subjects?.name || 'â€”')}</td>
             <td class="text-center"><span class="badge badge-primary">L${r.levels?.level_number || '1'} ${escapeHtml(r.levels?.name || '')}</span></td>
             <td class="text-center">
               <span class="badge ${r.is_completed ? 'badge-success' : r.is_unlocked ? 'badge-info' : 'badge-neutral'}">
-                ${r.is_completed ? '✓ Completed' : r.is_unlocked ? '▶ Unlocked' : '🔒 Locked'}
+                ${r.is_completed ? 'âœ“ Completed' : r.is_unlocked ? 'â–¶ Unlocked' : 'ðŸ”’ Locked'}
               </span>
             </td>
             <td class="text-center">
@@ -1626,7 +1626,7 @@
       renderTable();
     }
 
-    // ── AUDIT LOG ──
+    // â”€â”€ AUDIT LOG â”€â”€
     async function renderAuditLog(area) {
       const data = await adminFetchAll('audit_logs');
       area.innerHTML = `
@@ -1653,8 +1653,8 @@
                   <td class="text-sm text-muted">${new Date(r.created_at).toLocaleString()}</td>
                   <td class="text-center"><span class="badge badge-info">${r.actor_role || 'ADMIN'}</span></td>
                   <td class="fw-600 text-sm">${r.action}</td>
-                  <td class="text-muted text-sm">${r.entity_type || '—'}</td>
-                  <td class="text-center text-muted text-sm">${r.ip_address || '—'}</td>
+                  <td class="text-muted text-sm">${r.entity_type || 'â€”'}</td>
+                  <td class="text-center text-muted text-sm">${r.ip_address || 'â€”'}</td>
                 </tr>
               `).join('')}
               ${!(data?.length) ? '<tr><td colspan="5" class="text-center text-muted p-4">No audit events yet.</td></tr>' : ''}
@@ -1665,7 +1665,7 @@
     }
 
 
-    // ── SETTINGS ──
+    // â”€â”€ SETTINGS â”€â”€
     async function renderSettings(area) {
       const sb = await getSupabase();
       const { data } = await sb.from('site_settings').select('*');
@@ -1683,7 +1683,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Login Background URL (optional)</label>
-            <input class="form-control" id="setting-login_background_url" value="${settings.login_background_url || ''}" placeholder="https://…" />
+            <input class="form-control" id="setting-login_background_url" value="${settings.login_background_url || ''}" placeholder="https://â€¦" />
           </div>
           <button class="btn btn-primary" id="save-settings-btn">Save Settings</button>
         </div>
@@ -1701,8 +1701,8 @@
       });
     }
 
-    // ── Import placeholders ──
-    // ── Student Import Engine (Excel / CSV) ──
+    // â”€â”€ Import placeholders â”€â”€
+    // â”€â”€ Student Import Engine (Excel / CSV) â”€â”€
     async function renderImportStudents(area) {
       const [programs, classes, allBatches] = await Promise.all([
         adminFetchAll('programs'),
@@ -1721,8 +1721,8 @@
             <p class="section-subtitle">Unggah data siswa sekaligus menggunakan spreadsheet Excel (.xlsx / .xls) atau file CSV. PIN akan otomatis di-hash (SHA-256) demi keamanan.</p>
           </div>
           <div class="d-flex gap-2">
-            <button class="btn btn-secondary btn-sm" id="btn-back-to-students">← Back to Students</button>
-            <button class="btn btn-primary btn-sm" id="btn-dl-student-template">📥 Unduh Template Siswa (.xlsx)</button>
+            <button class="btn btn-secondary btn-sm" id="btn-back-to-students">â† Back to Students</button>
+            <button class="btn btn-primary btn-sm" id="btn-dl-student-template">ðŸ“¥ Unduh Template Siswa (.xlsx)</button>
           </div>
         </div>
 
@@ -1731,7 +1731,7 @@
             <div class="form-group">
               <label class="form-label">1. Target Program (Default / Override)</label>
               <select class="form-control" id="import-student-program">
-                <option value="">— Gunakan Program dari File Excel —</option>
+                <option value="">â€” Gunakan Program dari File Excel â€”</option>
                 ${sortedPrograms.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
               </select>
               <span class="text-muted text-xs mt-1">Pilih jika ingin menetapkan semua siswa di file ke Program ini.</span>
@@ -1740,7 +1740,7 @@
             <div class="form-group">
               <label class="form-label">2. Target Class (Default / Override)</label>
               <select class="form-control" id="import-student-class">
-                <option value="">— Gunakan Kelas dari File Excel —</option>
+                <option value="">â€” Gunakan Kelas dari File Excel â€”</option>
                 ${sortedClasses.map(c => `<option value="${c.id}" data-prog="${c.program_id}">[${escapeHtml(c.programs?.name || 'Program')}] ${escapeHtml(c.name)}</option>`).join('')}
               </select>
               <span class="text-muted text-xs mt-1">Pilih jika ingin menetapkan semua siswa di file ke Kelas ini.</span>
@@ -1749,7 +1749,7 @@
             <div class="form-group">
               <label class="form-label">3. Target Batch (Default / Override)</label>
               <select class="form-control" id="import-student-batch" disabled>
-                <option value="">— Pilih Kelas Terlebih Dahulu —</option>
+                <option value="">â€” Pilih Kelas Terlebih Dahulu â€”</option>
               </select>
               <span class="text-muted text-xs mt-1">Pilih jika ingin menetapkan semua siswa di file ke Batch ini.</span>
             </div>
@@ -1769,11 +1769,11 @@
               <span class="badge badge-info" style="font-size:0.75rem;">Mendukung Kolom Bahasa Indonesia &amp; English</span>
             </div>
             <div class="text-xs text-muted d-flex flex-column gap-1">
-              <div>• <b>Name:</b> Kolom <code>NAME</code>, <code>Nama</code>, <code>Student Name</code>, atau <code>Nama Siswa</code> (Wajib).</div>
-              <div>• <b>Gender (Opsional):</b> Kolom <code>GENDER</code>, <code>JK</code>, atau <code>Jenis Kelamin</code> (Menerima: male, female, L, P). <em>Jika dikosongkan, siswa akan memilih gendernya sendiri (Mr. / Miss) saat pertama kali masuk ke dashboard.</em></div>
-              <div>• <b>Birth Date / Age:</b> Kolom <code>BIRTH_DATE</code>, <code>Tgl Lahir</code>, atau <code>AGE</code>/<code>Usia</code> (Format: YYYY-MM-DD atau angka usia).</div>
-              <div>• <b>PIN:</b> Kolom <code>PIN</code> atau <code>Password</code> (Otomatis default ke <code>1234</code> jika dikosongkan).</div>
-              <div>• <b>Program &amp; Class &amp; Batch:</b> Jika dikosongkan di file Excel, akan menggunakan Target Program, Class &amp; Batch yang dipilih di atas.</div>
+              <div>â€¢ <b>Name:</b> Kolom <code>NAME</code>, <code>Nama</code>, <code>Student Name</code>, atau <code>Nama Siswa</code> (Wajib).</div>
+              <div>â€¢ <b>Gender (Opsional):</b> Kolom <code>GENDER</code>, <code>JK</code>, atau <code>Jenis Kelamin</code> (Menerima: male, female, L, P). <em>Jika dikosongkan, siswa akan memilih gendernya sendiri (Mr. / Miss) saat pertama kali masuk ke dashboard.</em></div>
+              <div>â€¢ <b>Birth Date / Age:</b> Kolom <code>BIRTH_DATE</code>, <code>Tgl Lahir</code>, atau <code>AGE</code>/<code>Usia</code> (Format: YYYY-MM-DD atau angka usia).</div>
+              <div>â€¢ <b>PIN:</b> Kolom <code>PIN</code> atau <code>Password</code> (Otomatis default ke <code>1234</code> jika dikosongkan).</div>
+              <div>â€¢ <b>Program &amp; Class &amp; Batch:</b> Jika dikosongkan di file Excel, akan menggunakan Target Program, Class &amp; Batch yang dipilih di atas.</div>
             </div>
           </div>
         </div>
@@ -1788,7 +1788,7 @@
               </div>
               <div class="d-flex align-center gap-3">
                 <button class="btn btn-secondary btn-sm" id="btn-cancel-students-import">Batalkan</button>
-                <button class="btn btn-primary btn-sm" id="btn-confirm-students-import">✓ Konfirmasi &amp; Simpan Siswa</button>
+                <button class="btn btn-primary btn-sm" id="btn-confirm-students-import">âœ“ Konfirmasi &amp; Simpan Siswa</button>
               </div>
             </div>
 
@@ -1871,10 +1871,10 @@
       const batchSelect = document.getElementById('import-student-batch');
 
       const updateBatchDropdown = (selectedClassId) => {
-        batchSelect.innerHTML = `<option value="">— Gunakan Batch dari File Excel —</option>`;
+        batchSelect.innerHTML = `<option value="">â€” Gunakan Batch dari File Excel â€”</option>`;
         if (!selectedClassId) {
           batchSelect.disabled = true;
-          batchSelect.innerHTML = `<option value="">— Pilih Kelas Terlebih Dahulu —</option>`;
+          batchSelect.innerHTML = `<option value="">â€” Pilih Kelas Terlebih Dahulu â€”</option>`;
           return;
         }
         batchSelect.disabled = false;
@@ -1911,7 +1911,7 @@
         const file = e.target.files?.[0];
         if (!file) return;
 
-        showLoading('Membaca file spreadsheet…');
+        showLoading('Membaca file spreadsheetâ€¦');
         const reader = new FileReader();
         reader.onload = async (evt) => {
           try {
@@ -1967,7 +1967,7 @@
               const rawBirth = getRowVal(row, ['birthdate', 'dob', 'tanggallahir', 'tgllahir', 'tgl', 'birth_date']);
               const rawAge = getRowVal(row, ['age', 'usia']);
               let birthDate = '';
-              let ageDisplay = '—';
+              let ageDisplay = 'â€”';
 
               if (rawBirth) {
                 if (!isNaN(rawBirth) && Number(rawBirth) > 1000) {
@@ -2082,7 +2082,7 @@
               // Check if student already in database
               const existingDbStudent = existingStudentsMap.get(batchKey);
               let status = 'valid';
-              let statusMsg = '✨ Siswa Baru';
+              let statusMsg = 'âœ¨ Siswa Baru';
               let isExisting = false;
               let existingId = null;
 
@@ -2091,7 +2091,7 @@
                 statusMsg = 'No Class Assigned';
               } else if (existingDbStudent) {
                 status = 'merge';
-                statusMsg = '🔄 Merge Existing';
+                statusMsg = 'ðŸ”„ Merge Existing';
                 isExisting = true;
                 existingId = existingDbStudent.id;
               }
@@ -2108,7 +2108,7 @@
                 classId: finalClassId,
                 className: finalClassName || 'Class',
                 batchId: finalBatchId,
-                batchName: finalBatchName || '—',
+                batchName: finalBatchName || 'â€”',
                 status,
                 statusMsg,
                 isExisting,
@@ -2158,32 +2158,32 @@
           const tr = document.createElement('tr');
           let badgeHtml = '';
           if (s.status === 'valid') {
-            badgeHtml = `<span class="badge badge-success">✨ Siswa Baru</span>`;
+            badgeHtml = `<span class="badge badge-success">âœ¨ Siswa Baru</span>`;
           } else if (s.status === 'merge') {
-            badgeHtml = `<span class="badge badge-info">🔄 Merge / Update</span>`;
+            badgeHtml = `<span class="badge badge-info">ðŸ”„ Merge / Update</span>`;
           } else {
             badgeHtml = `<span class="badge badge-danger">Error</span>`;
           }
 
           if (s.duplicateInFile) {
-            badgeHtml += ` <span class="badge badge-warning ml-1" title="Dimerge dari baris kembar dalam spreadsheet">⚡ Dimerge dari File</span>`;
+            badgeHtml += ` <span class="badge badge-warning ml-1" title="Dimerge dari baris kembar dalam spreadsheet">âš¡ Dimerge dari File</span>`;
           }
 
           const genderBadge = s.gender === 'male'
-            ? '<span class="badge badge-primary">👨 Male</span>'
+            ? '<span class="badge badge-primary">ðŸ‘¨ Male</span>'
             : s.gender === 'female'
-            ? '<span class="badge badge-accent">👩 Female</span>'
-            : '<span class="badge badge-neutral" style="font-size:0.7rem;" title="Siswa akan memilih gender saat login pertama">⏳ Unassigned</span>';
+            ? '<span class="badge badge-accent">ðŸ‘© Female</span>'
+            : '<span class="badge badge-neutral" style="font-size:0.7rem;" title="Siswa akan memilih gender saat login pertama">â³ Unassigned</span>';
 
           tr.innerHTML = `
             <td class="text-center text-muted fw-700">${i + 1}</td>
             <td class="fw-600">${escapeHtml(s.name)}</td>
             <td class="text-center">${genderBadge}</td>
-            <td class="text-center text-muted text-sm">${escapeHtml(s.birthDate || '—')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${escapeHtml(s.ageDisplay)}</span></td>
+            <td class="text-center text-muted text-sm">${escapeHtml(s.birthDate || 'â€”')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${escapeHtml(s.ageDisplay)}</span></td>
             <td class="text-muted text-sm">${escapeHtml(s.programName)}</td>
             <td class="fw-600 text-sm">${escapeHtml(s.className)}</td>
-            <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(s.batchName || '—')}</td>
-            <td class="text-center text-sm" style="font-family:monospace;letter-spacing:2px;">•••• <span class="text-muted text-xs" title="PIN: ${escapeHtml(s.pin)}">(${escapeHtml(s.pin)})</span></td>
+            <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(s.batchName || 'â€”')}</td>
+            <td class="text-center text-sm" style="font-family:monospace;letter-spacing:2px;">â€¢â€¢â€¢â€¢ <span class="text-muted text-xs" title="PIN: ${escapeHtml(s.pin)}">(${escapeHtml(s.pin)})</span></td>
             <td class="text-center">${badgeHtml}</td>
           `;
           tbody.appendChild(tr);
@@ -2191,8 +2191,8 @@
 
         document.getElementById('students-preview-summary').textContent = `${parsedStudentsState.length} siswa siap diproses (${newCount} data baru, ${mergeCount} data existing di-merge).`;
         document.getElementById('chip-total-students').textContent = `Total: ${parsedStudentsState.length}`;
-        document.getElementById('chip-valid-students').textContent = `✨ Baru: ${newCount}`;
-        document.getElementById('chip-warn-students').textContent = `🔄 Merge: ${mergeCount}`;
+        document.getElementById('chip-valid-students').textContent = `âœ¨ Baru: ${newCount}`;
+        document.getElementById('chip-warn-students').textContent = `ðŸ”„ Merge: ${mergeCount}`;
 
         const saveBtn = document.getElementById('btn-confirm-students-import');
         if (saveBtn) {
@@ -2215,16 +2215,16 @@
           return;
         }
 
-              showLoading(`Processing ${readyStudents.length} students (saving new & merging existing)…`);
+              showLoading(`Processing ${readyStudents.length} students (saving new & merging existing)â€¦`);
         try {
           let insertedCount = 0;
           let mergedCount = 0;
 
-          // ── Auto-create missing batches first (before saving students) ──
+          // â”€â”€ Auto-create missing batches first (before saving students) â”€â”€
           // Collect unique (classId, batchName) pairs that don't have a batchId yet
           const batchesToCreate = new Map(); // key: classId::batchName -> { classId, batchName }
           for (const s of readyStudents) {
-            if (!s.batchId && s.batchName && s.batchName !== '—' && s.classId) {
+            if (!s.batchId && s.batchName && s.batchName !== 'â€”' && s.classId) {
               const key = `${s.classId}::${s.batchName.toLowerCase().trim()}`;
               if (!batchesToCreate.has(key)) {
                 batchesToCreate.set(key, { classId: s.classId, batchName: s.batchName.trim() });
@@ -2252,13 +2252,13 @@
 
           // Resolve batch IDs for students that needed auto-creation
           for (const s of readyStudents) {
-            if (!s.batchId && s.batchName && s.batchName !== '—' && s.classId) {
+            if (!s.batchId && s.batchName && s.batchName !== 'â€”' && s.classId) {
               const key = `${s.classId}::${s.batchName.toLowerCase().trim()}`;
               if (newBatchMap.has(key)) s.batchId = newBatchMap.get(key);
             }
           }
 
-          // ── Safe student write helper: retries without extended columns if DB schema is old ──
+          // â”€â”€ Safe student write helper: retries without extended columns if DB schema is old â”€â”€
           let _dbHasBatchId = true;  // Assume yes, will be set to false on first schema error
           let _dbHasBirthDate = true;
           let _dbHasProgramId = true;
@@ -2274,7 +2274,7 @@
             } catch (e) {
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
                 _dbHasBatchId = false;
-                showToast('⚠️ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
+                showToast('âš ï¸ Column batch_id missing in DB â€” saving without batch. Run the SQL patch to fix this.', 'warning');
                 delete p.batch_id;
                 return await adminInsert('students', p);
               }
@@ -2302,7 +2302,7 @@
             } catch (e) {
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
                 _dbHasBatchId = false;
-                showToast('⚠️ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
+                showToast('âš ï¸ Column batch_id missing in DB â€” saving without batch. Run the SQL patch to fix this.', 'warning');
                 delete p.batch_id;
                 return await adminUpdate('students', id, p);
               }
@@ -2360,7 +2360,7 @@
           }
 
           hideLoading();
-          const batchWarning = !_dbHasBatchId ? ' (batch_id column missing — run SQL patch to enable full batch support)' : '';
+          const batchWarning = !_dbHasBatchId ? ' (batch_id column missing â€” run SQL patch to enable full batch support)' : '';
           showToast(`Done! ${insertedCount} new students added, ${mergedCount} updated/merged!${batchWarning}`, 'success');
           loadSection('students');
         } catch(err) {
@@ -2383,7 +2383,7 @@
           <div class="form-grid mb-4">
             <div class="form-group">
               <label class="form-label">1. Select Target Exam</label>
-              <select class="form-control" id="import-exam-select"><option value="">Loading exams…</option></select>
+              <select class="form-control" id="import-exam-select"><option value="">Loading examsâ€¦</option></select>
             </div>
             <div class="form-group">
               <label class="form-label">2. Select / Override Exam Type (Cara Menjawab)</label>
@@ -2404,7 +2404,7 @@
           <div class="p-4 rounded mb-4" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);">
             <div class="d-flex align-center justify-between flex-wrap gap-3 mb-2">
               <span class="text-sm fw-700 text-gradient" id="format-title-badge">FORMAT KOLOM EXCEL KETIK (WRITTEN)</span>
-              <button class="btn btn-primary btn-sm" id="download-template-btn">📥 Unduh Template Format Ini</button>
+              <button class="btn btn-primary btn-sm" id="download-template-btn">ðŸ“¥ Unduh Template Format Ini</button>
             </div>
             <p class="text-xs text-muted mb-2" id="format-desc-label">File Excel wajib memiliki susunan header kolom berikut pada baris pertama:</p>
             <div class="p-2 rounded text-xs mb-3" style="background:rgba(0,0,0,0.3);border:1px dashed var(--clr-border);font-family:monospace;overflow-x:auto;" id="format-columns-code">
@@ -2416,10 +2416,10 @@
           <div class="p-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);">
             <div class="text-xs fw-700 text-muted uppercase mb-3">Unduh Langsung Template Excel Per Jenis Exam:</div>
             <div class="d-flex flex-wrap gap-2">
-              <button class="btn btn-secondary btn-sm" id="dl-tmpl-written">📄 Template Written (Ketik)</button>
-              <button class="btn btn-secondary btn-sm" id="dl-tmpl-speech">🎙️ Template Speech to Text (Suara)</button>
-              <button class="btn btn-secondary btn-sm" id="dl-tmpl-mc">🔘 Template Multiple Choice (Pilihan Ganda)</button>
-              <button class="btn btn-secondary btn-sm" id="dl-tmpl-dropdown">▼ Template Drop-down</button>
+              <button class="btn btn-secondary btn-sm" id="dl-tmpl-written">ðŸ“„ Template Written (Ketik)</button>
+              <button class="btn btn-secondary btn-sm" id="dl-tmpl-speech">ðŸŽ™ï¸ Template Speech to Text (Suara)</button>
+              <button class="btn btn-secondary btn-sm" id="dl-tmpl-mc">ðŸ”˜ Template Multiple Choice (Pilihan Ganda)</button>
+              <button class="btn btn-secondary btn-sm" id="dl-tmpl-dropdown">â–¼ Template Drop-down</button>
             </div>
           </div>
         </div>
@@ -2466,7 +2466,7 @@
               <span class="text-muted text-sm" id="preview-count-label">0 soal siap di-import.</span>
               <div class="d-flex gap-3">
                 <button class="btn btn-secondary" id="cancel-import-btn">Batal</button>
-                <button class="btn btn-primary" id="confirm-save-import-btn">💾 Konfirmasi & Simpan Semua Soal</button>
+                <button class="btn btn-primary" id="confirm-save-import-btn">ðŸ’¾ Konfirmasi & Simpan Semua Soal</button>
               </div>
             </div>
           </div>
@@ -2545,7 +2545,7 @@
           return nameA.localeCompare(nameB);
         });
         const sel = document.getElementById('import-exam-select');
-        sel.innerHTML = '<option value="">— Pilih Target Exam —</option>' +
+        sel.innerHTML = '<option value="">â€” Pilih Target Exam â€”</option>' +
           sortedExams.map(e => `<option value="${e.id}">${escapeHtml(formatExamDisplayName(e))} (${(e.answer_type||'written').replace('_',' ')})</option>`).join('');
       });
 
@@ -2589,7 +2589,7 @@
         const file = e.target.files?.[0];
         if (!file) return;
 
-        showLoading('Reading Excel file preview…');
+        showLoading('Reading Excel file previewâ€¦');
         const reader = new FileReader();
 
         reader.onload = (evt) => {
@@ -2749,10 +2749,10 @@
             <td class="fw-600">${item.questionText}</td>
             <td class="text-success fw-700">${item.correctAnswer}</td>
             ${hasOptions ? `
-              <td class="text-xs ${optA === item.correctAnswer ? 'text-success fw-700' : 'text-muted'}">${optA || '—'}</td>
-              <td class="text-xs ${optB === item.correctAnswer ? 'text-success fw-700' : 'text-muted'}">${optB || '—'}</td>
-              <td class="text-xs ${optC === item.correctAnswer ? 'text-success fw-700' : 'text-muted'}">${optC || '—'}</td>
-              <td class="text-xs ${optD === item.correctAnswer ? 'text-success fw-700' : 'text-muted'}">${optD || '—'}</td>
+              <td class="text-xs ${optA === item.correctAnswer ? 'text-success fw-700' : 'text-muted'}">${optA || 'â€”'}</td>
+              <td class="text-xs ${optB === item.correctAnswer ? 'text-success fw-700' : 'text-muted'}">${optB || 'â€”'}</td>
+              <td class="text-xs ${optC === item.correctAnswer ? 'text-success fw-700' : 'text-muted'}">${optC || 'â€”'}</td>
+              <td class="text-xs ${optD === item.correctAnswer ? 'text-success fw-700' : 'text-muted'}">${optD || 'â€”'}</td>
             ` : ''}
           `;
           tbody.appendChild(tr);
@@ -2780,7 +2780,7 @@
         if (!examId) { showToast('Please select a target exam before saving.', 'warning'); return; }
         if (!parsedQuestionsState.length) { showToast('No questions to save.', 'warning'); return; }
 
-        showLoading('Menyimpan & merge soal ke database…');
+        showLoading('Menyimpan & merge soal ke databaseâ€¦');
         try {
           const existingQuestions = await adminFetchAll('questions', '*', { exam_id: examId });
           const orderMap = new Map();
@@ -2843,7 +2843,7 @@
           </div>
           <div class="form-group"><label class="form-label">Select Exam to Export</label>
             <select class="form-control" id="export-exam-select">
-              <option value="">— Select Exam —</option>
+              <option value="">â€” Select Exam â€”</option>
               ${[...exams].sort((a, b) => {
                 const labelA = `${a.exam_type ? a.exam_type + ' - ' : ''}${a.exam_title}`;
                 const labelB = `${b.exam_type ? b.exam_type + ' - ' : ''}${b.exam_title}`;
@@ -2851,7 +2851,7 @@
               }).map(e => `<option value="${e.id}">${e.exam_type ? e.exam_type + ' - ' : ''}${e.exam_title}</option>`).join('')}
             </select>
           </div>
-          <button class="btn btn-primary mt-2" id="export-questions-btn">📤 Download Excel (.xlsx)</button>
+          <button class="btn btn-primary mt-2" id="export-questions-btn">ðŸ“¤ Download Excel (.xlsx)</button>
         </div>
       `;
 
@@ -2860,7 +2860,7 @@
         if (!examId) { showToast('Please select an exam to export.', 'warning'); return; }
 
         const selectedExam = exams.find(e => e.id === examId);
-        showLoading('Preparing Excel export…');
+        showLoading('Preparing Excel exportâ€¦');
 
         try {
           const [questions, examClasses] = await Promise.all([
@@ -2915,7 +2915,7 @@
       });
     }
 
-    // ── CRUD Modal ──
+    // â”€â”€ CRUD Modal â”€â”€
     const crudModal = document.getElementById('crud-modal');
     const crudForm  = document.getElementById('crud-form');
     let _currentSection = null, _editId = null;
@@ -2955,7 +2955,7 @@
         { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: false, dependsOn: 'class_id' },
         { id: 'name', label: 'Full Name', type: 'text', required: true },
         { id: 'gender', label: 'Gender', type: 'select', options: [
-          { value: '', label: '— Unassigned (Student will choose) —' },
+          { value: '', label: 'â€” Unassigned (Student will choose) â€”' },
           { value: 'male', label: 'Male (Mr.)' },
           { value: 'female', label: 'Female (Miss)' }
         ]},
@@ -3021,7 +3021,7 @@
           if (f.required) sel.required = true;
           // Skip initial population for dependent dropdowns (handled by dependency logic below)
           if (!f.dependsOn) {
-            sel.innerHTML = `<option value="">— Select —</option>`;
+            sel.innerHTML = `<option value="">â€” Select â€”</option>`;
             const opts = await adminFetchAll(f.source);
             opts.forEach(o => {
               const opt = document.createElement('option');
@@ -3031,7 +3031,7 @@
               sel.appendChild(opt);
             });
           } else {
-            sel.innerHTML = `<option value="">— Select Previous First —</option>`;
+            sel.innerHTML = `<option value="">â€” Select Previous First â€”</option>`;
             sel.disabled = true;
           }
           group.appendChild(sel);
@@ -3041,7 +3041,7 @@
           sel.id = `field-${f.id}`;
           sel.name = f.id;
           if (f.required) sel.required = true;
-          sel.innerHTML = `<option value="">— Select —</option>` + f.options.map(o => {
+          sel.innerHTML = `<option value="">â€” Select â€”</option>` + f.options.map(o => {
             const val = typeof o === 'object' ? o.value : o;
             const labelStr = typeof o === 'object' ? o.label : o;
             const isSelected = record?.[f.id] === val || (!record && val === 'sequential');
@@ -3096,10 +3096,10 @@
       if (progSelect && classSelect) {
         const populateBatchesForClass = async (selectedClassId) => {
           if (!batchSelect) return;
-          batchSelect.innerHTML = `<option value="">— Select Batch —</option>`;
+          batchSelect.innerHTML = `<option value="">â€” Select Batch â€”</option>`;
           if (!selectedClassId) {
             batchSelect.disabled = true;
-            batchSelect.innerHTML = `<option value="">— Select Class First —</option>`;
+            batchSelect.innerHTML = `<option value="">â€” Select Class First â€”</option>`;
             return;
           }
           batchSelect.disabled = false;
@@ -3115,9 +3115,9 @@
         };
 
         const populateClassesForProgram = async (selectedProgId) => {
-          classSelect.innerHTML = `<option value="">${_currentSection === 'levels' ? '— Select Class (Optional / All Classes) —' : '— Select Class —'}</option>`;
+          classSelect.innerHTML = `<option value="">${_currentSection === 'levels' ? 'â€” Select Class (Optional / All Classes) â€”' : 'â€” Select Class â€”'}</option>`;
           if (batchSelect) {
-            batchSelect.innerHTML = `<option value="">— Select Class First —</option>`;
+            batchSelect.innerHTML = `<option value="">â€” Select Class First â€”</option>`;
             batchSelect.disabled = true;
           }
           if (!selectedProgId) {
@@ -3152,7 +3152,7 @@
           }
         } else {
           classSelect.disabled = true;
-          classSelect.innerHTML = `<option value="">— Select Program First —</option>`;
+          classSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
         }
 
         progSelect.addEventListener('change', async (e) => {
@@ -3166,9 +3166,9 @@
 
       if (progSelect && subjectSelect) {
         const populateSubjectsForProgram = async (selectedProgId) => {
-          subjectSelect.innerHTML = `<option value="">— Select Subject —</option>`;
+          subjectSelect.innerHTML = `<option value="">â€” Select Subject â€”</option>`;
           if (levelSelect) {
-            levelSelect.innerHTML = `<option value="">— Select Subject First —</option>`;
+            levelSelect.innerHTML = `<option value="">â€” Select Subject First â€”</option>`;
             levelSelect.disabled = true;
           }
           if (!selectedProgId) {
@@ -3192,7 +3192,7 @@
           await populateSubjectsForProgram(initialProgIdForSubject);
         } else {
           subjectSelect.disabled = true;
-          subjectSelect.innerHTML = `<option value="">— Select Program First —</option>`;
+          subjectSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
         }
 
         progSelect.addEventListener('change', async (e) => {
@@ -3202,7 +3202,7 @@
 
       if (subjectSelect && levelSelect) {
         const populateLevelsForSubject = async (selectedSubjId) => {
-          levelSelect.innerHTML = `<option value="">— Select Level —</option>`;
+          levelSelect.innerHTML = `<option value="">â€” Select Level â€”</option>`;
           if (!selectedSubjId) {
             levelSelect.disabled = true;
             return;
@@ -3224,7 +3224,7 @@
           await populateLevelsForSubject(initialSubjIdForLevel);
         } else {
           levelSelect.disabled = true;
-          levelSelect.innerHTML = `<option value="">— Select Subject First —</option>`;
+          levelSelect.innerHTML = `<option value="">â€” Select Subject First â€”</option>`;
         }
 
         subjectSelect.addEventListener('change', async (e) => {
@@ -3252,7 +3252,7 @@
         }
         else if (f.type === 'password' && _editId && !el.value) continue; // Don't overwrite PIN if empty on edit
         else if (f.type === 'password' && el.value) {
-          // Hash PIN client-side (browser) — real implementation should use Edge Function
+          // Hash PIN client-side (browser) â€” real implementation should use Edge Function
           payload[f.id] = await hashPin(el.value);
         }
         else payload[f.id] = el.value || null;
@@ -3309,7 +3309,7 @@
     });
 
     async function hashPin(pin) {
-      // Simple SHA-256 hash for display — use server-side bcrypt in production
+      // Simple SHA-256 hash for display â€” use server-side bcrypt in production
       const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
     }

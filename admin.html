@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ADMIN AREA — TOP ENGLISH CLASS</title>
-  <meta name="description" content="Admin management console for TOP ENGLISH CLASS — manage programs, classes, students, and exams." />
+  <meta name="description" content="Admin management console for TOP ENGLISH CLASS — manage institutions, programs, students, and exams." />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/admin.css" />
   <!-- SheetJS for Excel Import / Export -->
@@ -183,7 +183,7 @@
         <!-- DOMAIN 1: DATABASE & CURRICULUM -->
         <div class="nav-domain-group">
           <div class="nav-domain-header"><span class="domain-icon">🗄️</span>DATABASE &amp; CURRICULUM</div>
-          <div class="admin-nav-item" data-sub="programs"><span class="nav-icon">🏢</span>Programs</div>
+          <div class="admin-nav-item" data-sub="institutions"><span class="nav-icon">🏢</span>Institutions</div>
           <div class="admin-nav-item" data-sub="subjects"><span class="nav-icon">📚</span>Subjects</div>
           <div class="admin-nav-item" data-sub="levels"><span class="nav-icon">🏆</span>Levels</div>
           <div class="admin-nav-item" data-sub="audit"><span class="nav-icon">📋</span>Audit Log</div>
@@ -193,7 +193,7 @@
         <!-- DOMAIN 2: CLASS MANAGEMENT -->
         <div class="nav-domain-group">
           <div class="nav-domain-header"><span class="domain-icon">🏫</span>CLASS MANAGEMENT</div>
-          <div class="admin-nav-item active" data-sub="classes"><span class="nav-icon">🏫</span>All Classes</div>
+          <div class="admin-nav-item active" data-sub="programs"><span class="nav-icon">🏫</span>All Programs</div>
           <div class="admin-nav-item" data-sub="batches"><span class="nav-icon">👥</span>Batches</div>
         </div>
 
@@ -238,7 +238,7 @@
           <div class="topbar-breadcrumb">
             <span class="breadcrumb-domain" id="topbar-domain">CLASS</span>
             <span class="breadcrumb-sep">/</span>
-            <span class="breadcrumb-page" id="topbar-title">Classes</span>
+            <span class="breadcrumb-page" id="topbar-title">Programs</span>
           </div>
         </div>
 
@@ -401,7 +401,7 @@
       adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete,
       mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
       detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions,
-      fetchPrograms, fetchClasses, fetchBatches, formatStudentName,
+      fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
       testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
     } from './js/api.js?v=1.4';
     import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from './js/excel-parser.js?v=1.4';
@@ -415,8 +415,8 @@
     // Map: sidebar sub-section → primary domain label shown in breadcrumb
     // ── Section Titles ──
     const sectionTitles = {
-      programs: 'Programs', subjects: 'Subjects', levels: 'Levels', audit: 'Audit Log', settings: 'Site Settings',
-      classes: 'Classes', batches: 'Batches',
+      institutions: 'Institutions', subjects: 'Subjects', levels: 'Levels', audit: 'Audit Log', settings: 'Site Settings',
+      programs: 'Programs', batches: 'Batches',
       students: 'Students', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
       exams: 'Exams', questions: 'Questions', results: 'Results',
       'import-questions': 'Import Questions (Excel)', 'export-questions': 'Export Questions (Excel)',
@@ -424,8 +424,8 @@
     };
 
     const sectionDomainMap = {
-      programs: 'DATABASE', subjects: 'DATABASE', levels: 'DATABASE', audit: 'DATABASE', settings: 'DATABASE',
-      classes: 'CLASS', batches: 'CLASS',
+      institutions: 'DATABASE', subjects: 'DATABASE', levels: 'DATABASE', audit: 'DATABASE', settings: 'DATABASE',
+      programs: 'CLASS', batches: 'CLASS',
       students: 'STUDENT', 'import-students': 'STUDENT', 'progress-view': 'STUDENT',
       exams: 'EXAM', questions: 'EXAM', results: 'EXAM',
       'import-questions': 'EXAM', 'export-questions': 'EXAM', recalibrator: 'EXAM'
@@ -436,7 +436,7 @@
       DATABASE: 'database', CLASS: 'class', STUDENT: 'student', EXAM: 'exam'
     };
 
-    const tabDefaultSections = { database: 'programs', class: 'classes', student: 'students', exam: 'exams' };
+    const tabDefaultSections = { database: 'institutions', class: 'programs', student: 'students', exam: 'exams' };
 
     function toLevelLetter(num) {
       const n = parseInt(num, 10);
@@ -624,7 +624,7 @@
     function formatExamDisplayName(exam, classContext = '') {
       if (!exam) return '—';
       const parts = [];
-      if (exam.programs?.name) parts.push(`[${exam.programs.name}]`);
+      if (exam.institutions?.name) parts.push(`[${exam.institutions.name}]`);
       if (classContext) parts.push(`[${classContext}]`);
       if (exam.subjects?.name) parts.push(exam.subjects.name);
       if (exam.levels?.name) {
@@ -708,10 +708,10 @@
 
       try {
         switch(section) {
-          case 'programs':        await renderPrograms(area); break;
+          case 'institutions':        await renderPrograms(area); break;
           case 'subjects':        await renderSubjects(area); break;
           case 'levels':          await renderLevels(area); break;
-          case 'classes':         await renderClasses(area); break;
+          case 'programs':         await renderClasses(area); break;
           case 'batches':         await renderBatches(area); break;
           case 'students':        await renderStudents(area); break;
           case 'exams':           await renderExams(area); break;
@@ -732,17 +732,17 @@
       }
     }
 
-    // ── PROGRAMS ──
+    // ── INSTITUTIONS ──
     async function renderPrograms(area) {
-      const rawData = await adminFetchAll('programs');
+      const rawData = await adminFetchAll('institutions');
       // Enforce strict alphabetical ordering
       const data = [...rawData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
       area.innerHTML = `
         <div class="section-header">
           <div>
-            <h2 class="section-title">Programs <span class="count-chip">${data.length} Total</span></h2>
-            <p class="section-subtitle">Manage English learning programs in alphabetical order</p>
+            <h2 class="section-title">Institutions <span class="count-chip">${data.length} Total</span></h2>
+            <p class="section-subtitle">Manage English learning institutions in alphabetical order</p>
           </div>
         </div>
         <div class="table-wrap">
@@ -755,12 +755,12 @@
                 <th class="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody id="tbl-programs"></tbody>
+            <tbody id="tbl-institutions"></tbody>
           </table>
         </div>
       `;
-      const tbody = document.getElementById('tbl-programs');
-      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state__icon">🏢</div><p>No programs yet.</p></div></td></tr>'; return; }
+      const tbody = document.getElementById('tbl-institutions');
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state__icon">🏢</div><p>No institutions yet.</p></div></td></tr>'; return; }
       window._progRecords = {};
       data.forEach(r => {
         window._progRecords[r.id] = r;
@@ -783,25 +783,25 @@
         btn.addEventListener('click', () => {
           const pid = btn.getAttribute('data-edit-prog');
           const rec = window._progRecords[pid];
-          if (rec) openCrudModal('programs', rec);
+          if (rec) openCrudModal('institutions', rec);
         });
       });
       tbody.querySelectorAll('[data-del-prog]').forEach(btn => {
         btn.addEventListener('click', () => {
           const pid = btn.getAttribute('data-del-prog');
           const rec = window._progRecords[pid];
-          if (rec) window._deleteRecord('programs', pid, rec.name || 'Program');
+          if (rec) window._deleteRecord('institutions', pid, rec.name || 'Program');
         });
       });
     }
 
     // ── SUBJECTS ──
     async function renderSubjects(area) {
-      const [rawData, programs] = await Promise.all([adminFetchAll('subjects', '*, programs(name)'), adminFetchAll('programs')]);
+      const [rawData, institutions] = await Promise.all([adminFetchAll('subjects', '*, institutions(name)'), adminFetchAll('institutions')]);
       // Sort by Program Name (A-Z), then Subject Name (A-Z)
       const data = [...rawData].sort((a, b) => {
-        const pA = a.programs?.name || '';
-        const pB = b.programs?.name || '';
+        const pA = a.institutions?.name || '';
+        const pB = b.institutions?.name || '';
         return pA.localeCompare(pB) || (a.name || '').localeCompare(b.name || '');
       });
 
@@ -833,7 +833,7 @@
         window._subjRecords[r.id] = r;
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="text-muted fw-600">${escapeHtml(r.programs?.name || '—')}</td>
+          <td class="text-muted fw-600">${escapeHtml(r.institutions?.name || '—')}</td>
           <td class="fw-600" style="color:var(--clr-text-1);">${escapeHtml(r.name)}</td>
           <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-neutral'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
           <td class="text-right">
@@ -865,18 +865,18 @@
     // ── LEVELS ──
     async function renderLevels(area) {
       const [rawData, allClasses] = await Promise.all([
-        adminFetchAll('levels', '*, subjects(name, program_id, programs(name))'),
-        adminFetchAll('classes', 'id, name, program_id')
+        adminFetchAll('levels', '*, subjects(name, institution_id, institutions(name))'),
+        adminFetchAll('programs', 'id, name, institution_id')
       ]);
       const classMap = {};
       allClasses.forEach(c => { classMap[c.id] = c; });
 
       // Sort by Program Name (A-Z), Class Name, Subject Name (A-Z), then level_number ascending
       const data = [...rawData].sort((a, b) => {
-        const pA = a.subjects?.programs?.name || '';
-        const pB = b.subjects?.programs?.name || '';
-        const cA = (a.class_id && classMap[a.class_id]?.name) || '';
-        const cB = (b.class_id && classMap[b.class_id]?.name) || '';
+        const pA = a.subjects?.institutions?.name || '';
+        const pB = b.subjects?.institutions?.name || '';
+        const cA = (a.program_id && classMap[a.program_id]?.name) || '';
+        const cB = (b.program_id && classMap[b.program_id]?.name) || '';
         const sA = a.subjects?.name || '';
         const sB = b.subjects?.name || '';
         return pA.localeCompare(pB) || cA.localeCompare(cB) || sA.localeCompare(sB) || (a.level_number - b.level_number) || (a.name || '').localeCompare(b.name || '');
@@ -911,19 +911,19 @@
       
       window._levelRecords = {};
       data.forEach(r => {
-        if (!r.program_id && r.subjects?.program_id) {
-          r.program_id = r.subjects.program_id;
+        if (!r.institution_id && r.subjects?.institution_id) {
+          r.institution_id = r.subjects.institution_id;
         }
         window._levelRecords[r.id] = r;
       });
 
       data.forEach(r => {
-        const progName = r.subjects?.programs?.name || '—';
-        const className = (r.class_id && classMap[r.class_id]?.name) ? classMap[r.class_id].name : 'All Classes';
+        const progName = r.subjects?.institutions?.name || '—';
+        const programName = (r.program_id && classMap[r.program_id]?.name) ? classMap[r.program_id].name : 'All Programs';
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><span class="badge badge-neutral">${escapeHtml(progName)}</span></td>
-          <td><span class="badge badge-neutral">${escapeHtml(className)}</span></td>
+          <td><span class="badge badge-neutral">${escapeHtml(programName)}</span></td>
           <td class="text-muted fw-600">${escapeHtml(r.subjects?.name || '—')}</td>
           <td class="text-center"><span class="badge badge-primary">Level ${toLevelLetter(r.level_number)}</span></td>
           <td class="fw-600">${escapeHtml(r.name)}</td>
@@ -954,20 +954,20 @@
       });
     }
 
-    // ── CLASSES ──
+    // ── PROGRAMS ──
     async function renderClasses(area) {
-      const rawData = await adminFetchAll('classes', '*, programs(name)');
+      const rawData = await adminFetchAll('programs', '*, institutions(name)');
       // Sort by Program Name (A-Z), then Class Name (A-Z)
       const data = [...rawData].sort((a, b) => {
-        const pA = a.programs?.name || '';
-        const pB = b.programs?.name || '';
+        const pA = a.institutions?.name || '';
+        const pB = b.institutions?.name || '';
         return pA.localeCompare(pB) || (a.name || '').localeCompare(b.name || '');
       });
 
       area.innerHTML = `
         <div class="section-header">
           <div>
-            <h2 class="section-title">Classes <span class="count-chip">${data.length} Total</span></h2>
+            <h2 class="section-title">Programs <span class="count-chip">${data.length} Total</span></h2>
             <p class="section-subtitle">Manage student classrooms ordered alphabetically by program and name</p>
           </div>
         </div>
@@ -981,18 +981,18 @@
                 <th class="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody id="tbl-classes"></tbody>
+            <tbody id="tbl-programs"></tbody>
           </table>
         </div>
       `;
-      const tbody = document.getElementById('tbl-classes');
-      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">No classes yet.</td></tr>'; return; }
+      const tbody = document.getElementById('tbl-programs');
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">No programs yet.</td></tr>'; return; }
       window._classRecords = {};
       data.forEach(r => {
         window._classRecords[r.id] = r;
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="text-muted fw-600">${escapeHtml(r.programs?.name || '—')}</td>
+          <td class="text-muted fw-600">${escapeHtml(r.institutions?.name || '—')}</td>
           <td class="fw-600">${escapeHtml(r.name)}</td>
           <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-neutral'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
           <td class="text-right">
@@ -1009,14 +1009,14 @@
         btn.addEventListener('click', () => {
           const cid = btn.getAttribute('data-edit-class');
           const rec = window._classRecords[cid];
-          if (rec) openCrudModal('classes', rec);
+          if (rec) openCrudModal('programs', rec);
         });
       });
       tbody.querySelectorAll('[data-del-class]').forEach(btn => {
         btn.addEventListener('click', () => {
           const cid = btn.getAttribute('data-del-class');
           const rec = window._classRecords[cid];
-          if (rec) window._deleteRecord('classes', cid, rec.name || 'Class');
+          if (rec) window._deleteRecord('programs', cid, rec.name || 'Class');
         });
       });
     }
@@ -1038,17 +1038,17 @@
     // ── BATCHES (Hierarchy: Program -> Class -> Batch) ──
     async function renderBatches(area) {
       const [rawData, allStudents] = await Promise.all([
-        adminFetchAll('batches', '*, classes(name, program_id, programs(name))'),
+        adminFetchAll('batches', '*, programs(name, institution_id, institutions(name))'),
         adminFetchAll('students')
       ]);
 
       // Sort by Program (A-Z), Class (A-Z), Batch Name (A-Z)
       const data = [...rawData].sort((a, b) => {
-        const progA = a.classes?.programs?.name || '';
-        const progB = b.classes?.programs?.name || '';
+        const progA = a.programs?.institutions?.name || '';
+        const progB = b.programs?.institutions?.name || '';
         if (progA !== progB) return progA.localeCompare(progB);
-        const clsA = a.classes?.name || '';
-        const clsB = b.classes?.name || '';
+        const clsA = a.programs?.name || '';
+        const clsB = b.programs?.name || '';
         if (clsA !== clsB) return clsA.localeCompare(clsB);
         return (a.name || '').localeCompare(b.name || '');
       });
@@ -1100,8 +1100,8 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td class="fw-600" style="color:var(--clr-text-1);">${escapeHtml(r.name)}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.classes?.programs?.name || '—')}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.classes?.name || '—')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.programs?.institutions?.name || '—')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.programs?.name || '—')}</td>
             <td class="text-center"><span class="badge badge-info">${studentCount} students</span></td>
             <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-danger'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
             <td class="text-right">
@@ -1133,14 +1133,14 @@
       renderRows(data);
       document.getElementById('batch-filter')?.addEventListener('input', (e) => {
         const q = e.target.value.toLowerCase();
-        renderRows(data.filter(r => (r.name || '').toLowerCase().includes(q) || (r.classes?.name || '').toLowerCase().includes(q) || (r.classes?.programs?.name || '').toLowerCase().includes(q)));
+        renderRows(data.filter(r => (r.name || '').toLowerCase().includes(q) || (r.programs?.name || '').toLowerCase().includes(q) || (r.programs?.institutions?.name || '').toLowerCase().includes(q)));
       });
     }
 
     // ── STUDENTS (With Batch, Level, Overall Score & Global Grade) ──
     async function renderStudents(area) {
       const [rawData, allAttempts, allLevels] = await Promise.all([
-        adminFetchAll('students', '*, classes(name), programs(name), batches(name)'),
+        adminFetchAll('students', '*, programs(name), institutions(name), batches(name)'),
         adminFetchAll('attempts'),
         adminFetchAll('levels')
       ]);
@@ -1156,7 +1156,7 @@
       const dupMap = new Map();
       data.forEach(s => {
         if (s.deleted_at) return;
-        const key = `${s.class_id}::${(s.name || '').toLowerCase().trim()}`;
+        const key = `${s.program_id}::${(s.name || '').toLowerCase().trim()}`;
         if (!dupMap.has(key)) dupMap.set(key, []);
         dupMap.get(key).push(s);
       });
@@ -1273,8 +1273,8 @@
           let va, vb;
           switch (col) {
             case 'name':    va = (a.name || '').toLowerCase(); vb = (b.name || '').toLowerCase(); break;
-            case 'program': va = (a.programs?.name || '').toLowerCase(); vb = (b.programs?.name || '').toLowerCase(); break;
-            case 'class':   va = (a.classes?.name || '').toLowerCase(); vb = (b.classes?.name || '').toLowerCase(); break;
+            case 'program': va = (a.institutions?.name || '').toLowerCase(); vb = (b.institutions?.name || '').toLowerCase(); break;
+            case 'class':   va = (a.programs?.name || '').toLowerCase(); vb = (b.programs?.name || '').toLowerCase(); break;
             case 'batch':   va = (a.batches?.name || '').toLowerCase(); vb = (b.batches?.name || '').toLowerCase(); break;
             case 'gender':  va = (a.gender || '').toLowerCase(); vb = (b.gender || '').toLowerCase(); break;
             case 'score':   va = studentScoreMap.get(a.id)?.score ?? -1; vb = studentScoreMap.get(b.id)?.score ?? -1; return mult * (va - vb);
@@ -1334,8 +1334,8 @@
             batchMap.set(bId, {
               id: bId,
               name: r.batches?.name || (bId === '__unassigned__' ? 'Unassigned / No Batch' : 'Batch'),
-              programName: r.programs?.name || r.classes?.programs?.name || '',
-              className: r.classes?.name || '',
+              institutionName: r.institutions?.name || r.programs?.institutions?.name || '',
+              programName: r.programs?.name || '',
               students: []
             });
           }
@@ -1346,9 +1346,9 @@
         const batchGroups = Array.from(batchMap.values()).sort((a, b) => {
           if (a.id === '__unassigned__') return 1;
           if (b.id === '__unassigned__') return -1;
-          const pComp = (a.programName || '').localeCompare(b.programName || '');
+          const pComp = (a.institutionName || '').localeCompare(b.institutionName || '');
           if (pComp !== 0) return pComp;
-          const cComp = (a.className || '').localeCompare(b.className || '');
+          const cComp = (a.programName || '').localeCompare(b.programName || '');
           if (cComp !== 0) return cComp;
           return (a.name || '').localeCompare(b.name || '');
         });
@@ -1372,7 +1372,7 @@
                   <span class="batch-caret" style="font-size:0.8rem; display:inline-block; transition:transform 0.2s; ${isExpanded ? 'transform:rotate(90deg);' : ''}">▶</span>
                   <span class="fw-700" style="font-size:0.95rem; color:var(--clr-text-1);">👥 ${escapeHtml(group.name)}</span>
                   <span class="badge badge-info" style="font-size:0.75rem;">${group.students.length} student${group.students.length === 1 ? '' : 's'}</span>
-                  ${group.className ? `<span class="text-xs text-muted">(${escapeHtml(group.className)})</span>` : ''}
+                  ${group.programName ? `<span class="text-xs text-muted">(${escapeHtml(group.programName)})</span>` : ''}
                 </div>
                 <div class="d-flex align-center gap-2">
                   <span class="text-xs text-muted">${isExpanded ? 'Click to collapse ▲' : 'Click to expand ▼'}</span>
@@ -1416,8 +1416,8 @@
                   ${escapeHtml(displayName)}
                   ${isDuplicate ? `<span class="badge badge-warning ml-2" style="font-size:0.65rem;" title="Duplicate student in this class">Duplikat</span>` : ''}
                 </td>
+                <td class="text-muted text-sm">${escapeHtml(r.institutions?.name || '—')}</td>
                 <td class="text-muted text-sm">${escapeHtml(r.programs?.name || '—')}</td>
-                <td class="text-muted text-sm">${escapeHtml(r.classes?.name || '—')}</td>
                 <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(r.batches?.name || '—')}</td>
                 <td class="text-center text-muted text-sm" style="text-transform:capitalize;">${escapeHtml(r.gender || '—')}</td>
                 <td class="text-center text-muted text-sm">${escapeHtml(r.birth_date || '—')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${ageDisplay}</span></td>
@@ -1486,9 +1486,9 @@
         if (!currentFilter) return data;
         return data.filter(r =>
           (r.name || '').toLowerCase().includes(currentFilter) ||
-          (r.classes?.name || '').toLowerCase().includes(currentFilter) ||
-          (r.batches?.name || '').toLowerCase().includes(currentFilter) ||
           (r.programs?.name || '').toLowerCase().includes(currentFilter) ||
+          (r.batches?.name || '').toLowerCase().includes(currentFilter) ||
+          (r.institutions?.name || '').toLowerCase().includes(currentFilter) ||
           (r.gender || '').toLowerCase().includes(currentFilter)
         );
       }
@@ -1565,8 +1565,8 @@
             r.gender || '',
             r.birth_date || '',
             age,
+            r.institutions?.name || '',
             r.programs?.name || '',
-            r.classes?.name || '',
             r.batches?.name || '',
             scoreInfo ? scoreInfo.score.toFixed(1) : '',
             scoreInfo ? scoreInfo.grade : '',
@@ -1608,7 +1608,7 @@
         // 1. Fetch student record with relations
         const { data: student, error: stErr } = await sb
           .from('students')
-          .select('*, classes(id, name, program_id, programs(name)), programs(id, name), batches(id, name)')
+          .select('*, programs(id, name, institution_id, institutions(name)), institutions(id, name), batches(id, name)')
           .eq('id', studentId)
           .single();
 
@@ -1685,8 +1685,8 @@
         const initial = (student.name || 'S').trim().charAt(0).toUpperCase();
         const ageDisplay = calculateAgeFromBirthDate(student.birth_date);
         const batchName = student.batches?.name || 'Unassigned Batch';
-        const className = student.classes?.name || '—';
-        const programName = student.programs?.name || student.classes?.programs?.name || '—';
+        const programName = student.programs?.name || '—';
+        const institutionName = student.institutions?.name || student.programs?.institutions?.name || '—';
 
         area.innerHTML = `
           <div class="student-profile-view animate-fade-in" style="display:flex; flex-direction:column; gap:20px;">
@@ -1773,11 +1773,11 @@
                   <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-top:16px;">
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
                       <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">🏢 Program</div>
-                      <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${escapeHtml(programName)}</div>
+                      <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${escapeHtml(institutionName)}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
                       <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">🏫 Class</div>
-                      <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${escapeHtml(className)}</div>
+                      <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${escapeHtml(programName)}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
                       <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">👤 Gender</div>
@@ -2034,9 +2034,9 @@
     // ── EXAM MANAGEMENT HUB (Restored & Elevated) ──
     async function renderExams(area) {
       const [rawData, allQuestions, allClasses] = await Promise.all([
-        adminFetchAll('exams', '*, subjects(name), levels(name, level_number), programs(name)'),
+        adminFetchAll('exams', '*, subjects(name), levels(name, level_number), institutions(name)'),
         adminFetchAll('questions', 'id, exam_id'),
-        adminFetchAll('classes', 'id, name')
+        adminFetchAll('programs', 'id, name')
       ]);
 
       const classMap = {};
@@ -2153,9 +2153,9 @@
           const matchStatus = currentStatusFilter === 'all' || r.exam_status === currentStatusFilter;
           const matchQuery = !currentQuery ||
             (r.exam_title || '').toLowerCase().includes(currentQuery) ||
-            (r.programs?.name || '').toLowerCase().includes(currentQuery) ||
+            (r.institutions?.name || '').toLowerCase().includes(currentQuery) ||
             (r.subjects?.name || '').toLowerCase().includes(currentQuery) ||
-            (r.class_id && classMap[r.class_id]?.name || '').toLowerCase().includes(currentQuery) ||
+            (r.program_id && classMap[r.program_id]?.name || '').toLowerCase().includes(currentQuery) ||
             (r.levels?.name || '').toLowerCase().includes(currentQuery) ||
             `level ${toLevelLetter(r.levels?.level_number || 1)}`.toLowerCase().includes(currentQuery) ||
             `order ${r.exam_order || '1'}`.toLowerCase().includes(currentQuery) ||
@@ -2175,14 +2175,14 @@
 
         filtered.forEach(r => {
           const qCount = allQuestions.filter(q => q.exam_id === r.id).length;
-          const className = r.class_id && classMap[r.class_id]?.name ? classMap[r.class_id].name : 'All Classes';
+          const programName = r.program_id && classMap[r.program_id]?.name ? classMap[r.program_id].name : 'All Programs';
           const prereqExam = r.prerequisite_exam_id && examMap[r.prerequisite_exam_id];
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>
               <div class="fw-800" style="color:var(--clr-text-1); font-size:1rem; letter-spacing: 0.02em;">${escapeHtml(r.exam_title)}</div>
               <div class="text-muted text-xs mt-1 fw-600 d-flex gap-2 flex-wrap align-center">
-                <span><span class="text-accent">CLASS:</span> ${escapeHtml(className)}</span>
+                <span><span class="text-accent">CLASS:</span> ${escapeHtml(programName)}</span>
                 <span>•</span>
                 <span><span class="text-accent">SUBJ:</span> ${escapeHtml(r.subjects?.name || '—')}</span>
                 <span>•</span>
@@ -2289,7 +2289,7 @@
         delete newExam.deleted_at;
         delete newExam.subjects;
         delete newExam.levels;
-        delete newExam.programs;
+        delete newExam.institutions;
         newExam.exam_title = `${newExam.exam_title} (Copy)`;
         newExam.exam_status = 'draft'; // Prevent accidental publishing of duplicate
 
@@ -2311,10 +2311,10 @@
         }
 
         // 4. Duplicate Class Assignments
-        const { data: assignments } = await sb.from('exam_classes').select('class_id').eq('exam_id', examId);
+        const { data: assignments } = await sb.from('exam_programs').select('program_id').eq('exam_id', examId);
         if (assignments && assignments.length > 0) {
-           const newAssignments = assignments.map(a => ({ exam_id: createdExam.id, class_id: a.class_id }));
-           const { error: assignErr } = await sb.from('exam_classes').insert(newAssignments);
+           const newAssignments = assignments.map(a => ({ exam_id: createdExam.id, program_id: a.program_id }));
+           const { error: assignErr } = await sb.from('exam_programs').insert(newAssignments);
            if (assignErr) throw new Error(assignErr.message);
         }
 
@@ -2331,8 +2331,8 @@
     // ── QUESTIONS ──
     async function renderQuestions(area) {
       const [questions, exams] = await Promise.all([
-        adminFetchAll('questions', '*, exams(exam_title, exam_type, programs(name), subjects(name), levels(name, level_number))'),
-        adminFetchAll('exams', 'id, exam_title, exam_type, programs(name), subjects(name), levels(name, level_number)')
+        adminFetchAll('questions', '*, exams(exam_title, exam_type, institutions(name), subjects(name), levels(name, level_number))'),
+        adminFetchAll('exams', 'id, exam_title, exam_type, institutions(name), subjects(name), levels(name, level_number)')
       ]);
 
       // Strict alphabetical sorting on exams list
@@ -2445,9 +2445,9 @@
     // ── RESULTS (Student Submissions with Batch Grouping) ──
     async function renderResults(area) {
       const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
-        adminFetchAll('attempts', '*, students(name, gender, batch_id, batches(name), class_id, classes(name, program_id, programs(name))), exams(exam_title, exam_type), attempt_answers(id, evaluation_result, score)'),
+        adminFetchAll('attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), exams(exam_title, exam_type), attempt_answers(id, evaluation_result, score)'),
+        adminFetchAll('institutions'),
         adminFetchAll('programs'),
-        adminFetchAll('classes'),
         adminFetchAll('batches')
       ]);
 
@@ -2473,7 +2473,7 @@
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Program</label>
             <select id="res-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Programs —</option>
+              <option value="">— All Institutions —</option>
               ${(allPrograms || []).filter(p => !p.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
             </select>
           </div>
@@ -2481,8 +2481,8 @@
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Class</label>
             <select id="res-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Classes —</option>
-              ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.program_id}">${escapeHtml(c.name)}</option>`).join('')}
+              <option value="">— All Programs —</option>
+              ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
             </select>
           </div>
 
@@ -2490,7 +2490,7 @@
             <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
             <select id="res-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
               <option value="">— All Batches —</option>
-              ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.class_id}">${escapeHtml(b.name)}</option>`).join('')}
+              ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
             </select>
           </div>
 
@@ -2566,9 +2566,9 @@
         const q = searchInput.value.toLowerCase().trim();
 
         const filtered = allData.filter(r => {
-          const studentProgId = r.students?.classes?.programs?.id || r.students?.classes?.program_id;
+          const studentProgId = r.students?.programs?.institutions?.id || r.students?.programs?.institution_id;
           if (pId && studentProgId !== pId) return false;
-          if (cId && r.students?.class_id !== cId) return false;
+          if (cId && r.students?.program_id !== cId) return false;
           if (bId && r.students?.batch_id !== bId) return false;
           if (q) {
             const sName = (r.students?.name || '').toLowerCase();
@@ -2631,8 +2631,8 @@
           return `
           <tr>
             <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || '—'}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.programs?.name || '—')}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.name || '—')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.institutions?.name || '—')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.name || '—')}</td>
             <td><span class="badge ${r.students?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.students?.batches?.name || 'Unassigned')}</span></td>
             <td class="text-sm fw-600">${r.exams?.exam_type ? escapeHtml(r.exams.exam_type) + ' — ' : ''}${escapeHtml(r.exams?.exam_title || '—')}</td>
             <td class="text-center fw-700 text-grade-${r.grade || 'F'}">${parseFloat(r.percentage || 0).toFixed(1)}%</td>
@@ -2682,9 +2682,9 @@
     // ── STUDENT PROGRESS (Level Progression with Batch Grouping) ──
     async function renderProgressView(area) {
       const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
-        adminFetchAll('progress', '*, students(name, gender, batch_id, batches(name), class_id, classes(name, program_id, programs(name))), subjects(name), levels(name, level_number)'),
+        adminFetchAll('progress', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), subjects(name), levels(name, level_number)'),
+        adminFetchAll('institutions'),
         adminFetchAll('programs'),
-        adminFetchAll('classes'),
         adminFetchAll('batches')
       ]);
 
@@ -2704,7 +2704,7 @@
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Program</label>
             <select id="prog-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Programs —</option>
+              <option value="">— All Institutions —</option>
               ${(allPrograms || []).filter(p => !p.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
             </select>
           </div>
@@ -2712,8 +2712,8 @@
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Class</label>
             <select id="prog-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Classes —</option>
-              ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.program_id}">${escapeHtml(c.name)}</option>`).join('')}
+              <option value="">— All Programs —</option>
+              ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
             </select>
           </div>
 
@@ -2721,7 +2721,7 @@
             <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
             <select id="prog-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
               <option value="">— All Batches —</option>
-              ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.class_id}">${escapeHtml(b.name)}</option>`).join('')}
+              ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
             </select>
           </div>
 
@@ -2793,9 +2793,9 @@
         const q = searchInput.value.toLowerCase().trim();
 
         const filtered = allData.filter(r => {
-          const studentProgId = r.students?.classes?.programs?.id || r.students?.classes?.program_id;
+          const studentProgId = r.students?.programs?.institutions?.id || r.students?.programs?.institution_id;
           if (pId && studentProgId !== pId) return false;
-          if (cId && r.students?.class_id !== cId) return false;
+          if (cId && r.students?.program_id !== cId) return false;
           if (bId && r.students?.batch_id !== bId) return false;
           if (q) {
             const sName = (r.students?.name || '').toLowerCase();
@@ -2815,8 +2815,8 @@
         tbody.innerHTML = filtered.map(r => `
           <tr>
             <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || '—'}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.programs?.name || '—')}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.classes?.name || '—')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.institutions?.name || '—')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.name || '—')}</td>
             <td><span class="badge ${r.students?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.students?.batches?.name || 'Unassigned')}</span></td>
             <td class="fw-600 text-sm">${escapeHtml(r.subjects?.name || '—')}</td>
             <td class="text-center"><span class="badge badge-primary">Level ${toLevelLetter(r.levels?.level_number || 1)} ${escapeHtml(r.levels?.name || '')}</span></td>
@@ -3100,7 +3100,7 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td class="fw-600">${escapeHtml(item.studentName)}</td>
-            <td class="text-muted text-sm">${escapeHtml(item.className)}</td>
+            <td class="text-muted text-sm">${escapeHtml(item.programName)}</td>
             <td class="text-center text-muted">${item.oldScore}</td>
             <td class="text-center fw-700 ${isScoreUp ? 'text-success' : isScoreDown ? 'text-danger' : ''}">${item.newScore}</td>
             <td class="text-center text-muted">${item.oldPercentage}%</td>
@@ -3183,10 +3183,10 @@
 
     // ── Student Import Engine ──
     async function renderImportStudents(area) {
-      showLoading('Loading programs & classes…');
+      showLoading('Loading institutions & programs…');
       const [allProgs, allCls, allBatches, allLevels] = await Promise.all([
-        adminFetchAll('programs'),
-        adminFetchAll('classes', '*, programs(name)'),
+        adminFetchAll('institutions'),
+        adminFetchAll('programs', '*, institutions(name)'),
         adminFetchAll('batches'),
         adminFetchAll('levels')
       ]);
@@ -3228,7 +3228,7 @@
                   <label class="form-label">2. Target Class (Default / Override)</label>
                   <select class="form-control" id="import-student-class">
                     <option value="">- Use Class from Excel File -</option>
-                    ${sortedClasses.map(c => `<option value="${c.id}" data-prog="${c.program_id}">[${escapeHtml(c.programs?.name || 'Program')}] ${escapeHtml(c.name)}</option>`).join('')}
+                    ${sortedClasses.map(c => `<option value="${c.id}" data-prog="${c.institution_id}">[${escapeHtml(c.institutions?.name || 'Program')}] ${escapeHtml(c.name)}</option>`).join('')}
                   </select>
                   <span class="text-muted text-xs mt-1">Select to assign all students in the file to this Class.</span>
                 </div>
@@ -3375,7 +3375,7 @@
           return;
         }
         batchSelect.disabled = false;
-        const filteredBatches = sortedBatches.filter(b => b.class_id === selectedClassId && !b.deleted_at);
+        const filteredBatches = sortedBatches.filter(b => b.program_id === selectedClassId && !b.deleted_at);
         filteredBatches.forEach(b => {
           const opt = document.createElement('option');
           opt.value = b.id;
@@ -3449,7 +3449,7 @@
             const existingStudentsMap = new Map();
             existingStudents.forEach(s => {
               if (s.deleted_at) return;
-              const key = `${(s.name || '').toLowerCase().trim()}::${s.class_id}`;
+              const key = `${(s.name || '').toLowerCase().trim()}::${s.program_id}`;
               if (!existingStudentsMap.has(key)) {
                 existingStudentsMap.set(key, s);
               }
@@ -3538,18 +3538,18 @@
               let finalClassId = selectedClassId;
               let finalClassName = selectedClass?.name || '';
               if (!finalClassId && rowClassName) {
-                const matchedC = sortedClasses.find(c => c.name.toLowerCase().trim() === rowClassName.toLowerCase().trim() && (!finalProgId || c.program_id === finalProgId));
+                const matchedC = sortedClasses.find(c => c.name.toLowerCase().trim() === rowClassName.toLowerCase().trim() && (!finalProgId || c.institution_id === finalProgId));
                 if (matchedC) {
                   finalClassId = matchedC.id;
                   finalClassName = matchedC.name;
-                  if (!finalProgId && matchedC.program_id) {
-                    finalProgId = matchedC.program_id;
-                    finalProgName = matchedC.programs?.name || '';
+                  if (!finalProgId && matchedC.institution_id) {
+                    finalProgId = matchedC.institution_id;
+                    finalProgName = matchedC.institutions?.name || '';
                   }
                 }
               }
               if (!finalClassId) {
-                const firstClassInProg = sortedClasses.find(c => c.program_id === finalProgId) || sortedClasses[0];
+                const firstClassInProg = sortedClasses.find(c => c.institution_id === finalProgId) || sortedClasses[0];
                 if (firstClassInProg) {
                   finalClassId = firstClassInProg.id;
                   finalClassName = firstClassInProg.name;
@@ -3563,7 +3563,7 @@
               if (!finalBatchId && resolvedBatchName && finalClassId) {
                 // Look in current sortedBatches (already loaded, may include previously auto-created ones)
                 const matchedB = sortedBatches.find(b =>
-                  b.class_id === finalClassId &&
+                  b.program_id === finalClassId &&
                   b.name.toLowerCase().trim() === resolvedBatchName.toLowerCase().trim() &&
                   !b.deleted_at
                 );
@@ -3634,10 +3634,10 @@
                 birthDate: birthDate || null,
                 ageDisplay,
                 pin,
-                programId: finalProgId,
-                programName: finalProgName || 'Program',
-                classId: finalClassId,
-                className: finalClassName || 'Class',
+                institutionId: finalProgId,
+                institutionName: finalProgName || 'Program',
+                programId: finalClassId,
+                programName: finalClassName || 'Class',
                 batchId: finalBatchId,
                 batchName: finalBatchName || '—',
                 levelId: finalLevelId,
@@ -3715,8 +3715,8 @@
               <td class="fw-600">${escapeHtml(s.name)}</td>
               <td class="text-center">${genderBadge}</td>
               <td class="text-center text-muted text-sm">${escapeHtml(s.birthDate || '—')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${escapeHtml(s.ageDisplay)}</span></td>
-              <td class="text-muted text-sm">${escapeHtml(s.programName)}</td>
-              <td class="fw-600 text-sm">${escapeHtml(s.className)}</td>
+              <td class="text-muted text-sm">${escapeHtml(s.institutionName)}</td>
+              <td class="fw-600 text-sm">${escapeHtml(s.programName)}</td>
               <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(s.batchName || '—')}</td>
               <td class="text-center text-sm" style="font-family:monospace;letter-spacing:2px;">•••• <span class="text-muted text-xs" title="PIN: ${escapeHtml(s.pin)}">(${escapeHtml(s.pin)})</span></td>
               <td class="text-center">${badgeHtml}</td>
@@ -3761,29 +3761,29 @@
           let mergedCount = 0;
 
           // ── Auto-create missing batches first (before saving students) ──
-          // Collect unique (classId, batchName) pairs that don't have a batchId yet
-          const batchesToCreate = new Map(); // key: classId::batchName -> { classId, batchName }
+          // Collect unique (programId, batchName) pairs that don't have a batchId yet
+          const batchesToCreate = new Map(); // key: programId::batchName -> { programId, batchName }
           for (const s of readyStudents) {
-            if (!s.batchId && s.batchName && s.batchName !== '—' && s.classId) {
-              const key = `${s.classId}::${s.batchName.toLowerCase().trim()}`;
+            if (!s.batchId && s.batchName && s.batchName !== '—' && s.programId) {
+              const key = `${s.programId}::${s.batchName.toLowerCase().trim()}`;
               if (!batchesToCreate.has(key)) {
-                batchesToCreate.set(key, { classId: s.classId, batchName: s.batchName.trim() });
+                batchesToCreate.set(key, { programId: s.programId, batchName: s.batchName.trim() });
               }
             }
           }
 
           // Create missing batches and build a lookup map
-          const newBatchMap = new Map(); // key: classId::batchName -> id
-          for (const [key, { classId, batchName }] of batchesToCreate.entries()) {
+          const newBatchMap = new Map(); // key: programId::batchName -> id
+          for (const [key, { programId, batchName }] of batchesToCreate.entries()) {
             try {
               const newBatch = await adminInsert('batches', {
-                class_id: classId,
+                program_id: programId,
                 name: batchName,
                 is_active: true
               });
               newBatchMap.set(key, newBatch.id);
               // Also push into sortedBatches so it's available for subsequent rows
-              sortedBatches.push({ id: newBatch.id, class_id: classId, name: batchName, is_active: true });
+              sortedBatches.push({ id: newBatch.id, program_id: programId, name: batchName, is_active: true });
               showToast(`Batch "${batchName}" auto-created.`, 'info');
             } catch(batchErr) {
               console.warn(`Could not auto-create batch "${batchName}":`, batchErr.message);
@@ -3792,8 +3792,8 @@
 
           // Resolve batch IDs for students that needed auto-creation
           for (const s of readyStudents) {
-            if (!s.batchId && s.batchName && s.batchName !== '—' && s.classId) {
-              const key = `${s.classId}::${s.batchName.toLowerCase().trim()}`;
+            if (!s.batchId && s.batchName && s.batchName !== '—' && s.programId) {
+              const key = `${s.programId}::${s.batchName.toLowerCase().trim()}`;
               if (newBatchMap.has(key)) s.batchId = newBatchMap.get(key);
             }
           }
@@ -3809,7 +3809,7 @@
             const p = { ...payload };
             if (!_dbHasBatchId) delete p.batch_id;
             if (!_dbHasBirthDate) delete p.birth_date;
-            if (!_dbHasProgramId) delete p.program_id;
+            if (!_dbHasProgramId) delete p.institution_id;
             
             try {
               return await adminInsert('students', p);
@@ -3825,9 +3825,9 @@
                 delete p.birth_date;
                 return await adminInsert('students', p);
               }
-              if (e.message && e.message.toLowerCase().includes('program_id')) {
+              if (e.message && e.message.toLowerCase().includes('institution_id')) {
                 _dbHasProgramId = false;
-                delete p.program_id;
+                delete p.institution_id;
                 return await adminInsert('students', p);
               }
               throw e;
@@ -3838,7 +3838,7 @@
             const p = { ...payload };
             if (!_dbHasBatchId) delete p.batch_id;
             if (!_dbHasBirthDate) delete p.birth_date;
-            if (!_dbHasProgramId) delete p.program_id;
+            if (!_dbHasProgramId) delete p.institution_id;
             
             try {
               return await adminUpdate('students', id, p);
@@ -3854,9 +3854,9 @@
                 delete p.birth_date;
                 return await adminUpdate('students', id, p);
               }
-              if (e.message && e.message.toLowerCase().includes('program_id')) {
+              if (e.message && e.message.toLowerCase().includes('institution_id')) {
                 _dbHasProgramId = false;
-                delete p.program_id;
+                delete p.institution_id;
                 return await adminUpdate('students', id, p);
               }
               throw e;
@@ -3866,8 +3866,8 @@
           for (const s of readyStudents) {
             if (s.isExisting && s.existingId) {
               const payload = {
+                institution_id: s.institutionId,
                 program_id: s.programId,
-                class_id: s.classId,
                 batch_id: s.batchId || null,
                 birth_date: s.birthDate,
                 is_active: true,
@@ -3889,8 +3889,8 @@
               const hashed = await hashPin(s.pin || '1234');
               const payload = {
                 name: formatStudentName(s.name, s.gender),
+                institution_id: s.institutionId,
                 program_id: s.programId,
-                class_id: s.classId,
                 batch_id: s.batchId || null,
                 gender: s.gender || null,
                 birth_date: s.birthDate,
@@ -4200,8 +4200,8 @@
                 }
               }
 
-              const program = getRowVal(row, ['program', 'programname', 'namaprogram']) || selectedExam?.programs?.name || 'CEC';
-              const className = getRowVal(row, ['class', 'classname', 'kelas', 'namakelas']) || 'Camp';
+              const program = getRowVal(row, ['program', 'programname', 'namaprogram']) || selectedExam?.institutions?.name || 'CEC';
+              const programName = getRowVal(row, ['class', 'classname', 'kelas', 'namakelas']) || 'Camp';
               const level = getRowVal(row, ['level', 'tingkat', 'levelnumber']) || selectedExam?.levels?.name || '3rd Step';
 
               parsedQuestionsState.push({
@@ -4210,7 +4210,7 @@
                 correctAnswer: String(correctAnswer).trim(),
                 answerType: defaultAnswerType,
                 optionsJson: optionsJson,
-                program, className, subject, level, title, week, day, type
+                program, programName, subject, level, title, week, day, type
               });
             });
 
@@ -4362,7 +4362,7 @@
     }
 
     async function renderExportQuestions(area) {
-      const exams = await adminFetchAll('exams', '*, programs(name), subjects(name), levels(name)');
+      const exams = await adminFetchAll('exams', '*, institutions(name), subjects(name), levels(name)');
       area.innerHTML = `
         <div class="section-header"><div><h2 class="section-title">Export Questions (Excel)</h2></div></div>
         <div class="glass-card p-8" style="max-width:640px;">
@@ -4394,15 +4394,15 @@
         try {
           const [questions, examClasses] = await Promise.all([
             adminFetchAll('questions', '*', { exam_id: examId }),
-            getSupabase().then(sb => sb.from('exam_classes').select('classes(name)').eq('exam_id', examId))
+            getSupabase().then(sb => sb.from('exam_programs').select('programs(name)').eq('exam_id', examId))
           ]);
 
           const sortedQuestions = questions.sort((a,b) => (a.question_order || 0) - (b.question_order || 0));
-          const className = examClasses?.data?.[0]?.classes?.name || 'Camp';
+          const programName = examClasses?.data?.[0]?.programs?.name || 'Camp';
 
           const excelData = sortedQuestions.map((q, idx) => ({
-            'PROGRAM': selectedExam?.programs?.name || 'CEC',
-            'CLASS': className,
+            'PROGRAM': selectedExam?.institutions?.name || 'CEC',
+            'CLASS': programName,
             'SUBJECT': q.metadata?.subject || selectedExam?.subjects?.name || 'Vocab',
             'LEVEL': selectedExam?.levels?.name || '3rd Step',
             'TITLE': q.metadata?.title || selectedExam?.exam_title || 'Practice 1',
@@ -4450,38 +4450,38 @@
     let _editId = null;
 
     const formFields = {
-      programs: [
+      institutions: [
         { id: 'name', label: 'Program Name', type: 'text', required: true },
         { id: 'is_active', label: 'Active', type: 'checkbox' },
       ],
       subjects: [
         { id: 'name', label: 'Subject Name', type: 'text', required: true },
-        { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: true },
+        { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
         { id: 'is_active', label: 'Active', type: 'checkbox' },
       ],
       levels: [
-        { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: true, uiOnly: true },
-        { id: 'class_id', label: 'Class', type: 'select', source: 'classes', required: false, dependsOn: 'program_id' },
-        { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: true, dependsOn: 'program_id' },
+        { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true, uiOnly: true },
+        { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
+        { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: true, dependsOn: 'institution_id' },
         { id: 'level_number', label: 'Level Number', type: 'number', required: true, placeholder: 'e.g. 1' },
         { id: 'name', label: 'Level Name', type: 'text', required: true, placeholder: 'e.g. Level 1 - Beginner' },
         { id: 'is_active', label: 'Active', type: 'checkbox' },
       ],
-      classes: [
+      programs: [
         { id: 'name', label: 'Class Name', type: 'text', required: true },
-        { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: true },
+        { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
         { id: 'is_active', label: 'Active', type: 'checkbox' },
       ],
       batches: [
-        { id: 'program_id', label: 'Program (filter only)', type: 'select', source: 'programs', required: false, uiOnly: true },
-        { id: 'class_id', label: 'Class', type: 'select', source: 'classes', required: true, dependsOn: 'program_id' },
+        { id: 'institution_id', label: 'Program (filter only)', type: 'select', source: 'institutions', required: false, uiOnly: true },
+        { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: true, dependsOn: 'institution_id' },
         { id: 'name', label: 'Batch Name', type: 'text', required: true, placeholder: 'e.g. Batch 2026-A' },
         { id: 'is_active', label: 'Active', type: 'checkbox' },
       ],
       students: [
-        { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: true },
-        { id: 'class_id', label: 'Class', type: 'select', source: 'classes', required: true, dependsOn: 'program_id' },
-        { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: false, dependsOn: 'class_id' },
+        { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
+        { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: true, dependsOn: 'institution_id' },
+        { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: false, dependsOn: 'program_id' },
         
         { id: 'name', label: 'Full Name', type: 'text', required: true },
         { id: 'gender', label: 'Gender', type: 'select', options: [
@@ -4494,9 +4494,9 @@
         { id: 'is_active', label: 'Active', type: 'checkbox' },
       ],
       exams: [
-        { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: true },
-        { id: 'class_id', label: 'Class (Optional / Assigned)', type: 'select', source: 'classes', required: false, dependsOn: 'program_id' },
-        { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: true, dependsOn: 'program_id' },
+        { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
+        { id: 'program_id', label: 'Class (Optional / Assigned)', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
+        { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: true, dependsOn: 'institution_id' },
         { id: 'exam_type', label: 'Exam Type', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Final'], required: true, defaultValue: 'Daily' },
         
         { id: 'exam_order', label: 'Order (1, 2, 3...)', type: 'select', options: ['1','2','3','4','5','6','7','8','9','10'], required: true, defaultValue: '1' },
@@ -4640,8 +4640,8 @@
 
       crudForm.appendChild(formGrid);
 
-      const progSelect = crudForm.querySelector('#field-program_id');
-      const classSelect = crudForm.querySelector('#field-class_id');
+      const progSelect = crudForm.querySelector('#field-institution_id');
+      const classSelect = crudForm.querySelector('#field-program_id');
       const batchSelect = crudForm.querySelector('#field-batch_id');
       const subjectSelect = crudForm.querySelector('#field-subject_id');
             };
@@ -4736,7 +4736,7 @@
           }
           batchSelect.disabled = false;
           const allBatches = await adminFetchAll('batches');
-          const filteredBatches = allBatches.filter(b => b.class_id === selectedClassId && !b.deleted_at);
+          const filteredBatches = allBatches.filter(b => b.program_id === selectedClassId && !b.deleted_at);
           filteredBatches.sort((a, b) => (a.name || '').localeCompare(b.name || '')).forEach(b => {
             const opt = document.createElement('option');
             opt.value = b.id;
@@ -4747,7 +4747,7 @@
         };
 
         const populateClassesForProgram = async (selectedProgId) => {
-          classSelect.innerHTML = `<option value="">${_currentSection === 'levels' ? '— Select Class (Optional / All Classes) —' : '— Select Class —'}</option>`;
+          classSelect.innerHTML = `<option value="">${_currentSection === 'levels' ? '— Select Class (Optional / All Programs) —' : '— Select Class —'}</option>`;
           if (batchSelect) {
             batchSelect.innerHTML = `<option value="">— Select Class First —</option>`;
             batchSelect.disabled = true;
@@ -4757,13 +4757,13 @@
             return;
           }
           classSelect.disabled = false;
-          const allClasses = await adminFetchAll('classes');
-          const filteredClasses = allClasses.filter(c => c.program_id === selectedProgId && !c.deleted_at);
+          const allClasses = await adminFetchAll('programs');
+          const filteredClasses = allClasses.filter(c => c.institution_id === selectedProgId && !c.deleted_at);
           filteredClasses.sort((a, b) => (a.name || '').localeCompare(b.name || '')).forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.id;
             opt.textContent = c.name;
-            if (record && record.class_id === c.id) opt.selected = true;
+            if (record && record.program_id === c.id) opt.selected = true;
             classSelect.appendChild(opt);
           });
           if (classSelect.value) {
@@ -4773,13 +4773,13 @@
           triggerAutoTitle();
         };
 
-        const initialProgId = record?.program_id || (record?.classes?.program_id) || (record?.subjects?.program_id) || progSelect.value;
+        const initialProgId = record?.institution_id || (record?.programs?.institution_id) || (record?.subjects?.institution_id) || progSelect.value;
         if (initialProgId) {
           progSelect.value = initialProgId;
           await populateClassesForProgram(initialProgId);
-          if (record?.class_id) {
-            classSelect.value = record.class_id;
-            await populateBatchesForClass(record.class_id);
+          if (record?.program_id) {
+            classSelect.value = record.program_id;
+            await populateBatchesForClass(record.program_id);
             if (record?.batch_id && batchSelect) {
               batchSelect.value = record.batch_id;
             }
@@ -4811,7 +4811,7 @@
           }
           subjectSelect.disabled = false;
           const allSubjects = await adminFetchAll('subjects');
-          const filteredSubjects = allSubjects.filter(s => s.program_id === selectedProgId && !s.deleted_at);
+          const filteredSubjects = allSubjects.filter(s => s.institution_id === selectedProgId && !s.deleted_at);
           filteredSubjects.sort((a, b) => (a.name || '').localeCompare(b.name || '')).forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id;
@@ -4823,7 +4823,7 @@
           triggerAutoTitle();
         };
 
-        const initialProgIdForSubject = record?.program_id || (record?.subjects?.program_id) || progSelect?.value;
+        const initialProgIdForSubject = record?.institution_id || (record?.subjects?.institution_id) || progSelect?.value;
         if (initialProgIdForSubject) {
           await populateSubjectsForProgram(initialProgIdForSubject);
         } else {
@@ -4923,13 +4923,13 @@
           try {
             await adminUpdate(targetTable, _editId, payloadToSave);
           } catch (err) {
-            if (targetTable === 'levels' && payloadToSave.class_id && (err.message?.includes('class_id') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
-              delete payloadToSave.class_id;
+            if (targetTable === 'levels' && payloadToSave.program_id && (err.message?.includes('program_id') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
+              delete payloadToSave.program_id;
               await adminUpdate(targetTable, _editId, payloadToSave);
             } else if (targetTable === 'exams') {
               let retried = false;
-              if ('class_id' in payloadToSave && (err.message?.includes('class_id') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
-                delete payloadToSave.class_id;
+              if ('program_id' in payloadToSave && (err.message?.includes('program_id') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
+                delete payloadToSave.program_id;
                 retried = true;
               }
               if ('prerequisite_exam_id' in payloadToSave && (err.message?.includes('prerequisite') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
@@ -4954,7 +4954,7 @@
           // If manually adding a student, check if identical student already exists in same class
           if (_currentSection === 'students') {
             const existingList = await adminFetchAll('students');
-            const existingMatch = existingList.find(s => !s.deleted_at && s.class_id === payload.class_id && (formatStudentName(s.name, s.gender) || '').toLowerCase().trim() === (payload.name || '').toLowerCase().trim());
+            const existingMatch = existingList.find(s => !s.deleted_at && s.program_id === payload.program_id && (formatStudentName(s.name, s.gender) || '').toLowerCase().trim() === (payload.name || '').toLowerCase().trim());
             if (existingMatch) {
               await adminUpdate('students', existingMatch.id, { ...payload, updated_at: new Date().toISOString() });
               showToast('A student with this name already exists in the class. Data successfully merged/updated!', 'success');
@@ -4966,13 +4966,13 @@
           try {
             await adminInsert(targetTable, payloadToSave);
           } catch (err) {
-            if (targetTable === 'levels' && payloadToSave.class_id && (err.message?.includes('class_id') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
-              delete payloadToSave.class_id;
+            if (targetTable === 'levels' && payloadToSave.program_id && (err.message?.includes('program_id') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
+              delete payloadToSave.program_id;
               await adminInsert(targetTable, payloadToSave);
             } else if (targetTable === 'exams') {
               let retried = false;
-              if ('class_id' in payloadToSave && (err.message?.includes('class_id') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
-                delete payloadToSave.class_id;
+              if ('program_id' in payloadToSave && (err.message?.includes('program_id') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
+                delete payloadToSave.program_id;
                 retried = true;
               }
               if ('prerequisite_exam_id' in payloadToSave && (err.message?.includes('prerequisite') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
@@ -5100,8 +5100,8 @@
             html += `
                   <tr style="${sIdx === 0 ? 'background:rgba(74, 222, 128, 0.1);' : ''}">
                     <td>${student.id.substring(0,8)}...</td>
-                    <td>${escapeHtml(student.classes?.name || '-')}</td>
                     <td>${escapeHtml(student.programs?.name || '-')}</td>
+                    <td>${escapeHtml(student.institutions?.name || '-')}</td>
                     <td>${new Date(student.created_at).toLocaleString()}</td>
                     <td>${sIdx === 0 ? '<span class="badge badge-success">Primary Target</span>' : `<button class="btn btn-warning btn-sm btn-merge-student" data-primary="${group.recommendedPrimaryId}" data-secondary="${student.id}">Merge to Primary</button>`}</td>
                   </tr>
