@@ -5214,6 +5214,17 @@
         data.groups.forEach((group, gIdx) => {
           // Group by exam
           const examTitle = group[0].exams?.exam_title || 'Unknown Exam';
+          
+          let optsDisplay = '';
+          if (group[0].options_json) {
+            try {
+              const opts = typeof group[0].options_json === 'string' ? JSON.parse(group[0].options_json) : group[0].options_json;
+              optsDisplay = Array.isArray(opts) ? opts.join(' | ') : String(group[0].options_json);
+            } catch(e) {
+              optsDisplay = String(group[0].options_json);
+            }
+          }
+
           html += `
             <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-warning);">
               <div class="d-flex justify-between align-center mb-2 flex-wrap gap-2">
@@ -5221,7 +5232,9 @@
                 <button class="btn btn-warning btn-sm btn-resolve-q-group" data-primary="${group[0].id}">Auto-Resolve Group</button>
               </div>
               <div class="text-sm mb-3 px-3 py-2 rounded" style="background:var(--clr-surface-2); border:1px solid var(--clr-border);">
-                <strong>Text:</strong> ${escapeHtml(group[0].question_text)}
+                <div class="mb-2"><strong>Text:</strong> ${escapeHtml(group[0].question_text)}</div>
+                ${optsDisplay ? `<div class="mb-2 text-muted"><strong>Options:</strong> ${escapeHtml(optsDisplay)}</div>` : ''}
+                <div class="text-muted"><strong>Correct Answer:</strong> ${escapeHtml(group[0].correct_answer || '-')}</div>
               </div>
               <table class="table-sm w-100 text-xs">
                 <thead>
@@ -5229,6 +5242,7 @@
                     <th>ID</th>
                     <th>Order</th>
                     <th>Answer Type</th>
+                    <th>Answers Count</th>
                     <th>Created At</th>
                     <th>Status</th>
                   </tr>
@@ -5241,6 +5255,7 @@
                     <td>${q.id.substring(0,8)}...</td>
                     <td>${q.question_order}</td>
                     <td>${escapeHtml(q.answer_type)}</td>
+                    <td class="fw-700 text-primary">${q.answersCount || 0}</td>
                     <td>${new Date(q.created_at).toLocaleString()}</td>
                     <td>${qIdx === 0 ? '<span class="badge badge-success">Primary (Kept)</span>' : '<span class="badge badge-error">Duplicate (Will Remove)</span>'}</td>
                   </tr>
