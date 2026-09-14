@@ -1,16 +1,18 @@
 # CURRENT STATE
  
-Last Updated: 2026-09-14 06:45 UTC
-Current Phase: Fix & Polish -- Student Onboarding Gates & Auto-Capture
+Last Updated: 2026-09-14 07:05 UTC
+Current Phase: Fix & Polish -- Exam Runner escapeHtml & Universal v1.3 Cache Busting
 Current Task: Verification complete. Ready for commit & push to remote.
 Status: COMPLETE
 
 ## Completed
+- **Exam Runner escapeHtml ReferenceError Fix**:
+  - Imported `escapeHtml` in `exam.html` from `js/app.js` and defined local fallback `window.escapeHtml = escapeHtml` preventing runtime crashes when rendering word-type badges.
+  - Bumped module imports to `?v=1.3` across `admin.html`, `exam.html`, `result.html`, `dashboard.html`, and `index.html`.
 - **Student Onboarding Gate Fix & Auto-Capture on Confirmation**:
   - Auto-captures snapshot from active webcam feed if student clicks "✓ Save Photo & Enter Dashboard" without clicking "📸 Capture Photo" first.
   - Guaranteed modal dismissal in `finally` block preventing students from being trapped by network or upload errors.
   - Added skip buttons and guaranteed promise resolution to Gender, Photo, and Birthday setup modals.
-  - Bumped module query strings to `?v=1.3` across `index.html` and `dashboard.html`.
 - **Student Login Edge Function Fallback**:
   - Implemented `callEdgeFunction` in `js/supabase.js` and imported into `js/api.js`.
   - Enables clean fallback to Direct DB authentication without `ReferenceError`.

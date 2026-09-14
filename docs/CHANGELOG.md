@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## [2026-09-14 07:05 UTC] — Fix escapeHtml ReferenceError in exam.html & Universal v1.3 Cache Busting
+
+**Agent/Session:** Antigravity / SESSION-20260914-0705
+**Phase:** Fix & Polish — Exam Runner
+**Status:** PASS
+
+### Why
+- When taking an exam with word-type metadata (e.g. Vocabulary questions with `# VERB`, `# NOUN`, etc.), `exam.html` threw `ReferenceError: escapeHtml is not defined` at line 503, preventing the question from rendering and freezing the exam screen.
+- `escapeHtml` was exported by `js/app.js` but had not been imported in `exam.html`.
+- Module cache-busting query strings were inconsistent across pages (`?v=1.1`, `?v=1.2`, `?v=1.3`).
+
+### Changed
+- **exam.html**:
+  - Imported `escapeHtml` from `./js/app.js?v=1.3` and added a fallback definition `function escapeHtml(str)` with `window.escapeHtml = escapeHtml;`.
+  - Bumped module imports to `?v=1.3`.
+- **admin.html**:
+  - Bumped module imports to `?v=1.3`.
+- **result.html**:
+  - Bumped module imports to `?v=1.3`.
+
 ## [2026-09-14 06:45 UTC] — Student Onboarding Gate Fix & Auto-Capture on Confirmation
 
 **Agent/Session:** Antigravity / SESSION-20260914-0645
