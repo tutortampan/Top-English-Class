@@ -1,5 +1,38 @@
 # CHANGELOG
 
+## [2026-09-14 08:10 UTC] — Phase 26: Multi-Answer & Option Delimiters ('/' and ';') + Admin Results & Profile Verification
+
+**Agent/Session:** Antigravity / SESSION-20260914-0810
+**Phase:** Phase 26 Complete
+**Status:** PASS
+
+### Why
+- Admin requested:
+  1. Full student profile view in the admin portal with exam results including counts of correct and wrong answers (not just percentages and grades).
+  2. Exams with multiple answer options / multiple correct answers must support '/' and ';' as valid delimiters, and be interpreted accordingly during exam evaluation and rendering.
+
+### Changed
+- **js/grading.js**:
+  - Updated `parseCorrectAnswers(rawAnswer)` regex from `/[;|]/` to `/[;|/]/` to treat `/`, `;`, and `|` as equivalent OR answer delimiters.
+  - Enhanced `stripHyphens(text)` to remove both hyphens and spaces `/[-\s]/g`, ensuring compound word variants (e.g. `vacuum-clean`, `vacuum clean`, `vacuumclean`) match accurately.
+- **exam.html**:
+  - Enhanced `parseSnapshotOptions(rawOptions)` to split multiple choice and dropdown option strings delimited by `/` or `;` in addition to commas and JSON arrays.
+  - Bumped module imports to `?v=1.4`.
+- **admin.html**:
+  - Updated `options_json` field in the question CRUD modal to accept `/` and `;` delimited options without throwing JSON syntax errors.
+  - Updated placeholder hints for `correct_answer` and `options_json` to guide administrators.
+  - Verified `renderResults` displays `✅ Correct` and `❌ Wrong` count columns, plus `👤 Profile` button opening the complete profile inspector.
+  - Bumped module imports to `?v=1.4`.
+- **js/excel-parser.js**:
+  - Added `options` alias (`options`, `pilihan`, `opsi`, `choices`, etc.) in `HEADER_ALIASES`.
+  - In `processQuestionImportRows`, added extraction and parsing for options delimited by `/` or `;`.
+- **dashboard.html, result.html, index.html**:
+  - Bumped cache-busting query strings to `?v=1.4` across all entry points.
+- **Tests**:
+  - Verified with `scratch/test_multi_answer_and_profile.ps1` (14/14 tests passing).
+  - Verified simulation on 13 real database question cases with `scratch/test_eval_simulation.ps1` (13/13 passing).
+  - Verified master audit with `scratch/test_master_verification.ps1` (41/41 passing).
+
 ## [2026-09-14 07:05 UTC] — Fix escapeHtml ReferenceError in exam.html & Universal v1.3 Cache Busting
 
 **Agent/Session:** Antigravity / SESSION-20260914-0705

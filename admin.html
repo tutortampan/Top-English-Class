@@ -320,11 +320,11 @@
       adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete,
       mergeDuplicateStudents, fetchPrograms, fetchClasses, fetchBatches, formatStudentName,
       testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
-    } from './js/api.js?v=1.3';
-    import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from './js/excel-parser.js?v=1.3';
-    import { setAdminSession, getAdminSession, clearAdminSession } from './js/session.js?v=1.3';
-    import { showToast, showLoading, hideLoading, getGrade } from './js/app.js?v=1.3';
-    import { getSupabase } from './js/supabase.js?v=1.3';
+    } from './js/api.js?v=1.4';
+    import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from './js/excel-parser.js?v=1.4';
+    import { setAdminSession, getAdminSession, clearAdminSession } from './js/session.js?v=1.4';
+    import { showToast, showLoading, hideLoading, getGrade } from './js/app.js?v=1.4';
+    import { getSupabase } from './js/supabase.js?v=1.4';
 
     // ── Primary Tab Switching Variables ──
     const mobileTabs = document.querySelectorAll('.mobile-tab');
@@ -4429,7 +4429,7 @@
           {value:'written',label:'Written Test'}
         ], required: true },
         { id: 'correct_answer', label: 'Correct Answer', type: 'text', required: true, placeholder: 'e.g. run / jog / sprint  (use / ; or | to separate multiple accepted answers)' },
-        { id: 'options_json', label: 'Options (JSON array)', type: 'textarea', placeholder: '["Option A","Option B","Option C"]' },
+        { id: 'options_json', label: 'Options (separated by / ; or JSON array)', type: 'textarea', placeholder: 'e.g. Option A / Option B / Option C  (use / or ; to separate choices)' },
         { id: 'metadata', label: 'Metadata / Word Type', type: 'text', placeholder: 'e.g. 1 - VERB' },
       ],
     };
@@ -4792,7 +4792,28 @@
         if (f.type === 'checkbox') payload[f.id] = el.checked;
         else if (f.type === 'number') payload[f.id] = el.value ? parseFloat(el.value) : null;
         else if (f.id === 'options_json') {
-          try { payload[f.id] = el.value ? JSON.parse(el.value) : null; } catch { showToast('Invalid JSON in Options field.', 'error'); return; }
+          if (!el.value || !el.value.trim()) {
+            payload[f.id] = null;
+          } else {
+            const raw = el.value.trim();
+            if (raw.startsWith('[') && raw.endsWith(']')) {
+              try {
+                payload[f.id] = JSON.parse(raw);
+              } catch {
+                if (/[;/|]/.test(raw)) {
+                  payload[f.id] = raw.replace(/^[\[\]"']+|[\[\]"']+$/g, '').split(/[;/|]/).map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+                } else {
+                  payload[f.id] = raw.replace(/^[\[\]"']+|[\[\]"']+$/g, '').split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+                }
+              }
+            } else if (/[;/|]/.test(raw)) {
+              payload[f.id] = raw.split(/[;/|]/).map(s => s.trim()).filter(Boolean);
+            } else if (raw.includes(',')) {
+              payload[f.id] = raw.split(',').map(s => s.trim()).filter(Boolean);
+            } else {
+              payload[f.id] = [raw];
+            }
+          }
         }
         else if (f.type === 'password' && _editId && !el.value) continue; // Don't overwrite PIN if empty on edit
         else if (f.type === 'password' && el.value) {

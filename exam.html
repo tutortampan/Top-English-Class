@@ -125,12 +125,12 @@
   </div>
 
   <script type="module">
-    import { startExam, saveAnswer, submitExam, logCheatingEvent } from './js/api.js?v=1.3';
-    import { evaluateAnswer } from './js/grading.js?v=1.3';
-    import { requireStudentSession } from './js/session.js?v=1.3';
-    import { showToast, showLoading, hideLoading, formatTime, escapeHtml as appEscapeHtml } from './js/app.js?v=1.3';
-    import { startCountdown, isExpired } from './js/timer.js?v=1.3';
-    import { createSpeechSession, isSpeechSupported } from './js/speech.js?v=1.3';
+    import { startExam, saveAnswer, submitExam, logCheatingEvent } from './js/api.js?v=1.4';
+    import { evaluateAnswer } from './js/grading.js?v=1.4';
+    import { requireStudentSession } from './js/session.js?v=1.4';
+    import { showToast, showLoading, hideLoading, formatTime, escapeHtml as appEscapeHtml } from './js/app.js?v=1.4';
+    import { startCountdown, isExpired } from './js/timer.js?v=1.4';
+    import { createSpeechSession, isSpeechSupported } from './js/speech.js?v=1.4';
 
     function escapeHtml(str) {
       if (typeof appEscapeHtml === 'function') return appEscapeHtml(str);
@@ -588,6 +588,9 @@
             const parsed = JSON.parse(trimmed);
             if (Array.isArray(parsed)) return parsed;
           } catch (_) {}
+        }
+        if (/[;/|]/.test(trimmed)) {
+          return trimmed.split(/[;/|]/).map(s => s.trim()).filter(Boolean);
         }
         return trimmed.split(',').map(s => s.trim()).filter(Boolean);
       }

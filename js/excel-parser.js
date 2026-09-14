@@ -22,6 +22,7 @@ const HEADER_ALIASES = {
   no: ['no', 'nomor', 'num', 'order', 'urutan'],
   question: ['question', 'soal', 'pertanyaan', 'q'],
   answer: ['answer', 'jawaban', 'kunci', 'kunci_jawaban', 'kuncijawaban', 'a'],
+  options: ['options', 'pilihan', 'opsi', 'choices', 'pilihan_jawaban', 'pilihanjawaban', 'list_pilihan', 'opsi_jawaban'],
   option_a: ['option_a', 'optiona', 'pilihan_a', 'pilihana', 'opsi_a', 'a'],
   option_b: ['option_b', 'optionb', 'pilihan_b', 'pilihanb', 'opsi_b', 'b'],
   option_c: ['option_c', 'optionc', 'pilihan_c', 'pilihanc', 'opsi_c', 'c'],
@@ -203,6 +204,24 @@ export function processQuestionImportRows(normalizedRows, defaultContext = {}) {
         options.push(String(row[optKey]).trim());
       }
     });
+    if (options.length === 0 && row.options) {
+      const rawOpt = String(row.options).trim();
+      if (rawOpt.startsWith('[') && rawOpt.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(rawOpt);
+          if (Array.isArray(parsed)) options.push(...parsed.map(s => String(s).trim()).filter(Boolean));
+        } catch (_) {}
+      }
+      if (options.length === 0) {
+        if (/[;/|]/.test(rawOpt)) {
+          options.push(...rawOpt.split(/[;/|]/).map(s => s.trim()).filter(Boolean));
+        } else if (rawOpt.includes(',')) {
+          options.push(...rawOpt.split(',').map(s => s.trim()).filter(Boolean));
+        } else if (rawOpt) {
+          options.push(rawOpt);
+        }
+      }
+    }
 
     result.push({
       rowIndex: rowNum,

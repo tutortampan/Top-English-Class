@@ -46,7 +46,7 @@ export function normalizeAnswerText(text) {
  * e.g. "check-in" -> "checkin", "part-time" -> "parttime"
  */
 export function stripHyphens(text) {
-  return String(text ?? '').replace(/-/g, '').replace(/\s+/g, ' ').trim();
+  return String(text ?? '').replace(/[-\s]/g, '').trim();
 }
 
 /**
