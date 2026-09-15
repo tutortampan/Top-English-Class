@@ -1,0 +1,16 @@
+{
+  "name": "Top English Class - ABCD System",
+  "short_name": "ABCD System",
+  "description": "Student Assessment Portal for Top English Class",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
-
     import {
       adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete,
+      adminFetchDeleted, adminRestore, clearAdminCache, uploadFile,
       mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
       detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions,
       fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
@@ -24,7 +24,7 @@
       institutions: 'Institutions', programs: 'Programs', batches: 'Batches', students: 'Students Roster', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
       subjects: 'Curriculum Subjects', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', word_types: 'Word Types & Lexicon', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
       exams: 'All Challenges', assignments: 'Assignments & Rosters', results: 'Challenge Results', recalibrator: 'Recalibration Engine',
-      audit: 'Activity & Audit Logs', settings: 'System Settings'
+      audit: 'Activity & Audit Logs', settings: 'System Settings', recycle: 'Recycle Bin'
     };
 
     // ABCD 4-Domain Mapping
@@ -32,7 +32,7 @@
       institutions: 'ACADEMY', programs: 'ACADEMY', batches: 'ACADEMY', students: 'ACADEMY', 'import-students': 'ACADEMY', 'progress-view': 'ACADEMY',
       subjects: 'BLUEPRINT', levels: 'BLUEPRINT', topics: 'BLUEPRINT', questions: 'BLUEPRINT', word_types: 'BLUEPRINT', 'import-questions': 'BLUEPRINT', 'export-questions': 'BLUEPRINT',
       exams: 'CHALLENGES', assignments: 'CHALLENGES', results: 'CHALLENGES', recalibrator: 'CHALLENGES',
-      audit: 'DESK', settings: 'DESK'
+      audit: 'DESK', settings: 'DESK', recycle: 'DESK'
     };
 
     // Mobile Bottom Tab Panels -> Primary Domain
@@ -67,7 +67,8 @@
       'challenges-results': 'results',
       'challenges-recalibrator': 'recalibrator',
       'desk-audit': 'audit',
-      'desk-settings': 'settings'
+      'desk-settings': 'settings',
+      'desk-recycle': 'recycle'
     };
 
     async function updateAdminKpiBanner() {
@@ -398,6 +399,7 @@
           case 'results':             await renderResults(area); break;
           case 'progress-view':       await renderProgressView(area); break;
           case 'audit':               await renderAuditLog(area); break;
+          case 'recycle':             await renderRecycleBin(area); break;
           case 'settings':            await renderSettings(area); break;
           case 'import-students':     await renderImportStudents(area); break;
           case 'import-questions':    await renderCentralQuestionImport(area); break;
@@ -4573,6 +4575,94 @@
     });
     if (window.innerWidth <= 1024) document.getElementById('sidebar-toggle').style.display = 'flex';
   
+
+
+    async function renderRecycleBin(container) {
+      container.innerHTML = `
+        <div class="d-flex justify-between align-center mb-4">
+          <h2 class="text-xl">Recycle Bin</h2>
+        </div>
+        <div class="d-flex gap-2 mb-4">
+          <select id="recycle-table-select" class="form-control" style="max-width: 200px;">
+            <option value="students">Students</option>
+            <option value="exams">Exams</option>
+            <option value="programs">Programs</option>
+            <option value="questions">Questions</option>
+          </select>
+          <button class="btn btn-secondary" id="recycle-refresh-btn">Load Deleted</button>
+        </div>
+        <div id="recycle-results" class="card p-0" style="overflow-x:auto;">
+          <div class="p-4 text-center text-muted">Select an entity type and click Load Deleted.</div>
+        </div>
+      `;
+
+      const loadDeleted = async () => {
+        const table = document.getElementById('recycle-table-select').value;
+        const resDiv = document.getElementById('recycle-results');
+        resDiv.innerHTML = '<div class="p-4 text-center"><div class="spinner"></div> Loading...</div>';
+        
+        try {
+          const data = await adminFetchDeleted(table);
+          if (!data || data.length === 0) {
+            resDiv.innerHTML = `<div class="p-4 text-center text-muted">No deleted records found in ${table}.</div>`;
+            return;
+          }
+
+          let html = `
+            <table class="table" style="width:100%; white-space:nowrap;">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name / Title</th>
+                  <th>Deleted At</th>
+                  <th style="width:100px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+          data.forEach(item => {
+            const name = item.name || item.title || item.question_text?.substring(0,30) + '...' || 'Unnamed';
+            html += `
+              <tr>
+                <td style="font-family:monospace; font-size:0.8rem;">${item.id}</td>
+                <td><strong>${escapeHtml(name)}</strong></td>
+                <td>${new Date(item.deleted_at).toLocaleString()}</td>
+                <td>
+                  <button class="btn btn-outline btn-xs restore-btn" data-table="${table}" data-id="${item.id}">Restore</button>
+                </td>
+              </tr>
+            `;
+          });
+          html += `</tbody></table>`;
+          resDiv.innerHTML = html;
+
+          resDiv.querySelectorAll('.restore-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const t = e.target.dataset.table;
+              const id = e.target.dataset.id;
+              if (confirm('Are you sure you want to restore this record?')) {
+                showLoading('Restoring...');
+                try {
+                  await adminRestore(t, id);
+                  hideLoading();
+                  showToast('Record restored successfully.', 'success');
+                  loadDeleted();
+                } catch(err) {
+                  hideLoading();
+                  showToast('Failed to restore: ' + err.message, 'error');
+                }
+              }
+            });
+          });
+        } catch(err) {
+          resDiv.innerHTML = `<div class="p-4 text-center text-red-500">Error: ${escapeHtml(err.message)}</div>`;
+        }
+      };
+
+      document.getElementById('recycle-refresh-btn').addEventListener('click', loadDeleted);
+      loadDeleted();
+    }
+
 
 window.openCrudModal = openCrudModal;
 

@@ -469,6 +469,10 @@
     }
   </style>
   <meta name="view-transition" content="same-origin" />
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3b82f6">
+  <link rel="apple-touch-icon" href="favicon.ico">
 </head>
 <body>
 
@@ -1086,6 +1090,16 @@
     // ── Init ──
     restoreSavedLogin();
 
+  </script>
+  <!-- Service Worker Registration for PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(registration => console.log('ServiceWorker registered with scope:', registration.scope))
+          .catch(error => console.warn('ServiceWorker registration failed:', error));
+      });
+    }
   </script>
 </body>
 </html>

@@ -1351,6 +1351,30 @@ export async function adminSoftDelete(table, id) {
   clearAdminCache(normTable);
 }
 
+export async function adminFetchDeleted(table) {
+  const normTable = table.replace('-', '_');
+  if (isPlaceholderUrl()) return [];
+  const sb = await getSupabase();
+  const { data, error } = await sb.from(normTable).select('*').not('deleted_at', 'is', null);
+  if (error) {
+    console.error(`Supabase FETCH DELETED failed on ${normTable}:`, error);
+    throw new Error(`DB Error (${normTable}): ${error.message}`);
+  }
+  return data || [];
+}
+
+export async function adminRestore(table, id) {
+  const normTable = table.replace('-', '_');
+  if (isPlaceholderUrl()) return;
+  const sb = await getSupabase();
+  const { error } = await sb.from(normTable).update({ deleted_at: null }).eq('id', id);
+  if (error) {
+    console.error(`Supabase RESTORE failed on ${normTable} id=${id}:`, error);
+    throw new Error(`DB Error (${normTable}): ${error.message}`);
+  }
+  clearAdminCache(normTable);
+}
+
 export async function adminHardDelete(table, id) {
   const normTable = table.replace('-', '_');
   if (isPlaceholderUrl()) {
