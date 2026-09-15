@@ -1,11 +1,16 @@
 # CURRENT STATE
  
-Last Updated: 2026-09-15 09:45 UTC
+Last Updated: 2026-09-15 10:00 UTC
 Current Phase: PRODUCTION READINESS & ZERO-ERROR IDE POLISH
-Current Task: Resolution of IDE Lint & Template Literal Syntax Errors
+Current Task: UI Navigation Linkage & Browser Cache Purge
 Status: COMPLETE
 
 ## Completed
+- **UI Navigation & Cache Busting (`index.html`, `admin.html`, `dashboard.html`, `exam.html`, `result.html`)**:
+  - Added visible, direct navigation button to `admin.html` from `index.html` (`🛡️ Admin Portal (ABCD Hub) →`).
+  - Added pre-filled credentials hint on `admin.html` (`admin` / `admin123`) to streamline admin console access.
+  - Bumped all script and stylesheet cache-busting queries to `?v=2.1.0` across all 5 HTML entry points to ensure browsers instantly purge stale cached versions.
+  - Started local HTTP background daemon server on `http://localhost:8080/`.
 - **Resolved All IDE Syntax Errors (`@[current_problems]`)**:
   - Eliminated illegal escaped backticks (`\` `) and escaped dollar signs (`\${`) that were causing 70+ syntax diagnostics (invalid character, ';' expected, '{' expected, unterminated template literal) across:
     - `js/admin/exam-management.js`: Cleaned template literals in `renderExams`, columns, `_publishExam`, and `_duplicateExam`. Correctly imported `getSupabase` from `../supabase.js`.
