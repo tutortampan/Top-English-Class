@@ -16,7 +16,7 @@
     import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=2.1.0';
     import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport } from './central-assessment.js?v=2.1.0';
 
-    // â”€â”€ Primary Tab Switching Variables â”€â”€
+    // -- Primary Tab Switching Variables --
     const mobileTabs = document.querySelectorAll('.mobile-tab');
 
     // ── ABCD Primary Architecture Section Titles ──
@@ -4574,12 +4574,12 @@
     if (window.innerWidth <= 1024) document.getElementById('sidebar-toggle').style.display = 'flex';
   
 
-w i n d o w . o p e n C r u d M o d a l   =   o p e n C r u d M o d a l ; 
- 
- w i n d o w . o p e n D u p l i c a t e S t u d e n t s M o d a l   =   o p e n D u p l i c a t e S t u d e n t s M o d a l ; 
- 
- w i n d o w . l o a d S e c t i o n   =   l o a d S e c t i o n ; 
- 
- w i n d o w . o p e n S t u d e n t P r o f i l e   =   o p e n S t u d e n t P r o f i l e ; 
- 
- 
+window.openCrudModal = openCrudModal;
+
+window.openDuplicateStudentsModal = openDuplicateStudentsModal;
+
+window.loadSection = loadSection;
+
+window.openStudentProfile = openStudentProfile;
+
+
