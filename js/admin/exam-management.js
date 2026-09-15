@@ -1,4 +1,4 @@
-import { adminFetchAll, adminUpdate, adminSoftDelete, getSupabase, clearAdminCache } from '../api.js';
+import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js';
 import { openAssessmentBuilder } from './exam-builder.js';
 import { showToast, showLoading, hideLoading } from '../app.js';
 
