@@ -1,3 +1,4 @@
+// @ts-nocheck
 // TOP ENGLISH CLASS — Edge Function: submit-exam (Assessment V1)
 // Server-authoritative scoring, grading, best score resolution, and usage logging.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";

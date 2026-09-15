@@ -1,3 +1,4 @@
+// @ts-nocheck
 // TOP ENGLISH CLASS — Edge Function: start-exam (Assessment V1)
 // Server-authoritative assessment start. Creates or resumes an attempt.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
