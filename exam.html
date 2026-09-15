@@ -126,12 +126,12 @@
   </div>
 
   <script type="module">
-    import { startExam, saveAnswer, submitExam, logCheatingEvent } from './js/api.js?v=2.1.0';
-    import { evaluateAnswer } from './js/grading.js?v=2.1.0';
-    import { requireStudentSession } from './js/session.js?v=2.1.0';
-    import { showToast, showLoading, hideLoading, formatTime, escapeHtml as appEscapeHtml } from './js/app.js?v=2.1.0';
-    import { startCountdown, isExpired } from './js/timer.js?v=2.1.0';
-    import { createSpeechSession, isSpeechSupported } from './js/speech.js?v=2.1.0';
+    import { startExam, saveAnswer, submitExam, logCheatingEvent } from './js/api.js?v=3.1.0';
+    import { evaluateAnswer } from './js/grading.js?v=3.1.0';
+    import { requireStudentSession } from './js/session.js?v=3.1.0';
+    import { showToast, showLoading, hideLoading, formatTime, escapeHtml as appEscapeHtml } from './js/app.js?v=3.1.0';
+    import { startCountdown, isExpired } from './js/timer.js?v=3.1.0';
+    import { createSpeechSession, isSpeechSupported } from './js/speech.js?v=3.1.0';
 
     function escapeHtml(str) {
       if (typeof appEscapeHtml === 'function') return appEscapeHtml(str);

@@ -5,15 +5,15 @@
       detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions,
       fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
       testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
-    } from '../api.js?v=2.1.0';
-    import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=2.1.0';
-    import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=2.1.0';
-    import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=2.1.0';
-    import { getSupabase } from '../supabase.js?v=2.1.0';
-    import { openAssessmentBuilder } from './exam-builder.js?v=2.1.0';
-    import { renderStudents as _renderStudentsModule } from './student-management.js?v=2.1.0';
-    import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=2.1.0';
-    import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport } from './central-assessment.js?v=2.1.0';
+    } from '../api.js?v=3.1.0';
+    import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=3.1.0';
+    import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=3.1.0';
+    import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=3.1.0';
+    import { getSupabase } from '../supabase.js?v=3.1.0';
+    import { openAssessmentBuilder } from './exam-builder.js?v=3.1.0';
+    import { renderStudents as _renderStudentsModule } from './student-management.js?v=3.1.0';
+    import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=3.1.0';
+    import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport } from './central-assessment.js?v=3.1.0';
 
     // -- Primary Tab Switching Variables --
     const mobileTabs = document.querySelectorAll('.mobile-tab');

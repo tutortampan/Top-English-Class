@@ -1,4 +1,4 @@
-const CACHE_NAME = 'abcd-system-v1';
+const CACHE_NAME = 'abcd-system-v3.1.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -6,9 +6,9 @@ const ASSETS_TO_CACHE = [
   './dashboard.html',
   './exam.html',
   './result.html',
-  './css/style.css',
-  './css/admin.css',
-  './css/auth.css',
+  './css/style.css?v=3.0',
+  './css/admin.css?v=3.0',
+  './css/auth.css?v=3.0',
   './css/dashboard.css',
   './css/exam.css',
   './css/result.css'
@@ -40,11 +40,31 @@ self.addEventListener('fetch', event => {
   // Skip caching API/Supabase calls
   if (event.request.url.includes('supabase.co')) return;
 
+  const url = new URL(event.request.url);
+  const isScriptOrDoc = event.request.destination === 'script' || 
+                        event.request.destination === 'document' || 
+                        url.pathname.endsWith('.js') || 
+                        url.pathname.endsWith('.html');
+
+  if (isScriptOrDoc) {
+    // Network-first for scripts and documents so bug fixes and updates propagate immediately
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
+        }
+        return response;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first for other static assets (images, fonts, static css)
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       if (cachedResponse) return cachedResponse;
       return fetch(event.request).then(response => {
-        // Cache new static assets on the fly
         if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
@@ -55,7 +75,7 @@ self.addEventListener('fetch', event => {
         return response;
       });
     }).catch(() => {
-      // Fallback for offline (could return a custom offline page if desired)
+      // Fallback
     })
   );
 });
