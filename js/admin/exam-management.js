@@ -1,6 +1,7 @@
 import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js';
 import { openAssessmentBuilder } from './exam-builder.js';
 import { showToast, showLoading, hideLoading } from '../app.js';
+import { getSupabase } from '../supabase.js';
 
 let examsGrid;
 
@@ -24,7 +25,7 @@ export async function renderExams(area) {
   const draftCount = data.filter(e => e.exam_status === 'draft').length;
   const totalQuestions = allQuestions.length;
 
-  area.innerHTML = \`
+  area.innerHTML = `
     <div class="exam-hero">
       <div class="d-flex align-center justify-between flex-wrap gap-4">
         <div>
@@ -42,25 +43,25 @@ export async function renderExams(area) {
       <div class="kpi-grid mt-4">
         <div class="kpi-card">
           <div class="kpi-icon">📝</div>
-          <div><div class="kpi-val">\${totalExams}</div><div class="kpi-lbl">Total Exams</div></div>
+          <div><div class="kpi-val">${totalExams}</div><div class="kpi-lbl">Total Exams</div></div>
         </div>
         <div class="kpi-card">
           <div class="kpi-icon" style="color:var(--clr-success,#4ade80);">🟢</div>
-          <div><div class="kpi-val" style="color:var(--clr-success,#4ade80);">\${publishedCount}</div><div class="kpi-lbl">Published Exams</div></div>
+          <div><div class="kpi-val" style="color:var(--clr-success,#4ade80);">${publishedCount}</div><div class="kpi-lbl">Published Exams</div></div>
         </div>
         <div class="kpi-card">
           <div class="kpi-icon" style="color:var(--clr-warning,#fbbf24);">🚧</div>
-          <div><div class="kpi-val" style="color:var(--clr-warning,#fbbf24);">\${draftCount}</div><div class="kpi-lbl">Draft / Inactive</div></div>
+          <div><div class="kpi-val" style="color:var(--clr-warning,#fbbf24);">${draftCount}</div><div class="kpi-lbl">Draft / Inactive</div></div>
         </div>
         <div class="kpi-card">
           <div class="kpi-icon" style="color:var(--clr-accent-1);">❓</div>
-          <div><div class="kpi-val">\${totalQuestions}</div><div class="kpi-lbl">Questions in Bank</div></div>
+          <div><div class="kpi-val">${totalQuestions}</div><div class="kpi-lbl">Questions in Bank</div></div>
         </div>
       </div>
     </div>
     
     <div id="exams-grid-container" class="card mt-4" style="padding:1rem;"></div>
-  \`;
+  `;
 
   document.getElementById('hub-add-exam')?.addEventListener('click', () => {
     window.openCrudModal('exams', null);
@@ -103,60 +104,60 @@ export async function renderExams(area) {
         key: 'title', 
         label: 'Exam Details', 
         sortable: true,
-        render: (val, row) => \`
-          <div class="fw-800" style="color:var(--clr-text-1); font-size:1rem;">\${escapeHtml(val)}</div>
+        render: (val, row) => `
+          <div class="fw-800" style="color:var(--clr-text-1); font-size:1rem;">${escapeHtml(val)}</div>
           <div class="text-muted text-xs mt-1 fw-600 d-flex gap-2 flex-wrap align-center">
-            <span><span class="text-accent">CLASS:</span> \${escapeHtml(row.programName)}</span>
+            <span><span class="text-accent">CLASS:</span> ${escapeHtml(row.programName)}</span>
             <span>•</span>
-            <span><span class="text-accent">SUBJ:</span> \${escapeHtml(row.subject)}</span>
+            <span><span class="text-accent">SUBJ:</span> ${escapeHtml(row.subject)}</span>
             <span>•</span>
-            <span><span class="badge badge-primary" style="font-size:0.6rem; padding: 2px 6px;">LVL \${row.level}</span></span>
-            <span><span class="badge badge-neutral" style="font-size:0.6rem; padding: 2px 6px;">ORD \${row.order}</span></span>
+            <span><span class="badge badge-primary" style="font-size:0.6rem; padding: 2px 6px;">LVL ${row.level}</span></span>
+            <span><span class="badge badge-neutral" style="font-size:0.6rem; padding: 2px 6px;">ORD ${row.order}</span></span>
           </div>
-          \${row.prereq ? \`<div class="mt-2"><span class="badge badge-warning text-xs">⚠️ Prereq: \${escapeHtml(row.prereq)}</span></div>\` : ''}
-        \`
+          ${row.prereq ? `<div class="mt-2"><span class="badge badge-warning text-xs">⚠️ Prereq: ${escapeHtml(row.prereq)}</span></div>` : ''}
+        `
       },
       { 
         key: 'answerType', 
         label: 'Settings', 
         sortable: false,
-        render: (val, row) => \`
+        render: (val, row) => `
           <div class="d-flex flex-wrap gap-1">
-            <span class="badge badge-info text-xs">\${val}</span>
-            <span class="badge \${row.questionOrder === 'Random' ? 'badge-primary' : 'badge-neutral'} text-xs">\${row.questionOrder === 'Random' ? '🔀 Random' : '➡️ Seq'}</span>
-            <span class="badge badge-neutral text-xs">\${escapeHtml(row.examCategory)}</span>
+            <span class="badge badge-info text-xs">${val}</span>
+            <span class="badge ${row.questionOrder === 'Random' ? 'badge-primary' : 'badge-neutral'} text-xs">${row.questionOrder === 'Random' ? '🔀 Random' : '➡️ Seq'}</span>
+            <span class="badge badge-neutral text-xs">${escapeHtml(row.examCategory)}</span>
           </div>
           <div class="text-muted text-xs mt-2 fw-600">
-            ⏱️ \${row.timeLimit} min &nbsp; | &nbsp; 🎯 Pass: \${row.minScore}%
+            ⏱️ ${row.timeLimit} min &nbsp; | &nbsp; 🎯 Pass: ${row.minScore}%
           </div>
-        \`
+        `
       },
       { 
         key: 'qCount', 
         label: 'Questions', 
         sortable: true,
-        render: (val) => \`<span class="badge \${val > 0 ? 'badge-info' : 'badge-danger'} fw-700">\${val} Qs</span>\`
+        render: (val) => `<span class="badge ${val > 0 ? 'badge-info' : 'badge-danger'} fw-700">${val} Qs</span>`
       },
       { 
         key: 'status', 
         label: 'Status', 
         sortable: true,
-        render: (val) => \`<span class="badge \${statusColors[val] || 'badge-neutral'} fw-700" style="text-transform: uppercase;">\${val}</span>\`
+        render: (val) => `<span class="badge ${statusColors[val] || 'badge-neutral'} fw-700" style="text-transform: uppercase;">${val}</span>`
       },
       { 
         key: 'actions', 
         label: 'Actions', 
         sortable: false,
-        render: (val, row) => \`
+        render: (val, row) => `
           <div class="d-flex gap-2 justify-end">
-            <button class="btn btn-secondary btn-sm" onclick="window._duplicateExam('\${row.id}')" title="Duplicate Exam">Copy</button>
-            <button class="btn \${row.status === 'published' ? 'btn-danger' : 'btn-success'} btn-sm" onclick="window._publishExam('\${row.id}', '\${row.status}')">
-              \${row.status === 'published' ? 'Unpublish' : 'Publish'}
+            <button class="btn btn-secondary btn-sm" onclick="window._duplicateExam('${row.id}')" title="Duplicate Exam">Copy</button>
+            <button class="btn ${row.status === 'published' ? 'btn-danger' : 'btn-success'} btn-sm" onclick="window._publishExam('${row.id}', '${row.status}')">
+              ${row.status === 'published' ? 'Unpublish' : 'Publish'}
             </button>
-            <button class="btn btn-secondary btn-sm" onclick="window.openAssessmentBuilder('\${row.id}')">Edit</button>
-            <button class="btn btn-secondary btn-sm" style="color: var(--clr-accent-1);" onclick="window._deleteRecord('exams', '\${row.id}', '\${escapeHtml(row.title)}')">Del</button>
+            <button class="btn btn-secondary btn-sm" onclick="window.openAssessmentBuilder('${row.id}')">Edit</button>
+            <button class="btn btn-secondary btn-sm" style="color: var(--clr-accent-1);" onclick="window._deleteRecord('exams', '${row.id}', '${escapeHtml(row.title)}')">Del</button>
           </div>
-        \`
+        `
       }
     ]
   });
@@ -182,13 +183,13 @@ window._publishExam = async (examId, currentStatus) => {
   const newStatus = currentStatus === 'published' ? 'unpublished' : 'published';
   try {
     await adminUpdate('exams', examId, { exam_status: newStatus });
-    showToast(\`Exam \${newStatus}.\`, 'success');
+    showToast(`Exam ${newStatus}.`, 'success');
     window.loadSection('exams');
   } catch(e) { showToast(e.message, 'error'); }
 };
 
 window._duplicateExam = async (examId) => {
-  if (!confirm(\`Are you sure you want to duplicate this exam?\`)) return;
+  if (!confirm(`Are you sure you want to duplicate this exam?`)) return;
   
   showLoading('Duplicating exam and questions...');
   try {
@@ -211,7 +212,7 @@ window._duplicateExam = async (examId) => {
     delete newExam.subjects;
     delete newExam.levels;
     delete newExam.institutions;
-    newExam.exam_title = \`\${newExam.exam_title} (Copy)\`;
+    newExam.exam_title = `${newExam.exam_title} (Copy)`;
     newExam.exam_status = 'draft';
 
     const { data: createdExam, error: eErr } = await sb.from('exams').insert([newExam]).select().single();

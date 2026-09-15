@@ -1952,33 +1952,33 @@
             return true;
           });
 
-          countChip.textContent = \`\${filtered.length} of \${allData.length}\`;
+          countChip.textContent = `${filtered.length} of ${allData.length}`;
 
           if (!filtered.length) {
             tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted p-5">No progression records match the selected filters.</td></tr>';
             return;
           }
 
-          tbody.innerHTML = filtered.map(r => \`
+          tbody.innerHTML = filtered.map(r => `
             <tr>
-              <td class="fw-600" style="color:var(--clr-text-1);">\${formatStudentName(r.student?.name, r.student?.gender) || 'â€”'}</td>
-              <td class="text-muted text-sm">\${escapeHtml(r.student?.programs?.institutions?.name || 'â€”')}</td>
-              <td class="text-muted text-sm">\${escapeHtml(r.student?.programs?.name || 'â€”')}</td>
-              <td><span class="badge \${r.student?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">\${escapeHtml(r.student?.batches?.name || 'Unassigned')}</span></td>
-              <td class="fw-600 text-sm">\${escapeHtml(r.assessmentTitle || 'â€”')}</td>
-              <td class="text-center"><span class="badge badge-primary">Level \${toLevelLetter(r.levelNumber)} \${escapeHtml(r.levelName || '')}</span></td>
+              <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.student?.name, r.student?.gender) || '—'}</td>
+              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.institutions?.name || '—')}</td>
+              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.name || '—')}</td>
+              <td><span class="badge ${r.student?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.student?.batches?.name || 'Unassigned')}</span></td>
+              <td class="fw-600 text-sm">${escapeHtml(r.assessmentTitle || '—')}</td>
+              <td class="text-center"><span class="badge badge-primary">Level ${toLevelLetter(r.levelNumber)} ${escapeHtml(r.levelName || '')}</span></td>
               <td class="text-center">
-                <span class="badge \${r.is_completed ? 'badge-success' : r.is_in_progress ? 'badge-warning' : 'badge-neutral'}">
-                  \${r.is_completed ? 'âœ“ Completed' : r.is_in_progress ? 'â–¶ In Progress' : 'ðŸ”’ Not Started'}
+                <span class="badge ${r.is_completed ? 'badge-success' : r.is_in_progress ? 'badge-warning' : 'badge-neutral'}">
+                  ${r.is_completed ? '✓ Completed' : r.is_in_progress ? '▶ In Progress' : '🔒 Not Started'}
                 </span>
               </td>
               <td class="text-center">
                 <div class="progress-pill">
-                  <div class="progress-pill-fill" style="width:\${r.is_completed ? 100 : r.is_in_progress ? 50 : 0}%;"></div>
+                  <div class="progress-pill-fill" style="width:${r.is_completed ? 100 : r.is_in_progress ? 50 : 0}%;"></div>
                 </div>
               </td>
             </tr>
-          \`).join('');
+          `).join('');
         };
 
         progSelect.addEventListener('change', () => { updateClassOptions(); renderTable(); });
@@ -1998,7 +1998,7 @@
 
       } catch (err) {
         console.error('Failed to load progress', err);
-        area.innerHTML = \`<div class="p-5 text-center text-error">Failed to load progression data: \${err.message}</div>\`;
+        area.innerHTML = `<div class="p-5 text-center text-error">Failed to load progression data: ${err.message}</div>`;
       }
     }
     // â”€â”€ AUDIT LOG â”€â”€

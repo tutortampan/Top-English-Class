@@ -145,12 +145,12 @@ export class DataGrid {
   }
 
   render() {
-    this.countLabel.textContent = \`\${this.filteredData.length} records\`;
+    this.countLabel.textContent = `${this.filteredData.length} records`;
     this.tbody.innerHTML = '';
     
     if (this.filteredData.length === 0) {
       const colSpan = this.columns.length + (this.bulkActions ? 1 : 0);
-      this.tbody.innerHTML = \`<tr><td colspan="\${colSpan}">\${this.emptyStateHtml}</td></tr>\`;
+      this.tbody.innerHTML = `<tr><td colspan="${colSpan}">${this.emptyStateHtml}</td></tr>`;
       this.renderPagination(0);
       return;
     }
@@ -167,7 +167,7 @@ export class DataGrid {
       if (this.bulkActions) {
         const tdCb = document.createElement('td');
         tdCb.style.textAlign = 'center';
-        tdCb.innerHTML = \`<input type="checkbox" class="datagrid-row-cb" value="\${row.id}" \${this.selectedIds.has(String(row.id)) ? 'checked' : ''} />\`;
+        tdCb.innerHTML = `<input type="checkbox" class="datagrid-row-cb" value="${row.id}" ${this.selectedIds.has(String(row.id)) ? 'checked' : ''} />`;
         tdCb.querySelector('input').addEventListener('change', (e) => {
           if (e.target.checked) this.selectedIds.add(String(row.id));
           else this.selectedIds.delete(String(row.id));
@@ -178,7 +178,7 @@ export class DataGrid {
 
       this.columns.forEach(col => {
         const td = document.createElement('td');
-        if (col.align) td.classList.add(\`text-\${col.align}\`);
+        if (col.align) td.classList.add(`text-${col.align}`);
         if (col.render) {
           const content = col.render(row);
           if (content instanceof HTMLElement) td.appendChild(content);
@@ -204,7 +204,7 @@ export class DataGrid {
 
     const createBtn = (text, page, disabled = false, active = false) => {
       const btn = document.createElement('button');
-      btn.className = \`btn btn-sm \${active ? 'btn-primary' : 'btn-secondary'}\`;
+      btn.className = `btn btn-sm ${active ? 'btn-primary' : 'btn-secondary'}`;
       btn.textContent = text;
       btn.disabled = disabled;
       if (!disabled && !active) {

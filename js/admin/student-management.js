@@ -17,7 +17,7 @@ export async function renderStudents(area) {
   const dupMap = new Map();
   rawData.forEach(s => {
     if (s.deleted_at) return;
-    const key = \`\${s.program_id}::\${(s.name || '').toLowerCase().trim()}\`;
+    const key = `${s.program_id}::${(s.name || '').toLowerCase().trim()}`;
     if (!dupMap.has(key)) dupMap.set(key, []);
     dupMap.get(key).push(s);
   });
@@ -43,7 +43,7 @@ export async function renderStudents(area) {
       });
       if (totalMaxScore > 0) {
         const pct = Math.round((totalObtained / totalMaxScore) * 100);
-        overallScoreStr = \`\${pct}%\`;
+        overallScoreStr = `${pct}%`;
         if (typeof getGrade === 'function') {
            const g = getGrade(pct);
            globalGrade = g.label;
@@ -173,48 +173,48 @@ export async function renderStudents(area) {
         key: 'displayName',
         label: 'Name & Account',
         sortable: true,
-        render: (row) => \`
+        render: (row) => `
           <div class="d-flex align-center gap-3">
-            \${row.photo_url ? \`<img src="\${row.photo_url}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">\` : \`<div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:700;">\${row.displayName.charAt(0)}</div>\`}
+            ${row.photo_url ? `<img src="${row.photo_url}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">` : `<div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:700;">${row.displayName.charAt(0)}</div>`}
             <div>
-              <div class="fw-600" style="color:var(--clr-text-1);">\${row.displayName}</div>
-              <div class="text-xs text-muted" style="font-family:monospace;">PIN: \${row.pinDisplay}</div>
+              <div class="fw-600" style="color:var(--clr-text-1);">${row.displayName}</div>
+              <div class="text-xs text-muted" style="font-family:monospace;">PIN: ${row.pinDisplay}</div>
             </div>
           </div>
-        \`
+        `
       },
       {
         key: 'progName',
         label: 'Program / Class',
         sortable: true,
-        render: (row) => \`
-          <div>\${row.progName}</div>
-          <div class="text-xs text-muted">\${row.instName}</div>
-        \`
+        render: (row) => `
+          <div>${row.progName}</div>
+          <div class="text-xs text-muted">${row.instName}</div>
+        `
       },
       {
         key: 'batchName',
         label: 'Batch',
         sortable: true,
         align: 'center',
-        render: (row) => \`<span class="badge" style="background:rgba(255,255,255,0.1);color:#fff;">\${row.batchName}</span>\`
+        render: (row) => `<span class="badge" style="background:rgba(255,255,255,0.1);color:#fff;">${row.batchName}</span>`
       },
       {
         key: 'overallScoreStr',
         label: 'Progress',
         sortable: true,
         align: 'center',
-        render: (row) => \`
-          <div class="fw-600">\${row.overallScoreStr}</div>
-          <div class="text-xs text-muted">\${row.completedExams} Exams</div>
-        \`
+        render: (row) => `
+          <div class="fw-600">${row.overallScoreStr}</div>
+          <div class="text-xs text-muted">${row.completedExams} Exams</div>
+        `
       },
       {
         key: 'globalGrade',
         label: 'Grade',
         sortable: true,
         align: 'center',
-        render: (row) => row.globalGrade !== '-' ? \`<span class="badge" style="background:\${row.overallColor};color:#000;">\${row.globalGrade}</span>\` : '-'
+        render: (row) => row.globalGrade !== '-' ? `<span class="badge" style="background:${row.overallColor};color:#000;">${row.globalGrade}</span>` : '-'
       },
       {
         label: 'Actions',
