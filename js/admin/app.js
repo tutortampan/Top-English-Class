@@ -4572,12 +4572,14 @@
 
     async function renderDataHealth(container) {
       container.innerHTML = `
-        <div class="mb-5">
-          <h2 class="text-xl fw-700 mb-2">Data Health & Diagnostics</h2>
-          <p class="text-muted" style="font-size:0.9rem;">Manually scan the database for data integrity issues, duplicates, and orphans.</p>
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Data Health <span class="count-chip">Diagnostics</span></h2>
+            <p class="section-subtitle">Scan the database for integrity issues, duplicates, and orphaned records</p>
+          </div>
         </div>
-        
-        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; margin-top: 0.5rem;">
           
           <!-- Students Duplicate Engine -->
           <div class="card d-flex flex-col gap-3">
@@ -4627,11 +4629,14 @@
 
     async function renderRecycleBin(container) {
       container.innerHTML = `
-        <div class="d-flex justify-between align-center mb-4">
-          <h2 class="text-xl">Recycle Bin</h2>
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Recycle Bin <span class="count-chip">Soft-Deleted</span></h2>
+            <p class="section-subtitle">Restore soft-deleted Students, Exams, Programs and Questions. Hard-delete is permanent.</p>
+          </div>
         </div>
-        <div class="d-flex gap-2 mb-4">
-          <select id="recycle-table-select" class="form-control" style="max-width: 200px;">
+        <div class="d-flex gap-2 mb-3" style="margin-top:0.5rem;">
+          <select id="recycle-table-select" class="form-control" style="max-width:200px;">
             <option value="students">Students</option>
             <option value="exams">Exams</option>
             <option value="programs">Programs</option>
@@ -4639,8 +4644,8 @@
           </select>
           <button class="btn btn-secondary" id="recycle-refresh-btn">Load Deleted</button>
         </div>
-        <div id="recycle-results" class="card p-0" style="overflow-x:auto;">
-          <div class="p-4 text-center text-muted">Select an entity type and click Load Deleted.</div>
+        <div class="table-wrap" id="recycle-results">
+          <div class="p-4 text-center text-muted" style="font-size:0.875rem;">Select an entity type and click Load Deleted.</div>
         </div>
       `;
 
@@ -4657,13 +4662,13 @@
           }
 
           let html = `
-            <table class="table" style="width:100%; white-space:nowrap;">
+            <table>
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Name / Title</th>
-                  <th>Deleted At</th>
-                  <th style="width:100px;">Actions</th>
+                  <th class="text-left" style="width:4rem;">ID</th>
+                  <th class="text-left">Name / Title</th>
+                  <th class="text-center">Deleted At</th>
+                  <th class="text-right" style="width:120px;">Actions</th>
                 </tr>
               </thead>
               <tbody>

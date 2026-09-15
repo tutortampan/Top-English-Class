@@ -1527,3 +1527,40 @@
 ### Next Action
 - Discuss gamification implementation plan with the user.
 
+
+## [2026-09-15 23:49] -- FM UI Redesign Phases 2-4 Complete
+
+**Agent/Session:** Antigravity (conversation e733f7e5)
+**Phase:** UI REDESIGN
+**Status:** PASS
+
+### Why
+- Continued the Football Manager-inspired admin console redesign from the previous session.
+- Phase 1 (global layout, sidebar, topbar, tokens) was already complete.
+- Phases 2-4 required: KPI grid, search bar, domain view polish, toast, upload zones, progress bars, exam status indicators, student cards, orb ambient login effects, legacy class compatibility, modal overrides, duplicate resolver styling, and global tactical scrollbar.
+
+### Changed
+- css/admin.css: Added sections 11-27 (617 lines). Includes: .text-gradient override, utility helpers, .kpi-grid/.kpi-card/.kpi-val/.kpi-lbl/.kpi-icon, .exam-hero, .search-bar, .table-compact, .db-status-banner classes (connected/error), .form-group, select.form-control dropdown arrow, .toast notifications, .orb ambient login effects, .info-box/.warning-box/.error-box, .upload-zone, .progress-track/.progress-fill, .exam-status indicators, .student-card/.student-avatar, .dup-group-card, global tactical scrollbar.
+- js/admin/app.js: Fixed initConnectionBanner() to use CSS class toggling instead of inline styles. Removed duplicate sidebar toggle handler at line 4573 (was overriding the authoritative openSidebar/closeSidebar pattern).
+- dmin.html: Bumped dmin.css?v=4.0 cache buster.
+- 	ask.md: Updated with current phase completion status.
+
+### Files
+- css/admin.css (+617 lines)
+- js/admin/app.js (2 fixes)
+- dmin.html (version bump)
+- 	ask.md (updated)
+
+### Database
+- No schema changes.
+
+### Tests
+- command: scratch/audit_online_readiness.ps1
+- result: **163 PASSED, 0 FAILED**
+
+### Risks / Follow-up
+- Browser Playwright CDN is currently unavailable (404) so visual screenshot validation cannot be automated. Manual browser check required.
+- No functional logic was changed; all business rules and Supabase connections intact.
+
+### Next Action
+- User should open http://localhost:8080/admin.html (or https://topenglishclass.netlify.app/admin.html) and verify the FM workstation look across all ABCD domain sections.

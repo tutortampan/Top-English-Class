@@ -1,4 +1,4 @@
-$root = 'D:\Tutor Tampan\Top Class Web Builder\Top English Class'
+$root = 'D:\Drives\Tutor Tampan\Top Class Web Builder\Top English Class'
 $pass = 0; $fail = 0
 
 function OK   ($msg) { Write-Host "  [PASS] $msg" -ForegroundColor Green;  $global:pass++ }
