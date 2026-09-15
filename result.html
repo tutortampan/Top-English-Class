@@ -29,8 +29,9 @@
     <section class="result-hero">
       <div class="result-grade-display grade-S" id="result-grade-badge">—</div>
       <div class="result-percentage" id="result-percentage">0%</div>
-      <h1 class="text-gradient mb-2" id="result-headline">Exam Complete!</h1>
+      <h1 class="text-gradient mb-2" id="result-headline">Assessment Complete!</h1>
       <p class="text-muted" id="result-exam-name"></p>
+      <div id="result-best-score-badge" style="text-align:center;margin-bottom:0.75rem;"></div>
 
       <!-- Summary Grid -->
       <div class="result-summary-grid">
@@ -64,15 +65,24 @@
   </div>
 
   <script type="module">
-    import { fetchAttemptResult, fetchAttemptAnswers, startExam } from './js/api.js?v=1.4';
-    import { requireStudentSession } from './js/session.js?v=1.4';
-    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=1.4';
+    import { fetchAttemptResult, fetchAttemptAnswers, fetchAllStudentAttempts, startExam } from './js/api.js?v=1.5';
+    import { requireStudentSession } from './js/session.js?v=1.5';
+    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=1.5';
 
     const session = requireStudentSession();
     if (!session) throw new Error('Not authenticated');
 
-    const attemptId = sessionStorage.getItem('tec_attempt_id');
+    // V1: support ?attempt_id= URL param (from dashboard "View Result" button)
+    const urlParams = new URLSearchParams(window.location.search);
+    const attemptId = urlParams.get('attempt_id') || sessionStorage.getItem('tec_attempt_id');
     if (!attemptId) { window.location.href = 'dashboard.html'; }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    const gradeColors = { S: '#f59e0b', A: '#10b981', B: '#3b82f6', C: '#f59e0b', D: '#ea580c', E: '#ef4444', F: '#94a3b8' };
 
     async function loadResult() {
       try {
@@ -96,35 +106,138 @@
         const pctEl = document.getElementById('result-percentage');
         pctEl.className = `result-percentage text-grade-${grade}`;
         animateCount(pctEl, pct);
-        
+
         // Headline
         const headlines = { S: '🏆 Perfect Score!', A: '🌟 Outstanding!', B: '👏 Great Work!', C: '✅ Good Effort!', D: '📚 Keep Practicing!', E: '💪 Keep Going!', F: '🔄 Try Again' };
-        document.getElementById('result-headline').textContent = headlines[grade] || 'Exam Complete!';
+        document.getElementById('result-headline').textContent = headlines[grade] || 'Assessment Complete!';
 
-        const exam = attempt.exams;
-        document.getElementById('result-exam-name').textContent =
-          `${exam?.subjects?.name || ''} · ${exam?.levels?.name || ''} · ${exam?.exam_type || ''} — ${exam?.exam_title || ''}`;
+        // V1: title from assessments or legacy exams join
+        const asmData  = attempt.assessments || attempt.exams;
+        const asmTitle = asmData?.title || asmData?.exam_title || 'Assessment';
+        const subj = asmData?.subjects?.name || '';
+        const lvl  = asmData?.levels?.name ? `Level ${asmData.levels.name}` : '';
+        const typ  = asmData?.assessment_type || asmData?.exam_type || '';
+        const nameParts = [subj, lvl, typ, asmTitle].filter(Boolean);
+        document.getElementById('result-exam-name').textContent = nameParts.join(' · ');
+
+        // V1: Best score badge
+        const assessmentId = attempt.assessment_id || attempt.exam_id;
+        const isBest = attempt.is_best_score === true;
+
+        // Inject best-score indicator near the grade badge if we have it
+        const scoreBadgeEl = document.getElementById('result-best-score-badge');
+        if (scoreBadgeEl) {
+          if (isBest) {
+            scoreBadgeEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;font-weight:700;color:#10b981;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:3px 10px;">⭐ Best Score</span>`;
+          } else {
+            scoreBadgeEl.innerHTML = `<span style="font-size:0.75rem;color:var(--clr-text-3);">Not your best score</span>`;
+          }
+        }
 
         // Stats
         const correct = answers.filter(a => a.evaluation_result === 'correct').length;
-        const partial  = answers.filter(a => a.evaluation_result === 'minor_spelling_error').length;
-        const wrong    = answers.filter(a => a.evaluation_result === 'incorrect').length;
+        const partial = answers.filter(a => a.evaluation_result === 'minor_spelling_error').length;
+        const wrong   = answers.filter(a => a.evaluation_result === 'incorrect').length;
         document.getElementById('res-correct').textContent = correct;
-        document.getElementById('res-partial').textContent  = partial;
-        document.getElementById('res-wrong').textContent    = wrong;
+        document.getElementById('res-partial').textContent = partial;
+        document.getElementById('res-wrong').textContent   = wrong;
 
-        // Render answers
+        // Render answer breakdown
         renderAnswers(answers);
+
+        // V1: Attempt history (all attempts for this assessment)
+        if (assessmentId) {
+          try {
+            const allAttempts = await fetchAllStudentAttempts(session.student_id);
+            const thisAssessmentAttempts = allAttempts
+              .filter(a => (a.assessment_id || a.exam_id) === assessmentId && ['SUBMITTED','AUTO_SUBMITTED'].includes(a.status))
+              .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
+
+            if (thisAssessmentAttempts.length > 1) {
+              renderAttemptHistory(thisAssessmentAttempts, attemptId);
+            }
+          } catch (histErr) {
+            console.warn('Could not load attempt history:', histErr);
+          }
+        }
+
+        // Wire up Try Again button with V1 assessment_id
+        document.getElementById('try-again-btn').onclick = async () => {
+          try {
+            showLoading('Starting new attempt...');
+            const eid = assessmentId;
+            if (!eid) throw new Error('No assessment ID found.');
+            sessionStorage.setItem('tec_exam_id', eid);
+            window.location.href = 'exam.html';
+          } catch(e) {
+            hideLoading();
+            showToast(e.message, 'error');
+          }
+        };
 
       } catch(e) {
         showToast('Failed to load results: ' + e.message, 'error');
         document.getElementById('result-loading').innerHTML = `
           <div class="empty-state__icon">❌</div>
           <h3>Could not load results</h3>
-          <p class="text-muted">${e.message}</p>
+          <p class="text-muted">${escapeHtml(e.message)}</p>
           <a href="dashboard.html" class="btn btn-primary mt-4">Back to Dashboard</a>
         `;
       }
+    }
+
+    function renderAttemptHistory(attempts, currentAttemptId) {
+      // Create or find history container
+      let histSection = document.getElementById('attempt-history-section');
+      if (!histSection) {
+        histSection = document.createElement('section');
+        histSection.id = 'attempt-history-section';
+        histSection.style.cssText = 'max-width:680px;margin:1.5rem auto 0;padding:0 1rem;';
+        const answersSection = document.getElementById('answers-section');
+        if (answersSection) {
+          answersSection.parentNode.insertBefore(histSection, answersSection);
+        }
+      }
+
+      const rows = attempts.map(a => {
+        const apct = parseFloat(a.percentage || 0).toFixed(1);
+        const ag   = a.grade || getGrade(parseFloat(apct));
+        const isThis = a.id === currentAttemptId;
+        const isBestRow = a.is_best_score;
+        const dateStr = a.submitted_at ? new Date(a.submitted_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+        return `
+          <tr style="${isThis ? 'background:rgba(56,189,248,0.07);' : ''}">
+            <td style="padding:8px 12px;font-size:0.82rem;color:var(--clr-text-3);">${escapeHtml(dateStr)}</td>
+            <td style="padding:8px 12px;font-weight:700;color:${gradeColors[ag] || 'var(--clr-text-1)'};">${apct}%</td>
+            <td style="padding:8px 12px;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;font-weight:800;font-size:0.78rem;border:2px solid ${gradeColors[ag] || '#64748b'};color:${gradeColors[ag] || '#64748b'};">${ag}</span>
+            </td>
+            <td style="padding:8px 12px;">
+              ${isBestRow ? '<span style="font-size:0.72rem;font-weight:700;color:#10b981;">⭐ Best</span>' : ''}
+              ${isThis ? '<span style="font-size:0.72rem;color:#38bdf8;">← This attempt</span>' : `<a href="result.html?attempt_id=${escapeHtml(a.id)}" style="font-size:0.72rem;color:var(--clr-text-3);text-decoration:underline;">View</a>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      histSection.innerHTML = `
+        <div style="background:var(--clr-card,rgba(30,41,59,0.8));border:1px solid var(--clr-border,rgba(255,255,255,0.08));border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;">
+          <h3 style="font-size:0.9rem;font-weight:700;color:var(--clr-text-1);margin:0 0 1rem;">📋 Attempt History</h3>
+          <div class="table-responsive">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="border-bottom:1px solid var(--clr-border);">
+                  <th style="padding:6px 12px;font-size:0.75rem;color:var(--clr-text-3);text-align:left;font-weight:600;">Date</th>
+                  <th style="padding:6px 12px;font-size:0.75rem;color:var(--clr-text-3);text-align:left;font-weight:600;">Score</th>
+                  <th style="padding:6px 12px;font-size:0.75rem;color:var(--clr-text-3);text-align:left;font-weight:600;">Grade</th>
+                  <th style="padding:6px 12px;font-size:0.75rem;color:var(--clr-text-3);text-align:left;font-weight:600;"></th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
     }
 
     function animateCount(el, target) {
@@ -147,20 +260,26 @@
       container.innerHTML = '';
 
       answers.forEach((a, idx) => {
-        const snap = a.question_snapshot;
+        const snap = typeof a.question_snapshot === 'string'
+          ? (() => { try { return JSON.parse(a.question_snapshot); } catch { return {}; } })()
+          : (a.question_snapshot || {});
         const isCorrect = a.evaluation_result === 'correct';
         const isPartial = a.evaluation_result === 'minor_spelling_error';
         const isWrong   = a.evaluation_result === 'incorrect';
 
-        const resultIcon = isCorrect ? '✅' : isPartial ? '⚠️' : '❌';
-        const resultText = isCorrect ? 'Correct' : isPartial ? 'Minor Spelling Error' : 'Incorrect';
+        const resultIcon  = isCorrect ? '✅' : isPartial ? '⚠️' : '❌';
+        const resultText  = isCorrect ? 'Correct' : isPartial ? 'Minor Spelling Error' : 'Incorrect';
         const resultColor = isCorrect ? 'success' : isPartial ? 'warning' : 'danger';
+        const wordType    = snap.word_type || snap.metadata?.type || snap.type || '';
 
         const item = document.createElement('div');
         item.className = 'answer-item';
         item.innerHTML = `
           <div class="answer-item-header">
-            <div class="fw-700 text-sm">Q${idx + 1}. ${snap?.question_text || 'Question'}</div>
+            <div class="fw-700 text-sm">
+              Q${idx + 1}. ${escapeHtml(snap.question_text || snap.question || 'Question')}
+              ${wordType ? `<span style="font-size:0.68rem;margin-left:6px;color:#38bdf8;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.25);border-radius:6px;padding:1px 6px;">${escapeHtml(wordType)}</span>` : ''}
+            </div>
             <div class="d-flex align-center gap-2">
               <span class="answer-result-icon">${resultIcon}</span>
               <span class="badge badge-${resultColor}">${resultText}</span>
@@ -170,13 +289,13 @@
           ${a.student_answer ? `
             <div class="p-2 rounded mt-1" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);">
               <div class="text-xs text-muted mb-1">Your Answer</div>
-              <div class="text-sm">${a.student_answer}</div>
+              <div class="text-sm">${escapeHtml(a.student_answer)}</div>
             </div>
           ` : '<div class="text-sm text-muted mt-1 p-2">No answer given</div>'}
           ${!isCorrect ? `
             <div class="p-2 rounded mt-1" style="background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);">
               <div class="text-xs text-muted mb-1">Correct Answer</div>
-              <div class="text-sm text-success">${a.correct_answer_snapshot}</div>
+              <div class="text-sm text-success">${escapeHtml(String(a.correct_answer_snapshot || ''))}</div>
             </div>
           ` : ''}
         `;
@@ -189,24 +308,6 @@
       const isHidden = section.classList.toggle('hidden');
       document.getElementById('toggle-answers-btn').textContent =
         isHidden ? 'View Answer Breakdown' : 'Hide Breakdown';
-    });
-
-    document.getElementById('try-again-btn').addEventListener('click', async () => {
-      try {
-        showLoading('Starting new attempt...');
-        const attemptIdStr = sessionStorage.getItem('tec_attempt_id');
-        const attemptObj = await fetchAttemptResult(attemptIdStr);
-        const newAttemptId = await startExam(attemptObj.exam_id);
-        hideLoading();
-        if (newAttemptId) {
-          sessionStorage.setItem('tec_attempt_id', newAttemptId);
-          sessionStorage.setItem('tec_exam_id', attemptObj.exam_id);
-          window.location.href = 'exam.html';
-        }
-      } catch(e) {
-        hideLoading();
-        showToast(e.message, 'error');
-      }
     });
 
     loadResult();

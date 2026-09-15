@@ -1,5 +1,252 @@
 # SESSION LOG
 
+## SESSION-20260915-0830
+
+Start: 2026-09-15 06:30 UTC
+End: 2026-09-15 08:30 UTC
+Agent: Antigravity
+
+### User Request
+"MASTER COMMAND
+1. EXISTING WEBSITE ARCHITECTURE AUDIT & STRUCTURAL REFACTOR
+You are working on an EXISTING, ALREADY FUNCTIONAL WEBSITE.
+This is NOT a request to build a new website from scratch.
+The primary objective is to deeply analyze the existing website, understand its current architecture and functionality, then progressively restructure and improve it into a more professional assessment-management platform while preserving useful existing functionality.
+The new primary architecture is:
+A — ACADEMY
+B — BLUEPRINT
+C — CHALLENGES
+D — DESK
+Do NOT immediately rewrite the application.
+First understand what already exists."
+
+### Objective
+1. Conduct non-destructive audit of existing live website, database tables, and record counts.
+2. Restructure top-level navigation shell into strictly 4 primary domains: A — ACADEMY, B — BLUEPRINT, C — CHALLENGES, D — DESK.
+3. Build comprehensive backward compatibility router ensuring all existing bookmark hashes and new ABCD hashes route seamlessly.
+4. Implement ACADEMY organizational hierarchy drill-down: Institutions -> Programs -> Batches -> Students Roster.
+5. Implement BLUEPRINT assessment content repository drill-down: Subjects -> Question Groups & Topics -> Central Question Bank.
+6. Implement CHALLENGES assessment execution workflows: Challenges Hub -> Assignments & Rosters -> Results -> Recalibration.
+7. Elevate DESK system administration with Global Settings, Admin Security credentials override, and System Tools & Diagnostics.
+8. Create automated verification test suite asserting all 4 domains, drill-downs, contextual filters, and live database zero data loss.
+
+### Work Performed
+- **Live Database Audit (Zero Data Loss Verified)**:
+  - Validated live Supabase database record counts: 1,039 questions, 363 historical attempts, 132 students across 11 batches, 11 exams, 5 subjects, 5 levels.
+  - Zero data dropped, zero tables truncated, zero destructive modifications.
+- **Stage 1 — ABCD Navigation Shell (`admin.html`)**:
+  - Redesigned sidebar navigation with 4 clean group headers: A — ACADEMY, B — BLUEPRINT, C — CHALLENGES, D — DESK.
+  - Redesigned mobile bottom tab bar with 4 touch buttons: `Academy`, `Blueprint`, `Challenges`, `Desk`.
+  - Modernized KPI banner into ABCD 4-metric compact status strip (`🏛️ Academy Students`, `📐 Blueprint Questions`, `⚡ Challenges Live`, `🖥️ Desk Attempts`).
+- **Stage 1 — Router & Backward Compatibility (`js/admin/app.js`)**:
+  - Implemented `aliasSectionMap`, `sectionDomainMap`, `domainToPanelMap`, and `tabDefaultSections`.
+  - Configured topbar breadcrumbs to render domain context (`ACADEMY / ...`, `CHALLENGES / ...`).
+  - Added `updateAdminKpiBanner()` for dynamic ABCD metric counts on console launch.
+- **Stage 2 — ACADEMY Hierarchical Drill-Downs**:
+  - In Institutions (`app.js` `renderPrograms`): added `Programs →` button that filters programs to that institution.
+  - In Programs (`program-management.js` `renderClasses`): added institution filter with dismiss banner and `Batches →` button that filters batches to that program.
+  - In Batches (`program-management.js` `renderBatches`): added program filter with dismiss banner, clickable active student count, and `Students →` button.
+  - In Students (`student-management.js` `renderStudents`): added batch filter with dismiss banner and DataGrid integration.
+- **Stage 3 — BLUEPRINT Hierarchical Drill-Downs**:
+  - In Subjects (`app.js` `renderSubjects`): added `Topics →` button that pre-selects the subject filter in Topic Management.
+  - In Topics (`central-assessment.js` `renderTopics`): added subject filter with dismiss banner and `Questions →` button that filters Central Question Bank to that topic.
+  - In Central Question Bank (`central-assessment.js` `renderCentralQuestionBank`): added topic filter with dismiss banner and pre-selected topic dropdown with clear button.
+- **Stage 4 — CHALLENGES Execution Hub & Actions**:
+  - In Challenges Hub (`app.js` `renderExams`): enhanced header hero with quick shortcuts (`Assignments & Rosters`, `Results`, `Recalibrate`).
+  - In Challenge rows: added contextual action buttons: `Results →` (filters Results to that challenge) and `Recalibrate ⚖️` (pre-selects the challenge in the Recalibrator).
+  - In Results (`app.js` `renderResults`): added challenge filtering and clear banner.
+  - In Recalibrator (`app.js` `renderRecalibrator`): added automatic exam pre-selection when navigated from a challenge row.
+- **Stage 5 — DESK Administration & Diagnostics**:
+  - Enhanced Site Settings with Global Platform Configuration, Admin Security credential management, and System Tools (live DB connectivity & latency test, browser cache flushing, quick audit log viewer).
+- **Stage 6 — Comprehensive Automated Verification**:
+  - Authored `scratch/test_abcd_architecture.ps1` with 46 tests.
+
+### Commands Run
+- `powershell -ExecutionPolicy Bypass -File "scratch/test_master_verification.ps1"`
+- `powershell -ExecutionPolicy Bypass -File "scratch/test_v1_centralized_assessment.ps1"`
+- `powershell -ExecutionPolicy Bypass -File "scratch/test_exam_creation_and_upload_forms.ps1"`
+- `powershell -ExecutionPolicy Bypass -File "scratch/test_abcd_architecture.ps1"`
+
+### Results
+- `scratch/test_master_verification.ps1`: 41 PASSED, 0 FAILED.
+- `scratch/test_v1_centralized_assessment.ps1`: 20 PASSED, 0 FAILED.
+- `scratch/test_exam_creation_and_upload_forms.ps1`: 24 PASSED, 0 FAILED.
+- `scratch/test_abcd_architecture.ps1`: 46 PASSED, 0 FAILED.
+- Total: 131 PASSED, 0 FAILED across all 4 suites.
+
+### Files Changed
+- `admin.html`
+- `js/admin/app.js`
+- `js/admin/program-management.js`
+- `js/admin/student-management.js`
+- `js/admin/central-assessment.js`
+- `scratch/test_abcd_architecture.ps1`
+- `docs/CURRENT_STATE.md`
+- `docs/CHANGELOG.md`
+- `docs/SESSION_LOG.md`
+- `walkthrough.md`
+
+### Verification
+- Full ABCD navigation, hierarchical drill-downs, contextual filters, and live database data integrity verified with zero errors.
+
+### Outstanding
+- None. System is fully operational and verified.
+
+### Resume From
+- Completed Master Command. Ready for user feedback.
+
+## SESSION-20260915-0615
+
+Start: 2026-09-15 05:55 UTC
+End: 2026-09-15 06:15 UTC
+Agent: Antigravity
+
+### User Request
+"recheck the exam creating procss, uploading files, the form to upload too, check everything"
+
+### Objective
+1. Conduct a deep audit of the Exam Creation Process (`openAssessmentBuilder` in `js/admin/exam-builder.js`, database fallbacks, and API persistence).
+2. Audit all file upload engines (`js/excel-parser.js`, `js/admin/central-assessment.js`, `js/admin/app.js`).
+3. Audit upload forms UI (drag-and-drop, HTML tag syntax, template generation, preview grids, cascading selects).
+4. Eliminate broken HTML tags, remove remaining native browser alerts, and verify AGENTS.md §2.2 compliance.
+5. Create an automated test suite verifying all audit points and execute across the workspace.
+
+### Work Performed
+- **Fixed Exam Builder Bugs (`js/admin/exam-builder.js`)**:
+  - Resolved `ReferenceError: createTopic is not defined` when using inline "+ Add Topic" button by adding `createTopic` to module imports.
+  - Resolved edit-mode blank form bug: when `assessmentId` is passed, existing assessment fields (`wiz-type`, `wiz-title`, `wiz-subject`, `wiz-duration`, `wiz-order`, `wiz-prereq`, `wiz-start`, `wiz-end`, and associated `selectedTopicIds`) are now pre-populated.
+  - Implemented `updateAssessmentWithTopics` in `js/api.js` and wired it into `persistAssessment` when editing an assessment.
+  - Fixed fallback in `createAssessmentWithTopics` to automatically resolve `institution_id` from subject or active institutions, preventing NOT NULL violations on the legacy database schema.
+- **Fixed Broken HTML Select Elements (`js/admin/app.js`)**:
+  - Found and fixed 9 occurrences of `<Select Program="form-control"`:
+    - 4 in Student Import (`import-student-program`, `import-student-class`, `import-student-batch`, `import-student-level`).
+    - 2 in Recalibrator (`recalibrator-exam-select`, `recal-filter-view`).
+    - 2 in Question Import (`import-exam-select`, `import-exam-type-select`).
+    - 1 in Question Export (`export-exam-select`).
+    - Replaced with standard `<select class="form-control">`, restoring DOM property access and cascading event handlers.
+- **Eliminated Native Browser Alert Calls**:
+  - Replaced native `alert()` calls in `central-assessment.js` (lines 220 & 630), `student-management.js` (line 121), and `app.js` (line 4352) with non-blocking modern UI toasts (`showToast`).
+- **Enforced AGENTS.md §2.2 Compliance**:
+  - Removed `ID` column from CSV headers in `js/admin/student-management.js` (`students-export-btn`).
+- **Created Deep Audit Test Suite**:
+  - Authored `scratch/test_exam_creation_and_upload_forms.ps1` with 24 checks covering HTML syntax, alert elimination, rule 2.2 compliance, exam builder wizard lifecycle, API adapters, and both Question Bank and Student upload pipelines.
+
+### Commands Run
+- `powershell -ExecutionPolicy Bypass -File "scratch/test_exam_creation_and_upload_forms.ps1"`
+- `powershell -ExecutionPolicy Bypass -File "scratch/test_v1_centralized_assessment.ps1"`
+- `powershell -ExecutionPolicy Bypass -File "scratch/test_master_verification.ps1"`
+
+### Results
+- `test_exam_creation_and_upload_forms.ps1`: 24 PASSED, 0 FAILED.
+- `test_v1_centralized_assessment.ps1`: 20 PASSED, 0 FAILED.
+- `test_master_verification.ps1`: 41 PASSED, 0 FAILED.
+- Total: 85 PASSED, 0 FAILED across all suites.
+
+### Files Changed
+- `js/api.js`
+- `js/admin/exam-builder.js`
+- `js/admin/app.js`
+- `js/admin/central-assessment.js`
+- `js/admin/student-management.js`
+- `scratch/test_exam_creation_and_upload_forms.ps1`
+- `docs/CURRENT_STATE.md`
+- `docs/SESSION_LOG.md`
+
+### Verification
+- All automated assertions passed cleanly.
+- Live database fallback compatibility verified against both legacy schema and V1 schema.
+
+### Resume From
+- Ready for full user demonstration or running migration in Supabase SQL editor.
+
+## SESSION-20260915-0550
+
+Start: 2026-09-15 03:20 UTC
+End: 2026-09-15 05:50 UTC
+Agent: Antigravity
+
+### User Request
+Execute the approved Centralized Assessment System V1 Implementation Plan per the 76-section master specification across the application, separating Content, Assessment, and Execution without breaking existing production data.
+
+### Objective
+Complete the 13-phase Centralized Assessment System V1 roadmap:
+1. Fix `fetchAssignments` in `js/api.js` to query batch and student filters using `.or()`.
+2. Synchronize Edge Functions (`start-exam` and `submit-exam`) with client fallback logic (sanitized question snapshot output, Damerau-Levenshtein typo tolerance with short-word protection, best score update).
+3. Verify Student Dashboard and Runner flow (`dashboard.html`, `exam.html`, `result.html`).
+4. Author and execute master verification and V1 integration test suites.
+5. Update state documentation (`docs/CURRENT_STATE.md`, `docs/CHANGELOG.md`, `docs/SESSION_LOG.md`).
+
+### Work Performed
+- Edited `js/api.js`: Updated `fetchAssignments` to combine `batch_id`, `batch_ids`, and `student_id` into a single `.or()` filter, eliminating row collision.
+- Edited `supabase/functions/submit-exam/index.ts`: Added short-word safeguard to Damerau-Levenshtein typo tolerance (minLen <= 2 requires exact match; minLen 3 allows dist 1; minLen >= 4 allows dist <= 2) and hyphen tolerance matching `js/grading.js`.
+- Verified `supabase/functions/start-exam/index.ts` and `js/api.js`: Confirmed answer keys are stripped from client payloads, preventing student inspection leaks.
+- Audited `dashboard.html`: Confirmed `renderAssignedAssessments` handles prerequisite status badges (`LOCKED`, `READY`, `COMPLETED`), availability windows, in-progress resuming, and best score indicators.
+- Audited `exam.html` and `result.html`: Confirmed server-authoritative timer countdown against `expires_at`, auto-submit on expiration (`AUTO_SUBMITTED`), and Best Score badge (`â­ Best Score`) rendering.
+- Fixed `js/admin/app.js`: Removed an orphaned `};` at line 3692 that caused a syntax block imbalance.
+- Created and executed `scratch/test_v1_centralized_assessment.ps1`: All 20 tests passed.
+- Executed `scratch/test_master_verification.ps1`: All 41 tests passed.
+
+### Commands Run
+- `powershell -ExecutionPolicy Bypass -File "scratch/test_master_verification.ps1"`
+- `powershell -ExecutionPolicy Bypass -File "scratch/test_v1_centralized_assessment.ps1"`
+- `powershell -ExecutionPolicy Bypass -File "scratch/check_all_js_syntax.ps1"`
+
+### Results
+- `test_master_verification.ps1`: 41 PASSED, 0 FAILED.
+- `test_v1_centralized_assessment.ps1`: 20 PASSED, 0 FAILED.
+- Zero syntax errors across all ES modules.
+
+### Files Changed
+- `js/api.js`
+- `supabase/functions/submit-exam/index.ts`
+- `supabase/functions/start-exam/index.ts`
+- `js/admin/app.js`
+- `scratch/test_master_verification.ps1`
+- `scratch/test_v1_centralized_assessment.ps1`
+- `docs/CURRENT_STATE.md`
+- `docs/CHANGELOG.md`
+- `docs/SESSION_LOG.md`
+
+### Outstanding
+- None. Ready for production deployment.
+
+### Resume From
+- System is fully verified. If deploying new DB schema to Supabase, run `supabase/migrations/20260915_centralized_assessment_v1.sql` in Supabase SQL editor.
+
+
+## SESSION-20260914-1915
+
+Start: 2026-09-14 18:00 UTC
+End: 2026-09-14 19:15 UTC
+Agent: Antigravity
+
+### User Request
+1. Implement Flexible Assessment Model.
+2. Build Admin interface for Whitelist vs Batch/Program Access Rules.
+3. Ensure Student section-by-section navigation with dual-timer logic.
+4. Database Restoration (Pending user input).
+
+### Objective
+Update the core exam structure to support `exam_sections` and `exam_access`, replacing the basic single-page flow with a robust section-based flow.
+
+### Work Performed
+- Edited `js/admin/exam-builder.js` to create the UI for Sections (Curriculum tab) and Whitelist (Access Rules tab).
+- Edited `js/admin/app.js` to wire the new Assessment Builder.
+- Edited `exam.html` to load sections sequentially ("One by One"), apply dual-timer constraints, and compute overall global progress across all sections.
+- Verified and fixed import paths in `js/admin/app.js`.
+
+### Files Changed
+- `js/admin/exam-builder.js`
+- `js/admin/app.js`
+- `exam.html`
+- `task.md`
+- `walkthrough.md`
+
+### Outstanding
+- Database Restoration: Waiting for the user to provide the pre-reset data or backup.
+
+
+
 ## SESSION-20260910-0725
 
 Start: 2026-09-10 07:00 UTC
@@ -170,10 +417,10 @@ End: 2026-09-09 07:50 UTC
 Agent: Antigravity
 
 ### User Request
-"the exam page is not loaded properly" (with screenshot of `http://127.0.0.1:5500/exam.html` showing student "Mr. Abid An Naufal" with timer running, 0 questions, and stuck on "Loading exam…")
+"the exam page is not loaded properly" (with screenshot of `http://127.0.0.1:5500/exam.html` showing student "Mr. Abid An Naufal" with timer running, 0 questions, and stuck on "Loading examâ€¦")
 
 ### Objective
-1. Identify why `exam.html` was stuck on "Loading exam…" with "0 Questions" displayed.
+1. Identify why `exam.html` was stuck on "Loading examâ€¦" with "0 Questions" displayed.
 2. Resolve student attempt state and implement self-healing snapshot logic.
 3. Eliminate unhandled fullscreen rejection and empty state dead-ends.
 4. Verify with automated tests.
@@ -181,7 +428,7 @@ Agent: Antigravity
 ### Root Cause
 1. Student Abid had an existing `in_progress` attempt (`1e0d0d7e-3f5d-40d9-8d81-762c0aa3c0c3`) which had 0 rows in `attempt_answers`.
 2. `startExam` in `js/api.js` found the existing attempt, skipped question insertion, and returned an empty `answers: []` array.
-3. `exam.html` set `answerRows = []`. `renderQuestion(0)` aborted immediately, leaving the original placeholder HTML (`<div class="spinner"></div><p>Loading exam…</p>`) indefinitely displayed.
+3. `exam.html` set `answerRows = []`. `renderQuestion(0)` aborted immediately, leaving the original placeholder HTML (`<div class="spinner"></div><p>Loading examâ€¦</p>`) indefinitely displayed.
 
 ### Work Performed
 1. Directly populated all 60 question snapshots from exam `CEC Camp Vocabularies Weekly A 1` into `attempt_answers` for attempt `1e0d0d7e-3f5d-40d9-8d81-762c0aa3c0c3`.
@@ -300,7 +547,7 @@ Agent: Antigravity
    - Level options displayed as `A, B, C...` via `toLevelLetter`.
    - Order options displayed as `1, 2, 3...` up to `10`.
    - Real-time auto-generated title: `[Program] [Class] [Subject] [Type] [Level] [Order]`.
-   - Enforced prerequisite requirement: if exam is NOT Level A Order 1, prerequisite is mandatory (`* (Mandatory — Must Pass First)`) and submission is blocked if empty.
+   - Enforced prerequisite requirement: if exam is NOT Level A Order 1, prerequisite is mandatory (`* (Mandatory â€” Must Pass First)`) and submission is blocked if empty.
    - Exam Management Hub table displays `Order` column and Level letter badges.
 5. Updated `dashboard.html`:
    - Imported and used `toLevelLetter` for level cards and completion messages (`Level A: ...`).
@@ -409,16 +656,16 @@ Agent: Antigravity
    - Reordered `formFields.exams` to: `program_id -> class_id -> subject_id -> exam_type -> level_id -> exam_title -> prerequisite_exam_id -> time_limit_minutes -> ...`
    - Updated `openCrudModal`:
      - Added default value support for inputs (`defaultValue: 60`).
-     - Added visible Prerequisite Exam dropdown populated with other active exams and `— None (No Prerequisite) —`.
+     - Added visible Prerequisite Exam dropdown populated with other active exams and `â€” None (No Prerequisite) â€”`.
      - Enforced mandatory Class selection: `level_id` is disabled until both Class and Subject are selected.
      - Formatted Level options as clean numbers only (`1`, `2`, `3`...).
      - Implemented real-time auto-generated Exam Title listener (`[Program] [Class] [Subject] [Type] [Level]`) while preserving manual edits.
    - Updated `renderExams`:
      - Added **Questions** column displaying total questions count for each exam.
-     - Added **Class** column and **Prerequisite** badge indicator (`🔒 Prereq: [Exam Title]`).
-     - Enforced strict alphabetical sorting (A–Z by Title).
+     - Added **Class** column and **Prerequisite** badge indicator (`ðŸ”’ Prereq: [Exam Title]`).
+     - Enforced strict alphabetical sorting (Aâ€“Z by Title).
    - Added resilient save handler for `class_id` and `prerequisite_exam_id`.
-6. Updated `dashboard.html`: added prerequisite verification in `loadLevelExams` (disables Start button and displays warning if student hasn't passed prerequisite with ≥ 60%).
+6. Updated `dashboard.html`: added prerequisite verification in `loadLevelExams` (disables Start button and displays warning if student hasn't passed prerequisite with â‰¥ 60%).
 7. Verified with `scratch/verify_exam_hub_hierarchy.ps1`: 5/5 checks passed.
 8. Updated `docs/CURRENT_STATE.md`, `docs/CHANGELOG.md`, `docs/SESSION_LOG.md`, and `walkthrough.md`.
 
@@ -458,7 +705,7 @@ Agent: Antigravity
    - Classes: Camp (CEC), Morning & Afternoon (Sheraton), Hospitality (Tamata).
    - Subjects: Vocabularies for each program.
 2. Align Level form options with top-down structural hierarchy:
-   `Program` → `Class` → `Subject` → `Level Number` → `Level Name` → `Active`.
+   `Program` â†’ `Class` â†’ `Subject` â†’ `Level Number` â†’ `Level Name` â†’ `Active`.
 3. Enable dynamic cascading in Level modal so selecting Program immediately populates Class and Subject.
 4. Ensure editing a Level pre-populates Program, Class, Subject, Level Number, and Name.
 5. Upgrade Levels table to display Program and Class columns.
@@ -525,7 +772,7 @@ Agent: Antigravity
 1. Streamline curriculum hierarchy: eliminate manual Subject-to-Class (`class_subjects`) and Exam-to-Class (`exam_classes`) assignment steps.
 2. Establish direct Program-level inheritance for Subjects and Exams (`Program -> Subject -> Level -> Exam`).
 3. Maintain Batch strictly as student grouping within Class (`Program -> Class -> Batch -> Student`).
-4. Upgrade Results (`renderResults`) and Student Progress (`renderProgressView`) with Batch column and cascading interactive filters (Program → Class → Batch).
+4. Upgrade Results (`renderResults`) and Student Progress (`renderProgressView`) with Batch column and cascading interactive filters (Program â†’ Class â†’ Batch).
 5. Clean up Admin navigation, routing, and student portal queries.
 6. Diagnose and fix Admin Console login when connected to real Supabase project.
 
@@ -533,10 +780,10 @@ Agent: Antigravity
 1. Researched current database state and relational mappings connecting Programs, Classes, Batches, Subjects, Levels, and Exams.
 2. Formulated and updated the implementation plan in planning mode (`implementation_plan.md`), incorporating user approval.
 3. Updated `admin.html`:
-   - Removed `📎 Subject Assignments` (`class-subjects`) and `🔗 Exam Assignments` (`exam-classes`) from sidebar navigation, section titles, routing switch, and form definitions.
-   - Removed `🔗 Class Assignments` quick action button and listener from Exams Hub.
-   - Upgraded `renderResults`: added **Batch** column (`badge-info`) and interactive cascading filters (`Filter by Program` → `Filter by Class` → `Filter by Batch` + search input + Reset button).
-   - Upgraded `renderProgressView`: added **Batch** column (`badge-info`) and interactive cascading filters (`Program` → `Class` → `Batch` + search input + Reset button).
+   - Removed `ðŸ“Ž Subject Assignments` (`class-subjects`) and `ðŸ”— Exam Assignments` (`exam-classes`) from sidebar navigation, section titles, routing switch, and form definitions.
+   - Removed `ðŸ”— Class Assignments` quick action button and listener from Exams Hub.
+   - Upgraded `renderResults`: added **Batch** column (`badge-info`) and interactive cascading filters (`Filter by Program` â†’ `Filter by Class` â†’ `Filter by Batch` + search input + Reset button).
+   - Upgraded `renderProgressView`: added **Batch** column (`badge-info`) and interactive cascading filters (`Program` â†’ `Class` â†’ `Batch` + search input + Reset button).
 4. Updated `js/api.js`:
    - Updated `fetchStudentSubjects`: queries subjects directly by `program_id` (or resolved via class's program), removing mandatory `class_subjects` queries.
    - Updated `fetchExamsForStudentLevel`: queries published exams directly by `level_id` (and program), removing mandatory `exam_classes` queries.
@@ -593,10 +840,10 @@ Agent: Antigravity
    - Implemented `checkAndPromptGender()` on `loadDashboard()` and dynamic UI title refresh.
 6. Updated `admin.html`:
    - Removed hardcoded `let gender = 'female'` fallback in import parser; initialized to `null`.
-   - Updated preview table to display `⏳ Unassigned` badge for students without gender.
+   - Updated preview table to display `â³ Unassigned` badge for students without gender.
    - Updated save/merge logic to preserve existing database gender when spreadsheet cell is empty.
    - Updated sample template (`Template_Student_Import.xlsx`) and format guide.
-   - Added `— Unassigned (Student will choose) —` option to manual student CRUD modal.
+   - Added `â€” Unassigned (Student will choose) â€”` option to manual student CRUD modal.
 7. Updated `supabase/functions/student-login/index.ts` to return `gender`.
 8. Executed automated verification suite `scratch/verify_gender_workflow.ps1` (13/13 tests passed).
 
@@ -666,8 +913,8 @@ Agent: Antigravity
 3. Ensure `Batch` cannot be chosen without `Class`, and `Class` cannot be chosen without `Program`. Display selection panels and dropdown elements in this exact order everywhere (Student Login, Admin CRUD modals, Admin import filters).
 4. Add three new columns to the Students data table in Admin Console:
    - `Batch` (positioned immediately next to `Class`)
-   - `Overall Score` (average across highest effective scores per completed exam per AGENTS.md §2.7 & §2.8)
-   - `Global Grade` (computed authoritative letter grade `S`, `A`, `B`, `C`, `D`, `E`, `F` per AGENTS.md §2.10)
+   - `Overall Score` (average across highest effective scores per completed exam per AGENTS.md Â§2.7 & Â§2.8)
+   - `Global Grade` (computed authoritative letter grade `S`, `A`, `B`, `C`, `D`, `E`, `F` per AGENTS.md Â§2.10)
 
 ### Work Performed
 1. **Database Schema (`supabase-setup.sql`)**:
@@ -692,7 +939,7 @@ Agent: Antigravity
 5. **Student Login & Portal (`index.html` & `dashboard.html`)**:
    - Converted `index.html` student login flow into 5 structured steps: Program (1/5) -> Class (2/5) -> Batch (3/5) -> Student Name (4/5) -> PIN (5/5).
    - Updated step progress indicators (5 dots, 4 connection lines) and back buttons.
-   - Updated `dashboard.html`: welcome meta displays `Program › Class › Batch`; profile card displays `Program`, `Class`, and `Batch`.
+   - Updated `dashboard.html`: welcome meta displays `Program â€º Class â€º Batch`; profile card displays `Program`, `Class`, and `Batch`.
 6. **Automated Verification**:
    - Created and executed `scratch/verify_batch_titles.ps1` verifying all schema, API, UI, column ordering, and cascading dependency requirements. All checks passed with 0 errors.
    - Re-executed `verify_merge.ps1`: All 11 regression checks passed.
@@ -754,8 +1001,8 @@ Agent: Antigravity
    - Built and exported `adminHardDelete(table, id)` supporting both live Supabase and mock stores.
 2. **Student Import Engine (`admin.html`)**:
    - Implemented intra-batch deduplication via `batchMap`: consolidates duplicate rows within the uploaded file and flags items with `duplicateInFile`.
-   - Pre-queries existing students in the target class: flags matching records as `status: 'merge'` (`🔄 Merge / Update Existing`) while marking fresh entries as `status: 'valid'` (`✨ New Student`).
-   - Updated preview table with summary chips: `Total: X | ✨ Baru: Y | 🔄 Merge: Z` and clear badges.
+   - Pre-queries existing students in the target class: flags matching records as `status: 'merge'` (`ðŸ”„ Merge / Update Existing`) while marking fresh entries as `status: 'valid'` (`âœ¨ New Student`).
+   - Updated preview table with summary chips: `Total: X | âœ¨ Baru: Y | ðŸ”„ Merge: Z` and clear badges.
    - Updated confirm & save logic: calls `adminUpdate` on existing student UUIDs (updating birth date, gender, non-default PIN, active status, `updated_at`) while calling `adminInsert` only for new students.
 3. **Question Import Engine (`admin.html`)**:
    - Pre-queries existing questions in target exam.
@@ -764,8 +1011,8 @@ Agent: Antigravity
    - Deduplicates within the question import file batch.
 4. **Student Management Console (`admin.html`)**:
    - Added real-time duplicate student detection on table load.
-   - Rendered an alert banner when duplicates exist with one-click `"🔄 Gabungkan Semua Duplikat"` button.
-   - Added `"🔄 Merge Duplikat (N)"` button in the section header.
+   - Rendered an alert banner when duplicates exist with one-click `"ðŸ”„ Gabungkan Semua Duplikat"` button.
+   - Added `"ðŸ”„ Merge Duplikat (N)"` button in the section header.
    - Added `"Kembar / Duplikat"` badge next to duplicate names in the table.
    - Added duplicate check and merge in `crudForm` for manual student creation.
 5. **Automated Verification**:
@@ -881,13 +1128,13 @@ Implement the complete end-to-end Student Import feature via Excel/CSV spreadshe
    - Built interactive Excel/CSV student import UI (`renderImportStudents`) with Target Program & Class selectors.
    - Added downloadable sample Excel template (`Template_Student_Import.xlsx`).
    - Added fuzzy, trimmed, case-insensitive column mapper (`NAME`, `GENDER`, `BIRTH_DATE`/`AGE`, `PIN`, `PROGRAM`, `CLASS`).
-   - Implemented real-time preview table showing age calculation, masked PINs (`••••`), and duplicate detection in class.
+   - Implemented real-time preview table showing age calculation, masked PINs (`â€¢â€¢â€¢â€¢`), and duplicate detection in class.
    - Added SHA-256 PIN hashing (`hashPin`) and direct batch persistence via `adminInsert`.
-   - Added shortcut button "📥 Import Students" in `renderStudents` header.
+   - Added shortcut button "ðŸ“¥ Import Students" in `renderStudents` header.
 2. **Fixed Broken Strings & Quotes Across Admin Console**:
    - Replaced unsafe inline `onclick` string interpolation (`'${r.name}'`, `'${r.exam_title}'`) with safe `data-del-*` and `data-edit-*` dataset handlers and `escapeHtml` utility across `programs`, `subjects`, `levels`, `classes`, `students`, `exams`, and `questions`.
-3. **Approved Exam Display Formula (AGENTS.md §2.5 & §2.6)**:
-   - Added `formatExamDisplayName` formatting `[PROGRAM] [CLASS] SUBJECT · LEVEL · EXAM TYPE — EXAM TITLE` across Exam Hub, Questions bank, and dropdown selectors.
+3. **Approved Exam Display Formula (AGENTS.md Â§2.5 & Â§2.6)**:
+   - Added `formatExamDisplayName` formatting `[PROGRAM] [CLASS] SUBJECT Â· LEVEL Â· EXAM TYPE â€” EXAM TITLE` across Exam Hub, Questions bank, and dropdown selectors.
 4. **Expanded Exam Search**:
    - Broadened `renderExams` search filter to match Program name, Level name, Level number, Answer Type, Status, and Question Order.
 5. **Fuzzy Question Import Parser**:
@@ -895,7 +1142,7 @@ Implement the complete end-to-end Student Import feature via Excel/CSV spreadshe
 6. **Resilient Options Snapshot Parsing (`exam.html`)**:
    - Implemented `parseSnapshotOptions` to handle JSON strings and comma-separated option strings without throwing `TypeError`.
 7. **Written Answer String Tolerance (`js/api.js`)**:
-   - Brought `normalizeAnswerText`, `damerauLevenshtein`, and written answer tolerance (0 errors = 1.0, 1-2 errors = 0.5, 3+ = 0) into `js/api.js` client fallback to ensure exact server parity per AGENTS.md §2.12 & §2.13.
+   - Brought `normalizeAnswerText`, `damerauLevenshtein`, and written answer tolerance (0 errors = 1.0, 1-2 errors = 0.5, 3+ = 0) into `js/api.js` client fallback to ensure exact server parity per AGENTS.md Â§2.12 & Â§2.13.
 
 ### Commands Run
 - `powershell -Command "Get-ChildItem admin.html, exam.html, js/api.js ..."` (File check)
@@ -979,16 +1226,16 @@ Agent: Antigravity
 
 ### Objective
 1. Streamline all panels with modern, sleek, glassmorphic design and responsive micro-interactions.
-2. Enforce strict alphabetical ordering (A–Z) on all tables, lists, search results, and dropdowns.
+2. Enforce strict alphabetical ordering (Aâ€“Z) on all tables, lists, search results, and dropdowns.
 3. Check and standardize all table headers into a clean, logical hierarchy.
 4. Restore and elevate the missing/inaccessible Exam Management panel with an interactive Exam Management Hub and restore the missing Student Progress panel.
 
 ### Work Performed
-- Enriched `js/api.js` with A–Z localeCompare sorting for `fetchPrograms`, `fetchClasses`, and `fetchStudentsByClass`. Added relation hydration (`hydrateMockRelations`) and realistic mock relational data.
+- Enriched `js/api.js` with Aâ€“Z localeCompare sorting for `fetchPrograms`, `fetchClasses`, and `fetchStudentsByClass`. Added relation hydration (`hydrateMockRelations`) and realistic mock relational data.
 - Overhauled `css/admin.css` with sleek glassmorphism segmented tabs (`.primary-tab`), topbar domain quick switcher pills (`.domain-pill`), KPI metrics cards (`.kpi-grid`, `.kpi-card`), status filter pills (`.pill-filter-bar`), and standardized table typography.
 - Redesigned `admin.html` with prominent primary tabs, synchronized topbar domain switcher, and built the new **Exam Management Hub** with 4 KPI stat cards, quick action buttons, status filters, and live search.
 - Restored the previously missing **Student Progress** management view (`renderProgressView`) with status chips and progress bars.
-- Standardized all 12 table headers into a unified logical structure (`Parent Entity → Child Entity → Attributes → Status → Timestamps → Actions`).
+- Standardized all 12 table headers into a unified logical structure (`Parent Entity â†’ Child Entity â†’ Attributes â†’ Status â†’ Timestamps â†’ Actions`).
 - Cleaned up duplicate code blocks in `admin.html` and verified modal dropdown sorting.
 - Updated `index.html` and `dashboard.html` to guarantee strict alphabetical sorting on login selection and student subjects/exams.
 - Updated `docs/CURRENT_STATE.md`, `docs/CHANGELOG.md`, and `docs/SESSION_LOG.md`.

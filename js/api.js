@@ -369,7 +369,19 @@ export async function uploadStudentPhoto(studentId, photoBase64OrUrl) {
 /** Fetch subjects accessible by the student (directly by institution_id or class) */
 export async function fetchStudentSubjects(programId, institutionId) {
   const sb = await getSupabase();
-  // 1. Direct program lookup (recommended: subjects inherit from program)
+  // 1. Check for global subjects first or fallback
+  try {
+    const { data: globalSubjs, error: gErr } = await sb.from('subjects')
+      .select('id, name, code, description')
+      .eq('is_active', true)
+      .is('deleted_at', null)
+      .order('name');
+    if (!gErr && globalSubjs && globalSubjs.length > 0) return globalSubjs;
+  } catch (e) {
+    console.warn('Global subjects query note:', e.message);
+  }
+
+  // 2. Direct program lookup (legacy)
   if (institutionId) {
     const { data, error } = await sb.from('subjects')
       .select('id, name')
@@ -379,7 +391,7 @@ export async function fetchStudentSubjects(programId, institutionId) {
       .order('name');
     if (!error && data && data.length > 0) return data;
   }
-  // 2. Class lookup to resolve institution_id
+  // 3. Class lookup to resolve institution_id (legacy)
   if (programId) {
     const { data: cls } = await sb.from('programs')
       .select('institution_id')
@@ -394,15 +406,6 @@ export async function fetchStudentSubjects(programId, institutionId) {
         .order('name');
       if (!error && data && data.length > 0) return data;
     }
-    // 3. Fallback: program_subjects junction table if it exists
-    try {
-      const { data, error } = await sb.from('program_subjects')
-        .select('subjects(id, name)')
-        .eq('program_id', programId);
-      if (!error && data && data.length > 0) {
-        return data.map(r => r.subjects).filter(Boolean);
-      }
-    } catch(e) {}
   }
   return [];
 }
@@ -596,36 +599,60 @@ export async function startExam(studentId, examId) {
 
   const sb = await getSupabase();
 
-  // 1. Fetch exam details
-  const { data: exam, error: examErr } = await sb.from('exams').select('*').eq('id', examId).single();
-  if (examErr || !exam) throw new Error('Exam not found.');
+  // 1. Fetch assessment / exam details (try assessments table first, fallback to exams)
+  let exam = null;
+  const { data: asmData, error: asmErr } = await sb.from('assessments').select('*').eq('id', examId).single();
+  if (!asmErr && asmData) {
+    exam = {
+      ...asmData,
+      exam_title: asmData.title || asmData.exam_title,
+      time_limit_minutes: asmData.working_duration_minutes || asmData.time_limit_minutes || 60,
+      exam_type: asmData.assessment_type || asmData.exam_type || 'EVALUATION'
+    };
+  } else {
+    const { data: exData, error: exErr } = await sb.from('exams').select('*').eq('id', examId).single();
+    if (exErr || !exData) throw new Error('Assessment not found.');
+    exam = exData;
+  }
 
   // 2. Check for an existing in-progress attempt
   const { data: existingAttempts } = await sb.from('attempts')
     .select('*')
     .eq('student_id', studentId)
-    .eq('exam_id', examId)
-    .eq('status', 'in_progress')
+    .or(`assessment_id.eq.${examId},exam_id.eq.${examId}`)
+    .in('status', ['in_progress', 'IN_PROGRESS'])
     .order('created_at', { ascending: false });
 
   let attempt = existingAttempts?.[0];
 
   if (!attempt) {
     // Create new attempt
-    const timeLimit = exam.time_limit_minutes || 30;
+    const timeLimit = exam.working_duration_minutes || exam.time_limit_minutes || 60;
     const now = new Date();
     const expectedEnd = new Date(now.getTime() + timeLimit * 60000);
+
+    // Count previous attempts to set attempt_number
+    const { count: priorCount } = await sb.from('attempts')
+      .select('*', { count: 'exact', head: true })
+      .eq('student_id', studentId)
+      .or(`assessment_id.eq.${examId},exam_id.eq.${examId}`);
+
+    const attemptNumber = (priorCount || 0) + 1;
 
     const { data: newAttempt, error: createErr } = await sb.from('attempts')
       .insert({
         student_id: studentId,
+        assessment_id: examId,
         exam_id: examId,
+        attempt_number: attemptNumber,
         started_at: now.toISOString(),
         expected_end_at: expectedEnd.toISOString(),
+        expires_at: expectedEnd.toISOString(),
         status: 'in_progress',
         score: 0,
         percentage: 0,
-        grade: 'F'
+        grade: 'F',
+        is_best_score: false
       })
       .select()
       .single();
@@ -633,32 +660,65 @@ export async function startExam(studentId, examId) {
     if (createErr) throw createErr;
     attempt = newAttempt;
 
-    // Fetch questions and create attempt_answers snapshots
-    const { data: questions } = await sb.from('questions')
+    // Check for V1 frozen snapshot assessment_questions
+    const { data: snapQuestions } = await sb.from('assessment_questions')
       .select('*')
-      .eq('exam_id', examId)
-      .is('deleted_at', null)
-      .order('question_order');
+      .eq('assessment_id', examId)
+      .order('display_order');
 
-    if (questions && questions.length > 0) {
-      const answerRows = questions.map((q, idx) => ({
+    if (snapQuestions && snapQuestions.length > 0) {
+      const answerRows = snapQuestions.map(sq => ({
         attempt_id: attempt.id,
-        question_id: q.id,
+        question_id: sq.question_id,
         question_snapshot: {
-          question_text: q.question_text,
-          answer_type: q.answer_type || exam.answer_type || 'written',
-          correct_answer: q.correct_answer || '',
-          options_json: q.options_json,
-          question_order: q.question_order ?? (idx + 1),
-          metadata: q.metadata
+          question_text: sq.question_text_snapshot,
+          word_type: sq.word_type_snapshot,
+          topic: sq.topic_snapshot,
+          question_order: sq.display_order,
+          section_id: 'default'
         },
-        options_snapshot: q.options_json,
-        correct_answer_snapshot: q.correct_answer || '',
+        topic_snapshot: sq.topic_snapshot,
+        word_type_snapshot: sq.word_type_snapshot,
+        accepted_answers_snapshot: sq.accepted_answers_snapshot,
+        correct_answer_snapshot: Array.isArray(sq.accepted_answers_snapshot) ? sq.accepted_answers_snapshot.join(' / ') : sq.accepted_answers_snapshot,
         student_answer: null,
         score: 0
       }));
-
       await sb.from('attempt_answers').insert(answerRows);
+    } else {
+      // Legacy fallback: fetch sections and questions
+      const { data: sections } = await sb.from('exam_sections')
+        .select('*, questions(*)')
+        .eq('exam_id', examId)
+        .is('deleted_at', null)
+        .order('section_order');
+
+      if (sections && sections.length > 0) {
+        const answerRows = [];
+        sections.forEach(sec => {
+          const qs = sec.questions || [];
+          qs.forEach((q, idx) => {
+            answerRows.push({
+              attempt_id: attempt.id,
+              question_id: q.id,
+              question_snapshot: {
+                question_text: q.question_text,
+                answer_type: q.answer_type || 'written',
+                options_json: q.options_json,
+                question_order: q.question_order ?? (idx + 1),
+                section_id: sec.id,
+                metadata: q.metadata
+              },
+              options_snapshot: q.options_json,
+              correct_answer_snapshot: q.correct_answer || '',
+              accepted_answers_snapshot: q.accepted_answers || (q.correct_answer ? [q.correct_answer] : []),
+              student_answer: null,
+              score: 0
+            });
+          });
+        });
+        await sb.from('attempt_answers').insert(answerRows);
+      }
     }
   }
 
@@ -667,42 +727,11 @@ export async function startExam(studentId, examId) {
     .select('*')
     .eq('attempt_id', attempt.id);
 
-  // Self-heal: If attempt exists (e.g. resumed attempt) but has no attempt_answers snapshots, backfill them now
-  if (!answers || answers.length === 0) {
-    const { data: questions } = await sb.from('questions')
-      .select('*')
-      .eq('exam_id', examId)
-      .is('deleted_at', null)
-      .order('question_order');
+  let sections = null;
+  const { data: secs } = await sb.from('exam_sections').select('*, questions(*)').eq('exam_id', examId).is('deleted_at', null).order('section_order');
+  sections = secs;
 
-    if (questions && questions.length > 0) {
-      const answerRows = questions.map((q, idx) => ({
-        attempt_id: attempt.id,
-        question_id: q.id,
-        question_snapshot: {
-          question_text: q.question_text,
-          answer_type: q.answer_type || exam.answer_type || 'written',
-          correct_answer: q.correct_answer || '',
-          options_json: q.options_json,
-          question_order: q.question_order ?? (idx + 1),
-          metadata: q.metadata
-        },
-        options_snapshot: q.options_json,
-        correct_answer_snapshot: q.correct_answer || '',
-        student_answer: null,
-        score: 0
-      }));
-
-      await sb.from('attempt_answers').insert(answerRows);
-
-      const { data: refetched } = await sb.from('attempt_answers')
-        .select('*')
-        .eq('attempt_id', attempt.id);
-      answers = refetched;
-    }
-  }
-
-  // Ensure deterministic ordering by question_order or created_at
+  // Ensure deterministic ordering
   if (answers && answers.length > 0) {
     answers.sort((a, b) => {
       const orderA = a.question_snapshot?.question_order;
@@ -712,11 +741,33 @@ export async function startExam(studentId, examId) {
     });
   }
 
+  // SECURITY: Sanitize answers so secret answer keys are NEVER sent to the student client
+  const sanitizedAnswers = (answers || []).map(a => {
+    let snap = typeof a.question_snapshot === 'string'
+      ? (() => { try { return JSON.parse(a.question_snapshot); } catch(_) { return {}; } })()
+      : (a.question_snapshot ? { ...a.question_snapshot } : {});
+    
+    delete snap.correct_answer;
+    delete snap.accepted_answers;
+
+    return {
+      id: a.id,
+      attempt_id: a.attempt_id,
+      question_id: a.question_id,
+      question_snapshot: snap,
+      options_snapshot: a.options_snapshot,
+      student_answer: a.student_answer,
+      topic_snapshot: a.topic_snapshot,
+      word_type_snapshot: a.word_type_snapshot
+    };
+  });
+
   return {
     success: true,
     attempt: attempt,
     exam: exam,
-    answers: answers || [],
+    sections: sections || [],
+    answers: sanitizedAnswers,
     resumed: !!existingAttempts?.[0]
   };
 }
@@ -776,6 +827,7 @@ export async function submitExam(attemptId, answersMap, options = {}) {
   if (fetchErr) throw fetchErr;
 
   let totalPoints = 0;
+  let correctCount = 0;
   let maxPoints = attemptAnswers?.length || 0;
 
   const evalTasks = [];
@@ -787,11 +839,24 @@ export async function submitExam(attemptId, answersMap, options = {}) {
         if (qSnap?.answer_type) answerType = qSnap.answer_type;
       } catch (_) {}
     }
-    // Authoritative grading with multiple valid answers and hyphen tolerance
-    const evalRes = evaluateAnswer(a.student_answer, a.correct_answer_snapshot, answerType);
+
+    // Authoritative grading with multiple valid answers and hyphen/typo tolerance
+    const validKey = a.accepted_answers_snapshot || a.correct_answer_snapshot;
+    const evalRes = evaluateAnswer(a.student_answer, validKey, answerType);
     totalPoints += evalRes.score;
+    if (evalRes.score >= 1.0) correctCount++;
+
+    const isCorrect = evalRes.score >= 1.0;
+    const simScore = evalRes.score >= 1.0 ? 1.0 : (evalRes.score === 0.5 ? 0.85 : 0);
+
     evalTasks.push(
-      sb.from('attempt_answers').update({ score: evalRes.score, evaluation_result: evalRes.result }).eq('id', a.id)
+      sb.from('attempt_answers').update({
+        score: evalRes.score,
+        evaluation_result: evalRes.result,
+        is_correct: isCorrect,
+        similarity_score: simScore,
+        answered_at: new Date().toISOString()
+      }).eq('id', a.id)
     );
   }
   if (evalTasks.length > 0) {
@@ -806,6 +871,8 @@ export async function submitExam(attemptId, answersMap, options = {}) {
       status: targetStatus,
       submitted_at: new Date().toISOString(),
       score: totalPoints,
+      correct_count: correctCount,
+      total_questions: maxPoints,
       percentage,
       grade,
       effective_score: percentage
@@ -815,6 +882,13 @@ export async function submitExam(attemptId, answersMap, options = {}) {
     .single();
 
   if (updateErr) throw updateErr;
+
+  // Authoritative Best Score Recalculation
+  try {
+    await recalculateBestScore(updatedAttempt.student_id, updatedAttempt.assessment_id || updatedAttempt.exam_id);
+  } catch (bsErr) {
+    console.warn('Best score recalculation notice:', bsErr.message);
+  }
 
   return { success: true, attempt: updatedAttempt };
 }
@@ -828,8 +902,10 @@ export async function fetchAttemptResult(attemptId) {
   const sb = await getSupabase();
   const { data, error } = await sb.from('attempts')
     .select(`
-      id, status, score, percentage, grade, submitted_at, started_at, expected_end_at,
-      exams(exam_type, exam_title, answer_type, subjects(name), levels(name))
+      id, status, score, percentage, grade, submitted_at, started_at,
+      expected_end_at, expires_at, assessment_id, exam_id, is_best_score,
+      assessments:assessment_id(title, assessment_type, subjects(name), levels(name)),
+      exams:exam_id(exam_type, exam_title, answer_type, subjects(name), levels(name))
     `)
     .eq('id', attemptId)
     .single();
@@ -841,7 +917,7 @@ export async function fetchAttemptResult(attemptId) {
 export async function fetchAttemptAnswers(attemptId) {
   const sb = await getSupabase();
   const { data, error } = await sb.from('attempt_answers')
-    .select('*')
+    .select('id, attempt_id, question_id, student_answer, score, evaluation_result, question_snapshot, topic_snapshot, word_type_snapshot, correct_answer_snapshot, is_review_required, created_at, updated_at')
     .eq('attempt_id', attemptId);
   if (error) throw error;
   return data;
@@ -952,8 +1028,29 @@ function hydrateMockRelations(table, item) {
   return clone;
 }
 
-export async function adminFetchAll(table, select = '*', filters = {}) {
+let _adminCache = new Map();
+
+export function clearAdminCache(table = null) {
+  if (table) {
+    const normTable = table.replace('-', '_');
+    for (const key of _adminCache.keys()) {
+      if (key.startsWith(normTable + '|')) {
+        _adminCache.delete(key);
+      }
+    }
+  } else {
+    _adminCache.clear();
+  }
+}
+
+export async function adminFetchAll(table, select = '*', filters = {}, forceRefresh = false) {
   const normTable = table.replace('-', '_');
+  const cacheKey = normTable + '|' + select + '|' + JSON.stringify(filters);
+
+  if (!forceRefresh && _adminCache.has(cacheKey)) {
+    return JSON.parse(JSON.stringify(_adminCache.get(cacheKey))); // Return deep copy
+  }
+
   if (isPlaceholderUrl()) {
     let rows = MOCK_ADMIN_STORE[normTable] || [];
     for (const [key, val] of Object.entries(filters)) {
@@ -1002,6 +1099,7 @@ export async function adminFetchAll(table, select = '*', filters = {}) {
         console.warn('Metadata hydration warning:', hydrationErr.message);
       }
     }
+    _adminCache.set(cacheKey, JSON.parse(JSON.stringify(list)));
     return list;
   } catch(e) {
     console.warn(`Supabase query failed for ${table}, using mock store:`, e.message);
@@ -1009,7 +1107,9 @@ export async function adminFetchAll(table, select = '*', filters = {}) {
     for (const [key, val] of Object.entries(filters)) {
       rows = rows.filter(r => r[key] === val);
     }
-    return rows.map(r => hydrateMockRelations(normTable, r));
+    const list = rows.map(r => hydrateMockRelations(normTable, r));
+    _adminCache.set(cacheKey, JSON.parse(JSON.stringify(list)));
+    return list;
   }
 }
 
@@ -1019,6 +1119,7 @@ export async function adminInsert(table, payload) {
     const newItem = { id: crypto.randomUUID(), ...payload, created_at: new Date().toISOString() };
     if (!MOCK_ADMIN_STORE[normTable]) MOCK_ADMIN_STORE[normTable] = [];
     MOCK_ADMIN_STORE[normTable].unshift(newItem);
+    clearAdminCache(normTable);
     return newItem;
   }
   const sb = await getSupabase();
@@ -1101,6 +1202,7 @@ export async function adminInsert(table, payload) {
     }
   }
 
+  clearAdminCache(normTable);
   return data;
 }
 
@@ -1111,8 +1213,10 @@ export async function adminUpdate(table, id, payload) {
     const idx = list.findIndex(r => r.id === id);
     if (idx !== -1) {
       list[idx] = { ...list[idx], ...payload, updated_at: new Date().toISOString() };
+      clearAdminCache(normTable);
       return list[idx];
     }
+    clearAdminCache(normTable);
     return { id, ...payload };
   }
   const sb = await getSupabase();
@@ -1220,6 +1324,7 @@ export async function adminUpdate(table, id, payload) {
     }
   }
 
+  clearAdminCache(normTable);
   return data;
 }
 
@@ -1229,6 +1334,7 @@ export async function adminSoftDelete(table, id) {
     const list = MOCK_ADMIN_STORE[normTable] || [];
     const idx = list.findIndex(r => r.id === id);
     if (idx !== -1) list.splice(idx, 1);
+    clearAdminCache(normTable);
     return;
   }
   // Real Supabase — throw on error
@@ -1238,6 +1344,7 @@ export async function adminSoftDelete(table, id) {
     console.error(`Supabase SOFT DELETE failed on ${normTable} id=${id}:`, error);
     throw new Error(`DB Error (${normTable}): ${error.message || error.code || 'Unknown error'}`);
   }
+  clearAdminCache(normTable);
 }
 
 export async function adminHardDelete(table, id) {
@@ -1246,17 +1353,20 @@ export async function adminHardDelete(table, id) {
     const list = MOCK_ADMIN_STORE[normTable] || [];
     const idx = list.findIndex(r => r.id === id);
     if (idx !== -1) list.splice(idx, 1);
+    clearAdminCache(normTable);
     return;
   }
   try {
     const sb = await getSupabase();
     const { error } = await sb.from(normTable).delete().eq('id', id);
     if (error) throw error;
+    clearAdminCache(normTable);
   } catch(err) {
     console.warn(`Supabase hard delete failed for ${normTable}, falling back to mock store:`, err.message);
     const list = MOCK_ADMIN_STORE[normTable] || [];
     const idx = list.findIndex(r => r.id === id);
     if (idx !== -1) list.splice(idx, 1);
+    clearAdminCache(normTable);
   }
 }
 
@@ -1999,3 +2109,625 @@ export async function applyRecalibrateExam(examId, adminIdentifier = 'admin') {
     }
   };
 }
+
+// ============================================================
+// CENTRALIZED ASSESSMENT SYSTEM V1 API
+// ============================================================
+
+/** Global Subjects */
+export async function fetchGlobalSubjects() {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('subjects')
+    .select('*')
+    .eq('is_active', true)
+    .is('deleted_at', null)
+    .order('name');
+  if (error) throw error;
+  return data || [];
+}
+
+/** Word Types (Configurable Validation List) */
+export async function fetchWordTypes() {
+  const sb = await getSupabase();
+  try {
+    const { data, error } = await sb.from('word_types')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+    if (!error && data && data.length > 0) return data;
+  } catch (err) {
+    console.warn('Word types query fallback to defaults:', err.message);
+  }
+  // Standard grammatical word types fallback
+  return [
+    { id: 'wt-1', name: 'Noun', is_system: true, is_active: true },
+    { id: 'wt-2', name: 'Verb', is_system: true, is_active: true },
+    { id: 'wt-3', name: 'Adjective', is_system: true, is_active: true },
+    { id: 'wt-4', name: 'Adverb', is_system: true, is_active: true },
+    { id: 'wt-5', name: 'Pronoun', is_system: true, is_active: true },
+    { id: 'wt-6', name: 'Preposition', is_system: true, is_active: true },
+    { id: 'wt-7', name: 'Conjunction', is_system: true, is_active: true },
+    { id: 'wt-8', name: 'Interjection', is_system: true, is_active: true },
+    { id: 'wt-9', name: 'Determiner', is_system: true, is_active: true },
+    { id: 'wt-10', name: 'Article', is_system: true, is_active: true },
+    { id: 'wt-11', name: 'Phrase', is_system: true, is_active: true }
+  ];
+}
+
+export async function createWordType(name) {
+  const sb = await getSupabase();
+  try {
+    const { data, error } = await sb.from('word_types')
+      .insert({ name: name.trim(), is_active: true })
+      .select()
+      .single();
+    if (!error && data) {
+      clearAdminCache('word_types');
+      return data;
+    }
+  } catch (_) {}
+  return { id: 'custom-' + Date.now(), name: name.trim(), is_active: true };
+}
+
+export async function toggleWordType(id, isActive) {
+  const sb = await getSupabase();
+  try {
+    const { data, error } = await sb.from('word_types')
+      .update({ is_active: isActive })
+      .eq('id', id)
+      .select()
+      .single();
+    if (!error && data) {
+      clearAdminCache('word_types');
+      return data;
+    }
+  } catch (_) {}
+  return { id, is_active: isActive };
+}
+
+/** Topics (Global per Subject) */
+export async function fetchTopics(subjectId = null) {
+  const sb = await getSupabase();
+  try {
+    let query = sb.from('topics')
+      .select('*, subjects(name)')
+      .is('deleted_at', null);
+    if (subjectId) {
+      query = query.eq('subject_id', subjectId);
+    }
+    const { data, error } = await query.order('name');
+    if (!error && data) return data;
+  } catch (err) {
+    console.warn('Topics table query fallback:', err.message);
+  }
+  return [];
+}
+
+export async function createTopic(payload) {
+  const sb = await getSupabase();
+  try {
+    const { data, error } = await sb.from('topics')
+      .insert({
+        subject_id: payload.subject_id,
+        name: payload.name.trim(),
+        code: payload.code ? payload.code.trim() : null,
+        status: payload.status || 'active'
+      })
+      .select()
+      .single();
+    if (!error && data) {
+      clearAdminCache('topics');
+      return data;
+    }
+  } catch (_) {}
+  return {
+    id: 'topic-' + Date.now(),
+    subject_id: payload.subject_id,
+    name: payload.name.trim(),
+    code: payload.code ? payload.code.trim() : null,
+    status: payload.status || 'active'
+  };
+}
+
+export async function updateTopic(id, payload) {
+  const sb = await getSupabase();
+  try {
+    const { data, error } = await sb.from('topics')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single();
+    if (!error && data) {
+      clearAdminCache('topics');
+      return data;
+    }
+  } catch (_) {}
+  return { id, ...payload };
+}
+
+export async function deleteTopic(id) {
+  try {
+    return await adminSoftDelete('topics', id);
+  } catch (_) {
+    return { success: true };
+  }
+}
+
+/** Questions (Central Question Bank) */
+export async function fetchCentralQuestions(filters = {}) {
+  const sb = await getSupabase();
+  try {
+    let query = sb.from('questions')
+      .select('*, topics(name, code), subjects(name)')
+      .is('deleted_at', null);
+
+    if (filters.subject_id) query = query.eq('subject_id', filters.subject_id);
+    if (filters.topic_id) query = query.eq('topic_id', filters.topic_id);
+    if (filters.word_type) query = query.eq('word_type', filters.word_type);
+    if (filters.status) query = query.eq('status', filters.status);
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (!error && data) return data;
+  } catch (err) {
+    console.warn('Central questions query fallback to legacy questions:', err.message);
+  }
+
+  // Fallback to legacy questions table
+  try {
+    const { data: legacyQ, error: legErr } = await sb.from('questions')
+      .select('*')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (!legErr && legacyQ) {
+      return legacyQ.map(q => {
+        let metaObj = {};
+        if (typeof q.metadata === 'object' && q.metadata) metaObj = q.metadata;
+        else if (typeof q.metadata === 'string') {
+          try { metaObj = JSON.parse(q.metadata); } catch (_) {}
+        }
+        const topicName = metaObj.topic || 'General';
+        const wordType = metaObj.type || q.word_type || null;
+        const accepted = Array.isArray(q.accepted_answers) && q.accepted_answers.length > 0
+          ? q.accepted_answers
+          : (q.correct_answer ? [q.correct_answer] : []);
+
+        return {
+          ...q,
+          topic_id: null,
+          topic_name: topicName,
+          word_type: wordType,
+          topics: { name: topicName, code: 'GEN' },
+          subjects: { name: 'General' },
+          accepted_answers: accepted,
+          status: 'active'
+        };
+      });
+    }
+  } catch (e2) {
+    console.warn('Legacy questions fetch fallback error:', e2.message);
+  }
+  return [];
+}
+
+export async function createCentralQuestion(payload) {
+  const sb = await getSupabase();
+  let acceptedAnswers = [];
+  if (Array.isArray(payload.accepted_answers)) {
+    acceptedAnswers = payload.accepted_answers;
+  } else if (typeof payload.accepted_answers === 'string') {
+    acceptedAnswers = payload.accepted_answers.split(/[;/|]/).map(s => s.trim()).filter(Boolean);
+  } else if (payload.correct_answer) {
+    acceptedAnswers = String(payload.correct_answer).split(/[;/|]/).map(s => s.trim()).filter(Boolean);
+  }
+
+  const { data, error } = await sb.from('questions')
+    .insert({
+      subject_id: payload.subject_id,
+      topic_id: payload.topic_id,
+      word_type: payload.word_type || null,
+      question_text: payload.question_text.trim(),
+      accepted_answers: acceptedAnswers,
+      status: payload.status || 'active'
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  clearAdminCache('questions');
+  return data;
+}
+
+export async function updateCentralQuestion(id, payload) {
+  const sb = await getSupabase();
+  const updateData = { ...payload };
+  if (updateData.accepted_answers && !Array.isArray(updateData.accepted_answers)) {
+    updateData.accepted_answers = String(updateData.accepted_answers).split(/[;/|]/).map(s => s.trim()).filter(Boolean);
+  }
+  const { data, error } = await sb.from('questions')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  clearAdminCache('questions');
+  return data;
+}
+
+export async function deleteCentralQuestion(id) {
+  return await adminSoftDelete('questions', id);
+}
+
+/** Assessments (Evaluations & Exams) */
+export async function fetchAssessments(filters = {}) {
+  const sb = await getSupabase();
+  let query = sb.from('assessments').select('*, subjects(name)').is('deleted_at', null);
+
+  if (filters.subject_id) query = query.eq('subject_id', filters.subject_id);
+  if (filters.assessment_type) query = query.eq('assessment_type', filters.assessment_type);
+  if (filters.status) query = query.eq('status', filters.status);
+
+  try {
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (!error && data) return data;
+  } catch (err) {
+    console.warn('Assessments table query fallback to exams:', err.message);
+  }
+
+  // Fallback to legacy exams table if assessments not yet migrated
+  const legacyList = await adminFetchAll('exams', '*, subjects(name)');
+  return legacyList.map(e => ({
+    id: e.id,
+    title: e.title || e.exam_title,
+    assessment_type: e.assessment_type || 'EVALUATION',
+    status: (e.exam_status || 'draft').toUpperCase(),
+    working_duration_minutes: e.time_limit_minutes || 60,
+    created_at: e.created_at,
+    ...e
+  }));
+}
+
+export async function createAssessmentWithTopics(payload, topicIds = []) {
+  const sb = await getSupabase();
+  try {
+    const { data: assessment, error } = await sb.from('assessments')
+      .insert({
+        institution_id: payload.institution_id || null,
+        subject_id: payload.subject_id,
+        assessment_type: payload.assessment_type || 'EVALUATION',
+        title: payload.title.trim(),
+        description: payload.description || null,
+        status: 'DRAFT',
+        question_order: payload.question_order || 'RANDOM',
+        availability_start: payload.availability_start || null,
+        availability_end: payload.availability_end || null,
+        working_duration_minutes: payload.working_duration_minutes || 60,
+        prerequisite_assessment_id: payload.prerequisite_assessment_id || null,
+        created_by: payload.created_by || 'admin'
+      })
+      .select()
+      .single();
+
+    if (!error && assessment) {
+      if (topicIds && topicIds.length > 0) {
+        const topicInserts = topicIds.map(tid => ({
+          assessment_id: assessment.id,
+          topic_id: tid
+        }));
+        await sb.from('assessment_topics').insert(topicInserts);
+      }
+      clearAdminCache('assessments');
+      return assessment;
+    }
+  } catch (err) {
+    console.warn('createAssessmentWithTopics fallback to exams:', err.message);
+  }
+
+  // Fallback to legacy exams table
+  let instId = payload.institution_id || null;
+  if (!instId && payload.subject_id) {
+    try {
+      const { data: sData } = await sb.from('subjects').select('institution_id').eq('id', payload.subject_id).single();
+      if (sData?.institution_id) instId = sData.institution_id;
+    } catch (_) {}
+  }
+  if (!instId) {
+    try {
+      const { data: anyInst } = await sb.from('institutions').select('id').is('deleted_at', null).limit(1);
+      if (anyInst?.[0]?.id) instId = anyInst[0].id;
+    } catch (_) {}
+  }
+
+  const examPayload = {
+    institution_id: instId,
+    subject_id: payload.subject_id,
+    exam_title: payload.title.trim(),
+    time_limit_minutes: payload.working_duration_minutes || 60,
+    exam_status: 'draft',
+    randomize_order: payload.question_order === 'RANDOM'
+  };
+  const { data: createdExam, error: examErr } = await sb.from('exams')
+    .insert(examPayload)
+    .select()
+    .single();
+  if (examErr) throw examErr;
+  clearAdminCache('exams');
+  return {
+    ...createdExam,
+    title: createdExam.exam_title,
+    assessment_type: payload.assessment_type || 'EVALUATION',
+    working_duration_minutes: createdExam.time_limit_minutes
+  };
+}
+
+export async function updateAssessmentWithTopics(assessmentId, payload, topicIds = []) {
+  const sb = await getSupabase();
+  try {
+    const { data: updated, error } = await sb.from('assessments')
+      .update({
+        subject_id: payload.subject_id,
+        assessment_type: payload.assessment_type || 'EVALUATION',
+        title: payload.title,
+        working_duration_minutes: payload.working_duration_minutes || 60,
+        question_order: payload.question_order || 'RANDOM',
+        prerequisite_assessment_id: payload.prerequisite_assessment_id || null,
+        availability_start: payload.availability_start || null,
+        availability_end: payload.availability_end || null,
+        status: payload.status || 'DRAFT',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', assessmentId)
+      .select()
+      .single();
+
+    if (!error && updated) {
+      if (topicIds.length >= 0) {
+        await sb.from('assessment_topics').delete().eq('assessment_id', assessmentId);
+        if (topicIds.length > 0) {
+          const topicInserts = topicIds.map(tid => ({
+            assessment_id: assessmentId,
+            topic_id: tid
+          }));
+          await sb.from('assessment_topics').insert(topicInserts);
+        }
+      }
+      clearAdminCache('assessments');
+      return updated;
+    }
+  } catch (err) {
+    console.warn('updateAssessmentWithTopics fallback to exams:', err.message);
+  }
+
+  // Fallback to legacy exams table
+  const examUpdate = {
+    subject_id: payload.subject_id,
+    exam_title: payload.title.trim(),
+    time_limit_minutes: payload.working_duration_minutes || 60,
+    randomize_order: payload.question_order === 'RANDOM',
+    updated_at: new Date().toISOString()
+  };
+  const { data: updatedExam, error: exErr } = await sb.from('exams')
+    .update(examUpdate)
+    .eq('id', assessmentId)
+    .select()
+    .single();
+
+  if (exErr) throw exErr;
+  clearAdminCache('exams');
+  return {
+    ...updatedExam,
+    title: updatedExam.exam_title,
+    assessment_type: payload.assessment_type || 'EVALUATION',
+    working_duration_minutes: updatedExam.time_limit_minutes
+  };
+}
+
+export async function publishAssessment(assessmentId) {
+  const sb = await getSupabase();
+  try {
+    // 1. Fetch assessment and linked topics
+    const { data: assessment, error: aErr } = await sb.from('assessments')
+      .select('*, assessment_topics(topic_id)')
+      .eq('id', assessmentId)
+      .single();
+
+    if (!aErr && assessment) {
+      const topicIds = (assessment.assessment_topics || []).map(t => t.topic_id);
+      let snapshotCount = 0;
+      if (topicIds.length > 0) {
+        const { data: questions } = await sb.from('questions')
+          .select('*, topics(name)')
+          .in('topic_id', topicIds)
+          .eq('status', 'active')
+          .is('deleted_at', null);
+
+        if (questions && questions.length > 0) {
+          await sb.from('assessment_questions').delete().eq('assessment_id', assessmentId);
+          let displayOrder = 1;
+          const snapshotRows = questions.map(q => ({
+            assessment_id: assessmentId,
+            question_id: q.id,
+            question_text_snapshot: q.question_text,
+            accepted_answers_snapshot: Array.isArray(q.accepted_answers) ? q.accepted_answers : [q.correct_answer],
+            topic_snapshot: q.topics?.name || 'General',
+            word_type_snapshot: q.word_type || null,
+            display_order: displayOrder++
+          }));
+          await sb.from('assessment_questions').insert(snapshotRows);
+          snapshotCount = snapshotRows.length;
+        }
+      }
+
+      // Update status to PUBLISHED
+      const { data: updated, error: pubErr } = await sb.from('assessments')
+        .update({ status: 'PUBLISHED' })
+        .eq('id', assessmentId)
+        .select()
+        .single();
+
+      if (!pubErr && updated) {
+        clearAdminCache('assessments');
+        return { success: true, assessment: updated, total_questions: snapshotCount };
+      }
+    }
+  } catch (err) {
+    console.warn('publishAssessment fallback to legacy exams:', err.message);
+  }
+
+  // Fallback to legacy exam publishing
+  const { data: updatedExam, error: exErr } = await sb.from('exams')
+    .update({ exam_status: 'published' })
+    .eq('id', assessmentId)
+    .select()
+    .single();
+  if (exErr) throw exErr;
+
+  const { count } = await sb.from('questions')
+    .select('id', { count: 'exact', head: true })
+    .eq('exam_id', assessmentId)
+    .is('deleted_at', null);
+
+  clearAdminCache('exams');
+  return { success: true, assessment: updatedExam, total_questions: count || 0 };
+}
+
+export async function fetchAssessmentQuestions(assessmentId) {
+  const sb = await getSupabase();
+  try {
+    const { data, error } = await sb.from('assessment_questions')
+      .select('*')
+      .eq('assessment_id', assessmentId)
+      .order('display_order');
+    if (!error && data && data.length > 0) return data;
+  } catch (err) {
+    console.warn('assessment_questions query fallback to questions:', err.message);
+  }
+
+  // Fallback to legacy questions
+  const { data: legacyQ } = await sb.from('questions')
+    .select('*')
+    .eq('exam_id', assessmentId)
+    .is('deleted_at', null)
+    .order('question_order');
+
+  return (legacyQ || []).map((q, idx) => ({
+    id: q.id,
+    assessment_id: assessmentId,
+    question_id: q.id,
+    question_text_snapshot: q.question_text,
+    accepted_answers_snapshot: Array.isArray(q.accepted_answers) ? q.accepted_answers : (q.correct_answer ? [q.correct_answer] : []),
+    topic_snapshot: 'General',
+    word_type_snapshot: q.word_type || null,
+    display_order: q.question_order || (idx + 1)
+  }));
+}
+
+/** Assignments (Batch / Student Access Control) */
+export async function assignAssessment(payload) {
+  const sb = await getSupabase();
+  try {
+    const { data, error } = await sb.from('assignments')
+      .insert({
+        assessment_id: payload.assessment_id,
+        assignment_type: payload.assignment_type,
+        batch_id: payload.assignment_type === 'BATCH' ? payload.batch_id : null,
+        student_id: payload.assignment_type === 'STUDENT' ? payload.student_id : null,
+        availability_start: payload.availability_start || null,
+        availability_end: payload.availability_end || null,
+        assigned_by: payload.assigned_by || 'admin',
+        status: 'active'
+      })
+      .select()
+      .single();
+    if (!error && data) {
+      clearAdminCache('assignments');
+      return data;
+    }
+  } catch (err) {
+    console.warn('assignAssessment fallback to exam_programs:', err.message);
+  }
+
+  // Fallback to legacy exam_programs if batch assignment
+  if (payload.assignment_type === 'BATCH' && payload.batch_id) {
+    try {
+      const { data: batch } = await sb.from('batches').select('program_id').eq('id', payload.batch_id).single();
+      if (batch && batch.program_id) {
+        await sb.from('exam_programs').insert({
+          exam_id: payload.assessment_id,
+          program_id: batch.program_id
+        });
+      }
+    } catch (_) {}
+  }
+  return { id: 'fallback-assignment-' + Date.now(), ...payload };
+}
+
+export async function fetchAssignments(filters = {}) {
+  const sb = await getSupabase();
+  try {
+    let query = sb.from('assignments')
+      .select('*, assessments(title, assessment_type), batches(name), students(name)');
+
+    if (filters.assessment_id) query = query.eq('assessment_id', filters.assessment_id);
+
+    const orConditions = [];
+    if (filters.batch_id) orConditions.push(`batch_id.eq.${filters.batch_id}`);
+    if (filters.batch_ids && Array.isArray(filters.batch_ids) && filters.batch_ids.length > 0) {
+      filters.batch_ids.forEach(bId => {
+        if (bId) orConditions.push(`batch_id.eq.${bId}`);
+      });
+    }
+    if (filters.student_id) orConditions.push(`student_id.eq.${filters.student_id}`);
+
+    if (orConditions.length > 1) {
+      query = query.or(orConditions.join(','));
+    } else if (orConditions.length === 1) {
+      if (filters.batch_id) query = query.eq('batch_id', filters.batch_id);
+      else if (filters.student_id) query = query.eq('student_id', filters.student_id);
+      else if (filters.batch_ids && filters.batch_ids.length > 0) query = query.in('batch_id', filters.batch_ids);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (!error && data) return data;
+  } catch (err) {
+    console.warn('Assignments table query fallback:', err.message);
+  }
+  return [];
+}
+
+/** Enrollments (Student <-> Batch tracking) */
+export async function fetchStudentEnrollments(studentId) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('enrollments')
+    .select('*, batches(name, program_id, programs(name))')
+    .eq('student_id', studentId)
+    .order('joined_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+/** Student Assessment Runner & Best Score Recalculator */
+export async function recalculateBestScore(studentId, assessmentId) {
+  const sb = await getSupabase();
+  const { data: attempts, error } = await sb.from('attempts')
+    .select('id, score, percentage, effective_score, created_at')
+    .eq('student_id', studentId)
+    .eq('assessment_id', assessmentId)
+    .in('status', ['submitted', 'auto_submitted', 'evaluated', 'SUBMITTED', 'AUTO_SUBMITTED', 'EVALUATED'])
+    .order('percentage', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (error || !attempts || !attempts.length) return null;
+
+  const bestAttemptId = attempts[0].id;
+  for (const a of attempts) {
+    await sb.from('attempts')
+      .update({ is_best_score: a.id === bestAttemptId })
+      .eq('id', a.id);
+  }
+  return attempts[0];
+}
+
+/** Aliases for backward compatibility with existing views */
+export const startAssessment = startExam;
+export const submitAssessment = submitExam;
+

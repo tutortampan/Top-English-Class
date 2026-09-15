@@ -51,42 +51,40 @@
         <div class="logo-sub">ADMIN AREA</div>
       </div>
 
-      <!-- Clean 4-Domain Sidebar Navigation (AGENTS.md §2.1) -->
+      <!-- ABCD Architecture Primary Sidebar (ACADEMY, BLUEPRINT, CHALLENGES, DESK) -->
       <nav class="admin-nav" aria-label="Navigation">
-        <!-- DOMAIN 1: DATABASE & CURRICULUM -->
-        <div class="nav-domain-group">
-          <div class="nav-domain-header"><span class="domain-icon">🗄️</span>DATABASE &amp; CURRICULUM</div>
-          <div class="admin-nav-item" data-sub="institutions"><span class="nav-icon">🏢</span>Institutions</div>
-          <div class="admin-nav-item" data-sub="subjects"><span class="nav-icon">📚</span>Subjects</div>
-          <div class="admin-nav-item" data-sub="levels"><span class="nav-icon">🏆</span>Levels</div>
-          <div class="admin-nav-item" data-sub="audit"><span class="nav-icon">📋</span>Audit Log</div>
-          <div class="admin-nav-item" data-sub="settings"><span class="nav-icon">⚙️</span>Site Settings</div>
-        </div>
-
-        <!-- DOMAIN 2: CLASS MANAGEMENT -->
-        <div class="nav-domain-group">
-          <div class="nav-domain-header"><span class="domain-icon">🏫</span>CLASS MANAGEMENT</div>
-          <div class="admin-nav-item active" data-sub="programs"><span class="nav-icon">🏫</span>All Programs</div>
+        <!-- DOMAIN A: ACADEMY (Who / Organizational Structure & Roster) -->
+        <div class="nav-domain-group" data-domain="academy">
+          <div class="nav-domain-header"><span class="domain-icon">🏛️</span>A — ACADEMY</div>
+          <div class="admin-nav-item active" data-sub="institutions"><span class="nav-icon">🏢</span>Institutions</div>
+          <div class="admin-nav-item" data-sub="programs"><span class="nav-icon">🏫</span>Programs</div>
           <div class="admin-nav-item" data-sub="batches"><span class="nav-icon">👥</span>Batches</div>
+          <div class="admin-nav-item" data-sub="students"><span class="nav-icon">👨‍🎓</span>Students Roster</div>
         </div>
 
-        <!-- DOMAIN 3: STUDENT MANAGEMENT -->
-        <div class="nav-domain-group">
-          <div class="nav-domain-header"><span class="domain-icon">👨‍🎓</span>STUDENT MANAGEMENT</div>
-          <div class="admin-nav-item" data-sub="students"><span class="nav-icon">👨‍🎓</span>All Students</div>
-          <div class="admin-nav-item" data-sub="import-students"><span class="nav-icon">📥</span>Import Students</div>
-          <div class="admin-nav-item" data-sub="progress-view"><span class="nav-icon">📈</span>Student Progress</div>
+        <!-- DOMAIN B: BLUEPRINT (What / Content Repository & Taxonomy) -->
+        <div class="nav-domain-group" data-domain="blueprint">
+          <div class="nav-domain-header"><span class="domain-icon">📐</span>B — BLUEPRINT</div>
+          <div class="admin-nav-item" data-sub="subjects"><span class="nav-icon">📚</span>Curriculum Subjects</div>
+          <div class="admin-nav-item" data-sub="topics"><span class="nav-icon">🏷️</span>Question Groups &amp; Topics</div>
+          <div class="admin-nav-item" data-sub="questions"><span class="nav-icon">❓</span>Central Question Bank</div>
+          <div class="admin-nav-item" data-sub="word_types"><span class="nav-icon">🔤</span>Word Types &amp; Lexicon</div>
         </div>
 
-        <!-- DOMAIN 4: EXAM MANAGEMENT -->
-        <div class="nav-domain-group">
-          <div class="nav-domain-header"><span class="domain-icon">📝</span>EXAM MANAGEMENT</div>
-          <div class="admin-nav-item" data-sub="exams"><span class="nav-icon">📝</span>All Exams (Hub)</div>
-          <div class="admin-nav-item" data-sub="questions"><span class="nav-icon">❓</span>Question Bank</div>
-          <div class="admin-nav-item" data-sub="results"><span class="nav-icon">📊</span>Exam Results</div>
-          <div class="admin-nav-item" data-sub="import-questions"><span class="nav-icon">📥</span>Import Questions</div>
-          <div class="admin-nav-item" data-sub="export-questions"><span class="nav-icon">📤</span>Export Questions</div>
-          <div class="admin-nav-item" data-sub="recalibrator"><span class="nav-icon">⚡</span>Exam Recalibrator</div>
+        <!-- DOMAIN C: CHALLENGES (How & When / Assessment Execution, Assignments & Results) -->
+        <div class="nav-domain-group" data-domain="challenges">
+          <div class="nav-domain-header"><span class="domain-icon">⚡</span>C — CHALLENGES</div>
+          <div class="admin-nav-item" data-sub="exams"><span class="nav-icon">📝</span>All Challenges</div>
+          <div class="admin-nav-item" data-sub="assignments"><span class="nav-icon">🎯</span>Assignments &amp; Rosters</div>
+          <div class="admin-nav-item" data-sub="results"><span class="nav-icon">📊</span>Challenge Results</div>
+          <div class="admin-nav-item" data-sub="recalibrator"><span class="nav-icon">⚡</span>Recalibration Engine</div>
+        </div>
+
+        <!-- DOMAIN D: DESK (System Administration, Security & Health) -->
+        <div class="nav-domain-group" data-domain="desk">
+          <div class="nav-domain-header"><span class="domain-icon">🖥️</span>D — DESK</div>
+          <div class="admin-nav-item" data-sub="audit"><span class="nav-icon">📋</span>Activity &amp; Audit Logs</div>
+          <div class="admin-nav-item" data-sub="settings"><span class="nav-icon">⚙️</span>Site Settings</div>
         </div>
       </nav>
 
@@ -127,6 +125,27 @@
           <span id="db-status-text">Checking database connection…</span>
           <button onclick="this.parentElement.style.display='none'" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:1rem;line-height:1;" title="Dismiss">×</button>
         </div>
+
+        <!-- ABCD Status Overview Strip -->
+        <div id="admin-kpi-banner" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:0.85rem;margin-bottom:1.5rem;">
+          <div style="background:var(--clr-surface-2);padding:0.85rem 1rem;border-radius:10px;border:1px solid var(--clr-border);">
+            <div style="font-size:0.75rem;color:var(--clr-text-2);margin-bottom:2px;text-transform:uppercase;letter-spacing:1px;">🏛️ Academy Students</div>
+            <div id="kpi-academy" style="font-size:1.5rem;font-weight:700;color:var(--clr-primary);">-</div>
+          </div>
+          <div style="background:var(--clr-surface-2);padding:0.85rem 1rem;border-radius:10px;border:1px solid var(--clr-border);">
+            <div style="font-size:0.75rem;color:var(--clr-text-2);margin-bottom:2px;text-transform:uppercase;letter-spacing:1px;">📐 Blueprint Questions</div>
+            <div id="kpi-qbank" style="font-size:1.5rem;font-weight:700;color:var(--clr-primary);">-</div>
+          </div>
+          <div style="background:var(--clr-surface-2);padding:0.85rem 1rem;border-radius:10px;border:1px solid var(--clr-border);">
+            <div style="font-size:0.75rem;color:var(--clr-text-2);margin-bottom:2px;text-transform:uppercase;letter-spacing:1px;">⚡ Challenges Live</div>
+            <div id="kpi-assessments" style="font-size:1.5rem;font-weight:700;color:var(--clr-primary);">-</div>
+          </div>
+          <div style="background:var(--clr-surface-2);padding:0.85rem 1rem;border-radius:10px;border:1px solid var(--clr-border);">
+            <div style="font-size:0.75rem;color:var(--clr-text-2);margin-bottom:2px;text-transform:uppercase;letter-spacing:1px;">🖥️ Desk Attempts</div>
+            <div id="kpi-attempts" style="font-size:1.5rem;font-weight:700;color:var(--clr-primary);">-</div>
+          </div>
+        </div>
+
         <!-- Dynamic content rendered here -->
         <div class="empty-state">
           <div class="spinner"></div>
@@ -142,21 +161,21 @@
 
   <!-- Mobile bottom tab bar -->
   <nav class="mobile-bottom-tabs" id="mobile-bottom-tabs" aria-label="Primary navigation">
-    <button class="mobile-tab" data-panel="database" aria-label="Database">
-      <span class="mobile-tab-icon">🗄️</span>
-      <span class="mobile-tab-label">Database</span>
+    <button class="mobile-tab active" data-panel="academy" aria-label="Academy">
+      <span class="mobile-tab-icon">🏛️</span>
+      <span class="mobile-tab-label">Academy</span>
     </button>
-    <button class="mobile-tab active" data-panel="class" aria-label="Class">
-      <span class="mobile-tab-icon">🏫</span>
-      <span class="mobile-tab-label">Class</span>
+    <button class="mobile-tab" data-panel="blueprint" aria-label="Blueprint">
+      <span class="mobile-tab-icon">📐</span>
+      <span class="mobile-tab-label">Blueprint</span>
     </button>
-    <button class="mobile-tab" data-panel="student" aria-label="Student">
-      <span class="mobile-tab-icon">👨‍🎓</span>
-      <span class="mobile-tab-label">Student</span>
+    <button class="mobile-tab" data-panel="challenges" aria-label="Challenges">
+      <span class="mobile-tab-icon">⚡</span>
+      <span class="mobile-tab-label">Challenges</span>
     </button>
-    <button class="mobile-tab" data-panel="exam" aria-label="Exam">
-      <span class="mobile-tab-icon">📝</span>
-      <span class="mobile-tab-label">Exam</span>
+    <button class="mobile-tab" data-panel="desk" aria-label="Desk">
+      <span class="mobile-tab-icon">🖥️</span>
+      <span class="mobile-tab-label">Desk</span>
     </button>
   </nav>
 

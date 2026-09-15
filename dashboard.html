@@ -699,10 +699,10 @@
   </div>
 
   <script type="module">
-    import { fetchStudentSubjects, fetchStudentProgress, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, formatStudentName,  } from './js/api.js?v=1.4';
-    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=1.4';
-    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=1.4';
-    import { testMicrophoneCapability } from './js/speech.js?v=1.4';
+    import { fetchStudentSubjects, fetchStudentProgress, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, formatStudentName, fetchAssignments, fetchAssessments } from './js/api.js?v=1.5';
+    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=1.5';
+    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=1.5';
+    import { testMicrophoneCapability } from './js/speech.js?v=1.5';
 
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
@@ -1225,18 +1225,32 @@
         await checkAndPromptBirthday();
 
         showLoading('Loading your dashboard…');
-        const [subjects, progress, attempts] = await withTimeout(
+
+        // Fetch legacy data + V1 assignments concurrently
+        const [subjects, progress, attempts, assignmentsRaw, assessmentsRaw] = await withTimeout(
           Promise.all([
             fetchStudentSubjects(session.program_id, session.institution_id),
             fetchStudentProgress(session.student_id),
-            fetchAllStudentAttempts(session.student_id)
+            fetchAllStudentAttempts(session.student_id),
+            // V1: fetch assignments for this student's batch + individual
+            fetchAssignments({ batch_id: session.batch_id, student_id: session.student_id }).catch(() => []),
+            fetchAssessments({ status: 'PUBLISHED' }).catch(() => [])
           ]),
-          15000, 
+          20000,
           'Fetching dashboard data'
         );
 
         hideLoading();
         renderSubjects(subjects, progress);
+
+        // V1: build eligible assessment list from assignments
+        const eligibleIds = new Set();
+        (assignmentsRaw || []).forEach(a => { if (a.assessment_id) eligibleIds.add(a.assessment_id); });
+        const v1Assessments = (assessmentsRaw || []).filter(a => eligibleIds.has(a.id));
+        if (v1Assessments.length > 0) {
+          await renderAssignedAssessments(v1Assessments, attempts);
+        }
+
         await computeOverallStats(attempts);
         setupProfileModal(attempts);
       } catch(e) {
@@ -1358,32 +1372,201 @@
       }
     }
 
-    // ── Overall Stats Calculation (AGENTS.md §2.8 & §2.10) ──
-    async function computeOverallStats(attempts) {
-      // Calculate overall score (average of best attempt per unique completed exam)
-      const bestAttemptsMap = {};
-      attempts.forEach(att => {
+    // ── V1: Render Assigned Assessments Section ──
+    async function renderAssignedAssessments(assessments, allAttempts) {
+      // Find or create the assigned-assessments section
+      let section = document.getElementById('v1-assessments-section');
+      if (!section) {
+        // Insert before the completed-exams area
+        const completedSection = document.getElementById('completed-exams-container')?.closest('section') ||
+          document.getElementById('completed-exams-container')?.parentElement;
+        section = document.createElement('section');
+        section.id = 'v1-assessments-section';
+        section.style.cssText = 'margin: 0 0 2rem 0;';
+        if (completedSection) {
+          completedSection.parentElement.insertBefore(section, completedSection);
+        } else {
+          document.querySelector('.dashboard-content, main, .main-content')?.appendChild(section);
+        }
+      }
+
+      // Build attempts map: assessment_id -> best attempt
+      const bestByAssessment = {};
+      const inProgressByAssessment = {};
+      allAttempts.forEach(att => {
+        const aid = att.assessment_id || att.exam_id;
+        if (!aid) return;
         const pct = parseFloat(att.percentage || 0);
-        if (!bestAttemptsMap[att.exam_id] || pct > bestAttemptsMap[att.exam_id]) {
-          bestAttemptsMap[att.exam_id] = pct;
+        if (att.status === 'IN_PROGRESS') {
+          inProgressByAssessment[aid] = att;
+        }
+        // Prefer is_best_score flag; fallback to highest pct
+        if (att.is_best_score) {
+          bestByAssessment[aid] = att;
+        } else if (!bestByAssessment[aid] || pct > parseFloat(bestByAssessment[aid].percentage || 0)) {
+          if (!bestByAssessment[aid]?.is_best_score) bestByAssessment[aid] = att;
         }
       });
-      const uniqueExams = Object.values(bestAttemptsMap);
-      
-      const examsCountEl = document.getElementById('stat-exams-done');
-      if (examsCountEl) examsCountEl.textContent = uniqueExams.length;
-      const ovCountEl = document.getElementById('overview-exams-count');
-      if (ovCountEl) ovCountEl.textContent = uniqueExams.length;
 
-      if (!uniqueExams.length) {
+      const gradeColors = { S: '#f59e0b', A: '#10b981', B: '#3b82f6', C: '#f59e0b', D: '#ea580c', E: '#ef4444', F: '#94a3b8' };
+
+      let cards = '';
+      for (const asm of assessments) {
+        const bestAtt = bestByAssessment[asm.id];
+        const inProgAtt = inProgressByAssessment[asm.id];
+        const bestPct = bestAtt ? parseFloat(bestAtt.percentage || 0) : null;
+        const grade = bestPct !== null ? getGrade(bestPct) : null;
+        const passed = bestPct !== null && bestPct >= (asm.pass_threshold || 60);
+
+        // Check prerequisite
+        let prereqMet = true;
+        let prereqTitle = '';
+        if (asm.prerequisite_assessment_id || asm.prerequisite_exam_id) {
+          const pid = asm.prerequisite_assessment_id || asm.prerequisite_exam_id;
+          const prereqBest = bestByAssessment[pid];
+          const prereqPct = prereqBest ? parseFloat(prereqBest.percentage || 0) : null;
+          prereqMet = prereqPct !== null && prereqPct >= (asm.prerequisite_min_score || 60);
+          
+          const pObj = assessments.find(a => a.id === pid);
+          prereqTitle = pObj ? (pObj.title || pObj.exam_title || 'Prerequisite') : 'Prerequisite Assessment';
+        }
+
+        // Availability window
+        const now = new Date();
+        const availStart = asm.availability_start ? new Date(asm.availability_start) : null;
+        const availEnd = asm.availability_end ? new Date(asm.availability_end) : null;
+        const inWindow = (!availStart || now >= availStart) && (!availEnd || now <= availEnd);
+
+        // Status
+        let statusBadge = '';
+        let actionBtn = '';
+        const isCompleted = bestAtt && ['SUBMITTED', 'AUTO_SUBMITTED'].includes(bestAtt.status);
+
+        if (!prereqMet) {
+          statusBadge = `<span class="badge" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);">\uD83D\uDD12 Locked: ${escapeHtml(prereqTitle)}</span>`;
+          actionBtn = `<button class="btn btn-sm" disabled style="opacity:0.45;cursor:not-allowed;background:rgba(255,255,255,0.05);border:1px solid var(--clr-border);">Locked</button>`;
+        } else if (!inWindow) {
+          statusBadge = `<span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3);">Not Yet Available</span>`;
+          actionBtn = `<button class="btn btn-sm" disabled style="opacity:0.45;cursor:not-allowed;background:rgba(255,255,255,0.05);border:1px solid var(--clr-border);">Unavailable</button>`;
+        } else if (inProgAtt) {
+          statusBadge = `<span class="badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);">\u25BA In Progress</span>`;
+          actionBtn = `<button class="btn btn-warning btn-sm" data-aid="${asm.id}">Resume</button>`;
+        } else if (isCompleted) {
+          const retakesAllowed = asm.max_attempts == null || (asm.max_attempts > (allAttempts.filter(a => (a.assessment_id || a.exam_id) === asm.id && a.status !== 'IN_PROGRESS').length));
+          statusBadge = passed
+            ? `<span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);">\u2713 Passed</span>`
+            : `<span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);">Needs Improvement</span>`;
+          actionBtn = retakesAllowed && !passed
+            ? `<button class="btn btn-sm btn-primary" data-aid="${asm.id}">Retake</button>`
+            : `<button class="btn btn-sm" style="background:rgba(255,255,255,0.05);border:1px solid var(--clr-border);" data-aid-result="${bestAtt?.id}">View Result</button>`;
+        } else {
+          statusBadge = `<span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);">Ready</span>`;
+          actionBtn = `<button class="btn btn-primary btn-sm" data-aid="${asm.id}">Start</button>`;
+        }
+
+        const duration = asm.working_duration_minutes || asm.time_limit_minutes || 60;
+        const qCount = asm.question_count || '—';
+        const asmType = asm.assessment_type || asm.exam_type || 'Assessment';
+        const asmTitle = asm.title || asm.exam_title || 'Assessment';
+        const subjectName = asm.subjects?.name || '';
+
+        cards += `
+          <div class="v1-assessment-card" data-assessment-id="${asm.id}" style="
+            background: var(--clr-card, rgba(30,41,59,0.8));
+            border: 1px solid var(--clr-border, rgba(255,255,255,0.08));
+            border-radius: 14px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            transition: border-color 0.2s;
+          ">
+            <div style="flex:1;min-width:200px;">
+              <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.4rem;">
+                <span style="font-weight:700;font-size:0.95rem;color:var(--clr-text-1);">${escapeHtml(asmTitle)}</span>
+                ${subjectName ? `<span class="badge badge-neutral" style="font-size:0.7rem;">${escapeHtml(subjectName)}</span>` : ''}
+                <span class="badge" style="font-size:0.68rem;background:rgba(255,255,255,0.06);color:var(--clr-text-3);border:1px solid var(--clr-border);">${escapeHtml(asmType)}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+                <span style="font-size:0.78rem;color:var(--clr-text-3);">\u23F1 ${duration} min</span>
+                ${qCount !== '—' ? `<span style="font-size:0.78rem;color:var(--clr-text-3);">\uD83D\uDCCB ${qCount} Questions</span>` : ''}
+                ${statusBadge}
+              </div>
+              ${!prereqMet && prereqTitle ? `<div style="margin-top:0.5rem;"><span style="font-size:0.72rem;color:#f87171;">\uD83D\uDD12 Complete prerequisite first: <em>${escapeHtml(prereqTitle)}</em></span></div>` : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-shrink:0;">
+              ${bestPct !== null ? `
+                <div style="text-align:center;">
+                  <div style="font-size:1.1rem;font-weight:800;color:${gradeColors[grade] || 'var(--clr-text-1)'}">${bestPct.toFixed(0)}%</div>
+                  <div style="font-size:0.7rem;color:var(--clr-text-3);">Best Score</div>
+                </div>
+                <div style="width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;border:2px solid ${gradeColors[grade] || '#64748b'};color:${gradeColors[grade] || '#64748b'};">${grade}</div>
+              ` : ''}
+              ${actionBtn}
+            </div>
+          </div>
+        `;
+      }
+
+      section.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <h3 style="font-size:1rem;font-weight:700;color:var(--clr-text-1);margin:0;">\uD83D\uDCCB Assigned Assessments <span style="font-size:0.75rem;color:var(--clr-text-3);font-weight:400;margin-left:8px;">${assessments.length} total</span></h3>
+        </div>
+        ${cards || '<div class="empty-state" style="padding:2rem;text-align:center;"><p class="text-muted">No assessments assigned to you yet.</p></div>'}
+      `;
+
+      // Wire up buttons
+      section.querySelectorAll('[data-aid]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          sessionStorage.setItem('tec_exam_id', btn.dataset.aid);
+          window.location.href = 'exam.html';
+        });
+      });
+      section.querySelectorAll('[data-aid-result]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          window.location.href = `result.html?attempt_id=${btn.dataset.aidResult}`;
+        });
+      });
+    }
+
+    // ── Overall Stats Calculation (AGENTS.md §2.8 & §2.10) ──
+    async function computeOverallStats(attempts) {
+      // V1: prefer is_best_score flag; fallback to highest percentage per exam/assessment
+      const bestAttemptsMap = {};
+      attempts.forEach(att => {
+        const aid = att.assessment_id || att.exam_id;
+        if (!aid) return;
+        const pct = parseFloat(att.percentage || 0);
+        if (att.is_best_score) {
+          bestAttemptsMap[aid] = pct;
+        } else if (bestAttemptsMap[aid] == null || pct > bestAttemptsMap[aid]) {
+          if (!Object.hasOwn(bestAttemptsMap, aid + '_locked')) {
+            bestAttemptsMap[aid] = pct;
+          }
+        }
+        if (att.is_best_score) bestAttemptsMap[aid + '_locked'] = true;
+      });
+      const uniqueScores = Object.entries(bestAttemptsMap)
+        .filter(([k]) => !k.endsWith('_locked'))
+        .map(([, v]) => v);
+
+      const examsCountEl = document.getElementById('stat-exams-done');
+      if (examsCountEl) examsCountEl.textContent = uniqueScores.length;
+      const ovCountEl = document.getElementById('overview-exams-count');
+      if (ovCountEl) ovCountEl.textContent = uniqueScores.length;
+
+      if (!uniqueScores.length) {
         document.getElementById('stat-overall-score').textContent = '0%';
-        document.getElementById('stat-overall-grade-badge').textContent = '—';
+        document.getElementById('stat-overall-grade-badge').textContent = '\u2014';
         renderCompletedExamsBottom(attempts);
         return;
       }
 
-      const totalPct = uniqueExams.reduce((acc, curr) => acc + curr, 0);
-      const avgPct = Math.round(totalPct / uniqueExams.length);
+      const totalPct = uniqueScores.reduce((acc, curr) => acc + curr, 0);
+      const avgPct = Math.round(totalPct / uniqueScores.length);
       const overallGrade = getGrade(avgPct);
 
       const scoreEl = document.getElementById('stat-overall-score');
@@ -1392,7 +1575,7 @@
 
       const gradeBadge = document.getElementById('stat-overall-grade-badge');
       gradeBadge.textContent = overallGrade;
-      
+
       const gradeColors = { S: '#f59e0b', A: '#10b981', B: '#3b82f6', C: '#f59e0b', D: '#ea580c', E: '#ef4444', F: '#94a3b8' };
       gradeBadge.style.color = gradeColors[overallGrade] || 'var(--clr-text-1)';
 

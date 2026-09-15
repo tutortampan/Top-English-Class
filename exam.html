@@ -152,9 +152,13 @@
     if (!examId) { window.location.href = 'dashboard.html'; }
 
     let currentIndex = 0;
+    let allAnswerRows = [];
     let answerRows = [];
+    let examSections = [];
+    let currentSectionIndex = 0;
     let attemptData = null;
     let examData = null;
+    let examDisplayName = '';
     let timerController = null;
     let answeredMap = {}; // attempt_answer_id -> student_answer
 
@@ -352,23 +356,24 @@
         const result = await startExam(session.student_id, examId);
         attemptData = result.attempt;
         examData = result.exam;
-        answerRows = result.answers || [];
+        examSections = result.sections || [];
+        allAnswerRows = result.answers || [];
 
         // Question order shuffle (if random)
-        if (examData?.question_order === 'random' && answerRows.length > 1) {
-          answerRows = shuffleWithSeed(answerRows, attemptData.id || examId);
+        if (examData?.question_order === 'random' && allAnswerRows.length > 1) {
+          allAnswerRows = shuffleWithSeed(allAnswerRows, attemptData.id || examId);
         }
 
         // Prefill any existing answers (resume)
         if (result.resumed) {
-          answerRows.forEach(row => {
+          allAnswerRows.forEach(row => {
             if (row.student_answer) answeredMap[row.id] = row.student_answer;
           });
           showToast('Resuming your previous attempt.', 'info');
         }
 
-        // Populate exam name
-        let examDisplayName = examData?.display_name || examData?.name || '';
+        // Populate exam base name
+        examDisplayName = examData?.display_name || examData?.name || '';
         if (!examDisplayName && examData) {
           const parts = [
             session.institution_name || '',
@@ -380,17 +385,16 @@
           ].filter(Boolean);
           examDisplayName = parts.length > 0 ? parts.join(' · ') : (examData.exam_title || 'Exam');
         }
-        document.getElementById('exam-name').textContent = examDisplayName || 'Exam';
-        document.getElementById('exam-meta').textContent = `${answerRows.length} Questions · ${session.student_name}`;
 
-        if (!answerRows || answerRows.length === 0) {
+        // V1: If no answer rows at all, show error
+        if (!allAnswerRows || allAnswerRows.length === 0) {
           hideLoading();
           document.getElementById('exam-main').innerHTML = `
             <div class="question-card text-center" style="padding:3.5rem 1.5rem;text-align:center;">
               <div style="font-size:3.5rem;margin-bottom:1rem;">⚠️</div>
               <h3 style="font-size:1.4rem;font-weight:700;margin-bottom:0.75rem;">No Questions Found</h3>
               <p class="text-muted" style="max-width:440px;margin:0 auto 1.5rem;line-height:1.6;">
-                This exam does not have any questions available yet. Please inform your instructor or administrator.
+                This assessment does not have any questions yet. Please inform your instructor or administrator.
               </p>
               <button class="btn btn-primary" onclick="window.location.href='dashboard.html'">Return to Dashboard</button>
             </div>
@@ -398,10 +402,39 @@
           return;
         }
 
+        // V1 Snapshot fallback: if no legacy sections, synthesize a default section
+        // so assessment_questions snapshot rows (which have no section_id) render correctly
+        if (!examSections || examSections.length === 0) {
+          examSections = [{ id: 'default', title: examData?.title || examData?.exam_title || 'Assessment', section_order: 1 }];
+          allAnswerRows.forEach(row => {
+            if (row.question_snapshot) {
+              if (typeof row.question_snapshot === 'string') {
+                try {
+                  const parsed = JSON.parse(row.question_snapshot);
+                  parsed.section_id = 'default';
+                  row.question_snapshot = parsed;
+                } catch (e) {
+                  row.question_snapshot = { section_id: 'default' };
+                }
+              } else if (typeof row.question_snapshot === 'object') {
+                row.question_snapshot.section_id = 'default';
+              }
+            } else {
+              row.question_snapshot = { section_id: 'default' };
+            }
+          });
+        }
+
+        // Figure out current section
+        const savedSecIndex = parseInt(sessionStorage.getItem(`tec_sec_${attemptData.id}`), 10);
+        if (!isNaN(savedSecIndex) && savedSecIndex >= 0 && savedSecIndex < examSections.length) {
+          currentSectionIndex = savedSecIndex;
+        } else {
+          currentSectionIndex = 0;
+        }
+
         hideLoading();
-        buildNavGrid();
-        startTimer();
-        renderQuestion(0);
+        startSection(currentSectionIndex);
 
         // Activate Anti-Cheat System
         isExamActive = true;
@@ -413,19 +446,71 @@
       }
     }
 
-    // ── Timer ──
-    function startTimer() {
-      if (!attemptData?.expected_end_at) return;
+    function startSection(index) {
+       currentSectionIndex = index;
+       sessionStorage.setItem(`tec_sec_${attemptData.id}`, index);
+       const currentSection = examSections[index];
 
-      if (isExpired(attemptData.expected_end_at)) {
-        autoSubmit();
+       answerRows = allAnswerRows.filter(row => {
+         let snap = row.question_snapshot;
+         if (typeof snap === 'string') {
+            try { snap = JSON.parse(snap); } catch { snap = {}; }
+         }
+         return snap.section_id === currentSection.id;
+       });
+
+       document.getElementById('exam-name').textContent = examDisplayName + ` - ${currentSection.title || `Section ${index + 1}`}`;
+       document.getElementById('exam-meta').textContent = `${answerRows.length} Questions · ${session.student_name}`;
+
+       buildNavGrid();
+       startTimer(currentSection);
+       renderQuestion(0);
+    }
+
+    // ── Timer ──
+    function startTimer(currentSection) {
+      if (timerController) timerController.stop();
+
+      // V1 uses expires_at; legacy used expected_end_at — check both
+      const globalEndAt = attemptData?.expires_at
+        ? new Date(attemptData.expires_at)
+        : attemptData?.expected_end_at
+          ? new Date(attemptData.expected_end_at)
+          : null;
+      
+      let sectionEndAt = null;
+      if (currentSection && currentSection.time_limit_minutes) {
+         let secStartedStr = localStorage.getItem(`tec_sec_started_${attemptData.id}_${currentSectionIndex}`);
+         let secStarted;
+         if (!secStartedStr) {
+            secStarted = new Date();
+            localStorage.setItem(`tec_sec_started_${attemptData.id}_${currentSectionIndex}`, secStarted.toISOString());
+         } else {
+            secStarted = new Date(secStartedStr);
+         }
+         sectionEndAt = new Date(secStarted.getTime() + currentSection.time_limit_minutes * 60000);
+      }
+
+      let activeEndAt = globalEndAt;
+      let isSectionTimer = false;
+
+      if (sectionEndAt && (!globalEndAt || sectionEndAt < globalEndAt)) {
+          activeEndAt = sectionEndAt;
+          isSectionTimer = true;
+      }
+
+      if (!activeEndAt) return;
+
+      if (isExpired(activeEndAt.toISOString())) {
+        handleTimeUp(isSectionTimer);
         return;
       }
 
       const timerEl = document.getElementById('exam-timer');
       const display = document.getElementById('timer-display');
+      timerEl.classList.remove('warning', 'critical');
 
-      timerController = startCountdown(attemptData.expected_end_at, {
+      timerController = startCountdown(activeEndAt.toISOString(), {
         onTick(remaining) {
           display.textContent = formatTime(remaining);
         },
@@ -439,10 +524,32 @@
           }
         },
         onExpire() {
-          showToast('Time is up! Submitting your exam…', 'warning', 5000);
-          autoSubmit();
+          handleTimeUp(isSectionTimer);
         }
       });
+    }
+
+    function nextSection() {
+      saveCurrentAnswer();
+      if (currentSectionIndex < examSections.length - 1) {
+         startSection(currentSectionIndex + 1);
+      } else {
+         openSubmitModal();
+      }
+    }
+
+    function handleTimeUp(isSection) {
+       if (isSection) {
+          showToast('Section time is up! Moving to next section.', 'warning', 5000);
+          if (currentSectionIndex < examSections.length - 1) {
+              startSection(currentSectionIndex + 1);
+          } else {
+              autoSubmit();
+          }
+       } else {
+          showToast('Time is up! Submitting your exam…', 'warning', 5000);
+          autoSubmit();
+       }
     }
 
     // ── Build Nav Grid ──
@@ -482,12 +589,12 @@
         btn.classList.toggle('current', idx === currentIndex);
       });
 
-      // Progress bar
+      // Progress bar (global across all sections)
       const answered = Object.values(answeredMap).filter(v => v?.trim()).length;
-      const pct = answerRows.length > 0 ? (answered / answerRows.length) * 100 : 0;
+      const pct = allAnswerRows.length > 0 ? (answered / allAnswerRows.length) * 100 : 0;
       document.getElementById('exam-progress-fill').style.width = pct + '%';
       const counterEl = document.getElementById('question-counter');
-      if(counterEl) counterEl.textContent = `${answered}/${answerRows.length} answered`;
+      if(counterEl) counterEl.textContent = `${answered}/${allAnswerRows.length} answered`;
     }
 
     // ── Render Question ──
@@ -521,7 +628,9 @@
           <button class="btn btn-secondary" id="prev-btn" ${idx === 0 ? 'disabled' : ''}>← Previous</button>
           <div class="d-flex gap-3">
             ${idx === answerRows.length - 1
-              ? `<button class="btn btn-success" id="submit-exam-btn">Submit Exam</button>`
+              ? (currentSectionIndex === examSections.length - 1 
+                  ? `<button class="btn btn-success" id="submit-exam-btn">Submit Exam</button>` 
+                  : `<button class="btn btn-success" id="next-section-btn">Next Section →</button>`)
               : `<button class="btn btn-primary" id="next-btn">Next →</button>`
             }
           </div>
@@ -557,6 +666,10 @@
         openSubmitModal();
       });
 
+      document.getElementById('next-section-btn')?.addEventListener('click', () => {
+        nextSection();
+      });
+
       // Bottom Nav buttons (mobile)
       const bottomPrev = document.getElementById('bottom-prev-btn');
       const bottomNext = document.getElementById('bottom-next-btn');
@@ -566,9 +679,15 @@
       }
       if (bottomNext) {
         if (idx === answerRows.length - 1) {
-          bottomNext.textContent = 'Submit 📋';
-          bottomNext.className = 'btn btn-success';
-          bottomNext.onclick = () => { saveCurrentAnswer(); openSubmitModal(); };
+          if (currentSectionIndex === examSections.length - 1) {
+            bottomNext.textContent = 'Submit 📋';
+            bottomNext.className = 'btn btn-success';
+            bottomNext.onclick = () => { saveCurrentAnswer(); openSubmitModal(); };
+          } else {
+            bottomNext.textContent = 'Next Sec →';
+            bottomNext.className = 'btn btn-success';
+            bottomNext.onclick = () => { nextSection(); };
+          }
         } else {
           bottomNext.textContent = 'Next →';
           bottomNext.className = 'btn btn-primary';
@@ -828,7 +947,7 @@
     // ── Submit Modal ──
     function openSubmitModal() {
       const answered = Object.values(answeredMap).filter(v => v?.trim()).length;
-      const total = answerRows.length;
+      const total = allAnswerRows.length;
       const unanswered = total - answered;
 
       document.getElementById('answered-count').textContent = answered;
@@ -888,7 +1007,7 @@
       }
       showLoading(isAuto ? 'Time is up. Auto-submitting the exam.' : 'Submitting your exam.');
 
-      const payload = answerRows.map(row => ({
+      const payload = allAnswerRows.map(row => ({
         attempt_answer_id: row.id,
         student_answer: answeredMap[row.id] || '',
       }));

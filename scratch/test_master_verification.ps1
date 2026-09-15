@@ -78,25 +78,26 @@ if ($apiContent -match "import\s*\{[^}]*evaluateAnswer[^}]*\}\s*from\s*'./gradin
   FAIL "api.js DOES NOT import evaluateAnswer from grading.js"
 }
 
-# 5. Check admin.html Level & Recalibrator UI
-Write-Host "`n[5] ADMIN CONSOLE (admin.html)" -ForegroundColor Magenta
+# 5. Check admin.html & js/admin/app.js Level & Recalibrator UI
+Write-Host "`n[5] ADMIN CONSOLE (admin.html & js/admin/app.js)" -ForegroundColor Magenta
 $adminContent = Get-Content "$root\admin.html" -Raw
-if ($adminContent -match "recalibrator") {
+$adminJsContent = Get-Content "$root\js\admin\app.js" -Raw
+if ($adminContent -match "recalibrator" -or $adminJsContent -match "recalibrator") {
   OK "Recalibrator section registered in navigation"
 } else {
-  FAIL "Recalibrator section MISSING from admin.html navigation"
+  FAIL "Recalibrator section MISSING from admin navigation"
 }
-if ($adminContent -match "renderRecalibrator") {
-  OK "renderRecalibrator function present in admin.html"
+if ($adminJsContent -match "renderRecalibrator" -or $adminContent -match "renderRecalibrator") {
+  OK "renderRecalibrator function present in admin"
 } else {
-  FAIL "renderRecalibrator function MISSING in admin.html"
+  FAIL "renderRecalibrator function MISSING in admin"
 }
-if ($adminContent -match "import-student-level") {
+if ($adminJsContent -match "import-student-level" -or $adminContent -match "import-student-level") {
   OK "import-student-level selector present in student import"
 } else {
   FAIL "import-student-level selector MISSING in student import"
 }
-if ($adminContent -match "_dbHasLevelId") {
+if ($adminJsContent -match "_dbHasLevelId" -or $adminContent -match "_dbHasLevelId") {
   OK "Resilient _dbHasLevelId fallback present for student import"
 } else {
   FAIL "_dbHasLevelId fallback MISSING in student import"

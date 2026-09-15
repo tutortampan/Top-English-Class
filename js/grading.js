@@ -102,9 +102,13 @@ export function evaluateAnswer(studentAnswer, rawCorrectAnswer, answerType = 'wr
     }
 
     // 3. Written or Speech tolerance: Damerau-Levenshtein distance <= 2 -> minor_spelling_error
+    // Safeguard short words: length <= 2 requires exact match; length 3 allows dist 1; length >= 4 allows dist <= 2
     if (answerType === 'written' || answerType === 'speech_to_text') {
       const dist = damerauLevenshtein(normStudent, normOpt);
-      if (dist <= 2 && bestResult.score < 0.5) {
+      const minLen = Math.min(normStudent.length, normOpt.length);
+      const isAllowedTypo = (minLen >= 4 && dist <= 2) || (minLen === 3 && dist === 1);
+
+      if (isAllowedTypo && bestResult.score < 0.5) {
         bestResult = { result: 'minor_spelling_error', score: 0.5, matchedAnswer: opt };
       }
     }

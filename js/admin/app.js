@@ -4,41 +4,92 @@
       mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
       detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions,
       fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
-      testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
-    } from './js/api.js?v=1.4';
-    import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from './js/excel-parser.js?v=1.4';
-    import { setAdminSession, getAdminSession, clearAdminSession } from './js/session.js?v=1.4';
-    import { showToast, showLoading, hideLoading, getGrade } from './js/app.js?v=1.4';
-    import { getSupabase } from './js/supabase.js?v=1.4';
+      testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage,
+      clearAdminCache
+    } from '../api.js?v=1.4';
+    import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=1.4';
+    import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=1.4';
+    import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=1.4';
+    import { getSupabase } from '../supabase.js?v=1.4';
+    import { openAssessmentBuilder } from './exam-builder.js?v=1.4';
+    import { renderStudents as _renderStudentsModule } from './student-management.js?v=1.4';
+    import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=1.4';
+    import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport } from './central-assessment.js?v=1.4';
 
-    // ── Primary Tab Switching Variables ──
+    // â”€â”€ Primary Tab Switching Variables â”€â”€
     const mobileTabs = document.querySelectorAll('.mobile-tab');
 
-    // Map: sidebar sub-section → primary domain label shown in breadcrumb
-    // ── Section Titles ──
+    // ── ABCD Primary Architecture Section Titles ──
     const sectionTitles = {
-      institutions: 'Institutions', subjects: 'Subjects', levels: 'Levels', audit: 'Audit Log', settings: 'Site Settings',
-      programs: 'Programs', batches: 'Batches',
-      students: 'Students', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
-      exams: 'Exams', questions: 'Questions', results: 'Results',
-      'import-questions': 'Import Questions (Excel)', 'export-questions': 'Export Questions (Excel)',
-      recalibrator: 'Exam Recalibrator'
+      institutions: 'Institutions', programs: 'Programs', batches: 'Batches', students: 'Students Roster', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
+      subjects: 'Curriculum Subjects', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', word_types: 'Word Types & Lexicon', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
+      exams: 'All Challenges', assignments: 'Assignments & Rosters', results: 'Challenge Results', recalibrator: 'Recalibration Engine',
+      audit: 'Activity & Audit Logs', settings: 'System Settings'
     };
 
+    // ABCD 4-Domain Mapping
     const sectionDomainMap = {
-      institutions: 'DATABASE', subjects: 'DATABASE', levels: 'DATABASE', audit: 'DATABASE', settings: 'DATABASE',
-      programs: 'CLASS', batches: 'CLASS',
-      students: 'STUDENT', 'import-students': 'STUDENT', 'progress-view': 'STUDENT',
-      exams: 'EXAM', questions: 'EXAM', results: 'EXAM',
-      'import-questions': 'EXAM', 'export-questions': 'EXAM', recalibrator: 'EXAM'
+      institutions: 'ACADEMY', programs: 'ACADEMY', batches: 'ACADEMY', students: 'ACADEMY', 'import-students': 'ACADEMY', 'progress-view': 'ACADEMY',
+      subjects: 'BLUEPRINT', levels: 'BLUEPRINT', topics: 'BLUEPRINT', questions: 'BLUEPRINT', word_types: 'BLUEPRINT', 'import-questions': 'BLUEPRINT', 'export-questions': 'BLUEPRINT',
+      exams: 'CHALLENGES', assignments: 'CHALLENGES', results: 'CHALLENGES', recalibrator: 'CHALLENGES',
+      audit: 'DESK', settings: 'DESK'
     };
 
-    // Map: primary domain → which mobile tab panel it corresponds to
+    // Mobile Bottom Tab Panels -> Primary Domain
     const domainToPanelMap = {
-      DATABASE: 'database', CLASS: 'class', STUDENT: 'student', EXAM: 'exam'
+      ACADEMY: 'academy', BLUEPRINT: 'blueprint', CHALLENGES: 'challenges', DESK: 'desk',
+      DATABASE: 'blueprint', CLASS: 'academy', STUDENT: 'academy', EXAM: 'challenges'
     };
 
-    const tabDefaultSections = { database: 'institutions', class: 'programs', student: 'students', exam: 'exams' };
+    const tabDefaultSections = {
+      academy: 'institutions',
+      blueprint: 'subjects',
+      challenges: 'exams',
+      desk: 'audit',
+      database: 'subjects', class: 'programs', student: 'students', exam: 'exams'
+    };
+
+    // Section alias map to guarantee 100% backward compatibility
+    const aliasSectionMap = {
+      'academy-institutions': 'institutions',
+      'academy-programs': 'programs',
+      'academy-batches': 'batches',
+      'academy-students': 'students',
+      'academy-import': 'import-students',
+      'blueprint-subjects': 'subjects',
+      'blueprint-topics': 'topics',
+      'blueprint-bank': 'questions',
+      'blueprint-wordtypes': 'word_types',
+      'blueprint-import': 'import-questions',
+      'blueprint-export': 'export-questions',
+      'challenges-hub': 'exams',
+      'challenges-assignments': 'assignments',
+      'challenges-results': 'results',
+      'challenges-recalibrator': 'recalibrator',
+      'desk-audit': 'audit',
+      'desk-settings': 'settings'
+    };
+
+    async function updateAdminKpiBanner() {
+      try {
+        const [stds, qList, asms, atts] = await Promise.all([
+          adminFetchAll('students'),
+          adminFetchAll('questions'),
+          adminFetchAll('exams'),
+          adminFetchAll('attempts')
+        ]);
+        const kpiAcad = document.getElementById('kpi-academy');
+        if (kpiAcad) kpiAcad.textContent = stds.filter(s => !s.deleted_at).length;
+        const kpiQ = document.getElementById('kpi-qbank');
+        if (kpiQ) kpiQ.textContent = qList.filter(q => !q.deleted_at).length;
+        const kpiAsm = document.getElementById('kpi-assessments');
+        if (kpiAsm) kpiAsm.textContent = asms.filter(a => !a.deleted_at && a.exam_status === 'published').length;
+        const kpiAtt = document.getElementById('kpi-attempts');
+        if (kpiAtt) kpiAtt.textContent = atts.length;
+      } catch (err) {
+        console.warn('Could not refresh admin KPI banner:', err.message);
+      }
+    }
 
     function toLevelLetter(num) {
       const n = parseInt(num, 10);
@@ -53,7 +104,7 @@
       return result;
     }
 
-    // ── Auth ──
+    // â”€â”€ Auth â”€â”€
     const session = getAdminSession();
     if (session) showConsole();
 
@@ -62,7 +113,7 @@
       const pass = document.getElementById('admin-password').value;
       if (!user || !pass) { showToast('Please enter credentials.', 'warning'); return; }
 
-      showLoading('Authenticating…');
+      showLoading('Authenticatingâ€¦');
       try {
         // 1. Primary Check: Master credentials (admin / admin123) or custom saved password
         const savedCustomPass = localStorage.getItem('tec_admin_custom_password');
@@ -121,15 +172,17 @@
     function showConsole() {
       document.getElementById('admin-login-screen').classList.add('hidden');
       document.getElementById('admin-console').classList.remove('hidden');
+      updateAdminKpiBanner();
       const hash = window.location.hash.substring(1);
-      if (hash && (sectionTitles[hash] || hash === 'students')) {
-        loadSection(hash, true);
+      const targetSec = aliasSectionMap[hash] || hash;
+      if (targetSec && (sectionTitles[targetSec] || targetSec === 'students')) {
+        loadSection(targetSec, true);
       } else if (hash && hash.startsWith('profile-')) {
         const studentId = hash.replace('profile-', '');
-        activatePrimaryTab('student');
+        activatePrimaryTab('academy');
         openStudentProfile(studentId, [], true);
       } else {
-        activatePrimaryTab('exam');
+        activatePrimaryTab('challenges');
         loadSection('exams', true);
       }
       initConnectionBanner(); // Check live DB connection and show status banner
@@ -137,8 +190,9 @@
     
     window.addEventListener('popstate', (e) => {
       const hash = window.location.hash.substring(1);
-      if (hash && (sectionTitles[hash] || hash === 'students')) {
-        loadSection(hash, true);
+      const targetSec = aliasSectionMap[hash] || hash;
+      if (targetSec && (sectionTitles[targetSec] || targetSec === 'students')) {
+        loadSection(targetSec, true);
       } else if (hash && hash.startsWith('profile-')) {
         const studentId = hash.replace('profile-', '');
         const batchStudentIds = e.state?.batchStudentIds || [];
@@ -151,12 +205,20 @@
       mobileTabs.forEach(t => t.classList.toggle('active', t.dataset.panel === panel));
       // Update topbar breadcrumb domain label
       const domainEl = document.getElementById('topbar-domain');
-      if (domainEl) domainEl.textContent = panel.toUpperCase();
+      if (domainEl) {
+        const domainNameMap = {
+          academy: 'ACADEMY',
+          blueprint: 'BLUEPRINT',
+          challenges: 'CHALLENGES',
+          desk: 'DESK'
+        };
+        domainEl.textContent = domainNameMap[panel.toLowerCase()] || panel.toUpperCase();
+      }
     }
 
-    // ── Topbar Domain Switcher Click (removed — no domain pill elements exist) ──
+    // â”€â”€ Topbar Domain Switcher Click (removed â€” no domain pill elements exist) â”€â”€
 
-    // ── Mobile Bottom Tab Switching ──
+    // â”€â”€ Mobile Bottom Tab Switching â”€â”€
     mobileTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         const panel = tab.dataset.panel;
@@ -165,7 +227,7 @@
       });
     });
 
-    // ── Sidebar Toggle for Mobile ──
+    // â”€â”€ Sidebar Toggle for Mobile â”€â”€
     const sidebarToggleBtn = document.getElementById('sidebar-toggle');
     const adminSidebar = document.getElementById('admin-sidebar');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -186,7 +248,7 @@
     });
     sidebarOverlay?.addEventListener('click', closeSidebar);
 
-    // ── Sub-nav item click ──
+    // â”€â”€ Sub-nav item click â”€â”€
     document.querySelectorAll('.admin-nav-item').forEach(item => {
       item.addEventListener('click', () => {
         document.querySelectorAll('.admin-nav-item').forEach(i => i.classList.remove('active'));
@@ -196,7 +258,7 @@
       });
     });
 
-    // ── Global String & HTML Utilities ──
+    // â”€â”€ Global String & HTML Utilities â”€â”€
     function escapeHtml(str) {
       return String(str || '')
         .replace(/&/g, '&amp;')
@@ -224,7 +286,7 @@
     }
 
     function formatExamDisplayName(exam, classContext = '') {
-      if (!exam) return '—';
+      if (!exam) return 'â€”';
       const parts = [];
       if (exam.institutions?.name) parts.push(`[${exam.institutions.name}]`);
       if (classContext) parts.push(`[${classContext}]`);
@@ -235,10 +297,10 @@
       }
       if (exam.exam_type) parts.push(exam.exam_type);
       if (exam.exam_title) parts.push(exam.exam_title);
-      return parts.length > 0 ? parts.join(' · ') : (exam.exam_title || 'Exam');
+      return parts.length > 0 ? parts.join(' Â· ') : (exam.exam_title || 'Exam');
     }
 
-    // ── DB Connection Status Banner ──
+    // â”€â”€ DB Connection Status Banner â”€â”€
     async function initConnectionBanner() {
       const banner = document.getElementById('db-connection-banner');
       const statusDot = document.getElementById('db-status-dot');
@@ -247,13 +309,13 @@
 
       // Show checking state
       statusDot.style.background = '#facc15';
-      statusText.textContent = 'Checking database connection…';
+      statusText.textContent = 'Checking database connectionâ€¦';
 
       const result = await testSupabaseConnection();
       if (result.connected) {
         statusDot.style.background = '#34d399';
         statusDot.style.boxShadow = '0 0 6px #34d399';
-        statusText.innerHTML = `<strong>Connected to Supabase</strong> — data is saved permanently to the cloud`;
+        statusText.innerHTML = `<strong>Connected to Supabase</strong> â€” data is saved permanently to the cloud`;
         banner.style.borderColor = 'rgba(52,211,153,0.3)';
         banner.style.background = 'rgba(52,211,153,0.07)';
         setTimeout(() => banner.style.display = 'none', 4000); // Auto-hide when connected
@@ -262,9 +324,9 @@
         statusDot.style.boxShadow = '0 0 8px #f87171';
         statusDot.style.animation = 'pulse 1.5s infinite';
         if (result.mode === 'demo') {
-          statusText.innerHTML = `<strong>Demo / Offline Mode</strong> — data is in-memory only and will be lost on page reload`;
+          statusText.innerHTML = `<strong>Demo / Offline Mode</strong> â€” data is in-memory only and will be lost on page reload`;
         } else {
-          statusText.innerHTML = `<strong>Database Error</strong> — ${result.error}. <a href="docs/DATABASE.md" target="_blank" style="color:#f87171;">Check setup guide</a>`;
+          statusText.innerHTML = `<strong>Database Error</strong> â€” ${result.error}. <a href="docs/DATABASE.md" target="_blank" style="color:#f87171;">Check setup guide</a>`;
         }
       banner.style.borderColor = 'rgba(248,113,113,0.4)';
         banner.style.background = 'rgba(248,113,113,0.08)';
@@ -283,49 +345,64 @@
     let _currentSection = null;
     async function loadSection(section, skipHistory = false) {
       if (!section) return;
-      if (!skipHistory && window.location.hash.substring(1) !== section) {
-        window.history.pushState(null, '', `#${section}`);
+      const rawSection = section;
+      section = aliasSectionMap[section] || section;
+      if (!skipHistory && window.location.hash.substring(1) !== rawSection) {
+        window.history.pushState(null, '', `#${rawSection}`);
       }
       _currentSection = section;
       if (typeof window._cleanupProfileView === 'function') {
         window._cleanupProfileView();
         window._cleanupProfileView = null;
       }
-      const domain = sectionDomainMap[section] || 'DATABASE';
+      const domain = sectionDomainMap[section] || 'BLUEPRINT';
       const panel = domainToPanelMap[domain] || domain.toLowerCase();
       activatePrimaryTab(panel);
 
-      // Highlight active sub-nav item
+      // Highlight active sub-nav item (support direct key and alias)
       document.querySelectorAll('.admin-nav-item').forEach(i => {
-        i.classList.toggle('active', i.dataset.sub === section);
+        const sub = i.dataset.sub;
+        const mappedSub = aliasSectionMap[sub] || sub;
+        i.classList.toggle('active', sub === rawSection || sub === section || mappedSub === section);
       });
 
+      const domainEl = document.getElementById('topbar-domain');
+      if (domainEl) domainEl.textContent = domain;
       document.getElementById('topbar-title').textContent = sectionTitles[section] || section;
       const area = document.getElementById('admin-content-area');
       area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loading…</p></div>';
 
       // Set up Add button
-      document.getElementById('add-record-btn').onclick = () => openCrudModal(section, null);
+      document.getElementById('add-record-btn').onclick = () => {
+        if (section === 'exams') {
+          openAssessmentBuilder(null);
+        } else {
+          openCrudModal(section, null);
+        }
+      };
       document.getElementById('add-record-btn').style.display = ['audit', 'results', 'progress-view', 'import-students', 'import-questions', 'export-questions', 'recalibrator'].includes(section) ? 'none' : '';
 
       try {
         switch(section) {
           case 'institutions':        await renderPrograms(area); break;
-          case 'subjects':        await renderSubjects(area); break;
-          case 'levels':          await renderLevels(area); break;
-          case 'programs':         await renderClasses(area); break;
-          case 'batches':         await renderBatches(area); break;
-          case 'students':        await renderStudents(area); break;
-          case 'exams':           await renderExams(area); break;
-          case 'questions':       await renderQuestions(area); break;
-          case 'results':         await renderResults(area); break;
-          case 'progress-view':   await renderProgressView(area); break;
-          case 'audit':           await renderAuditLog(area); break;
-          case 'settings':        await renderSettings(area); break;
-          case 'import-students': await renderImportStudents(area); break;
-          case 'import-questions': renderImportQuestions(area); break;
-          case 'export-questions': renderExportQuestions(area); break;
-          case 'recalibrator':    await renderRecalibrator(area); break;
+          case 'subjects':            await renderSubjects(area); break;
+          case 'levels':              await renderLevels(area); break;
+          case 'topics':              await renderTopics(area); break;
+          case 'word_types':          await renderWordTypes(area); break;
+          case 'programs':            await _renderClassesModule(area); break;
+          case 'batches':             await _renderBatchesModule(area); break;
+          case 'students':            await _renderStudentsModule(area); break;
+          case 'exams':               await renderExams(area); break;
+          case 'questions':           await renderCentralQuestionBank(area); break;
+          case 'assignments':         await renderAssignments(area); break;
+          case 'results':             await renderResults(area); break;
+          case 'progress-view':       await renderProgressView(area); break;
+          case 'audit':               await renderAuditLog(area); break;
+          case 'settings':            await renderSettings(area); break;
+          case 'import-students':     await renderImportStudents(area); break;
+          case 'import-questions':    await renderCentralQuestionImport(area); break;
+          case 'export-questions':    renderExportQuestions(area); break;
+          case 'recalibrator':        await renderRecalibrator(area); break;
           default: area.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🚧</div><h3>${sectionTitles[section] || section}</h3><p>This section is under development.</p></div>`;
         }
       } catch(e) {
@@ -334,7 +411,7 @@
       }
     }
 
-    // ── INSTITUTIONS ──
+    // â”€â”€ INSTITUTIONS â”€â”€
     async function renderPrograms(area) {
       const rawData = await adminFetchAll('institutions');
       // Enforce strict alphabetical ordering
@@ -362,7 +439,7 @@
         </div>
       `;
       const tbody = document.getElementById('tbl-institutions');
-      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state__icon">🏢</div><p>No institutions yet.</p></div></td></tr>'; return; }
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state__icon">ðŸ¢</div><p>No institutions yet.</p></div></td></tr>'; return; }
       window._progRecords = {};
       data.forEach(r => {
         window._progRecords[r.id] = r;
@@ -373,6 +450,7 @@
           <td class="text-center text-muted text-sm">${new Date(r.created_at).toLocaleDateString()}</td>
           <td class="text-right">
             <div class="d-flex gap-2 justify-end">
+              <button class="btn btn-outline btn-sm" data-nav-progs="${r.id}" title="View Programs in ${escapeHtml(r.name)}">Programs →</button>
               <button class="btn btn-secondary btn-sm" data-edit-prog="${r.id}">Edit</button>
               <button class="btn btn-danger btn-sm" data-del-prog="${r.id}">Delete</button>
             </div>
@@ -381,6 +459,15 @@
         tbody.appendChild(tr);
       });
 
+      tbody.querySelectorAll('[data-nav-progs]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pid = btn.getAttribute('data-nav-progs');
+          const rec = window._progRecords[pid];
+          window._filterInstitutionId = pid;
+          window._filterInstitutionName = rec ? rec.name : '';
+          loadSection('programs');
+        });
+      });
       tbody.querySelectorAll('[data-edit-prog]').forEach(btn => {
         btn.addEventListener('click', () => {
           const pid = btn.getAttribute('data-edit-prog');
@@ -397,7 +484,7 @@
       });
     }
 
-    // ── SUBJECTS ──
+    // â”€â”€ SUBJECTS â”€â”€
     async function renderSubjects(area) {
       const [rawData, institutions] = await Promise.all([adminFetchAll('subjects', '*, institutions(name)'), adminFetchAll('institutions')]);
       // Sort by Institution Name (A-Z), then Subject Name (A-Z)
@@ -435,11 +522,12 @@
         window._subjRecords[r.id] = r;
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="text-muted fw-600">${escapeHtml(r.institutions?.name || '—')}</td>
+          <td class="text-muted fw-600">${escapeHtml(r.institutions?.name || 'â€”')}</td>
           <td class="fw-600" style="color:var(--clr-text-1);">${escapeHtml(r.name)}</td>
           <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-neutral'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
           <td class="text-right">
             <div class="d-flex gap-2 justify-end">
+              <button class="btn btn-outline btn-sm" data-nav-topics="${r.id}" title="View Topics in ${escapeHtml(r.name)}">Topics →</button>
               <button class="btn btn-secondary btn-sm" data-edit-subj="${r.id}">Edit</button>
               <button class="btn btn-danger btn-sm" data-del-subj="${r.id}">Delete</button>
             </div>
@@ -448,6 +536,15 @@
         tbody.appendChild(tr);
       });
 
+      tbody.querySelectorAll('[data-nav-topics]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const sid = btn.getAttribute('data-nav-topics');
+          const rec = window._subjRecords[sid];
+          window._filterSubjectId = sid;
+          window._filterSubjectName = rec ? rec.name : '';
+          loadSection('topics');
+        });
+      });
       tbody.querySelectorAll('[data-edit-subj]').forEach(btn => {
         btn.addEventListener('click', () => {
           const sid = btn.getAttribute('data-edit-subj');
@@ -464,7 +561,7 @@
       });
     }
 
-    // ── LEVELS ──
+    // â”€â”€ LEVELS â”€â”€
     async function renderLevels(area) {
       const [rawData, allClasses] = await Promise.all([
         adminFetchAll('levels', '*, subjects(name, institution_id, institutions(name))'),
@@ -520,13 +617,13 @@
       });
 
       data.forEach(r => {
-        const progName = r.subjects?.institutions?.name || '—';
+        const progName = r.subjects?.institutions?.name || 'â€”';
         const programName = (r.program_id && classMap[r.program_id]?.name) ? classMap[r.program_id].name : 'All Programs';
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><span class="badge badge-neutral">${escapeHtml(progName)}</span></td>
           <td><span class="badge badge-neutral">${escapeHtml(programName)}</span></td>
-          <td class="text-muted fw-600">${escapeHtml(r.subjects?.name || '—')}</td>
+          <td class="text-muted fw-600">${escapeHtml(r.subjects?.name || 'â€”')}</td>
           <td class="text-center"><span class="badge badge-primary">Level ${toLevelLetter(r.level_number)}</span></td>
           <td class="fw-600">${escapeHtml(r.name)}</td>
           <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-neutral'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
@@ -556,639 +653,22 @@
       });
     }
 
-    // ── PROGRAMS ──
-    async function renderClasses(area) {
-      const rawData = await adminFetchAll('programs', '*, institutions(name)');
-      // Sort by Institution Name (A-Z), then Program Name (A-Z)
-      const data = [...rawData].sort((a, b) => {
-        const pA = a.institutions?.name || '';
-        const pB = b.institutions?.name || '';
-        return pA.localeCompare(pB) || (a.name || '').localeCompare(b.name || '');
-      });
-
-      area.innerHTML = `
-        <div class="section-header">
-          <div>
-            <h2 class="section-title">Programs <span class="count-chip">${data.length} Total</span></h2>
-            <p class="section-subtitle">Manage student classrooms ordered alphabetically by program and name</p>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th class="text-left">Program</th>
-                <th class="text-left">Program Name</th>
-                <th class="text-center">Status</th>
-                <th class="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-programs"></tbody>
-          </table>
-        </div>
-      `;
-      const tbody = document.getElementById('tbl-programs');
-      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">No programs yet.</td></tr>'; return; }
-      window._classRecords = {};
-      data.forEach(r => {
-        window._classRecords[r.id] = r;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="text-muted fw-600">${escapeHtml(r.institutions?.name || '—')}</td>
-          <td class="fw-600">${escapeHtml(r.name)}</td>
-          <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-neutral'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
-          <td class="text-right">
-            <div class="d-flex gap-2 justify-end">
-              <button class="btn btn-secondary btn-sm" data-edit-class="${r.id}">Edit</button>
-              <button class="btn btn-danger btn-sm" data-del-class="${r.id}">Delete</button>
-            </div>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      tbody.querySelectorAll('[data-edit-class]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const cid = btn.getAttribute('data-edit-class');
-          const rec = window._classRecords[cid];
-          if (rec) openCrudModal('programs', rec);
-        });
-      });
-      tbody.querySelectorAll('[data-del-class]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const cid = btn.getAttribute('data-del-class');
-          const rec = window._classRecords[cid];
-          if (rec) window._deleteRecord('programs', cid, rec.name || 'Class');
-        });
-      });
-    }
-
     // Helper function to calculate age from birth date string (YYYY-MM-DD)
     function calculateAgeFromBirthDate(birthDateStr) {
-      if (!birthDateStr) return '—';
+      if (!birthDateStr) return 'â€”';
       const birthDate = new Date(birthDateStr);
-      if (isNaN(birthDate.getTime())) return '—';
+      if (isNaN(birthDate.getTime())) return 'â€”';
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
       }
-      return age >= 0 ? `${age} yrs` : '—';
+      return age >= 0 ? `${age} yrs` : 'â€”';
     }
 
-    // ── BATCHES (Hierarchy: Program -> Class -> Batch) ──
-    async function renderBatches(area) {
-      const [rawData, allStudents] = await Promise.all([
-        adminFetchAll('batches', '*, programs(name, institution_id, institutions(name))'),
-        adminFetchAll('students')
-      ]);
 
-      // Sort by Program (A-Z), Class (A-Z), Batch Name (A-Z)
-      const data = [...rawData].sort((a, b) => {
-        const progA = a.programs?.institutions?.name || '';
-        const progB = b.programs?.institutions?.name || '';
-        if (progA !== progB) return progA.localeCompare(progB);
-        const clsA = a.programs?.name || '';
-        const clsB = b.programs?.name || '';
-        if (clsA !== clsB) return clsA.localeCompare(clsB);
-        return (a.name || '').localeCompare(b.name || '');
-      });
-
-      area.innerHTML = `
-        <div class="section-header">
-          <div>
-            <h2 class="section-title">Batches <span class="count-chip">${data.length} Total</span></h2>
-            <p class="section-subtitle">Manage class batches in the hierarchy: Program › Class › Batch</p>
-          </div>
-          <button class="btn btn-primary btn-sm" id="batches-add-shortcut">+ Add Batch</button>
-        </div>
-
-        <div class="filter-bar mb-4">
-          <div class="search-bar" style="max-width:420px;">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="batch-filter" placeholder="Search by batch, class, or program…" />
-          </div>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th class="text-left">Batch Name</th>
-                <th class="text-left">Program</th>
-                <th class="text-left">Class</th>
-                <th class="text-center">Enrolled Students</th>
-                <th class="text-center">Status</th>
-                <th class="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-batches"></tbody>
-          </table>
-        </div>
-      `;
-
-      document.getElementById('batches-add-shortcut')?.addEventListener('click', () => openCrudModal('batches', null));
-
-      const tbody = document.getElementById('tbl-batches');
-      window._batchRecords = {};
-      data.forEach(r => { window._batchRecords[r.id] = r; });
-
-      const renderRows = (filtered) => {
-        tbody.innerHTML = '';
-        if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted p-4">No batches found.</td></tr>'; return; }
-        filtered.forEach(r => {
-          const studentCount = allStudents.filter(s => s.batch_id === r.id && !s.deleted_at).length;
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td class="fw-600" style="color:var(--clr-text-1);">${escapeHtml(r.name)}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.programs?.institutions?.name || '—')}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.programs?.name || '—')}</td>
-            <td class="text-center"><span class="badge badge-info">${studentCount} students</span></td>
-            <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-danger'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
-            <td class="text-right">
-              <div class="d-flex gap-2 justify-end">
-                <button class="btn btn-secondary btn-sm" data-edit-batch="${r.id}">Edit</button>
-                <button class="btn btn-danger btn-sm" data-del-batch="${r.id}">Delete</button>
-              </div>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-        tbody.querySelectorAll('[data-edit-batch]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const bid = btn.getAttribute('data-edit-batch');
-            const rec = window._batchRecords[bid];
-            if (rec) openCrudModal('batches', rec);
-          });
-        });
-        tbody.querySelectorAll('[data-del-batch]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const bid = btn.getAttribute('data-del-batch');
-            const rec = window._batchRecords[bid];
-            if (rec) window._deleteRecord('batches', bid, rec.name || 'Batch');
-          });
-        });
-      };
-
-      renderRows(data);
-      document.getElementById('batch-filter')?.addEventListener('input', (e) => {
-        const q = e.target.value.toLowerCase();
-        renderRows(data.filter(r => (r.name || '').toLowerCase().includes(q) || (r.programs?.name || '').toLowerCase().includes(q) || (r.programs?.institutions?.name || '').toLowerCase().includes(q)));
-      });
-    }
-
-    // ── STUDENTS (With Batch, Level, Overall Score & Global Grade) ──
-    async function renderStudents(area) {
-      const [rawData, allAttempts, allLevels] = await Promise.all([
-        adminFetchAll('students', '*, programs(name), institutions(name), batches(name)'),
-        adminFetchAll('attempts'),
-        adminFetchAll('levels')
-      ]);
-      const levelsMap = new Map();
-      (allLevels || []).forEach(l => levelsMap.set(l.id, l));
-
-      // Default: alphabetical by student name
-      const data = [...rawData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      // Sort state: { col, dir } — dir is 'asc', 'desc', or null (default)
-      let sortState = { col: 'name', dir: 'asc' };
-
-      // Detect duplicate students within the same class
-      const dupMap = new Map();
-      data.forEach(s => {
-        if (s.deleted_at) return;
-        const key = `${s.program_id}::${(s.name || '').toLowerCase().trim()}`;
-        if (!dupMap.has(key)) dupMap.set(key, []);
-        dupMap.get(key).push(s);
-      });
-      const duplicateGroups = Array.from(dupMap.values()).filter(g => g.length > 1);
-      const totalDuplicates = duplicateGroups.reduce((acc, g) => acc + (g.length - 1), 0);
-      const duplicateIds = new Set(duplicateGroups.flatMap(g => g.map(s => s.id)));
-
-      area.innerHTML = `
-        <div class="section-header">
-          <div>
-            <h2 class="section-title">Students <span class="count-chip">${data.length} Total</span></h2>
-            <p class="section-subtitle">Manage enrolled students listed in alphabetical order with Batch, Overall Score &amp; Global Grade</p>
-          </div>
-          <div class="d-flex gap-2">
-            ${totalDuplicates > 0 ? `<button class="btn btn-warning btn-sm" id="students-merge-shortcut" style="font-weight:700;">🔄 Merge Duplikat (${totalDuplicates})</button>` : ''}
-            <button class="btn btn-secondary btn-sm" id="students-import-shortcut">📥 Import Students</button>
-            <button class="btn btn-success btn-sm" id="students-export-btn" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;">📊 Export to CSV</button>
-            <button class="btn btn-primary btn-sm" id="students-add-shortcut">+ Add Student</button>
-          </div>
-        </div>
-
-        ${totalDuplicates > 0 ? `
-          <div class="mb-4 p-3 rounded d-flex align-center justify-between" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:#fef3c7;">
-            <div class="d-flex align-center gap-3">
-              <span style="font-size:1.4rem;">⚠️</span>
-              <div>
-                <div class="fw-700 text-sm">Detected ${totalDuplicates} Twin / Duplicate Student Data!</div>
-                <div class="text-xs text-muted" style="color:rgba(255,255,255,0.85)!important;">
-                  Found ${duplicateGroups.length} groups of student names with duplicate data in the same class. Merge now to unify their grades, exam history, and progress.
-                </div>
-              </div>
-            </div>
-            <button class="btn btn-warning btn-sm" id="btn-banner-merge-duplicates" style="background:#f59e0b;color:#000;font-weight:700;border:none;white-space:nowrap;">
-              🔄 Gabungkan Semua Duplikat
-            </button>
-          </div>
-        ` : ''}
-
-        <div class="filter-bar mb-4 d-flex align-center justify-between flex-wrap gap-3">
-          <div class="search-bar" style="max-width:420px; flex:1;">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="student-filter" placeholder="Search by student name, class, batch…" />
-          </div>
-          <div class="d-flex align-center gap-2">
-            <button class="btn btn-ghost btn-sm" id="btn-expand-all-batches" style="font-size:0.75rem; border:1px solid var(--clr-border);">▼ Expand All</button>
-            <button class="btn btn-ghost btn-sm" id="btn-collapse-all-batches" style="font-size:0.75rem; border:1px solid var(--clr-border);">▲ Collapse All</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table id="students-table">
-            <thead>
-              <tr>
-                <th class="text-left sortable-th" data-col="name" style="cursor:pointer;user-select:none;">Student Name <span class="sort-icon" data-col="name"></span></th>
-                <th class="text-left sortable-th" data-col="program" style="cursor:pointer;user-select:none;">Program <span class="sort-icon" data-col="program"></span></th>
-                <th class="text-left sortable-th" data-col="class" style="cursor:pointer;user-select:none;">Class <span class="sort-icon" data-col="class"></span></th>
-                <th class="text-left sortable-th" data-col="batch" style="cursor:pointer;user-select:none;">Batch <span class="sort-icon" data-col="batch"></span></th>
-                <th class="text-center sortable-th" data-col="gender" style="cursor:pointer;user-select:none;">Gender <span class="sort-icon" data-col="gender"></span></th>
-                <th class="text-center">Birth Date / Age</th>
-                <th class="text-center sortable-th" data-col="score" style="cursor:pointer;user-select:none;">Overall Score <span class="sort-icon" data-col="score"></span></th>
-                <th class="text-center sortable-th" data-col="grade" style="cursor:pointer;user-select:none;">Global Grade <span class="sort-icon" data-col="grade"></span></th>
-                <th class="text-center sortable-th" data-col="status" style="cursor:pointer;user-select:none;">Status <span class="sort-icon" data-col="status"></span></th>
-                <th class="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-students"></tbody>
-          </table>
-        </div>
-      `;
-
-      // Wire merge duplicates buttons
-      const runMergeDuplicates = async () => {
-        openDuplicateStudentsModal();
-      };
-
-      document.getElementById('students-merge-shortcut')?.addEventListener('click', runMergeDuplicates);
-      document.getElementById('btn-banner-merge-duplicates')?.addEventListener('click', runMergeDuplicates);
-
-      // Wire shortcut buttons
-      document.getElementById('students-import-shortcut')?.addEventListener('click', () => loadSection('import-students'));
-      document.getElementById('students-add-shortcut')?.addEventListener('click', () => openCrudModal('students', null));
-
-      const tbody = document.getElementById('tbl-students');
-      window._studentRecords = {};
-      data.forEach(r => { window._studentRecords[r.id] = r; });
-
-      // ── Pre-compute scores for each student (needed for sorting too) ──
-      const studentScoreMap = new Map(); // id -> { score: number, grade: string }
-      data.forEach(r => {
-        const studentAttempts = allAttempts.filter(a => a.student_id === r.id && ['submitted', 'auto_submitted'].includes(a.status));
-        if (studentAttempts.length > 0) {
-          const examBestScores = new Map();
-          for (const att of studentAttempts) {
-            const score = parseFloat(att.percentage || att.score || 0);
-            if (!examBestScores.has(att.exam_id) || score > examBestScores.get(att.exam_id)) {
-              examBestScores.set(att.exam_id, score);
-            }
-          }
-          const scores = Array.from(examBestScores.values());
-          const avg = scores.reduce((sum, s) => sum + s, 0) / scores.length;
-          const overallScore = Math.round(avg * 10) / 10;
-          studentScoreMap.set(r.id, { score: overallScore, grade: getGrade(overallScore) });
-        }
-      });
-
-      // Grade order for sort: S > A > B > C > D > E > F
-      const GRADE_ORDER = { S: 7, A: 6, B: 5, C: 4, D: 3, E: 2, F: 1, '—': 0 };
-
-      // ── Sort function ──
-      function getSortedData(baseData) {
-        const { col, dir } = sortState;
-        if (!dir) return baseData; // null = default (already alphabetical by name)
-        const mult = dir === 'asc' ? 1 : -1;
-        return [...baseData].sort((a, b) => {
-          let va, vb;
-          switch (col) {
-            case 'name':    va = (a.name || '').toLowerCase(); vb = (b.name || '').toLowerCase(); break;
-            case 'program': va = (a.institutions?.name || '').toLowerCase(); vb = (b.institutions?.name || '').toLowerCase(); break;
-            case 'class':   va = (a.programs?.name || '').toLowerCase(); vb = (b.programs?.name || '').toLowerCase(); break;
-            case 'batch':   va = (a.batches?.name || '').toLowerCase(); vb = (b.batches?.name || '').toLowerCase(); break;
-            case 'gender':  va = (a.gender || '').toLowerCase(); vb = (b.gender || '').toLowerCase(); break;
-            case 'score':   va = studentScoreMap.get(a.id)?.score ?? -1; vb = studentScoreMap.get(b.id)?.score ?? -1; return mult * (va - vb);
-            case 'grade':   va = GRADE_ORDER[studentScoreMap.get(a.id)?.grade ?? '—'] ?? 0; vb = GRADE_ORDER[studentScoreMap.get(b.id)?.grade ?? '—'] ?? 0; return mult * (va - vb);
-            case 'status':  va = a.is_active ? 1 : 0; vb = b.is_active ? 1 : 0; return mult * (va - vb);
-            default:        return 0;
-          }
-          return mult * va.localeCompare(vb);
-        });
-      }
-
-      // ── Update sort header icons ──
-      function updateSortIcons() {
-        document.querySelectorAll('#students-table .sort-icon').forEach(el => {
-          const col = el.dataset.col;
-          if (col === sortState.col) {
-            el.textContent = sortState.dir === 'asc' ? ' ▲' : sortState.dir === 'desc' ? ' ▼' : '';
-            el.style.color = 'var(--clr-accent-1, #a78bfa)';
-          } else {
-            el.textContent = ' ⇅';
-            el.style.color = 'rgba(255,255,255,0.2)';
-          }
-        });
-      }
-
-      let currentFilter = '';
-
-      // Manage session-remembered expanded batch IDs
-      const getExpandedBatches = () => {
-        try {
-          const saved = sessionStorage.getItem('tec_expanded_batches');
-          return saved ? new Set(JSON.parse(saved)) : new Set();
-        } catch {
-          return new Set();
-        }
-      };
-      const saveExpandedBatches = (set) => {
-        try {
-          sessionStorage.setItem('tec_expanded_batches', JSON.stringify(Array.from(set)));
-        } catch {}
-      };
-      let expandedBatches = getExpandedBatches();
-
-      const renderRows = (sourceData) => {
-        const sorted = getSortedData(sourceData);
-        tbody.innerHTML = '';
-        if (!sorted.length) {
-          tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted p-4">No students found.</td></tr>';
-          return;
-        }
-
-        // Group sorted students by batch
-        const batchMap = new Map();
-        sorted.forEach(r => {
-          const bId = r.batch_id || '__unassigned__';
-          if (!batchMap.has(bId)) {
-            batchMap.set(bId, {
-              id: bId,
-              name: r.batches?.name || (bId === '__unassigned__' ? 'Unassigned / No Batch' : 'Batch'),
-              institutionName: r.institutions?.name || r.programs?.institutions?.name || '',
-              programName: r.programs?.name || '',
-              students: []
-            });
-          }
-          batchMap.get(bId).students.push(r);
-        });
-
-        // Sort batch groups: Program -> Class -> Batch Name, __unassigned__ at end
-        const batchGroups = Array.from(batchMap.values()).sort((a, b) => {
-          if (a.id === '__unassigned__') return 1;
-          if (b.id === '__unassigned__') return -1;
-          const pComp = (a.institutionName || '').localeCompare(b.institutionName || '');
-          if (pComp !== 0) return pComp;
-          const cComp = (a.programName || '').localeCompare(b.programName || '');
-          if (cComp !== 0) return cComp;
-          return (a.name || '').localeCompare(b.name || '');
-        });
-
-        // If a search query is active, auto-expand all matching batches
-        const isFiltering = !!currentFilter;
-
-        batchGroups.forEach(group => {
-          const isExpanded = isFiltering || expandedBatches.has(group.id);
-          const batchStudentIds = group.students.map(s => s.id);
-
-          // Render Batch Header Row
-          const headerTr = document.createElement('tr');
-          headerTr.className = 'batch-group-header';
-          headerTr.setAttribute('data-batch-id', group.id);
-          headerTr.style.cssText = 'cursor:pointer; background:rgba(99, 102, 241, 0.08); border-left:4px solid var(--clr-primary, #6366f1); user-select:none;';
-          headerTr.innerHTML = `
-            <td colspan="10" style="padding:10px 16px;">
-              <div class="d-flex align-center justify-between">
-                <div class="d-flex align-center gap-2">
-                  <span class="batch-caret" style="font-size:0.8rem; display:inline-block; transition:transform 0.2s; ${isExpanded ? 'transform:rotate(90deg);' : ''}">▶</span>
-                  <span class="fw-700" style="font-size:0.95rem; color:var(--clr-text-1);">👥 ${escapeHtml(group.name)}</span>
-                  <span class="badge badge-info" style="font-size:0.75rem;">${group.students.length} student${group.students.length === 1 ? '' : 's'}</span>
-                  ${group.programName ? `<span class="text-xs text-muted">(${escapeHtml(group.programName)})</span>` : ''}
-                </div>
-                <div class="d-flex align-center gap-2">
-                  <span class="text-xs text-muted">${isExpanded ? 'Click to collapse ▲' : 'Click to expand ▼'}</span>
-                </div>
-              </div>
-            </td>
-          `;
-
-          headerTr.addEventListener('click', () => {
-            if (expandedBatches.has(group.id)) {
-              expandedBatches.delete(group.id);
-            } else {
-              expandedBatches.add(group.id);
-            }
-            saveExpandedBatches(expandedBatches);
-            renderRows(getFilteredData());
-          });
-
-          tbody.appendChild(headerTr);
-
-          // Render student rows if batch is expanded
-          if (isExpanded) {
-            group.students.forEach(r => {
-              const ageDisplay = calculateAgeFromBirthDate(r.birth_date);
-              const isDuplicate = duplicateIds.has(r.id);
-              const scoreInfo = studentScoreMap.get(r.id);
-              let overallScoreDisplay = '<span class="text-muted">—</span>';
-              let globalGradeDisplay = '<span class="text-muted">—</span>';
-              if (scoreInfo) {
-                overallScoreDisplay = `<span class="fw-700 text-sm text-grade-${scoreInfo.grade}">${scoreInfo.score.toFixed(1)}%</span>`;
-                globalGradeDisplay = `<span class="grade-badge grade-${scoreInfo.grade}" style="width:28px;height:28px;font-size:0.8rem;display:inline-flex;">${scoreInfo.grade}</span>`;
-              }
-              const displayName = formatStudentName(r.name, r.gender);
-              const tr = document.createElement('tr');
-              tr.className = 'student-clickable-row';
-              tr.setAttribute('data-student-id', r.id);
-              tr.style.cssText = 'cursor:pointer; transition:background 0.15s;';
-              tr.title = 'Click to inspect individual student profile & answers';
-              tr.innerHTML = `
-                <td class="fw-600" style="color:var(--clr-text-1);">
-                  ${escapeHtml(displayName)}
-                  ${isDuplicate ? `<span class="badge badge-warning ml-2" style="font-size:0.65rem;" title="Duplicate student in this class">Duplikat</span>` : ''}
-                </td>
-                <td class="text-muted text-sm">${escapeHtml(r.institutions?.name || '—')}</td>
-                <td class="text-muted text-sm">${escapeHtml(r.programs?.name || '—')}</td>
-                <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(r.batches?.name || '—')}</td>
-                <td class="text-center text-muted text-sm" style="text-transform:capitalize;">${escapeHtml(r.gender || '—')}</td>
-                <td class="text-center text-muted text-sm">${escapeHtml(r.birth_date || '—')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${ageDisplay}</span></td>
-                <td class="text-center">${overallScoreDisplay}</td>
-                <td class="text-center">${globalGradeDisplay}</td>
-                <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-danger'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
-                <td class="text-right">
-                  <div class="d-flex gap-2 justify-end" onclick="event.stopPropagation()">
-                    <button class="btn btn-primary btn-sm" data-profile-student="${r.id}" title="View detailed profile & answers">👤 Profile</button>
-                    <button class="btn btn-secondary btn-sm" data-edit-student="${r.id}">Edit</button>
-                    <button class="btn btn-danger btn-sm" data-del-student="${r.id}">Delete</button>
-                  </div>
-                </td>
-              `;
-
-              // Hover styling
-              tr.addEventListener('mouseenter', () => tr.style.background = 'rgba(255, 255, 255, 0.04)');
-              tr.addEventListener('mouseleave', () => tr.style.background = '');
-
-              // Click on row opens profile with batch list for navigation
-              tr.addEventListener('click', () => {
-                openStudentProfile(r.id, batchStudentIds);
-              });
-
-              tbody.appendChild(tr);
-            });
-          }
-        });
-
-        // Wire profile button clicks
-        tbody.querySelectorAll('[data-profile-student]').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const sid = btn.getAttribute('data-profile-student');
-            for (const grp of batchGroups) {
-              const ids = grp.students.map(s => s.id);
-              if (ids.includes(sid)) {
-                openStudentProfile(sid, ids);
-                break;
-              }
-            }
-          });
-        });
-
-        // Wire edit & delete
-        tbody.querySelectorAll('[data-edit-student]').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const sid = btn.getAttribute('data-edit-student');
-            const rec = window._studentRecords[sid];
-            if (rec) openCrudModal('students', rec);
-          });
-        });
-        tbody.querySelectorAll('[data-del-student]').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const sid = btn.getAttribute('data-del-student');
-            const rec = window._studentRecords[sid];
-            if (rec) window._deleteRecord('students', sid, rec.name || 'Student');
-          });
-        });
-      };
-
-      // Filter helper
-      function getFilteredData() {
-        if (!currentFilter) return data;
-        return data.filter(r =>
-          (r.name || '').toLowerCase().includes(currentFilter) ||
-          (r.programs?.name || '').toLowerCase().includes(currentFilter) ||
-          (r.batches?.name || '').toLowerCase().includes(currentFilter) ||
-          (r.institutions?.name || '').toLowerCase().includes(currentFilter) ||
-          (r.gender || '').toLowerCase().includes(currentFilter)
-        );
-      }
-
-      // Initial render
-      updateSortIcons();
-      renderRows(getFilteredData());
-
-      // Search filter
-      document.getElementById('student-filter')?.addEventListener('input', (e) => {
-        currentFilter = e.target.value.toLowerCase();
-        renderRows(getFilteredData());
-      });
-
-      // Expand All & Collapse All shortcuts
-      document.getElementById('btn-expand-all-batches')?.addEventListener('click', () => {
-        const allIds = new Set(data.map(s => s.batch_id || '__unassigned__'));
-        expandedBatches = allIds;
-        saveExpandedBatches(expandedBatches);
-        renderRows(getFilteredData());
-      });
-
-      document.getElementById('btn-collapse-all-batches')?.addEventListener('click', () => {
-        expandedBatches = new Set();
-        saveExpandedBatches(expandedBatches);
-        renderRows(getFilteredData());
-      });
-
-      // ── Sortable header clicks ──
-      document.querySelectorAll('#students-table .sortable-th').forEach(th => {
-        th.addEventListener('click', () => {
-          const col = th.dataset.col;
-          if (sortState.col === col) {
-            // Cycle: asc → desc → null (default = asc)
-            if (sortState.dir === 'asc') sortState.dir = 'desc';
-            else if (sortState.dir === 'desc') { sortState.col = 'name'; sortState.dir = 'asc'; }
-            else sortState.dir = 'asc';
-          } else {
-            sortState.col = col;
-            sortState.dir = 'asc';
-          }
-          updateSortIcons();
-          renderRows(getFilteredData());
-        });
-        // Hover style
-        th.style.transition = 'background 0.15s';
-        th.addEventListener('mouseenter', () => th.style.background = 'rgba(255,255,255,0.04)');
-        th.addEventListener('mouseleave', () => th.style.background = '');
-      });
-
-      // ── Export Students to CSV ──
-      document.getElementById('students-export-btn')?.addEventListener('click', () => {
-        const exportData = getSortedData(getFilteredData());
-        if (!exportData.length) { showToast('No students to export.', 'warning'); return; }
-
-        const escCsv = (v) => {
-          const s = String(v ?? '').replace(/"/g, '""');
-          return /[,"\n\r]/.test(s) ? `"${s}"` : s;
-        };
-
-        const headers = [
-          'Name', 'Title', 'Gender', 'Birth Date', 'Age',
-          'Program', 'Class', 'Batch',
-          'Overall Score (%)', 'Global Grade', 'Status'
-        ];
-
-        const rows = exportData.map(r => {
-          const scoreInfo = studentScoreMap.get(r.id);
-          const title = (r.gender || '').toLowerCase() === 'male' ? 'Mr.' : (r.gender || '').toLowerCase() === 'female' ? 'Miss' : '';
-          const age = calculateAgeFromBirthDate(r.birth_date);
-          return [
-            r.name || '',
-            title,
-            r.gender || '',
-            r.birth_date || '',
-            age,
-            r.institutions?.name || '',
-            r.programs?.name || '',
-            r.batches?.name || '',
-            scoreInfo ? scoreInfo.score.toFixed(1) : '',
-            scoreInfo ? scoreInfo.grade : '',
-            r.is_active ? 'Active' : 'Inactive'
-          ].map(escCsv).join(',');
-        });
-
-        const csvContent = [headers.map(escCsv).join(','), ...rows].join('\r\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `Students_Export_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      });
-    }
-
-    // ── INDIVIDUAL STUDENT PROFILE (Detailed Progress, Correct/Incorrect Counts, Batch Navigation) ──
+    // â”€â”€ INDIVIDUAL STUDENT PROFILE (Detailed Progress, Correct/Incorrect Counts, Batch Navigation) â”€â”€
     async function openStudentProfile(studentId, batchStudentIds = [], skipHistory = false) {
       if (!skipHistory) {
          const hashState = `profile-${studentId}`;
@@ -1202,7 +682,7 @@
       }
 
       const area = document.getElementById('admin-content-area');
-      area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loading student profile &amp; question answer history…</p></div>';
+      area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loading student profile &amp; question answer historyâ€¦</p></div>';
 
       try {
         const sb = await getSupabase();
@@ -1245,7 +725,7 @@
         const bestAttempts = Array.from(bestAttemptMap.values());
         const bestAttemptIds = new Set(bestAttempts.map(a => a.id));
 
-        // 4. Compute KPIs (Best attempt per exam only — per agreement)
+        // 4. Compute KPIs (Best attempt per exam only â€” per agreement)
         let totalCorrect = 0;
         let totalMinor = 0;
         let totalIncorrect = 0;
@@ -1270,7 +750,7 @@
         const avgScore = bestAttempts.length > 0
           ? bestAttempts.reduce((sum, a) => sum + parseFloat(a.percentage || a.score || 0), 0) / bestAttempts.length
           : 0;
-        const globalGrade = bestAttempts.length > 0 ? getGrade(Math.round(avgScore)) : '—';
+        const globalGrade = bestAttempts.length > 0 ? getGrade(Math.round(avgScore)) : 'â€”';
         const gradeColors = { S: '#f59e0b', A: '#10b981', B: '#3b82f6', C: '#f59e0b', D: '#ea580c', E: '#ef4444', F: '#94a3b8' };
         const gradeColor = gradeColors[globalGrade] || 'var(--clr-text-1)';
 
@@ -1287,8 +767,8 @@
         const initial = (student.name || 'S').trim().charAt(0).toUpperCase();
         const ageDisplay = calculateAgeFromBirthDate(student.birth_date);
         const batchName = student.batches?.name || 'Unassigned Batch';
-        const programName = student.programs?.name || '—';
-        const institutionName = student.institutions?.name || student.programs?.institutions?.name || '—';
+        const programName = student.programs?.name || 'â€”';
+        const institutionName = student.institutions?.name || student.programs?.institutions?.name || 'â€”';
 
         area.innerHTML = `
           <div class="student-profile-view animate-fade-in" style="display:flex; flex-direction:column; gap:20px;">
@@ -1296,10 +776,10 @@
             <div class="d-flex align-center justify-between flex-wrap gap-3 p-4 rounded" style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border);">
               <div class="d-flex align-center gap-3">
                 <button class="btn btn-secondary btn-sm" id="btn-back-to-students" style="display:inline-flex; align-items:center; gap:6px;">
-                  <span>←</span> Back to Students
+                  <span>â†</span> Back to Students
                 </button>
                 <div class="d-flex align-center gap-2">
-                  <span class="badge badge-info" style="font-size:0.8rem;">👥 Batch: ${escapeHtml(batchName)}</span>
+                  <span class="badge badge-info" style="font-size:0.8rem;">ðŸ‘¥ Batch: ${escapeHtml(batchName)}</span>
                 </div>
               </div>
 
@@ -1307,11 +787,11 @@
               ${batchStudentIds.length > 0 ? `
                 <div class="d-flex align-center gap-2">
                   <button class="btn btn-secondary btn-sm" id="btn-prev-student" ${!hasPrev ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''} title="Previous Student (ArrowLeft)">
-                    ◀ Previous
+                    â—€ Previous
                   </button>
                   <span class="text-xs fw-700 text-muted" style="padding:0 6px;">${positionText}</span>
                   <button class="btn btn-secondary btn-sm" id="btn-next-student" ${!hasNext ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''} title="Next Student (ArrowRight)">
-                    Next ▶
+                    Next â–¶
                   </button>
                 </div>
               ` : ''}
@@ -1352,10 +832,10 @@
                 <div class="glass-card" style="border-radius:20px; padding:16px 20px; box-sizing:border-box;">
                   <div class="d-flex align-center justify-between gap-2 mb-1">
                     <span class="badge ${student.is_active ? 'badge-success' : 'badge-danger'}">${student.is_active ? 'Active Student' : 'Inactive'}</span>
-                    <span class="text-xs text-muted">ID: <code style="font-size:0.75rem;">${escapeHtml(student.id.substring(0, 8))}…</code></span>
+                    <span class="text-xs text-muted">ID: <code style="font-size:0.75rem;">${escapeHtml(student.id.substring(0, 8))}â€¦</code></span>
                   </div>
                   <h2 style="font-size:1.35rem; font-weight:800; margin:0 0 2px; color:var(--clr-text-1);">${escapeHtml(displayName)}</h2>
-                  <p class="text-xs text-muted" style="margin:0;">👥 Batch: <strong>${escapeHtml(batchName)}</strong></p>
+                  <p class="text-xs text-muted" style="margin:0;">ðŸ‘¥ Batch: <strong>${escapeHtml(batchName)}</strong></p>
                 </div>
               </div>
 
@@ -1364,36 +844,36 @@
                 <div>
                   <div class="d-flex align-center justify-between mb-3 flex-wrap gap-2">
                     <div>
-                      <h3 style="font-size:1.15rem; font-weight:800; margin:0; color:var(--clr-text-1);">🎓 Student Enrollment &amp; Demographics</h3>
+                      <h3 style="font-size:1.15rem; font-weight:800; margin:0; color:var(--clr-text-1);">ðŸŽ“ Student Enrollment &amp; Demographics</h3>
                       <p class="text-xs text-muted" style="margin:2px 0 0;">Official class registration and student profile data</p>
                     </div>
                     <button class="btn btn-secondary btn-sm" id="btn-edit-current-student" style="display:inline-flex; align-items:center; gap:6px;">
-                      ✏️ Edit Student
+                      âœï¸ Edit Student
                     </button>
                   </div>
 
                   <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-top:16px;">
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
-                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">🏢 Program</div>
+                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">ðŸ¢ Program</div>
                       <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${escapeHtml(institutionName)}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
-                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">🏫 Class</div>
+                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">ðŸ« Class</div>
                       <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${escapeHtml(programName)}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
-                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">👤 Gender</div>
-                      <div class="fw-700 text-sm mt-1" style="text-transform:capitalize; color:var(--clr-text-1);">${escapeHtml(student.gender || '—')}</div>
+                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">ðŸ‘¤ Gender</div>
+                      <div class="fw-700 text-sm mt-1" style="text-transform:capitalize; color:var(--clr-text-1);">${escapeHtml(student.gender || 'â€”')}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
-                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">🎂 Age / Birth Date</div>
-                      <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${ageDisplay} <span class="text-xs text-muted fw-400">(${escapeHtml(student.birth_date || '—')})</span></div>
+                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">ðŸŽ‚ Age / Birth Date</div>
+                      <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${ageDisplay} <span class="text-xs text-muted fw-400">(${escapeHtml(student.birth_date || 'â€”')})</span></div>
                     </div>
                   </div>
                 </div>
 
                 <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--clr-border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-                  <span class="text-xs text-muted">Created: ${student.created_at ? new Date(student.created_at).toLocaleDateString() : '—'}</span>
+                  <span class="text-xs text-muted">Created: ${student.created_at ? new Date(student.created_at).toLocaleDateString() : 'â€”'}</span>
                   <span class="badge badge-neutral" style="font-size:0.75rem;">Account Status: ${student.is_active ? 'Active' : 'Inactive'}</span>
                 </div>
               </div>
@@ -1407,12 +887,12 @@
                 <div class="text-xs text-muted mt-1">${allAttempts.length} total attempt${allAttempts.length === 1 ? '' : 's'}</div>
               </div>
               <div class="glass-card p-4 text-center" style="border-top:3px solid #10b981;">
-                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em; color:#10b981;">✅ CORRECT ANSWERS</div>
+                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em; color:#10b981;">âœ… CORRECT ANSWERS</div>
                 <div class="fw-800" style="font-size:2rem; color:#10b981;">${totalCorrect}</div>
                 <div class="text-xs text-muted mt-1">From best attempts</div>
               </div>
               <div class="glass-card p-4 text-center" style="border-top:3px solid #ef4444;">
-                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em; color:#ef4444;">❌ INCORRECT ANSWERS</div>
+                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em; color:#ef4444;">âŒ INCORRECT ANSWERS</div>
                 <div class="fw-800" style="font-size:2rem; color:#ef4444;">${totalIncorrect}</div>
                 <div class="text-xs text-muted mt-1">${totalMinor > 0 ? `+ ${totalMinor} minor error${totalMinor === 1 ? '' : 's'}` : '0 minor errors'}</div>
               </div>
@@ -1422,7 +902,7 @@
             <div class="glass-card p-5">
               <div class="d-flex align-center justify-between mb-3 flex-wrap gap-2">
                 <div>
-                  <h3 style="font-size:1.15rem; font-weight:700; margin:0;">📋 Exam Performance &amp; Question History</h3>
+                  <h3 style="font-size:1.15rem; font-weight:700; margin:0;">ðŸ“‹ Exam Performance &amp; Question History</h3>
                   <p class="text-xs text-muted">Click any exam row below to inspect question-level answers and correct vs. incorrect breakdown</p>
                 </div>
                 <span class="badge badge-neutral">${allAttempts.length} Attempt${allAttempts.length === 1 ? '' : 's'} Logged</span>
@@ -1430,7 +910,7 @@
 
               ${allAttempts.length === 0 ? `
                 <div class="empty-state p-6 text-center">
-                  <div style="font-size:2.5rem; margin-bottom:8px;">📝</div>
+                  <div style="font-size:2.5rem; margin-bottom:8px;">ðŸ“</div>
                   <h4 style="font-weight:700;">No Exams Taken Yet</h4>
                   <p class="text-xs text-muted">This student hasn't completed or submitted any exams yet.</p>
                 </div>
@@ -1443,9 +923,9 @@
                         <th>Subject</th>
                         <th class="text-center">Score</th>
                         <th class="text-center">Grade</th>
-                        <th class="text-center">✅ Correct</th>
-                        <th class="text-center">⚠️ Half</th>
-                        <th class="text-center">❌ Incorrect</th>
+                        <th class="text-center">âœ… Correct</th>
+                        <th class="text-center">âš ï¸ Half</th>
+                        <th class="text-center">âŒ Incorrect</th>
                         <th class="text-center">Submitted At</th>
                         <th class="text-center" style="width:110px;">Details</th>
                       </tr>
@@ -1465,8 +945,8 @@
                         const pct = parseFloat(att.percentage || att.score || 0).toFixed(1);
                         const grade = att.grade || getGrade(Math.round(pct));
                         const examTitle = att.exams?.exam_title || 'Exam';
-                        const subjectName = att.exams?.subjects?.name || '—';
-                        const submitDate = att.submitted_at ? new Date(att.submitted_at).toLocaleString() : '—';
+                        const subjectName = att.exams?.subjects?.name || 'â€”';
+                        const submitDate = att.submitted_at ? new Date(att.submitted_at).toLocaleString() : 'â€”';
                         const rowId = `att-row-${att.id}`;
                         const detailId = `att-detail-${att.id}`;
 
@@ -1474,9 +954,9 @@
                           <tr id="${rowId}" class="clickable-attempt-row" data-att-id="${att.id}" style="cursor:pointer; transition:background 0.15s;">
                             <td class="fw-600">
                               <div class="d-flex align-center gap-2">
-                                <span class="toggle-arrow" id="arrow-${att.id}" style="font-size:0.75rem; color:var(--clr-text-muted); transition:transform 0.2s;">▶</span>
+                                <span class="toggle-arrow" id="arrow-${att.id}" style="font-size:0.75rem; color:var(--clr-text-muted); transition:transform 0.2s;">â–¶</span>
                                 <span>${escapeHtml(examTitle)}</span>
-                                ${isBest ? `<span class="badge badge-success" style="font-size:0.65rem;" title="Highest score attempt for this exam">⭐ Best</span>` : ''}
+                                ${isBest ? `<span class="badge badge-success" style="font-size:0.65rem;" title="Highest score attempt for this exam">â­ Best</span>` : ''}
                               </div>
                             </td>
                             <td class="text-sm text-muted">${escapeHtml(subjectName)}</td>
@@ -1508,16 +988,16 @@
                                     ${[...answers].sort((a, b) => (a.question_order || 0) - (b.question_order || 0)).map((ans, qIdx) => {
                                       const evalRes = (ans.evaluation_result || 'Unknown').toLowerCase();
                                       const sc = parseFloat(ans.score || 0);
-                                      let statusBadge = '<span class="badge badge-danger">❌ Incorrect (0 pt)</span>';
+                                      let statusBadge = '<span class="badge badge-danger">âŒ Incorrect (0 pt)</span>';
                                       if (evalRes === 'correct' || sc >= 1) {
-                                        statusBadge = '<span class="badge badge-success">✅ Correct (+1 pt)</span>';
+                                        statusBadge = '<span class="badge badge-success">âœ… Correct (+1 pt)</span>';
                                       } else if (evalRes.includes('minor') || (sc > 0 && sc < 1)) {
-                                        statusBadge = '<span class="badge badge-warning">⚠️ Minor Error (+0.5 pt)</span>';
+                                        statusBadge = '<span class="badge badge-warning">âš ï¸ Minor Error (+0.5 pt)</span>';
                                       }
                                       
                                       const qText = ans.question_snapshot || `Question #${qIdx + 1}`;
                                       const studentAns = ans.student_answer || '(No Answer)';
-                                      const correctAns = ans.correct_answer_snapshot || '—';
+                                      const correctAns = ans.correct_answer_snapshot || 'â€”';
 
                                       return `
                                         <div style="padding:10px 14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
@@ -1614,7 +1094,7 @@
             const arrow = document.getElementById(`arrow-${attId}`);
             if (detailRow) {
               const isNowHidden = detailRow.classList.toggle('hidden');
-              if (arrow) arrow.textContent = isNowHidden ? '▶' : '▼';
+              if (arrow) arrow.textContent = isNowHidden ? 'â–¶' : 'â–¼';
             }
           });
         });
@@ -1623,17 +1103,17 @@
         console.error('Failed to render student profile:', err);
         area.innerHTML = `
           <div class="empty-state p-6 text-center">
-            <div style="font-size:2.5rem; margin-bottom:8px;">⚠️</div>
+            <div style="font-size:2.5rem; margin-bottom:8px;">âš ï¸</div>
             <h4 class="text-danger">Failed to load student profile</h4>
             <p class="text-xs text-muted mb-4">${escapeHtml(err.message)}</p>
-            <button class="btn btn-secondary btn-sm" id="btn-err-back">← Back to Students</button>
+            <button class="btn btn-secondary btn-sm" id="btn-err-back">â† Back to Students</button>
           </div>
         `;
         document.getElementById('btn-err-back')?.addEventListener('click', () => loadSection('students'));
       }
     }
 
-    // ── EXAM MANAGEMENT HUB (Restored & Elevated) ──
+    // â”€â”€ EXAM MANAGEMENT HUB (Restored & Elevated) â”€â”€
     async function renderExams(area) {
       const [rawData, allQuestions, allClasses] = await Promise.all([
         adminFetchAll('exams', '*, subjects(name), levels(name, level_number), institutions(name)'),
@@ -1660,13 +1140,14 @@
         <div class="exam-hero">
           <div class="d-flex align-center justify-between flex-wrap gap-4">
             <div>
-              <h2 class="section-title text-gradient" style="font-size:1.75rem;">Exam Management Hub</h2>
-              <p class="section-subtitle">Create, organize, publish, and inspect all online examinations</p>
+              <h2 class="section-title text-gradient" style="font-size:1.75rem;">Challenges Hub (C — CHALLENGES)</h2>
+              <p class="section-subtitle">Assessment execution: configure challenges, assign cohorts, schedule time windows, inspect results & recalibrate</p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
-              <button class="btn btn-primary btn-sm" id="hub-add-exam">+ Create Exam</button>
-              <button class="btn btn-secondary btn-sm" id="hub-import-q">📥 Import Questions</button>
-              <button class="btn btn-secondary btn-sm" id="hub-export-q">📤 Export Questions</button>
+              <button class="btn btn-primary btn-sm" id="hub-add-exam">+ Create Challenge</button>
+              <button class="btn btn-secondary btn-sm" id="hub-btn-assignments">👥 Assignments & Rosters</button>
+              <button class="btn btn-secondary btn-sm" id="hub-btn-results">🏆 Results</button>
+              <button class="btn btn-secondary btn-sm" id="hub-btn-recalibrate">⚖️ Recalibrate</button>
               <button class="btn btn-warning btn-sm" id="hub-resolve-q" style="font-weight:700;">⚡ Resolve Duplicates</button>
             </div>
           </div>
@@ -1674,28 +1155,28 @@
           <!-- KPI Cards -->
           <div class="kpi-grid">
             <div class="kpi-card">
-              <div class="kpi-icon">📝</div>
+              <div class="kpi-icon">ðŸ“</div>
               <div>
                 <div class="kpi-val">${totalExams}</div>
                 <div class="kpi-lbl">Total Exams</div>
               </div>
             </div>
             <div class="kpi-card">
-              <div class="kpi-icon" style="color:var(--clr-success,#4ade80);">✓</div>
+              <div class="kpi-icon" style="color:var(--clr-success,#4ade80);">âœ“</div>
               <div>
                 <div class="kpi-val" style="color:var(--clr-success,#4ade80);">${publishedCount}</div>
                 <div class="kpi-lbl">Published Exams</div>
               </div>
             </div>
             <div class="kpi-card">
-              <div class="kpi-icon" style="color:var(--clr-warning,#fbbf24);">⏳</div>
+              <div class="kpi-icon" style="color:var(--clr-warning,#fbbf24);">â³</div>
               <div>
                 <div class="kpi-val" style="color:var(--clr-warning,#fbbf24);">${draftCount}</div>
                 <div class="kpi-lbl">Draft / Inactive</div>
               </div>
             </div>
             <div class="kpi-card">
-              <div class="kpi-icon" style="color:var(--clr-accent-1);">❓</div>
+              <div class="kpi-icon" style="color:var(--clr-accent-1);">â“</div>
               <div>
                 <div class="kpi-val">${totalQuestions}</div>
                 <div class="kpi-lbl">Questions in Bank</div>
@@ -1714,8 +1195,8 @@
             <button class="pill-filter-btn" data-status="archived">Archived</button>
           </div>
           <div class="search-bar" style="max-width:320px;">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="exam-search-input" placeholder="Search exams by title, subject…" />
+            <span class="search-icon">ðŸ”</span>
+            <input type="text" id="exam-search-input" placeholder="Search exams by title, subjectâ€¦" />
           </div>
         </div>
 
@@ -1737,9 +1218,10 @@
       `;
 
       // Wire Quick Action buttons
-      document.getElementById('hub-add-exam')?.addEventListener('click', () => openCrudModal('exams', null));
-      document.getElementById('hub-import-q')?.addEventListener('click', () => loadSection('import-questions'));
-      document.getElementById('hub-export-q')?.addEventListener('click', () => loadSection('export-questions'));
+      document.getElementById('hub-add-exam')?.addEventListener('click', () => openAssessmentBuilder(null));
+      document.getElementById('hub-btn-assignments')?.addEventListener('click', () => loadSection('assignments'));
+      document.getElementById('hub-btn-results')?.addEventListener('click', () => loadSection('results'));
+      document.getElementById('hub-btn-recalibrate')?.addEventListener('click', () => loadSection('recalibrator'));
       document.getElementById('hub-resolve-q')?.addEventListener('click', () => openDuplicateQuestionsModal());
 
       const tbody = document.getElementById('tbl-exams');
@@ -1785,22 +1267,22 @@
               <div class="fw-800" style="color:var(--clr-text-1); font-size:1rem; letter-spacing: 0.02em;">${escapeHtml(r.exam_title)}</div>
               <div class="text-muted text-xs mt-1 fw-600 d-flex gap-2 flex-wrap align-center">
                 <span><span class="text-accent">CLASS:</span> ${escapeHtml(programName)}</span>
-                <span>•</span>
-                <span><span class="text-accent">SUBJ:</span> ${escapeHtml(r.subjects?.name || '—')}</span>
-                <span>•</span>
+                <span>â€¢</span>
+                <span><span class="text-accent">SUBJ:</span> ${escapeHtml(r.subjects?.name || 'â€”')}</span>
+                <span>â€¢</span>
                 <span><span class="badge badge-primary" style="font-size:0.6rem; padding: 2px 6px;">LVL ${toLevelLetter(r.levels?.level_number || 1)}</span></span>
                 <span><span class="badge badge-neutral" style="font-size:0.6rem; padding: 2px 6px;">ORD ${escapeHtml(r.exam_order || '1')}</span></span>
               </div>
-              ${prereqExam ? `<div class="mt-2"><span class="badge badge-warning text-xs">🔒 Prereq: ${escapeHtml(prereqExam.exam_title)}</span></div>` : ''}
+              ${prereqExam ? `<div class="mt-2"><span class="badge badge-warning text-xs">ðŸ”’ Prereq: ${escapeHtml(prereqExam.exam_title)}</span></div>` : ''}
             </td>
             <td>
               <div class="d-flex flex-wrap gap-1">
                 <span class="badge badge-info text-xs" title="Answer Type">${formatAnswerType(r.answer_type)}</span>
-                <span class="badge ${r.question_order === 'random' ? 'badge-primary' : 'badge-neutral'} text-xs" title="Question Delivery">${r.question_order === 'random' ? '🔀 Random' : '🔢 Seq'}</span>
+                <span class="badge ${r.question_order === 'random' ? 'badge-primary' : 'badge-neutral'} text-xs" title="Question Delivery">${r.question_order === 'random' ? 'ðŸ”€ Random' : 'ðŸ”¢ Seq'}</span>
                 <span class="badge badge-neutral text-xs" title="Exam Category">${escapeHtml(r.exam_type || 'Daily')}</span>
               </div>
               <div class="text-muted text-xs mt-2 fw-600">
-                ⏱ ${r.time_limit_minutes || 60} min &nbsp; | &nbsp; 🎯 Pass: ${r.minimum_required_score || 60}%
+                â± ${r.time_limit_minutes || 60} min &nbsp; | &nbsp; ðŸŽ¯ Pass: ${r.minimum_required_score || 60}%
               </div>
             </td>
             <td class="text-center">
@@ -1810,7 +1292,9 @@
               <span class="badge ${statusColors[r.exam_status] || 'badge-neutral'} fw-700" style="text-transform: uppercase; letter-spacing: 1px;">${r.exam_status}</span>
             </td>
             <td class="text-right">
-              <div class="d-flex gap-2 justify-end">
+              <div class="d-flex gap-1 justify-end flex-wrap">
+                <button class="btn btn-outline btn-sm" onclick="window._filterExamResults='${r.id}'; window.loadSection('results');" title="View Results for this Challenge">Results →</button>
+                <button class="btn btn-outline btn-sm" onclick="window._filterRecalibrateExam='${r.id}'; window.loadSection('recalibrator');" title="Recalibrate this Challenge">Recalibrate ⚖️</button>
                 <button class="btn btn-secondary btn-sm" onclick="window._duplicateExam('${r.id}')" title="Duplicate Exam">Copy</button>
                 <button class="btn ${r.exam_status === 'published' ? 'btn-danger' : 'btn-success'} btn-sm" onclick="window._publishExam('${r.id}', '${r.exam_status}')">
                   ${r.exam_status === 'published' ? 'Unpublish' : 'Publish'}
@@ -1827,7 +1311,7 @@
           btn.addEventListener('click', async () => {
             const eid = btn.getAttribute('data-edit-exam');
             const rec = window._examRecords[eid];
-            if (rec) await openCrudModal('exams', rec);
+            if (rec) await openAssessmentBuilder(rec.id);
           });
         });
         tbody.querySelectorAll('[data-del-exam]').forEach(btn => {
@@ -1930,10 +1414,10 @@
       }
     };
 
-    // ── QUESTIONS ──
+    // â”€â”€ QUESTIONS â”€â”€
     async function renderQuestions(area) {
       const [questions, exams] = await Promise.all([
-        adminFetchAll('questions', '*, exams(exam_title, exam_type, institutions(name), subjects(name), levels(name, level_number))'),
+        adminFetchAll('questions', '*, exam_sections(title, exams(id, exam_title, exam_type, institutions(name), subjects(name), levels(name, level_number)))'),
         adminFetchAll('exams', 'id, exam_title, exam_type, institutions(name), subjects(name), levels(name, level_number)')
       ]);
 
@@ -1955,8 +1439,8 @@
             </select>
           </div>
           <div class="search-bar" style="max-width:320px;">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="question-search-filter" placeholder="Search question text…" />
+            <span class="search-icon">ðŸ”</span>
+            <input type="text" id="question-search-filter" placeholder="Search question textâ€¦" />
           </div>
         </div>
         <div class="table-wrap">
@@ -1988,7 +1472,7 @@
         const query = searchInput.value.toLowerCase().trim();
 
         const filtered = questions.filter(q => {
-          const matchExam = !selectedExamId || q.exam_id === selectedExamId;
+          const matchExam = !selectedExamId || (q.exam_sections && q.exam_sections.exams && q.exam_sections.exams.id === selectedExamId);
           const matchSearch = !query || (q.question_text || '').toLowerCase().includes(query) || (q.correct_answer || '').toLowerCase().includes(query);
           return matchExam && matchSearch;
         });
@@ -2004,11 +1488,11 @@
 
         filtered.forEach(q => {
           const tr = document.createElement('tr');
-          const answerDisplay = (q.correct_answer || '—').slice(0, 40) + ((q.correct_answer?.length > 40) ? '…' : '');
-          const examDisplay = formatExamDisplayName(q.exams);
+          const answerDisplay = (q.correct_answer || 'â€”').slice(0, 40) + ((q.correct_answer?.length > 40) ? 'â€¦' : '');
+          const examDisplay = (q.exam_sections && q.exam_sections.exams) ? formatExamDisplayName(q.exam_sections.exams) + ` (Sec: ${q.exam_sections.title})` : 'â€”';
           tr.innerHTML = `
             <td class="text-center text-muted fw-700">${q.question_order}</td>
-            <td class="fw-600">${escapeHtml(q.question_text?.slice(0,70))}${q.question_text?.length > 70 ? '…' : ''}</td>
+            <td class="fw-600">${escapeHtml(q.question_text?.slice(0,70))}${q.question_text?.length > 70 ? 'â€¦' : ''}</td>
             <td class="text-sm" style="color:var(--clr-success,#4ade80);font-family:monospace;">${escapeHtml(answerDisplay)}</td>
             <td class="text-center"><span class="badge badge-info">${formatAnswerType(q.answer_type)}</span></td>
             <td class="text-muted text-sm">${escapeHtml(examDisplay)}</td>
@@ -2044,7 +1528,7 @@
       searchInput.addEventListener('input', renderList);
     }
 
-    // ── RESULTS (Student Submissions with Batch Grouping) ──
+    // â”€â”€ RESULTS (Student Submissions with Batch Grouping) â”€â”€
     async function renderResults(area) {
       const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
         adminFetchAll('attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), exams(exam_title, exam_type), attempt_answers(id, evaluation_result, score)'),
@@ -2055,7 +1539,10 @@
 
       const submittedOnly = rawData.filter(r => ['submitted', 'auto_submitted'].includes(r.status));
       // Default: sort alphabetically by Student Name (A-Z)
-      const allData = [...submittedOnly].sort((a, b) => (a.students?.name || '').localeCompare(b.students?.name || ''));
+      let allData = [...submittedOnly].sort((a, b) => (a.students?.name || '').localeCompare(b.students?.name || ''));
+      if (window._filterExamResults) {
+        allData = allData.filter(r => r.exam_id === window._filterExamResults);
+      }
 
       let selectedProg = '';
       let selectedClass = '';
@@ -2070,12 +1557,19 @@
           </div>
         </div>
 
+        ${window._filterExamResults ? `
+          <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
+            <span>⚡ Filtered Results for Selected Challenge (${allData.length} attempts)</span>
+            <button class="btn btn-ghost btn-xs" id="clear-exam-results-btn" style="text-decoration:underline;color:#93c5fd;">Show All Challenge Results</button>
+          </div>
+        ` : ''}
+
         <!-- Filter Bar -->
         <div class="filter-bar mb-4 p-3 rounded d-flex gap-3 align-center flex-wrap" style="background:var(--clr-surface-2);border:1px solid var(--clr-border);">
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Program</label>
             <select id="res-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Institutions —</option>
+              <option value="">â€” All Institutions â€”</option>
               ${(allPrograms || []).filter(p => !p.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
             </select>
           </div>
@@ -2083,7 +1577,7 @@
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Class</label>
             <select id="res-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Programs —</option>
+              <option value="">â€” All Programs â€”</option>
               ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
             </select>
           </div>
@@ -2091,18 +1585,18 @@
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
             <select id="res-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Batches —</option>
+              <option value="">â€” All Batches â€”</option>
               ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
             </select>
           </div>
 
           <div style="flex:1;min-width:220px;">
             <label class="text-xs text-muted d-block mb-1">Search Student / Exam</label>
-            <input type="text" id="res-filter-search" class="form-control" placeholder="Type student name or exam title…" style="padding:6px 10px;font-size:0.85rem;">
+            <input type="text" id="res-filter-search" class="form-control" placeholder="Type student name or exam titleâ€¦" style="padding:6px 10px;font-size:0.85rem;">
           </div>
 
           <div class="d-flex align-end" style="padding-top:18px;">
-            <button class="btn btn-ghost btn-sm" id="res-btn-reset" title="Reset all filters">✕ Reset</button>
+            <button class="btn btn-ghost btn-sm" id="res-btn-reset" title="Reset all filters">âœ• Reset</button>
           </div>
         </div>
 
@@ -2117,9 +1611,9 @@
                 <th class="text-left">Exam Title</th>
                 <th class="text-center">Score</th>
                 <th class="text-center">Grade</th>
-                <th class="text-center">✅ Correct</th>
-                <th class="text-center">⚠️ Half</th>
-                <th class="text-center">❌ Incorrect</th>
+                <th class="text-center">âœ… Correct</th>
+                <th class="text-center">âš ï¸ Half</th>
+                <th class="text-center">âŒ Incorrect</th>
                 <th class="text-center">Submitted At</th>
                 <th class="text-center" style="width:100px;">Profile</th>
               </tr>
@@ -2220,31 +1714,31 @@
           const total = answers.length;
           const correctLabel = total > 0
             ? `<span class="badge badge-success" style="font-size:0.75rem;">${attCorrect}</span>`
-            : '<span class="text-muted text-xs">—</span>';
+            : '<span class="text-muted text-xs">â€”</span>';
           const halfLabel = total > 0
             ? `<span class="badge badge-warning" style="font-size:0.75rem;">${attMinor}</span>`
-            : '<span class="text-muted text-xs">—</span>';
+            : '<span class="text-muted text-xs">â€”</span>';
           const wrongLabel  = total > 0
             ? `<span class="badge badge-danger" style="font-size:0.75rem;">${attWrong}</span>`
-            : '<span class="text-muted text-xs">—</span>';
+            : '<span class="text-muted text-xs">â€”</span>';
 
           const studentId = r.student_id;
 
           return `
           <tr>
-            <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || '—'}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.institutions?.name || '—')}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.name || '—')}</td>
+            <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || 'â€”'}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.institutions?.name || 'â€”')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.name || 'â€”')}</td>
             <td><span class="badge ${r.students?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.students?.batches?.name || 'Unassigned')}</span></td>
-            <td class="text-sm fw-600">${r.exams?.exam_type ? escapeHtml(r.exams.exam_type) + ' — ' : ''}${escapeHtml(r.exams?.exam_title || '—')}</td>
+            <td class="text-sm fw-600">${r.exams?.exam_type ? escapeHtml(r.exams.exam_type) + ' â€” ' : ''}${escapeHtml(r.exams?.exam_title || 'â€”')}</td>
             <td class="text-center fw-700 text-grade-${r.grade || 'F'}">${parseFloat(r.percentage || 0).toFixed(1)}%</td>
-            <td class="text-center"><span class="grade-badge grade-${r.grade || 'F'}" style="width:30px;height:30px;font-size:0.85rem;">${r.grade || '—'}</span></td>
+            <td class="text-center"><span class="grade-badge grade-${r.grade || 'F'}" style="width:30px;height:30px;font-size:0.85rem;">${r.grade || 'â€”'}</span></td>
             <td class="text-center">${correctLabel}</td>
             <td class="text-center">${wrongLabel}</td>
-            <td class="text-center text-muted text-xs">${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '—'}</td>
+            <td class="text-center text-muted text-xs">${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'â€”'}</td>
             <td class="text-center">
               <button class="btn btn-ghost btn-sm results-view-profile-btn" data-sid="${studentId}" style="font-size:0.75rem; padding:3px 10px; display:inline-flex; align-items:center; gap:4px;" title="View full student profile">
-                👤 Profile
+                ðŸ‘¤ Profile
               </button>
             </td>
           </tr>
@@ -2257,12 +1751,17 @@
       batchSelect.addEventListener('change', renderTable);
       searchInput.addEventListener('input', renderTable);
       document.getElementById('res-btn-reset')?.addEventListener('click', () => {
+        window._filterExamResults = null;
         progSelect.value = '';
         classSelect.value = '';
         batchSelect.value = '';
         searchInput.value = '';
         updateClassOptions();
-        renderTable();
+        loadSection('results');
+      });
+      document.getElementById('clear-exam-results-btn')?.addEventListener('click', () => {
+        window._filterExamResults = null;
+        loadSection('results');
       });
 
       renderTable();
@@ -2281,178 +1780,228 @@
       });
     }
 
-    // ── STUDENT PROGRESS (Level Progression with Batch Grouping) ──
+    // â”€â”€ STUDENT PROGRESS (Level Progression with Batch Grouping) â”€â”€
     async function renderProgressView(area) {
-      const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
-        adminFetchAll('progress', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), subjects(name), levels(name, level_number)'),
-        adminFetchAll('institutions'),
-        adminFetchAll('programs'),
-        adminFetchAll('batches')
-      ]);
-
-      // Default: sort alphabetically by Student Name (A-Z)
-      const allData = [...rawData].sort((a, b) => (a.students?.name || '').localeCompare(b.students?.name || ''));
-
       area.innerHTML = `
         <div class="section-header">
           <div>
-            <h2 class="section-title">Student Progress <span class="count-chip" id="prog-count-chip">${allData.length} Records</span></h2>
-            <p class="section-subtitle">Level unlock progression and completion status grouped and filterable by Program, Class, and Batch</p>
+            <h2 class="section-title">Student Progress <span class="count-chip" id="prog-count-chip">Loading...</span></h2>
+            <p class="section-subtitle">Assessment progression and completion status filterable by Program, Class, and Batch</p>
           </div>
         </div>
-
-        <!-- Filter Bar -->
-        <div class="filter-bar mb-4 p-3 rounded d-flex gap-3 align-center flex-wrap" style="background:var(--clr-surface-2);border:1px solid var(--clr-border);">
-          <div style="min-width:180px;">
-            <label class="text-xs text-muted d-block mb-1">Filter Program</label>
-            <select id="prog-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Institutions —</option>
-              ${(allPrograms || []).filter(p => !p.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
-            </select>
-          </div>
-
-          <div style="min-width:180px;">
-            <label class="text-xs text-muted d-block mb-1">Filter Class</label>
-            <select id="prog-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Programs —</option>
-              ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
-            </select>
-          </div>
-
-          <div style="min-width:180px;">
-            <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
-            <select id="prog-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">— All Batches —</option>
-              ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
-            </select>
-          </div>
-
-          <div style="flex:1;min-width:220px;">
-            <label class="text-xs text-muted d-block mb-1">Search Student / Subject</label>
-            <input type="text" id="prog-filter-search" class="form-control" placeholder="Type student name or subject…" style="padding:6px 10px;font-size:0.85rem;">
-          </div>
-
-          <div class="d-flex align-end" style="padding-top:18px;">
-            <button class="btn btn-ghost btn-sm" id="prog-btn-reset" title="Reset all filters">✕ Reset</button>
-          </div>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th class="text-left">Student Name</th>
-                <th class="text-left">Program</th>
-                <th class="text-left">Class</th>
-                <th class="text-left">Batch</th>
-                <th class="text-left">Subject</th>
-                <th class="text-center">Current Level</th>
-                <th class="text-center">Status</th>
-                <th class="text-center">Completion</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-progress-body"></tbody>
-          </table>
-        </div>
+        <div class="p-5 text-center text-muted"><span class="loader"></span> Loading progression data...</div>
       `;
 
-      const progSelect  = document.getElementById('prog-filter-prog');
-      const classSelect = document.getElementById('prog-filter-class');
-      const batchSelect = document.getElementById('prog-filter-batch');
-      const searchInput = document.getElementById('prog-filter-search');
-      const tbody       = document.getElementById('tbl-progress-body');
-      const countChip   = document.getElementById('prog-count-chip');
+      try {
+        const [allStudents, allPrograms, allClasses, allBatches, allAssignments, allAssessments, allAttempts] = await Promise.all([
+          adminFetchAll('students', '*, batches(name), programs(name, institution_id, institutions(name))'),
+          adminFetchAll('institutions'),
+          adminFetchAll('programs'),
+          adminFetchAll('batches'),
+          adminFetchAll('assignments', 'student_id, batch_id, assessment_id'),
+          adminFetchAll('assessments', 'id, title, level_id, levels(name, level_number)'),
+          adminFetchAll('attempts', 'student_id, assessment_id, status, is_best_score')
+        ]);
 
-      const updateClassOptions = () => {
-        const pId = progSelect.value;
-        Array.from(classSelect.options).forEach((opt, idx) => {
-          if (idx === 0) return;
-          const match = !pId || opt.getAttribute('data-prog') === pId;
-          opt.style.display = match ? '' : 'none';
+        const allData = [];
+
+        // Map V1 Data
+        const assessmentsMap = new Map((allAssessments || []).map(a => [a.id, a]));
+        
+        (allStudents || []).filter(s => !s.deleted_at).forEach(student => {
+          const sAssignments = (allAssignments || []).filter(a => 
+            a.student_id === student.id || (a.batch_id && a.batch_id === student.batch_id)
+          );
+          
+          // To avoid duplicates if both student and batch assigned
+          const assignedAssesIds = new Set(sAssignments.map(a => a.assessment_id));
+
+          assignedAssesIds.forEach(assessmentId => {
+            const assessment = assessmentsMap.get(assessmentId);
+            if (!assessment) return;
+
+            const studentAttempts = (allAttempts || []).filter(att => att.student_id === student.id && att.assessment_id === assessmentId);
+            const isCompleted = studentAttempts.some(att => att.status === 'SUBMITTED' || att.status === 'AUTO_SUBMITTED');
+            const isInProgress = studentAttempts.some(att => att.status === 'IN_PROGRESS');
+
+            allData.push({
+              student: student,
+              assessmentTitle: assessment.title,
+              levelNumber: assessment.levels?.level_number || 1,
+              levelName: assessment.levels?.name || 'Unknown',
+              is_completed: isCompleted,
+              is_in_progress: isInProgress
+            });
+          });
         });
-        if (pId && classSelect.selectedOptions[0]?.style.display === 'none') {
-          classSelect.value = '';
-        }
-        updateBatchOptions();
-      };
 
-      const updateBatchOptions = () => {
-        const cId = classSelect.value;
-        Array.from(batchSelect.options).forEach((opt, idx) => {
-          if (idx === 0) return;
-          const match = !cId || opt.getAttribute('data-class') === cId;
-          opt.style.display = match ? '' : 'none';
-        });
-        if (cId && batchSelect.selectedOptions[0]?.style.display === 'none') {
-          batchSelect.value = '';
-        }
-      };
+        // Default: sort alphabetically by Student Name (A-Z)
+        allData.sort((a, b) => (a.student.name || '').localeCompare(b.student.name || ''));
 
-      const renderTable = () => {
-        const pId = progSelect.value;
-        const cId = classSelect.value;
-        const bId = batchSelect.value;
-        const q = searchInput.value.toLowerCase().trim();
+        area.innerHTML = `
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">Student Progress <span class="count-chip" id="prog-count-chip">${allData.length} Records</span></h2>
+              <p class="section-subtitle">Assessment progression and completion status filterable by Program, Class, and Batch</p>
+            </div>
+          </div>
 
-        const filtered = allData.filter(r => {
-          const studentProgId = r.students?.programs?.institutions?.id || r.students?.programs?.institution_id;
-          if (pId && studentProgId !== pId) return false;
-          if (cId && r.students?.program_id !== cId) return false;
-          if (bId && r.students?.batch_id !== bId) return false;
-          if (q) {
-            const sName = (r.students?.name || '').toLowerCase();
-            const sSubj = (r.subjects?.name || '').toLowerCase();
-            if (!sName.includes(q) && !sSubj.includes(q)) return false;
+          <!-- Filter Bar -->
+          <div class="filter-bar mb-4 p-3 rounded d-flex gap-3 align-center flex-wrap" style="background:var(--clr-surface-2);border:1px solid var(--clr-border);">
+            <div style="min-width:180px;">
+              <label class="text-xs text-muted d-block mb-1">Filter Program</label>
+              <select id="prog-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
+                <option value="">â€” All Institutions â€”</option>
+                ${(allPrograms || []).filter(p => !p.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
+              </select>
+            </div>
+
+            <div style="min-width:180px;">
+              <label class="text-xs text-muted d-block mb-1">Filter Class</label>
+              <select id="prog-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
+                <option value="">â€” All Programs â€”</option>
+                ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
+              </select>
+            </div>
+
+            <div style="min-width:180px;">
+              <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
+              <select id="prog-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
+                <option value="">â€” All Batches â€”</option>
+                ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
+              </select>
+            </div>
+
+            <div style="flex:1;min-width:220px;">
+              <label class="text-xs text-muted d-block mb-1">Search Student / Assessment</label>
+              <input type="text" id="prog-filter-search" class="form-control" placeholder="Type student name or assessment..." style="padding:6px 10px;font-size:0.85rem;">
+            </div>
+
+            <div class="d-flex align-end" style="padding-top:18px;">
+              <button class="btn btn-ghost btn-sm" id="prog-btn-reset" title="Reset all filters">âœ• Reset</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="text-left">Student Name</th>
+                  <th class="text-left">Program</th>
+                  <th class="text-left">Class</th>
+                  <th class="text-left">Batch</th>
+                  <th class="text-left">Assessment</th>
+                  <th class="text-center">Level</th>
+                  <th class="text-center">Status</th>
+                  <th class="text-center">Completion</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-progress-body"></tbody>
+            </table>
+          </div>
+        `;
+
+        const progSelect  = document.getElementById('prog-filter-prog');
+        const classSelect = document.getElementById('prog-filter-class');
+        const batchSelect = document.getElementById('prog-filter-batch');
+        const searchInput = document.getElementById('prog-filter-search');
+        const tbody       = document.getElementById('tbl-progress-body');
+        const countChip   = document.getElementById('prog-count-chip');
+
+        const updateClassOptions = () => {
+          const pId = progSelect.value;
+          Array.from(classSelect.options).forEach((opt, idx) => {
+            if (idx === 0) return;
+            const match = !pId || opt.getAttribute('data-prog') === pId;
+            opt.style.display = match ? '' : 'none';
+          });
+          if (pId && classSelect.selectedOptions[0]?.style.display === 'none') {
+            classSelect.value = '';
           }
-          return true;
+          updateBatchOptions();
+        };
+
+        const updateBatchOptions = () => {
+          const cId = classSelect.value;
+          Array.from(batchSelect.options).forEach((opt, idx) => {
+            if (idx === 0) return;
+            const match = !cId || opt.getAttribute('data-class') === cId;
+            opt.style.display = match ? '' : 'none';
+          });
+          if (cId && batchSelect.selectedOptions[0]?.style.display === 'none') {
+            batchSelect.value = '';
+          }
+        };
+
+        const renderTable = () => {
+          const pId = progSelect.value;
+          const cId = classSelect.value;
+          const bId = batchSelect.value;
+          const q = searchInput.value.toLowerCase().trim();
+
+          const filtered = allData.filter(r => {
+            const studentProgId = r.student?.programs?.institutions?.id || r.student?.programs?.institution_id;
+            if (pId && studentProgId !== pId) return false;
+            if (cId && r.student?.program_id !== cId) return false;
+            if (bId && r.student?.batch_id !== bId) return false;
+            if (q) {
+              const sName = (r.student?.name || '').toLowerCase();
+              const sSubj = (r.assessmentTitle || '').toLowerCase();
+              if (!sName.includes(q) && !sSubj.includes(q)) return false;
+            }
+            return true;
+          });
+
+          countChip.textContent = \`\${filtered.length} of \${allData.length}\`;
+
+          if (!filtered.length) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted p-5">No progression records match the selected filters.</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = filtered.map(r => \`
+            <tr>
+              <td class="fw-600" style="color:var(--clr-text-1);">\${formatStudentName(r.student?.name, r.student?.gender) || 'â€”'}</td>
+              <td class="text-muted text-sm">\${escapeHtml(r.student?.programs?.institutions?.name || 'â€”')}</td>
+              <td class="text-muted text-sm">\${escapeHtml(r.student?.programs?.name || 'â€”')}</td>
+              <td><span class="badge \${r.student?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">\${escapeHtml(r.student?.batches?.name || 'Unassigned')}</span></td>
+              <td class="fw-600 text-sm">\${escapeHtml(r.assessmentTitle || 'â€”')}</td>
+              <td class="text-center"><span class="badge badge-primary">Level \${toLevelLetter(r.levelNumber)} \${escapeHtml(r.levelName || '')}</span></td>
+              <td class="text-center">
+                <span class="badge \${r.is_completed ? 'badge-success' : r.is_in_progress ? 'badge-warning' : 'badge-neutral'}">
+                  \${r.is_completed ? 'âœ“ Completed' : r.is_in_progress ? 'â–¶ In Progress' : 'ðŸ”’ Not Started'}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="progress-pill">
+                  <div class="progress-pill-fill" style="width:\${r.is_completed ? 100 : r.is_in_progress ? 50 : 0}%;"></div>
+                </div>
+              </td>
+            </tr>
+          \`).join('');
+        };
+
+        progSelect.addEventListener('change', () => { updateClassOptions(); renderTable(); });
+        classSelect.addEventListener('change', () => { updateBatchOptions(); renderTable(); });
+        batchSelect.addEventListener('change', renderTable);
+        searchInput.addEventListener('input', renderTable);
+        document.getElementById('prog-btn-reset')?.addEventListener('click', () => {
+          progSelect.value = '';
+          classSelect.value = '';
+          batchSelect.value = '';
+          searchInput.value = '';
+          updateClassOptions();
+          renderTable();
         });
 
-        countChip.textContent = `${filtered.length} of ${allData.length}`;
-
-        if (!filtered.length) {
-          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted p-5">No progression records match the selected filters.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = filtered.map(r => `
-          <tr>
-            <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || '—'}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.institutions?.name || '—')}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.name || '—')}</td>
-            <td><span class="badge ${r.students?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.students?.batches?.name || 'Unassigned')}</span></td>
-            <td class="fw-600 text-sm">${escapeHtml(r.subjects?.name || '—')}</td>
-            <td class="text-center"><span class="badge badge-primary">Level ${toLevelLetter(r.levels?.level_number || 1)} ${escapeHtml(r.levels?.name || '')}</span></td>
-            <td class="text-center">
-              <span class="badge ${r.is_completed ? 'badge-success' : r.is_unlocked ? 'badge-info' : 'badge-neutral'}">
-                ${r.is_completed ? '✓ Completed' : r.is_unlocked ? '▶ Unlocked' : '🔒 Locked'}
-              </span>
-            </td>
-            <td class="text-center">
-              <div class="progress-pill">
-                <div class="progress-pill-fill" style="width:${r.is_completed ? 100 : r.is_unlocked ? 50 : 0}%;"></div>
-              </div>
-            </td>
-          </tr>
-        `).join('');
-      };
-
-      progSelect.addEventListener('change', () => { updateClassOptions(); renderTable(); });
-      classSelect.addEventListener('change', () => { updateBatchOptions(); renderTable(); });
-      batchSelect.addEventListener('change', renderTable);
-      searchInput.addEventListener('input', renderTable);
-      document.getElementById('prog-btn-reset')?.addEventListener('click', () => {
-        progSelect.value = '';
-        classSelect.value = '';
-        batchSelect.value = '';
-        searchInput.value = '';
-        updateClassOptions();
         renderTable();
-      });
 
-      renderTable();
+      } catch (err) {
+        console.error('Failed to load progress', err);
+        area.innerHTML = \`<div class="p-5 text-center text-error">Failed to load progression data: \${err.message}</div>\`;
+      }
     }
-
-    // ── AUDIT LOG ──
+    // â”€â”€ AUDIT LOG â”€â”€
     async function renderAuditLog(area) {
       const data = await adminFetchAll('audit_logs');
       area.innerHTML = `
@@ -2479,8 +2028,8 @@
                   <td class="text-sm text-muted">${new Date(r.created_at).toLocaleString()}</td>
                   <td class="text-center"><span class="badge badge-info">${r.actor_role || 'ADMIN'}</span></td>
                   <td class="fw-600 text-sm">${r.action}</td>
-                  <td class="text-muted text-sm">${r.entity_type || '—'}</td>
-                  <td class="text-center text-muted text-sm">${r.ip_address || '—'}</td>
+                  <td class="text-muted text-sm">${r.entity_type || 'â€”'}</td>
+                  <td class="text-center text-muted text-sm">${r.ip_address || 'â€”'}</td>
                 </tr>
               `).join('')}
               ${!(data?.length) ? '<tr><td colspan="5" class="text-center text-muted p-4">No audit events yet.</td></tr>' : ''}
@@ -2491,29 +2040,83 @@
     }
 
 
-    // ── SETTINGS ──
+    // ── SETTINGS & SYSTEM TOOLS (D — DESK) ──
     async function renderSettings(area) {
       const sb = await getSupabase();
       const { data } = await sb.from('site_settings').select('*');
       const settings = Object.fromEntries((data || []).map(r => [r.key, r.value]));
+      const currentCustomPass = localStorage.getItem('tec_admin_custom_password') || '';
+
       area.innerHTML = `
-        <div class="section-header"><div><h2 class="section-title">Site Settings</h2></div></div>
-        <div class="glass-card p-8" style="max-width:560px;">
-          <div class="form-group">
-            <label class="form-label">Site Name</label>
-            <input class="form-control" id="setting-site_name" value="${settings.site_name || 'TOP ENGLISH CLASS'}" />
+        <div class="section-header">
+          <div>
+            <h2 class="section-title text-gradient">System Settings & Administration (D — DESK)</h2>
+            <p class="section-subtitle">Platform configuration, security credentials, system tools & diagnostic telemetry</p>
           </div>
-          <div class="form-group">
-            <label class="form-label">Passing Threshold (%)</label>
-            <input class="form-control" type="number" id="setting-passing_threshold" value="${settings.passing_threshold || '60'}" min="0" max="100" />
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:1.5rem;align-items:start;">
+          <!-- 1. Site Configuration Card -->
+          <div class="glass-card p-6">
+            <h3 style="font-size:1.1rem;margin-bottom:1rem;color:var(--clr-text-1);">🌐 Global Platform Configuration</h3>
+            <div class="form-group">
+              <label class="form-label">Site Name</label>
+              <input class="form-control" id="setting-site_name" value="${escapeHtml(settings.site_name || 'TOP ENGLISH CLASS')}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Passing Threshold (%)</label>
+              <input class="form-control" type="number" id="setting-passing_threshold" value="${escapeHtml(settings.passing_threshold || '60')}" min="0" max="100" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Login Background URL (optional)</label>
+              <input class="form-control" id="setting-login_background_url" value="${escapeHtml(settings.login_background_url || '')}" placeholder="https://…" />
+            </div>
+            <button class="btn btn-primary btn-sm" id="save-settings-btn">Save Configuration</button>
           </div>
-          <div class="form-group">
-            <label class="form-label">Login Background URL (optional)</label>
-            <input class="form-control" id="setting-login_background_url" value="${settings.login_background_url || ''}" placeholder="https://…" />
+
+          <!-- 2. Security & Credentials Card -->
+          <div class="glass-card p-6">
+            <h3 style="font-size:1.1rem;margin-bottom:1rem;color:var(--clr-text-1);">🔒 Security & Administrator Access</h3>
+            <p class="text-xs text-muted mb-3">Configure local administrator credentials or manage system authentication overrides.</p>
+            <div class="form-group">
+              <label class="form-label">Master Admin Username</label>
+              <input class="form-control" value="admin" disabled style="opacity:0.7;" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Custom Admin Password Override</label>
+              <input class="form-control" type="password" id="setting-custom-password" placeholder="Leave empty to use default (admin123)" value="${escapeHtml(currentCustomPass)}" />
+              <div class="text-xs text-muted mt-1">Leave blank to use default 'admin123' master key.</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-save-admin-password">Update Admin Password</button>
           </div>
-          <button class="btn btn-primary" id="save-settings-btn">Save Settings</button>
+
+          <!-- 3. System Tools & Diagnostics Card -->
+          <div class="glass-card p-6" style="grid-column:1/-1;">
+            <h3 style="font-size:1.1rem;margin-bottom:1rem;color:var(--clr-text-1);">🛠️ System Tools & Diagnostics</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:1rem;">
+              <div style="background:var(--clr-surface-2);padding:1rem;border-radius:8px;border:1px solid var(--clr-border);">
+                <div class="fw-600 text-sm mb-1">Database Connectivity & Latency</div>
+                <div class="text-xs text-muted mb-3" id="diag-db-status">Testing cloud database connection...</div>
+                <button class="btn btn-secondary btn-xs" id="btn-diag-test-conn">⚡ Test Latency</button>
+              </div>
+
+              <div style="background:var(--clr-surface-2);padding:1rem;border-radius:8px;border:1px solid var(--clr-border);">
+                <div class="fw-600 text-sm mb-1">Local Browser Cache</div>
+                <div class="text-xs text-muted mb-3">Clear client-side cached queries, rosters, and question indexes.</div>
+                <button class="btn btn-secondary btn-xs" id="btn-diag-clear-cache">🗑️ Flush Cache</button>
+              </div>
+
+              <div style="background:var(--clr-surface-2);padding:1rem;border-radius:8px;border:1px solid var(--clr-border);">
+                <div class="fw-600 text-sm mb-1">Activity & Audit Logs</div>
+                <div class="text-xs text-muted mb-3">Inspect system changes, logins, exams published, and student updates.</div>
+                <button class="btn btn-outline btn-xs" id="btn-diag-view-audit">📜 View Audit Log →</button>
+              </div>
+            </div>
+          </div>
         </div>
       `;
+
+      // Handlers
       document.getElementById('save-settings-btn').addEventListener('click', async () => {
         const pairs = [
           ['site_name', document.getElementById('setting-site_name').value],
@@ -2523,13 +2126,49 @@
         for (const [key, value] of pairs) {
           await sb.from('site_settings').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
         }
-        showToast('Settings saved.', 'success');
+        showToast('Settings saved successfully.', 'success');
+      });
+
+      document.getElementById('btn-save-admin-password').addEventListener('click', () => {
+        const customPass = document.getElementById('setting-custom-password').value.trim();
+        if (customPass) {
+          localStorage.setItem('tec_admin_custom_password', customPass);
+          showToast('Custom admin password saved. You can log in with your new password.', 'success');
+        } else {
+          localStorage.removeItem('tec_admin_custom_password');
+          showToast('Custom password cleared. Default password (admin123) restored.', 'info');
+        }
+      });
+
+      const dbStatusEl = document.getElementById('diag-db-status');
+      const runConnTest = async () => {
+        if (!dbStatusEl) return;
+        dbStatusEl.textContent = 'Measuring latency...';
+        const start = performance.now();
+        const res = await testSupabaseConnection();
+        const latency = Math.round(performance.now() - start);
+        if (res.connected) {
+          dbStatusEl.innerHTML = `<span class="text-success">Connected to Cloud DB</span> (${latency}ms roundtrip)`;
+        } else {
+          dbStatusEl.innerHTML = `<span class="text-danger">Offline / Error</span>: ${res.error || 'Check network'}`;
+        }
+      };
+      runConnTest();
+      document.getElementById('btn-diag-test-conn')?.addEventListener('click', runConnTest);
+
+      document.getElementById('btn-diag-clear-cache')?.addEventListener('click', () => {
+        if (typeof clearAdminCache === 'function') clearAdminCache();
+        showToast('Local admin cache cleared.', 'success');
+      });
+
+      document.getElementById('btn-diag-view-audit')?.addEventListener('click', () => {
+        loadSection('audit');
       });
     }
 
-    // ── EXAM RECALIBRATOR (Phases 15, 16, 17) ──
+    // â”€â”€ EXAM RECALIBRATOR (Phases 15, 16, 17) â”€â”€
     async function renderRecalibrator(area) {
-      showLoading('Loading exams for recalibration…');
+      showLoading('Loading exams for recalibrationâ€¦');
       const allExams = await adminFetchAll('exams');
       hideLoading();
       const activeExams = allExams.filter(e => !e.deleted_at).sort((a, b) => (a.exam_title || '').localeCompare(b.exam_title || ''));
@@ -2537,7 +2176,7 @@
       area.innerHTML = `
         <div class="section-header">
           <div>
-            <h2 class="section-title text-gradient" style="font-size:1.6rem;">⚡ Exam Recalibrator</h2>
+            <h2 class="section-title text-gradient" style="font-size:1.6rem;">âš¡ Exam Recalibrator</h2>
             <p class="section-subtitle">
               Recalculate historical submitted student attempts after updating questions, adding multiple correct answers (separated by <code>;</code> or <code>|</code>), or enabling hyphen tolerance.
             </p>
@@ -2548,14 +2187,14 @@
           <div class="d-flex align-center gap-4 flex-wrap">
             <div style="flex: 1; min-width: 280px;">
               <label class="form-label">Select Target Exam</label>
-              <Select Program="form-control" id="recalibrator-exam-select">
-                <option value="">— Choose an Exam to Recalibrate —</option>
+              <select class="form-control" id="recalibrator-exam-select">
+                <option value="">â€” Choose an Exam to Recalibrate â€”</option>
                 ${activeExams.map(e => `<option value="${e.id}">[${escapeHtml(e.exam_type || 'Exam')}] ${escapeHtml(e.exam_title || e.display_name || e.id)}</option>`).join('')}
               </select>
             </div>
             <div style="display: flex; gap: 12px; align-items: flex-end; padding-top: 20px;">
-              <button class="btn btn-primary" id="btn-preview-recal" disabled>🔍 Preview Recalibration</button>
-              <button class="btn btn-success" id="btn-apply-recal" disabled style="background:linear-gradient(135deg,#10b981,#059669);font-weight:700;">⚡ Apply Recalibration</button>
+              <button class="btn btn-primary" id="btn-preview-recal" disabled>ðŸ” Preview Recalibration</button>
+              <button class="btn btn-success" id="btn-apply-recal" disabled style="background:linear-gradient(135deg,#10b981,#059669);font-weight:700;">âš¡ Apply Recalibration</button>
             </div>
           </div>
         </div>
@@ -2576,11 +2215,11 @@
               <div class="fw-700" style="font-size:1.6rem; color:var(--clr-primary, #a78bfa);" id="recal-metric-affected">0</div>
             </div>
             <div class="glass-card p-4 text-center" style="border-left: 4px solid #10b981;">
-              <div class="text-xs text-muted mb-1">Status: FAIL ➔ PASS</div>
+              <div class="text-xs text-muted mb-1">Status: FAIL âž” PASS</div>
               <div class="fw-700" style="font-size:1.6rem; color: #10b981;" id="recal-metric-fail-pass">0</div>
             </div>
             <div class="glass-card p-4 text-center" style="border-left: 4px solid #f43f5e;">
-              <div class="text-xs text-muted mb-1">Status: PASS ➔ FAIL</div>
+              <div class="text-xs text-muted mb-1">Status: PASS âž” FAIL</div>
               <div class="fw-700" style="font-size:1.6rem; color: #f43f5e;" id="recal-metric-pass-fail">0</div>
             </div>
             <div class="glass-card p-4 text-center" style="border-left: 4px solid #38bdf8;">
@@ -2600,7 +2239,7 @@
               </div>
               <div class="d-flex align-center gap-2">
                 <label class="text-xs text-muted">Filter:</label>
-                <Select Program="form-control" id="recal-filter-view" style="width: auto; padding: 4px 10px; font-size: 0.85rem;">
+                <select class="form-control" id="recal-filter-view" style="width: auto; padding: 4px 10px; font-size: 0.85rem;">
                   <option value="affected">Affected Students Only</option>
                   <option value="all">All Students</option>
                 </select>
@@ -2632,19 +2271,19 @@
         <!-- Confirmation Modal for Recalibration -->
         <div class="modal-backdrop hidden" id="recal-confirm-modal" role="dialog" aria-modal="true">
           <div class="modal-box" style="max-width: 480px; text-align: center;">
-            <div style="font-size: 2.8rem; margin-bottom: 1rem;">⚡</div>
+            <div style="font-size: 2.8rem; margin-bottom: 1rem;">âš¡</div>
             <h3 class="mb-2">Confirm Exam Recalibration?</h3>
             <p class="text-muted text-sm mb-4" id="recal-modal-desc">
               This will safely update historical submitted scores, percentages, grades, and student progression using the authoritative grading engine.
             </p>
             <div class="p-4 rounded text-left text-xs mb-6" style="background: rgba(255,255,255,0.04); border: 1px solid var(--clr-border);">
-              <div class="mb-1">• <b>Affected Attempts:</b> <span id="modal-affected-count" class="fw-700 text-primary">0</span></div>
-              <div class="mb-1">• <b>Status Transitions:</b> <span id="modal-status-changes" class="fw-700">0</span></div>
-              <div>• <b>Audit Trail:</b> An audit log entry will be permanently recorded.</div>
+              <div class="mb-1">â€¢ <b>Affected Attempts:</b> <span id="modal-affected-count" class="fw-700 text-primary">0</span></div>
+              <div class="mb-1">â€¢ <b>Status Transitions:</b> <span id="modal-status-changes" class="fw-700">0</span></div>
+              <div>â€¢ <b>Audit Trail:</b> An audit log entry will be permanently recorded.</div>
             </div>
             <div class="d-flex gap-3 justify-between">
               <button class="btn btn-secondary" id="btn-recal-cancel" style="flex:1;">Cancel</button>
-              <button class="btn btn-primary" id="btn-recal-confirm-run" style="flex:1; background: linear-gradient(135deg,#10b981,#059669); border:none;">✓ Yes, Apply Changes</button>
+              <button class="btn btn-primary" id="btn-recal-confirm-run" style="flex:1; background: linear-gradient(135deg,#10b981,#059669); border:none;">âœ“ Yes, Apply Changes</button>
             </div>
           </div>
         </div>
@@ -2669,6 +2308,12 @@
         currentPreviewData = null;
       });
 
+      if (window._filterRecalibrateExam) {
+        examSelect.value = window._filterRecalibrateExam;
+        window._filterRecalibrateExam = null;
+        btnPreview.disabled = !examSelect.value;
+      }
+
       const renderPreviewRows = () => {
         if (!currentPreviewData) return;
         const mode = filterSelect.value;
@@ -2690,9 +2335,9 @@
 
           let statusBadge = '<span class="badge badge-neutral">No Change</span>';
           if (isStatusPass) {
-            statusBadge = '<span class="badge badge-success fw-700">FAIL ➔ PASS ✨</span>';
+            statusBadge = '<span class="badge badge-success fw-700">FAIL âž” PASS âœ¨</span>';
           } else if (isStatusFail) {
-            statusBadge = '<span class="badge badge-danger fw-700">PASS ➔ FAIL ⚠️</span>';
+            statusBadge = '<span class="badge badge-danger fw-700">PASS âž” FAIL âš ï¸</span>';
           } else if (item.isAffected) {
             statusBadge = isScoreUp ? '<span class="badge badge-info">+ Score Up</span>' : '<span class="badge badge-warning">- Score Down</span>';
           }
@@ -2722,7 +2367,7 @@
         const examId = examSelect.value;
         if (!examId) return;
 
-        showLoading('Calculating recalibration preview across all attempts…');
+        showLoading('Calculating recalibration preview across all attemptsâ€¦');
         try {
           currentPreviewData = await previewRecalibrateExam(examId);
           hideLoading();
@@ -2768,7 +2413,7 @@
         const examId = examSelect.value;
         if (!examId) return;
 
-        showLoading('Applying recalibration to historical student results…');
+        showLoading('Applying recalibration to historical student resultsâ€¦');
         try {
           const res = await applyRecalibrateExam(examId);
           hideLoading();
@@ -2783,9 +2428,9 @@
       });
     }
 
-    // ── Student Import Engine ──
+    // â”€â”€ Student Import Engine â”€â”€
     async function renderImportStudents(area) {
-      showLoading('Loading institutions & programs…');
+      showLoading('Loading institutions & programsâ€¦');
       const [allProgs, allCls, allBatches, allLevels] = await Promise.all([
         adminFetchAll('institutions'),
         adminFetchAll('programs', '*, institutions(name)'),
@@ -2808,7 +2453,7 @@
             </div>
             <div class="d-flex gap-2">
               <button class="btn btn-secondary btn-sm" id="btn-back-to-students">Back to Students</button>
-              <button class="btn btn-primary btn-sm" id="btn-dl-student-template">📥 Download Student Template (.xlsx)</button>
+              <button class="btn btn-primary btn-sm" id="btn-dl-student-template">ðŸ“¥ Download Student Template (.xlsx)</button>
             </div>
           </div>
 
@@ -2819,7 +2464,7 @@
               <div class="d-flex flex-column gap-4 mb-4">
                 <div class="form-group w-100">
                   <label class="form-label">1. Target Program (Default / Override)</label>
-                  <Select Program="form-control" id="import-student-program">
+                  <select class="form-control" id="import-student-program">
                     <option value="">- Use Program from Excel File -</option>
                     ${sortedPrograms.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
                   </select>
@@ -2828,7 +2473,7 @@
 
                 <div class="form-group w-100">
                   <label class="form-label">2. Target Class (Default / Override)</label>
-                  <Select Program="form-control" id="import-student-class">
+                  <select class="form-control" id="import-student-class">
                     <option value="">- Use Class from Excel File -</option>
                     ${sortedClasses.map(c => `<option value="${c.id}" data-prog="${c.institution_id}">[${escapeHtml(c.institutions?.name || 'Program')}] ${escapeHtml(c.name)}</option>`).join('')}
                   </select>
@@ -2837,7 +2482,7 @@
 
                 <div class="form-group w-100">
                   <label class="form-label">3. Target Batch (Default / Override)</label>
-                  <Select Program="form-control" id="import-student-batch" disabled>
+                  <select class="form-control" id="import-student-batch" disabled>
                     <option value="">- Select Program First -</option>
                   </select>
                   <span class="text-muted text-xs mt-1">Select to assign all students in the file to this Batch.</span>
@@ -2845,7 +2490,7 @@
 
                 <div class="form-group w-100">
                   <label class="form-label">4. Target Level (Optional / Override)</label>
-                  <Select Program="form-control" id="import-student-level">
+                  <select class="form-control" id="import-student-level">
                     <option value="">- Use Level from Excel File / None -</option>
                     ${sortedLevels.map(l => `<option value="${l.id}">Level ${toLevelLetter(l.level_number)} (${escapeHtml(l.name)})</option>`).join('')}
                   </select>
@@ -2865,11 +2510,11 @@
                   <span class="badge badge-info" style="font-size:0.75rem;">Supports English Columns</span>
                 </div>
                 <div class="text-xs text-muted d-flex flex-column gap-1">
-                  <div>• <b>Name:</b> Column <code>NAME</code>, <code>Student Name</code> (Required).</div>
-                  <div>• <b>Gender (Optional):</b> Column <code>GENDER</code>. <em>If left blank, students will select their own gender (Mr. / Miss) upon first login.</em></div>
-                  <div>• <b>Birth Date / Age:</b> Column <code>BIRTH_DATE</code> or <code>AGE</code> (Format: YYYY-MM-DD or age number).</div>
-                  <div>• <b>PIN:</b> Column <code>PIN</code> or <code>Password</code> (Defaults to <code>1234</code> if left blank).</div>
-                  <div>• <b>Program &amp; Class &amp; Batch:</b> If left blank in the Excel file, the Target Program, Class, and Batch selected above will be used.</div>
+                  <div>â€¢ <b>Name:</b> Column <code>NAME</code>, <code>Student Name</code> (Required).</div>
+                  <div>â€¢ <b>Gender (Optional):</b> Column <code>GENDER</code>. <em>If left blank, students will select their own gender (Mr. / Miss) upon first login.</em></div>
+                  <div>â€¢ <b>Birth Date / Age:</b> Column <code>BIRTH_DATE</code> or <code>AGE</code> (Format: YYYY-MM-DD or age number).</div>
+                  <div>â€¢ <b>PIN:</b> Column <code>PIN</code> or <code>Password</code> (Defaults to <code>1234</code> if left blank).</div>
+                  <div>â€¢ <b>Program &amp; Class &amp; Batch:</b> If left blank in the Excel file, the Target Program, Class, and Batch selected above will be used.</div>
                 </div>
               </div>
             </div>
@@ -2884,7 +2529,7 @@
                   </div>
                   <div class="d-flex align-center gap-3">
                     <button class="btn btn-secondary btn-sm" id="btn-cancel-students-import">Cancel</button>
-                    <button class="btn btn-primary btn-sm" id="btn-confirm-students-import">✓ Confirm &amp; Save Students</button>
+                    <button class="btn btn-primary btn-sm" id="btn-confirm-students-import">âœ“ Confirm &amp; Save Students</button>
                   </div>
                 </div>
 
@@ -2970,7 +2615,7 @@
       const batchSelect = document.getElementById('import-student-batch');
 
       const updateBatchDropdown = (selectedClassId) => {
-        batchSelect.innerHTML = `<option value="">— Use Batch from Excel File —</option>`;
+        batchSelect.innerHTML = `<option value="">â€” Use Batch from Excel File â€”</option>`;
         if (!selectedClassId) {
           batchSelect.disabled = true;
           batchSelect.innerHTML = `<option value="">- Select Program First -</option>`;
@@ -3030,7 +2675,7 @@
         const file = e.target.files?.[0];
         if (!file) return;
 
-        showLoading('Reading spreadsheet file…');
+        showLoading('Reading spreadsheet fileâ€¦');
         const reader = new FileReader();
         reader.onload = async (evt) => {
           try {
@@ -3088,7 +2733,7 @@
               const rawBirth = getRowVal(row, ['birthdate', 'dob', 'tanggallahir', 'tgllahir', 'tgl', 'birth_date']);
               const rawAge = getRowVal(row, ['age', 'usia']);
               let birthDate = '';
-              let ageDisplay = '—';
+              let ageDisplay = 'â€”';
 
               if (rawBirth) {
                 if (!isNaN(rawBirth) && Number(rawBirth) > 1000) {
@@ -3203,7 +2848,7 @@
               // Check if student already in database
               const existingDbStudent = existingStudentsMap.get(batchKey);
               let status = 'valid';
-              let statusMsg = '✨ New Student';
+              let statusMsg = 'âœ¨ New Student';
               let isExisting = false;
               let existingId = null;
 
@@ -3212,7 +2857,7 @@
                 statusMsg = 'No Class Assigned';
               } else if (existingDbStudent) {
                 status = 'merge';
-                statusMsg = '🔄 Merge Existing';
+                statusMsg = 'ðŸ”„ Merge Existing';
                 isExisting = true;
                 existingId = existingDbStudent.id;
               }
@@ -3241,7 +2886,7 @@
                 programId: finalClassId,
                 programName: finalClassName || 'Class',
                 batchId: finalBatchId,
-                batchName: finalBatchName || '—',
+                batchName: finalBatchName || 'â€”',
                 levelId: finalLevelId,
                 levelName: finalLevelName || '',
                 status,
@@ -3295,32 +2940,32 @@
             const tr = document.createElement('tr');
             let badgeHtml = '';
             if (s.status === 'valid') {
-              badgeHtml = `<span class="badge badge-success">✨ New Student</span>`;
+              badgeHtml = `<span class="badge badge-success">âœ¨ New Student</span>`;
             } else if (s.status === 'merge') {
-              badgeHtml = `<span class="badge badge-info">🔄 Merge / Update</span>`;
+              badgeHtml = `<span class="badge badge-info">ðŸ”„ Merge / Update</span>`;
             } else {
               badgeHtml = `<span class="badge badge-danger">Error</span>`;
             }
 
             if (s.duplicateInFile) {
-              badgeHtml += ` <span class="badge badge-warning ml-1" title="Dimerge dari baris kembar dalam spreadsheet">⚡ Dimerge dari File</span>`;
+              badgeHtml += ` <span class="badge badge-warning ml-1" title="Dimerge dari baris kembar dalam spreadsheet">âš¡ Dimerge dari File</span>`;
             }
 
             const genderBadge = s.gender === 'male'
-              ? '<span class="badge badge-primary">👨 Male</span>'
+              ? '<span class="badge badge-primary">ðŸ‘¨ Male</span>'
               : s.gender === 'female'
-              ? '<span class="badge badge-accent">👩 Female</span>'
-              : '<span class="badge badge-neutral" style="font-size:0.7rem;" title="Student will select gender upon first login">⏳ Unassigned</span>';
+              ? '<span class="badge badge-accent">ðŸ‘© Female</span>'
+              : '<span class="badge badge-neutral" style="font-size:0.7rem;" title="Student will select gender upon first login">â³ Unassigned</span>';
 
             tr.innerHTML = `
               <td class="text-center text-muted fw-700">${i + 1}</td>
               <td class="fw-600">${escapeHtml(s.name)}</td>
               <td class="text-center">${genderBadge}</td>
-              <td class="text-center text-muted text-sm">${escapeHtml(s.birthDate || '—')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${escapeHtml(s.ageDisplay)}</span></td>
+              <td class="text-center text-muted text-sm">${escapeHtml(s.birthDate || 'â€”')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${escapeHtml(s.ageDisplay)}</span></td>
               <td class="text-muted text-sm">${escapeHtml(s.institutionName)}</td>
               <td class="fw-600 text-sm">${escapeHtml(s.programName)}</td>
-              <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(s.batchName || '—')}</td>
-              <td class="text-center text-sm" style="font-family:monospace;letter-spacing:2px;">•••• <span class="text-muted text-xs" title="PIN: ${escapeHtml(s.pin)}">(${escapeHtml(s.pin)})</span></td>
+              <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(s.batchName || 'â€”')}</td>
+              <td class="text-center text-sm" style="font-family:monospace;letter-spacing:2px;">â€¢â€¢â€¢â€¢ <span class="text-muted text-xs" title="PIN: ${escapeHtml(s.pin)}">(${escapeHtml(s.pin)})</span></td>
               <td class="text-center">${badgeHtml}</td>
             `;
             tbody.appendChild(tr);
@@ -3333,8 +2978,8 @@
 
         document.getElementById('students-preview-summary').textContent = `${parsedStudentsState.length} students ready to be processed (${newCount} new records, ${mergeCount} existing records merged).`;
         document.getElementById('chip-total-students').textContent = `Total: ${parsedStudentsState.length}`;
-        document.getElementById('chip-valid-students').textContent = `✨ Baru: ${newCount}`;
-        document.getElementById('chip-warn-students').textContent = `🔄 Merge: ${mergeCount}`;
+        document.getElementById('chip-valid-students').textContent = `âœ¨ Baru: ${newCount}`;
+        document.getElementById('chip-warn-students').textContent = `ðŸ”„ Merge: ${mergeCount}`;
 
         const saveBtn = document.getElementById('btn-confirm-students-import');
         if (saveBtn) {
@@ -3357,16 +3002,16 @@
           return;
         }
 
-              showLoading(`Processing ${readyStudents.length} students (saving new & merging existing)…`);
+              showLoading(`Processing ${readyStudents.length} students (saving new & merging existing)â€¦`);
         try {
           let insertedCount = 0;
           let mergedCount = 0;
 
-          // ── Auto-create missing batches first (before saving students) ──
+          // â”€â”€ Auto-create missing batches first (before saving students) â”€â”€
           // Collect unique (programId, batchName) pairs that don't have a batchId yet
           const batchesToCreate = new Map(); // key: programId::batchName -> { programId, batchName }
           for (const s of readyStudents) {
-            if (!s.batchId && s.batchName && s.batchName !== '—' && s.programId) {
+            if (!s.batchId && s.batchName && s.batchName !== 'â€”' && s.programId) {
               const key = `${s.programId}::${s.batchName.toLowerCase().trim()}`;
               if (!batchesToCreate.has(key)) {
                 batchesToCreate.set(key, { programId: s.programId, batchName: s.batchName.trim() });
@@ -3394,13 +3039,13 @@
 
           // Resolve batch IDs for students that needed auto-creation
           for (const s of readyStudents) {
-            if (!s.batchId && s.batchName && s.batchName !== '—' && s.programId) {
+            if (!s.batchId && s.batchName && s.batchName !== 'â€”' && s.programId) {
               const key = `${s.programId}::${s.batchName.toLowerCase().trim()}`;
               if (newBatchMap.has(key)) s.batchId = newBatchMap.get(key);
             }
           }
 
-          // ── Safe student write helper: retries without extended columns if DB schema is old ──
+          // â”€â”€ Safe student write helper: retries without extended columns if DB schema is old â”€â”€
           let _dbHasBatchId = true;  // Assume yes, will be set to false on first schema error
           let _dbHasBirthDate = true;
           let _dbHasProgramId = true;
@@ -3418,7 +3063,7 @@
             } catch (e) {
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
                 _dbHasBatchId = false;
-                showToast('⚠️ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
+                showToast('âš ï¸ Column batch_id missing in DB â€” saving without batch. Run the SQL patch to fix this.', 'warning');
                 delete p.batch_id;
                 return await adminInsert('students', p);
               }
@@ -3447,7 +3092,7 @@
             } catch (e) {
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
                 _dbHasBatchId = false;
-                showToast('⚠️ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
+                showToast('âš ï¸ Column batch_id missing in DB â€” saving without batch. Run the SQL patch to fix this.', 'warning');
                 delete p.batch_id;
                 return await adminUpdate('students', id, p);
               }
@@ -3505,7 +3150,7 @@
           }
 
           hideLoading();
-          const batchWarning = !_dbHasBatchId ? ' (batch_id column missing — run SQL patch to enable full batch support)' : '';
+          const batchWarning = !_dbHasBatchId ? ' (batch_id column missing â€” run SQL patch to enable full batch support)' : '';
           showToast(`Done! ${insertedCount} new students added, ${mergedCount} updated/merged!${batchWarning}`, 'success');
           
           // Stay on page and reset preview box
@@ -3536,11 +3181,11 @@
               <div class="d-flex flex-column gap-4 mb-4">
                 <div class="form-group w-100">
                   <label class="form-label">1. Select Target Exam</label>
-                  <Select Program="form-control" id="import-exam-select"><option value="">Loading exams…</option></select>
+                  <select class="form-control" id="import-exam-select"><option value="">Loading exams…</option></select>
                 </div>
                 <div class="form-group w-100">
                   <label class="form-label">2. Exam Type (Answer Method)</label>
-                  <Select Program="form-control" id="import-exam-type-select">
+                  <select class="form-control" id="import-exam-type-select">
                     <option value="written">Written (Type)</option>
                     <option value="speech_to_text">Speech to Text (Suara)</option>
                     <option value="multiple_choice">Multiple Choice</option>
@@ -3557,7 +3202,7 @@
               <div class="p-4 rounded mb-4" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);">
                 <div class="d-flex align-center justify-between flex-wrap gap-3 mb-2">
                   <span class="text-xs fw-700 text-gradient" id="format-title-badge">WRITTEN EXCEL FORMAT</span>
-                  <button class="btn btn-primary btn-sm w-100 mt-2" id="download-template-btn">📥 Download Template</button>
+                  <button class="btn btn-primary btn-sm w-100 mt-2" id="download-template-btn">ðŸ“¥ Download Template</button>
                 </div>
                 <p class="text-xs text-muted mb-2" id="format-desc-label">First row header arrangement:</p>
                 <div class="p-2 rounded text-xs mb-3" style="background:rgba(0,0,0,0.3);border:1px dashed var(--clr-border);font-family:monospace;overflow-x:auto;white-space:nowrap;" id="format-columns-code">
@@ -3569,10 +3214,10 @@
               <div class="p-4 rounded mt-auto" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);">
                 <div class="text-xs fw-700 text-muted uppercase mb-3">Other Templates:</div>
                 <div class="d-flex flex-column gap-2">
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-written">📄 Written (Type)</button>
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-speech">🎙️ Speech to Text</button>
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-mc">🔘 Multiple Choice</button>
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-dropdown">▼ Drop-down</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-written">ðŸ“„ Written (Type)</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-speech">ðŸŽ™ï¸ Speech to Text</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-mc">ðŸ”˜ Multiple Choice</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-dropdown">â–¼ Drop-down</button>
                 </div>
               </div>
             </div>
@@ -3607,7 +3252,7 @@
                   <span class="text-muted text-sm" id="preview-count-label">0 questions siap di-import.</span>
                   <div class="d-flex gap-2">
                     <button class="btn btn-secondary" id="cancel-import-btn">Cancel</button>
-                    <button class="btn btn-primary" id="confirm-save-import-btn">💾 Save Questions</button>
+                    <button class="btn btn-primary" id="confirm-save-import-btn">ðŸ’¾ Save Questions</button>
                   </div>
                 </div>
               </div>
@@ -3689,7 +3334,7 @@
           return nameA.localeCompare(nameB);
         });
         const sel = document.getElementById('import-exam-select');
-        sel.innerHTML = '<option value="">— Select Target Exam —</option>' +
+        sel.innerHTML = '<option value="">â€” Select Target Exam â€”</option>' +
           sortedExams.map(e => `<option value="${e.id}">${escapeHtml(formatExamDisplayName(e))} (${formatAnswerType(e.answer_type)})</option>`).join('');
       });
 
@@ -3733,7 +3378,7 @@
         const file = e.target.files?.[0];
         if (!file) return;
 
-        showLoading('Reading Excel file preview…');
+        showLoading('Reading Excel file previewâ€¦');
         const reader = new FileReader();
 
         reader.onload = (evt) => {
@@ -3895,9 +3540,14 @@
         if (!examId) { showToast('Please select a target exam before saving.', 'warning'); return; }
         if (!parsedQuestionsState.length) { showToast('No questions to save.', 'warning'); return; }
 
-        showLoading('Menyimpan & merge questions ke database…');
+        showLoading('Menyimpan & merge questions ke databaseâ€¦');
         try {
-          const existingQuestions = await adminFetchAll('questions', '*', { exam_id: examId });
+          const sb = await getSupabase();
+          const { data: secs } = await sb.from('exam_sections').select('id').eq('exam_id', examId).order('section_order').limit(1);
+          if (!secs || !secs.length) { hideLoading(); showToast('No sections found in this exam.', 'error'); return; }
+          const defaultSectionId = secs[0].id;
+
+          const existingQuestions = await adminFetchAll('questions', '*', { section_id: defaultSectionId });
           const orderMap = new Map();
           const textMap = new Map();
           existingQuestions.forEach(q => {
@@ -3928,7 +3578,7 @@
 
           for (const q of batchMap.values()) {
             const payload = {
-              exam_id: examId,
+              section_id: defaultSectionId,
               question_order: q.order,
               question_text: q.questionText,
               correct_answer: q.correctAnswer,
@@ -3973,8 +3623,8 @@
             PROGRAM | CLASS | SUBJECT | LEVEL | TITLE | WEEK | DAY | TYPE | NO | QUESTION | ANSWER
           </div>
           <div class="form-group"><label class="form-label">Select Exam to Export</label>
-            <Select Program="form-control" id="export-exam-select">
-              <option value="">— Select Exam —</option>
+            <select class="form-control" id="export-exam-select">
+              <option value="">â€” Select Exam â€”</option>
               ${[...exams].sort((a, b) => {
                 const labelA = `${a.exam_type ? a.exam_type + ' - ' : ''}${a.exam_title}`;
                 const labelB = `${b.exam_type ? b.exam_type + ' - ' : ''}${b.exam_title}`;
@@ -3982,7 +3632,7 @@
               }).map(e => `<option value="${e.id}">${e.exam_type ? e.exam_type + ' - ' : ''}${e.exam_title}</option>`).join('')}
             </select>
           </div>
-          <button class="btn btn-primary mt-2" id="export-questions-btn">📤 Download Excel (.xlsx)</button>
+          <button class="btn btn-primary mt-2" id="export-questions-btn">ðŸ“¤ Download Excel (.xlsx)</button>
         </div>
       `;
 
@@ -3991,13 +3641,17 @@
         if (!examId) { showToast('Please select an exam to export.', 'warning'); return; }
 
         const selectedExam = exams.find(e => e.id === examId);
-        showLoading('Preparing Excel export…');
+        showLoading('Preparing Excel exportâ€¦');
 
         try {
-          const [questions, examClasses] = await Promise.all([
-            adminFetchAll('questions', '*', { exam_id: examId }),
-            getSupabase().then(sb => sb.from('exam_programs').select('programs(name)').eq('exam_id', examId))
+          const sb = await getSupabase();
+          const { data: sections } = await sb.from('exam_sections').select('id').eq('exam_id', examId);
+          const sectionIds = (sections || []).map(s => s.id);
+          const [qRes, examClasses] = await Promise.all([
+            sb.from('questions').select('*').in('section_id', sectionIds),
+            sb.from('exam_programs').select('programs(name)').eq('exam_id', examId)
           ]);
+          const questions = qRes.data || [];
 
           const sortedQuestions = questions.sort((a,b) => (a.question_order || 0) - (b.question_order || 0));
           const programName = examClasses?.data?.[0]?.programs?.name || 'Camp';
@@ -4046,7 +3700,7 @@
       });
     }
 
-    // ── CRUD Modal ──
+    // â”€â”€ CRUD Modal â”€â”€
     const crudModal = document.getElementById('crud-modal');
     const crudForm  = document.getElementById('crud-form');
     let _editId = null;
@@ -4087,7 +3741,7 @@
         
         { id: 'name', label: 'Full Name', type: 'text', required: true },
         { id: 'gender', label: 'Gender', type: 'select', options: [
-          { value: '', label: '— Unassigned (Student will choose) —' },
+          { value: '', label: 'â€” Unassigned (Student will choose) â€”' },
           { value: 'male', label: 'Male (Mr.)' },
           { value: 'female', label: 'Female (Miss)' }
         ]},
@@ -4098,7 +3752,7 @@
       exams: [
         { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
         { id: 'program_id', label: 'Class (Optional / Assigned)', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
-        { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: true, dependsOn: 'institution_id' },
+        { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: false, dependsOn: 'institution_id' },
         { id: 'exam_type', label: 'Exam Type', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Final'], required: true, defaultValue: 'Daily' },
         
         { id: 'exam_order', label: 'Order (1, 2, 3...)', type: 'select', options: ['1','2','3','4','5','6','7','8','9','10'], required: true, defaultValue: '1' },
@@ -4106,13 +3760,7 @@
         { id: 'prerequisite_exam_id', label: 'Prerequisite Exam (Optional)', type: 'select', source: 'exams', required: false },
         { id: 'minimum_required_score', label: 'Passing Score % (Default: 60%)', type: 'number', required: true, defaultValue: 60 },
         { id: 'prerequisite_min_score', label: 'Prerequisite Min % (Default: 60%)', type: 'number', required: false, defaultValue: 60 },
-        { id: 'time_limit_minutes', label: 'Time Limit (minutes)', type: 'number', required: true, defaultValue: 60 },
-        { id: 'answer_type', label: 'Answer Type', type: 'select', options: [
-          {value:'multiple_choice',label:'Multiple Choice'},
-          {value:'dropdown',label:'Dropdown'},
-          {value:'speech_to_text',label:'Speaking Test'},
-          {value:'written',label:'Written Test'}
-        ], required: true },
+        { id: 'time_limit_minutes', label: 'Global Time Limit (minutes)', type: 'number', required: true, defaultValue: 60 },
         { id: 'exam_status', label: 'Exam Status', type: 'select', options: ['published','draft','unpublished','archived'], required: true },
         { id: 'question_order', label: 'Question Order', type: 'select', options: [{ value: 'sequential', label: 'Sequential' }, { value: 'random', label: 'Random' }], required: true },
         { id: 'retake_allowed', label: 'Retake Allowed', type: 'checkbox' },
@@ -4121,7 +3769,7 @@
       questions: [
         { id: 'question_text', label: 'Question Text', type: 'textarea', required: true },
         { id: 'question_order', label: 'Order', type: 'number', required: true },
-        { id: 'exam_id', label: 'Exam', type: 'select', source: 'exams', required: true },
+        { id: 'section_id', label: 'Section', type: 'select', source: 'exam_sections', required: true },
         { id: 'answer_type', label: 'Answer Type', type: 'select', options: [
           {value:'multiple_choice',label:'Multiple Choice'},
           {value:'dropdown',label:'Dropdown'},
@@ -4171,20 +3819,20 @@
             sel.innerHTML = `<option value="">None (Optional)</option>`;
             sel.disabled = false;
 
-            sel.innerHTML = `<option value="">— No Level / Optional —</option>`;
+            sel.innerHTML = `<option value="">â€” No Level / Optional â€”</option>`;
             sel.disabled = false;
           } else if (!f.dependsOn) {
-            sel.innerHTML = `<option value="">— Select —</option>`;
+            sel.innerHTML = `<option value="">â€” Select â€”</option>`;
             const opts = await adminFetchAll(f.source);
             opts.forEach(o => {
               const opt = document.createElement('option');
               opt.value = o.id;
-              opt.textContent = o.name || o.exam_title || o.id;
+              opt.textContent = o.name || o.title || o.exam_title || o.id;
               if (record && record[f.id] === o.id) opt.selected = true;
               sel.appendChild(opt);
             });
           } else {
-            sel.innerHTML = `<option value="">— Select Previous First —</option>`;
+            sel.innerHTML = `<option value="">â€” Select Previous First â€”</option>`;
             sel.disabled = true;
           }
           group.appendChild(sel);
@@ -4194,7 +3842,7 @@
           sel.id = `field-${f.id}`;
           sel.name = f.id;
           if (f.required) sel.required = true;
-          sel.innerHTML = `<option value="">— Select —</option>` + f.options.map(o => {
+          sel.innerHTML = `<option value="">â€” Select â€”</option>` + f.options.map(o => {
             const val = typeof o === 'object' ? o.value : o;
             const labelStr = typeof o === 'object' ? o.label : o;
             const isSelected = record?.[f.id] === val || (!record && val === 'sequential');
@@ -4246,7 +3894,6 @@
       const classSelect = crudForm.querySelector('#field-program_id');
       const batchSelect = crudForm.querySelector('#field-batch_id');
       const subjectSelect = crudForm.querySelector('#field-subject_id');
-            };
 
       if (prereqSelect) {
         prereqSelect.disabled = false;
@@ -4289,7 +3936,7 @@
 
       const populateLevelsForSection = async () => {
         if (!levelSelect) return;
-        levelSelect.innerHTML = `<option value="">— No Level / Optional —</option>`;
+        levelSelect.innerHTML = `<option value="">â€” No Level / Optional â€”</option>`;
         levelSelect.disabled = false;
 
         try {
@@ -4330,10 +3977,10 @@
       if (progSelect && classSelect) {
         const populateBatchesForClass = async (selectedClassId) => {
           if (!batchSelect) return;
-          batchSelect.innerHTML = `<option value="">— Select Batch —</option>`;
+          batchSelect.innerHTML = `<option value="">â€” Select Batch â€”</option>`;
           if (!selectedClassId) {
             batchSelect.disabled = true;
-            batchSelect.innerHTML = `<option value="">— Select Program First —</option>`;
+            batchSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
             return;
           }
           batchSelect.disabled = false;
@@ -4349,9 +3996,9 @@
         };
 
         const populateClassesForProgram = async (selectedProgId) => {
-          classSelect.innerHTML = `<option value="">${_currentSection === 'levels' ? '— Select Program (Optional / All Programs) —' : '— Select Program —'}</option>`;
+          classSelect.innerHTML = `<option value="">${_currentSection === 'levels' ? 'â€” Select Program (Optional / All Programs) â€”' : 'â€” Select Program â€”'}</option>`;
           if (batchSelect) {
-            batchSelect.innerHTML = `<option value="">— Select Program First —</option>`;
+            batchSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
             batchSelect.disabled = true;
           }
           if (!selectedProgId) {
@@ -4388,7 +4035,7 @@
           }
         } else {
           classSelect.disabled = true;
-          classSelect.innerHTML = `<option value="">— Select Program First —</option>`;
+          classSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
         }
 
         progSelect.addEventListener('change', async (e) => {
@@ -4406,7 +4053,7 @@
       // Program -> Subject -> Level cascading dependencies
       if (progSelect && subjectSelect) {
         const populateSubjectsForProgram = async (selectedProgId) => {
-          subjectSelect.innerHTML = `<option value="">— Select Subject —</option>`;
+          subjectSelect.innerHTML = `<option value="">â€” Select Subject â€”</option>`;
           if (!selectedProgId) {
             subjectSelect.disabled = true;
             return;
@@ -4430,7 +4077,7 @@
           await populateSubjectsForProgram(initialProgIdForSubject);
         } else {
           subjectSelect.disabled = true;
-          subjectSelect.innerHTML = `<option value="">— Select Program First —</option>`;
+          subjectSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
         }
 
         progSelect.addEventListener('change', async (e) => {
@@ -4508,8 +4155,7 @@
 
       // Prerequisite Exam Validation: Must fill if level and order are not Level A and Order 1
       if (_currentSection === 'exams') {
-                  return;
-        }
+        // Prerequisite logic handled in Assessment Builder
       }
 
       // Never send display_name (Postgres GENERATED ALWAYS STORED column causes 428C9)
@@ -4604,7 +4250,7 @@
     });
 
     async function hashPin(pin) {
-      // Simple SHA-256 hash for display — use server-side bcrypt in production
+      // Simple SHA-256 hash for display â€” use server-side bcrypt in production
       const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
     }
@@ -4677,7 +4323,7 @@
         else document.getElementById('dup-stud-cross-count').textContent = totalDups;
 
         if (dupStudentGroups.length === 0) {
-          dupStudContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No duplicate students found.</p></div>';
+          dupStudContent.innerHTML = '<div class="empty-state p-6 text-center"><p>âœ… No duplicate students found.</p></div>';
           return;
         }
 
@@ -4685,7 +4331,7 @@
         dupStudentGroups.forEach((group, gIdx) => {
           html += `
             <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-primary);">
-              <div class="fw-700 mb-2">Duplicate Group ${gIdx + 1} — Name: "${escapeHtml(group.name)}"</div>
+              <div class="fw-700 mb-2">Duplicate Group ${gIdx + 1} â€” Name: "${escapeHtml(group.name)}"</div>
               <table class="table-sm w-100 mb-3 text-sm">
                 <thead>
                   <tr>
@@ -4779,7 +4425,7 @@
       try {
         const exams = await adminFetchAll('exams', 'id, exam_title, exam_status');
         const sortedExams = exams.sort((a, b) => a.exam_title.localeCompare(b.exam_title));
-        dupQExamSelect.innerHTML = '<option value="">— All Exams (Global Search) —</option>' + 
+        dupQExamSelect.innerHTML = '<option value="">â€” All Exams (Global Search) â€”</option>' + 
           sortedExams.map(e => `<option value="${e.id}">${escapeHtml(e.exam_title)} (${e.exam_status})</option>`).join('');
       } catch(e) { console.error("Could not load exams for duplicate select:", e); }
         
@@ -4801,7 +4447,7 @@
         document.getElementById('dup-q-same-count').textContent = data.totalSameExamDupCount;
 
         if (data.sameExamDuplicates.length === 0) {
-          dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No duplicate questions found.</p></div>';
+          dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>âœ… No duplicate questions found.</p></div>';
           return;
         }
 
@@ -4902,7 +4548,7 @@
     document.getElementById('btn-resolve-all-visible-questions')?.addEventListener('click', async () => {
       const examId = dupQExamSelect.value || null;
       if (!examId) {
-        alert("Please select a specific Exam from the filter to perform Batch Auto-Resolve.");
+        showToast('Please select a specific Exam from the filter to perform Batch Auto-Resolve.', 'warning');
         return;
       }
       
@@ -4928,3 +4574,12 @@
     if (window.innerWidth <= 1024) document.getElementById('sidebar-toggle').style.display = 'flex';
   
 
+w i n d o w . o p e n C r u d M o d a l   =   o p e n C r u d M o d a l ; 
+ 
+ w i n d o w . o p e n D u p l i c a t e S t u d e n t s M o d a l   =   o p e n D u p l i c a t e S t u d e n t s M o d a l ; 
+ 
+ w i n d o w . l o a d S e c t i o n   =   l o a d S e c t i o n ; 
+ 
+ w i n d o w . o p e n S t u d e n t P r o f i l e   =   o p e n S t u d e n t P r o f i l e ; 
+ 
+ 

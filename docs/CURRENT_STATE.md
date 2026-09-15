@@ -1,66 +1,65 @@
 # CURRENT STATE
  
-Last Updated: 2026-09-14 08:08 UTC
-Current Phase: Phase 27 -- Post-Import Duplicate Detection & Resolution (Students & Questions)
-Current Task: UI connected and logic implemented.
+Last Updated: 2026-09-15 08:30 UTC
+Current Phase: MASTER COMMAND — Existing Website Architecture Audit & Structural Refactor
+Current Task: Implementation of Primary ABCD Architecture (Academy, Blueprint, Challenges, Desk)
 Status: COMPLETE
 
 ## Completed
-- **Post-Import Duplicate Detection & Resolution UI (Phase 27)**:
-  - `admin.html`: Connected JS event listeners and modal rendering logic to `duplicate-students-modal` and `duplicate-questions-modal`.
-  - Added "Resolve Duplicates" buttons to Student Management and Exam Management hubs.
-  - Implemented logic for Single Merge and Batch Auto-Resolve within the frontend.
-- **Multi-Answer & Option Delimiter Support ('/' and ';') (Phase 26)**:
-  - `js/grading.js`: `parseCorrectAnswers` regex updated to `/[;|/]/`, fully supporting `/`, `;`, and `|` as equivalent OR answer delimiters for written, speaking, and choice evaluation.
-  - `js/grading.js`: `stripHyphens` enhanced to strip both hyphens and spaces `/[-\s]/g` for compound words (e.g. `vacuum-clean` matches `vacuum clean`).
-  - `exam.html`: `parseSnapshotOptions` enhanced to split options by `/` and `;` for multiple choice and dropdown tests.
-  - `admin.html`: `options_json` field in question CRUD form updated to accept `/` and `;` separated options without JSON syntax errors, with updated hint.
-  - `js/excel-parser.js`: Added `options` alias (`options`, `pilihan`, `opsi`, `choices`, etc.) and multi-delimiter parsing in `processQuestionImportRows`.
-  - Bumped module imports to `?v=1.4` across `admin.html`, `exam.html`, `dashboard.html`, `result.html`, and `index.html`.
-- **Exam Results Correct/Wrong Counts + Profile Button (Phase 25 - Admin)**:
-  - Updated `renderResults` in `admin.html` to fetch `attempt_answers` alongside each attempt.
-  - Added two new columns to the Results table: `Correct` and `Wrong` (with minor-error half-point badge).
-  - Added a `Profile` button column per row that opens `openStudentProfile()` with full batch navigation support.
-  - Used event delegation on `tbody` so buttons work even after filter re-renders.
-- **Individual Student Profile & Answer Inspector (Phase 21 - Admin)**:
-  - Full profile view with photo, Global Grade, Avg Score, demographics, KPI cards for Correct and Incorrect, and expandable exam rows showing all question answers.
-  - Updated `renderResults` in `admin.html` to fetch `attempt_answers` alongside each attempt.
-  - Added two new columns to the Results table: `Correct` and `Wrong` (with minor-error half-point badge).
-  - Added a `Profile` button column per row that opens `openStudentProfile()` with full batch navigation support.
-  - Used event delegation on `tbody` so buttons work even after filter re-renders.
-- **Subject Box Positioned Directly Under Welcome Banner (Phase 24 - Student Dashboard)**:
-  - Removed the unrequested "Academic Overview" side-card and its duplicate subject counter tile.
-  - Positioned the My Subjects section directly beneath the Welcome Banner.
-  - Maintained hidden DOM elements to prevent null reference errors.
-- **Relocated & Expanded Completed Exams Section (Phase 23 - Student Dashboard)**.
-- **Batch-Grouped Student Management & Collapse State (Phase 21 - Admin)**.
-- **Individual Student Profile & Answer Inspector (Phase 21 - Admin)**:
-  - Full profile view with correct/incorrect KPI cards, exam accordion rows.
-- **Uniform Hero Grid & UI Alignment Overhaul (Phase 22)**.
-- **Independent & Optional Level System (Phases 3 & 4)**.
-- **Centralized Excel Parser & Aliases (Phases 5, 6, 7)**.
-- **Authoritative Centralized Grading Engine (Phases 9, 10, 11)**.
-- **Media & Hardware Compatibility (Phase 12)**.
-- **Exam Recalibrator Engine & UI (Phases 13-17)**.
-- **Exam Runner Polish (Phase 8)**.
-- **Comprehensive Integration Testing (Phase 18)**: 41/41 checks passed.
-
-## In Progress
-- None.
-
-## Not Started
-- None.
+- **Live Database Audit (Zero Data Loss Confirmed)**:
+  - Validated live Supabase database record counts before and after migration: 1,039 questions, 363 historical attempts, 132 students across 11 batches, 11 exams, 5 subjects, 5 levels.
+  - Zero data loss, zero table drops, zero breaking changes to existing data models.
+- **ABCD Navigation Shell (`admin.html`)**:
+  - Sidebar redesigned into 4 primary domain groups:
+    - **A — ACADEMY**: Institutions, Programs, Batches, Students Roster, Import Students, Student Progress.
+    - **B — BLUEPRINT**: Curriculum Subjects, Levels, Question Groups & Topics, Central Question Bank, Word Types & Lexicon, Import Questions, Export Questions.
+    - **C — CHALLENGES**: All Challenges (Challenges Hub), Assignments & Rosters, Challenge Results, Recalibration Engine.
+    - **D — DESK**: Activity & Audit Logs, System Settings & Diagnostics.
+  - Mobile bottom navigation bar updated to 4 touch buttons: `Academy`, `Blueprint`, `Challenges`, `Desk`.
+  - Dynamic KPI status strip modernized into compact 4-metric ABCD banner: `🏛️ Academy Students`, `📐 Blueprint Questions`, `⚡ Challenges Live`, `🖥️ Desk Attempts`.
+- **Router, Aliasing & Resilience (`js/admin/app.js`)**:
+  - Maintained 100% backward compatibility via `aliasSectionMap`: all legacy URL hashes (`#students`, `#questions`, `#exams`, etc.) and new ABCD hashes (`#academy-students`, `#blueprint-bank`, `#challenges-hub`, etc.) route seamlessly to their respective modules without 404 or broken links.
+  - Updated `showConsole()` to initialize ABCD KPI banner and activate primary domain tab with deep links.
+  - Breadcrumb navigation displays full hierarchical path (`ACADEMY / Institutions`, `CHALLENGES / All Challenges`, etc.).
+- **ACADEMY Hierarchical Drill-Downs (`js/admin/app.js`, `js/admin/program-management.js`, `js/admin/student-management.js`)**:
+  - Institutions view includes `Programs →` button that filters programs to that institution with a filter dismiss banner.
+  - Programs view includes `Batches →` button that filters batches to that program with a filter dismiss banner.
+  - Batches view includes clickable active students counter and `Students →` action button.
+  - Students Roster filters to the selected batch with an active filter badge and `Show All Batches` clear action.
+- **BLUEPRINT Hierarchical Drill-Downs (`js/admin/app.js`, `js/admin/central-assessment.js`)**:
+  - Subjects view includes `Topics →` button that pre-selects the subject filter in Topic Management.
+  - Topics view includes `Questions →` button that filters Central Question Bank to that topic.
+  - Central Question Bank displays topic filter banner and pre-selected topic dropdown with clear button.
+- **CHALLENGES Execution Hub & Actions (`js/admin/app.js`)**:
+  - Challenges Hub hero enhanced with quick shortcuts (`Assignments & Rosters`, `Results`, `Recalibrate`).
+  - Challenge rows equipped with direct contextual action buttons: `Results →` (filters Results to that challenge) and `Recalibrate ⚖️` (pre-selects the challenge in the Recalibrator).
+- **DESK Administration & System Tools (`js/admin/app.js`)**:
+  - System Settings elevated with Global Platform Configuration, Administrator Security credential management, and System Tools & Diagnostics (cloud DB latency measurement, browser cache flushing, quick audit log viewer).
 
 ## Current Architecture
-- Static HTML5 + CSS3 + Modular ES6 JavaScript frontend.
-- Supabase PostgreSQL + Storage + REST API backend.
-- Authoritative modules: `js/grading.js`, `js/excel-parser.js`, `js/speech.js`, `js/api.js`, `js/session.js`.
+- Static HTML5 + CSS3 (mobile-first compact UI) + Modular ES6 JavaScript frontend.
+- Supabase PostgreSQL + Storage + REST API + Edge Functions backend.
+- 4 Primary Domain Modules:
+  - **A — ACADEMY** (`WHO` / Organizations, Cohorts, Students)
+  - **B — BLUEPRINT** (`WHAT` / Subjects, Question Groups, Question Bank, Lexicon)
+  - **C — CHALLENGES** (`HOW & WHEN` / Assessment Execution, Assignments, Scoring, Results, Recalibration)
+  - **D — DESK** (`ADMINISTRATION` / Security, Activity Logs, Settings, System Tools)
 
-## Tests
-- Command: `powershell -ExecutionPolicy Bypass -File "scratch/test_master_verification.ps1"`
-- Result: 41 PASSED, 0 FAILED (as of Phase 18; Phase 25 changes are additive display-only, no regression expected).
+## Tests & Verification
+- Test Suite 1: `scratch/test_master_verification.ps1` -> 41 PASSED, 0 FAILED.
+- Test Suite 2: `scratch/test_v1_centralized_assessment.ps1` -> 20 PASSED, 0 FAILED.
+- Test Suite 3: `scratch/test_exam_creation_and_upload_forms.ps1` -> 24 PASSED, 0 FAILED.
+- Test Suite 4: `scratch/test_abcd_architecture.ps1` -> 46 PASSED, 0 FAILED.
+- Total: 131 PASSED, 0 FAILED across entire test harness.
 
 ## Files Changed In Latest Step
-- `admin.html` (renderResults: added attempt_answers query, Correct/Wrong columns, Profile button + event delegation)
-- `docs/CHANGELOG.md`
+- `admin.html` (sidebar and mobile tabs converted to ABCD architecture, ABCD KPI strip)
+- `js/admin/app.js` (ABCD domain maps, alias mapping, breadcrumbs, Challenges Hub shortcuts, DESK diagnostics)
+- `js/admin/program-management.js` (ACADEMY drill-down filters and buttons for Programs and Batches)
+- `js/admin/student-management.js` (ACADEMY batch filter banner and DataGrid integration)
+- `js/admin/central-assessment.js` (BLUEPRINT subject/topic drill-down filters and banners)
+- `scratch/test_abcd_architecture.ps1` (new comprehensive ABCD architecture test suite)
 - `docs/CURRENT_STATE.md`
+- `docs/CHANGELOG.md`
+- `docs/SESSION_LOG.md`
+- `walkthrough.md`

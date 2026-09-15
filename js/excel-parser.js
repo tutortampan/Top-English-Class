@@ -16,12 +16,14 @@ const HEADER_ALIASES = {
   age: ['age', 'usia', 'umur'],
   pin: ['pin', 'password', 'pass', 'kodesandi'],
   title: ['title', 'exam_title', 'examtitle', 'judul', 'nama_ujian'],
+  topic: ['topic', 'topik', 'topic_name', 'nama_topik', 'tema', 'theme', 'kategori', 'category'],
+  word_type: ['word_type', 'wordtype', 'part_of_speech', 'pos', 'type', 'tipe', 'jenis_kata', 'tipe_kata', 'tipekata', 'jenis', 'kategori_kata', 'pos_tag'],
   week: ['week', 'minggu', 'wk'],
   day: ['day', 'hari'],
   type: ['type', 'tipe', 'word_type', 'wordtype', 'part_of_speech', 'partofspeech'],
   no: ['no', 'nomor', 'num', 'order', 'urutan'],
-  question: ['question', 'soal', 'pertanyaan', 'q'],
-  answer: ['answer', 'jawaban', 'kunci', 'kunci_jawaban', 'kuncijawaban', 'a'],
+  question: ['question', 'soal', 'pertanyaan', 'q', 'prompt', 'indonesia', 'kalimat', 'text'],
+  answer: ['answer', 'jawaban', 'kunci', 'kunci_jawaban', 'kuncijawaban', 'a', 'accepted_answers', 'english', 'solution', 'jawaban_benar', 'terjemahan'],
   options: ['options', 'pilihan', 'opsi', 'choices', 'pilihan_jawaban', 'pilihanjawaban', 'list_pilihan', 'opsi_jawaban'],
   option_a: ['option_a', 'optiona', 'pilihan_a', 'pilihana', 'opsi_a', 'a'],
   option_b: ['option_b', 'optionb', 'pilihan_b', 'pilihanb', 'opsi_b', 'b'],
@@ -242,3 +244,160 @@ export function processQuestionImportRows(normalizedRows, defaultContext = {}) {
 
   return { questions: result, errors };
 }
+
+function calcLevenshtein(a, b) {
+  const la = a.length, lb = b.length;
+  const dp = Array.from({ length: la + 1 }, (_, i) =>
+    Array.from({ length: lb + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= la; i++) {
+    for (let j = 1; j <= lb; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[la][lb];
+}
+
+/**
+ * Process Excel rows for Centralized Question Bank V1 (Topic | Word Type | Question | Answer)
+ */
+export function processCentralBankQuestionImport(normalizedRows, { existingQuestions = [], validWordTypes = [] } = {}) {
+  const processed = [];
+  const errors = [];
+  const validWordTypeNames = validWordTypes.map(w => typeof w === 'string' ? w : w.name);
+
+  normalizedRows.forEach((row, idx) => {
+    const rowNum = row._rawRowIndex || (idx + 2);
+    const questionText = String(row.question || '').trim();
+    const rawAnswer = String(row.answer || '').trim();
+    const topicName = String(row.topic || row.tema || 'General').trim();
+    const rawWordType = String(row.word_type || row.type || '').trim();
+
+    if (!questionText) {
+      errors.push({ row: rowNum, error: 'Missing Question prompt.' });
+      return;
+    }
+    if (!rawAnswer) {
+      errors.push({ row: rowNum, error: 'Missing Answer.' });
+      return;
+    }
+
+    // Word Type validation & fuzzy suggestion
+    let wordType = rawWordType;
+    let wordTypeWarning = null;
+    if (rawWordType) {
+      const exactMatch = validWordTypeNames.find(v => v.toLowerCase() === rawWordType.toLowerCase());
+      if (exactMatch) {
+        wordType = exactMatch;
+      } else {
+        let closest = null;
+        let minDistance = 3;
+        for (const v of validWordTypeNames) {
+          const d = calcLevenshtein(rawWordType.toLowerCase(), v.toLowerCase());
+          if (d < minDistance) {
+            minDistance = d;
+            closest = v;
+          }
+        }
+        if (closest) {
+          wordTypeWarning = `Unrecognized "${rawWordType}". Auto-suggested: "${closest}"`;
+          wordType = closest;
+        } else {
+          wordTypeWarning = `Custom type "${rawWordType}" will be registered.`;
+        }
+      }
+    }
+
+    const acceptedAnswers = rawAnswer.split(/[;/|]/).map(s => s.trim()).filter(Boolean);
+
+    // Deduplication against existing central bank questions
+    let duplicateStatus = 'NEW';
+    let duplicateOfId = null;
+    let existingQuestionText = null;
+    let existingAnswers = [];
+    let answerKeyChanged = false;
+    let similarityPct = 0;
+
+    const normQ = questionText.toLowerCase().replace(/[^\w\s]/g, '').trim();
+
+    // Check duplicate within existing Question Bank
+    for (const eq of existingQuestions) {
+      const eqNorm = String(eq.question_text || '').toLowerCase().replace(/[^\w\s]/g, '').trim();
+      if (normQ === eqNorm) {
+        duplicateStatus = 'EXACT_DUPLICATE';
+        duplicateOfId = eq.id;
+        existingQuestionText = eq.question_text;
+        existingAnswers = Array.isArray(eq.accepted_answers) && eq.accepted_answers.length > 0
+          ? eq.accepted_answers
+          : (eq.correct_answer ? [eq.correct_answer] : []);
+
+        // Compare answer keys
+        const normExisting = existingAnswers.map(a => String(a).toLowerCase().trim()).sort().join('|');
+        const normNew = acceptedAnswers.map(a => String(a).toLowerCase().trim()).sort().join('|');
+        if (normExisting !== normNew) {
+          answerKeyChanged = true;
+        }
+        break;
+      }
+
+      const dist = calcLevenshtein(normQ, eqNorm);
+      const maxLen = Math.max(normQ.length, eqNorm.length);
+      if (maxLen > 0) {
+        const ratio = (maxLen - dist) / maxLen;
+        if (ratio >= 0.85) {
+          duplicateStatus = 'POSSIBLE_DUPLICATE';
+          duplicateOfId = eq.id;
+          existingQuestionText = eq.question_text;
+          existingAnswers = Array.isArray(eq.accepted_answers) && eq.accepted_answers.length > 0
+            ? eq.accepted_answers
+            : (eq.correct_answer ? [eq.correct_answer] : []);
+          similarityPct = Math.round(ratio * 100);
+          break;
+        }
+      }
+    }
+
+    // Check duplicate within the current batch/sheet itself
+    const priorMatch = processed.find(p => p.question_text.toLowerCase().replace(/[^\w\s]/g, '').trim() === normQ);
+    let inSheetDuplicate = false;
+    if (priorMatch) {
+      inSheetDuplicate = true;
+    }
+
+    processed.push({
+      rowIndex: rowNum,
+      topicName,
+      wordType,
+      wordTypeWarning,
+      question_text: questionText,
+      accepted_answers: acceptedAnswers,
+      duplicateStatus,
+      duplicateOfId,
+      existingQuestionText,
+      existingAnswers,
+      answerKeyChanged,
+      similarityPct,
+      inSheetDuplicate,
+      actionChoice: duplicateStatus === 'POSSIBLE_DUPLICATE' ? 'CREATE_NEW' : (duplicateStatus === 'EXACT_DUPLICATE' ? 'USE_EXISTING' : 'CREATE_NEW'),
+      status: 'ready'
+    });
+  });
+
+  return {
+    rows: processed,
+    errors,
+    summary: {
+      total: normalizedRows.length,
+      ready: processed.length,
+      newQuestions: processed.filter(r => r.duplicateStatus === 'NEW' && !r.inSheetDuplicate).length,
+      existingQuestions: processed.filter(r => r.duplicateStatus === 'EXACT_DUPLICATE').length,
+      answerChanges: processed.filter(r => r.answerKeyChanged).length,
+      possibleDuplicates: processed.filter(r => r.duplicateStatus === 'POSSIBLE_DUPLICATE').length,
+      invalidWordTypes: processed.filter(r => r.wordTypeWarning).length,
+      sheetDuplicates: processed.filter(r => r.inSheetDuplicate).length,
+      errorsCount: errors.length
+    }
+  };
+}
+
