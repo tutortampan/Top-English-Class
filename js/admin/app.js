@@ -6,15 +6,15 @@
       fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
       testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage,
       clearAdminCache
-    } from '../api.js?v=1.4';
-    import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=1.4';
-    import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=1.4';
-    import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=1.4';
-    import { getSupabase } from '../supabase.js?v=1.4';
-    import { openAssessmentBuilder } from './exam-builder.js?v=1.4';
-    import { renderStudents as _renderStudentsModule } from './student-management.js?v=1.4';
-    import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=1.4';
-    import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport } from './central-assessment.js?v=1.4';
+    } from '../api.js?v=2.1.0';
+    import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=2.1.0';
+    import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=2.1.0';
+    import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=2.1.0';
+    import { getSupabase } from '../supabase.js?v=2.1.0';
+    import { openAssessmentBuilder } from './exam-builder.js?v=2.1.0';
+    import { renderStudents as _renderStudentsModule } from './student-management.js?v=2.1.0';
+    import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=2.1.0';
+    import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport } from './central-assessment.js?v=2.1.0';
 
     // â”€â”€ Primary Tab Switching Variables â”€â”€
     const mobileTabs = document.querySelectorAll('.mobile-tab');

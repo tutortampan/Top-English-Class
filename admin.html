@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ADMIN AREA — TOP ENGLISH CLASS</title>
   <meta name="description" content="Admin management console for TOP ENGLISH CLASS — manage institutions, programs, students, and exams." />
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/admin.css" />
+  <link rel="stylesheet" href="css/style.css?v=2.1.0" />
+  <link rel="stylesheet" href="css/admin.css?v=2.1.0" />
   <!-- SheetJS for Excel Import / Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <meta name="view-transition" content="same-origin" />
@@ -16,7 +16,6 @@
   <div id="toast-container"></div>
 
   <!-- ═══ ADMIN LOGIN ═══ -->
-  <link rel="stylesheet" href="css/admin.css" />
   <div id="admin-login-screen" class="auth-page">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
@@ -24,19 +23,20 @@
       <div class="auth-brand">
         <div class="brand-icon">🛡️</div>
         <h1>ADMIN AREA</h1>
-        <p>Top English Class</p>
+        <p>Top English Class — ABCD Assessment Hub</p>
       </div>
       <div class="form-group">
         <label class="form-label" for="admin-username">Username</label>
-        <input class="form-control" type="text" id="admin-username" autocomplete="username" placeholder="Enter admin username" />
+        <input class="form-control" type="text" id="admin-username" autocomplete="username" placeholder="Enter admin username" value="admin" />
       </div>
       <div class="form-group">
         <label class="form-label" for="admin-password">Password</label>
-        <input class="form-control" type="password" id="admin-password" autocomplete="current-password" placeholder="Enter admin password" />
+        <input class="form-control" type="password" id="admin-password" autocomplete="current-password" placeholder="Enter admin password" value="admin123" />
       </div>
-      <button class="btn btn-primary" style="width:100%;" id="admin-login-btn">Sign In</button>
-      <div class="auth-footer-link">
-        <a href="index.html">← Return to Student Portal</a>
+      <button class="btn btn-primary" style="width:100%;" id="admin-login-btn">Sign In to Console</button>
+      <div class="auth-footer-link" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:0.8rem;">
+        <a href="index.html">← Student Portal</a>
+        <span style="color:rgba(255,255,255,0.45);">Credentials: <code>admin</code> / <code>admin123</code></span>
       </div>
     </div>
   </div>
@@ -288,7 +288,7 @@
     </div>
   </div>
 
-  <script type="module" src="js/admin/app.js"></script>
+  <script type="module" src="js/admin/app.js?v=2.1.0"></script>
 </body>
 </html>
 
