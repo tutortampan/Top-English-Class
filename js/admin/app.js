@@ -24,7 +24,7 @@
       institutions: 'Institutions', programs: 'Programs', batches: 'Batches', students: 'Students Roster', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
       subjects: 'Curriculum Subjects', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', word_types: 'Word Types & Lexicon', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
       exams: 'All Challenges', assignments: 'Assignments & Rosters', results: 'Challenge Results', recalibrator: 'Recalibration Engine',
-      audit: 'Activity & Audit Logs', settings: 'System Settings', recycle: 'Recycle Bin'
+      audit: 'Activity & Audit Logs', settings: 'System Settings', recycle: 'Recycle Bin', health: 'Data Health & Diagnostics'
     };
 
     // ABCD 4-Domain Mapping
@@ -32,7 +32,7 @@
       institutions: 'ACADEMY', programs: 'ACADEMY', batches: 'ACADEMY', students: 'ACADEMY', 'import-students': 'ACADEMY', 'progress-view': 'ACADEMY',
       subjects: 'BLUEPRINT', levels: 'BLUEPRINT', topics: 'BLUEPRINT', questions: 'BLUEPRINT', word_types: 'BLUEPRINT', 'import-questions': 'BLUEPRINT', 'export-questions': 'BLUEPRINT',
       exams: 'CHALLENGES', assignments: 'CHALLENGES', results: 'CHALLENGES', recalibrator: 'CHALLENGES',
-      audit: 'DESK', settings: 'DESK', recycle: 'DESK'
+      audit: 'DESK', settings: 'DESK', recycle: 'DESK', health: 'DESK'
     };
 
     // Mobile Bottom Tab Panels -> Primary Domain
@@ -68,7 +68,8 @@
       'challenges-recalibrator': 'recalibrator',
       'desk-audit': 'audit',
       'desk-settings': 'settings',
-      'desk-recycle': 'recycle'
+      'desk-recycle': 'recycle',
+      'desk-health': 'health'
     };
 
     async function updateAdminKpiBanner() {
@@ -399,6 +400,7 @@
           case 'results':             await renderResults(area); break;
           case 'progress-view':       await renderProgressView(area); break;
           case 'audit':               await renderAuditLog(area); break;
+          case 'health':              await renderDataHealth(area); break;
           case 'recycle':             await renderRecycleBin(area); break;
           case 'settings':            await renderSettings(area); break;
           case 'import-students':     await renderImportStudents(area); break;
@@ -4576,6 +4578,62 @@
     if (window.innerWidth <= 1024) document.getElementById('sidebar-toggle').style.display = 'flex';
   
 
+
+
+    async function renderDataHealth(container) {
+      container.innerHTML = `
+        <div class="mb-5">
+          <h2 class="text-xl fw-700 mb-2">Data Health & Diagnostics</h2>
+          <p class="text-muted" style="font-size:0.9rem;">Manually scan the database for data integrity issues, duplicates, and orphans.</p>
+        </div>
+        
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+          
+          <!-- Students Duplicate Engine -->
+          <div class="card d-flex flex-col gap-3">
+            <div class="d-flex align-center gap-3">
+              <div style="font-size:2rem; background:rgba(59, 130, 246, 0.1); padding:0.5rem; border-radius:10px;">👤</div>
+              <div>
+                <h3 class="fw-700">Student Profile Duplicates</h3>
+                <div class="text-xs text-muted">Scans for identical names within the same class</div>
+              </div>
+            </div>
+            <p style="font-size:0.85rem; color:var(--clr-text-2);">
+              Automatically detect students who accidentally registered twice. You can merge their profiles safely, transferring all past exam progress to the primary account.
+            </p>
+            <button class="btn btn-primary mt-auto" id="btn-health-scan-students">
+              <span class="nav-icon">🔍</span> Scan Students
+            </button>
+          </div>
+
+          <!-- Question Duplicate Engine -->
+          <div class="card d-flex flex-col gap-3">
+            <div class="d-flex align-center gap-3">
+              <div style="font-size:2rem; background:rgba(250, 204, 21, 0.1); padding:0.5rem; border-radius:10px;">⚡</div>
+              <div>
+                <h3 class="fw-700">Question Bank Duplicates</h3>
+                <div class="text-xs text-muted">Scans for duplicate text or order conflicts</div>
+              </div>
+            </div>
+            <p style="font-size:0.85rem; color:var(--clr-text-2);">
+              Detect duplicate questions inside the same exam, or identically worded questions spread across multiple exams. Bulk-resolve them to keep the blueprint clean.
+            </p>
+            <button class="btn btn-warning mt-auto" id="btn-health-scan-questions" style="color:#000;">
+              <span class="nav-icon">🔍</span> Scan Questions
+            </button>
+          </div>
+
+        </div>
+      `;
+
+      document.getElementById('btn-health-scan-students').addEventListener('click', () => {
+        openDuplicateStudentsModal();
+      });
+
+      document.getElementById('btn-health-scan-questions').addEventListener('click', () => {
+        openDuplicateQuestionsModal();
+      });
+    }
 
     async function renderRecycleBin(container) {
       container.innerHTML = `
