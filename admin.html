@@ -6,7 +6,7 @@
   <title>ADMIN AREA — TOP ENGLISH CLASS</title>
   <meta name="description" content="Admin management console for TOP ENGLISH CLASS — manage institutions, programs, students, and exams." />
   <link rel="stylesheet" href="css/style.css?v=3.0" />
-  <link rel="stylesheet" href="css/admin.css?v=3.0" />
+  <link rel="stylesheet" href="css/admin.css?v=4.0" />
   <!-- SheetJS for Excel Import / Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <meta name="view-transition" content="same-origin" />
@@ -121,29 +121,30 @@
 
       <main class="admin-content" id="admin-content-area">
         <!-- DB Connection Status Banner -->
-        <div id="db-connection-banner" style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 1.25rem;background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.3);border-radius:10px;margin-bottom:1rem;font-size:0.82rem;color:rgba(255,255,255,0.8);">
-          <div id="db-status-dot" style="width:10px;height:10px;border-radius:50%;background:#facc15;flex-shrink:0;"></div>
+        <!-- DB Connection Status Banner -->
+        <div id="db-connection-banner" class="db-status-banner">
+          <div id="db-status-dot" class="status-dot"></div>
           <span id="db-status-text">Checking database connection…</span>
-          <button onclick="this.parentElement.style.display='none'" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:1rem;line-height:1;" title="Dismiss">×</button>
+          <button onclick="this.parentElement.style.display='none'" class="btn-dismiss-banner" title="Dismiss">×</button>
         </div>
 
         <!-- ABCD Status Overview Strip -->
-        <div id="admin-kpi-banner" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:0.85rem;margin-bottom:1.5rem;">
-          <div style="background:var(--clr-surface-2);padding:0.85rem 1rem;border-radius:10px;border:1px solid var(--clr-border);">
-            <div style="font-size:0.75rem;color:var(--clr-text-2);margin-bottom:2px;text-transform:uppercase;letter-spacing:1px;">🏛️ Academy Students</div>
-            <div id="kpi-academy" style="font-size:1.5rem;font-weight:700;color:var(--clr-primary);">-</div>
+        <div id="admin-kpi-banner" class="admin-kpi-strip">
+          <div class="kpi-card">
+            <div class="kpi-label">🏛️ Academy Students</div>
+            <div id="kpi-academy" class="kpi-value">-</div>
           </div>
-          <div style="background:var(--clr-surface-2);padding:0.85rem 1rem;border-radius:10px;border:1px solid var(--clr-border);">
-            <div style="font-size:0.75rem;color:var(--clr-text-2);margin-bottom:2px;text-transform:uppercase;letter-spacing:1px;">📐 Blueprint Questions</div>
-            <div id="kpi-qbank" style="font-size:1.5rem;font-weight:700;color:var(--clr-primary);">-</div>
+          <div class="kpi-card">
+            <div class="kpi-label">📐 Blueprint Questions</div>
+            <div id="kpi-qbank" class="kpi-value">-</div>
           </div>
-          <div style="background:var(--clr-surface-2);padding:0.85rem 1rem;border-radius:10px;border:1px solid var(--clr-border);">
-            <div style="font-size:0.75rem;color:var(--clr-text-2);margin-bottom:2px;text-transform:uppercase;letter-spacing:1px;">⚡ Challenges Live</div>
-            <div id="kpi-assessments" style="font-size:1.5rem;font-weight:700;color:var(--clr-primary);">-</div>
+          <div class="kpi-card">
+            <div class="kpi-label">⚡ Challenges Live</div>
+            <div id="kpi-assessments" class="kpi-value">-</div>
           </div>
-          <div style="background:var(--clr-surface-2);padding:0.85rem 1rem;border-radius:10px;border:1px solid var(--clr-border);">
-            <div style="font-size:0.75rem;color:var(--clr-text-2);margin-bottom:2px;text-transform:uppercase;letter-spacing:1px;">🖥️ Desk Attempts</div>
-            <div id="kpi-attempts" style="font-size:1.5rem;font-weight:700;color:var(--clr-primary);">-</div>
+          <div class="kpi-card">
+            <div class="kpi-label">🖥️ Desk Attempts</div>
+            <div id="kpi-attempts" class="kpi-value">-</div>
           </div>
         </div>
 

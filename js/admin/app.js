@@ -308,29 +308,23 @@
       const statusText = document.getElementById('db-status-text');
       if (!banner) return;
 
-      // Show checking state
-      statusDot.style.background = '#facc15';
-      statusText.textContent = 'Checking database connectionâ€¦';
+      // Show checking state — use CSS classes, not inline styles
+      statusText.textContent = 'Checking database connection…';
 
       const result = await testSupabaseConnection();
       if (result.connected) {
-        statusDot.style.background = '#34d399';
-        statusDot.style.boxShadow = '0 0 6px #34d399';
-        statusText.innerHTML = `<strong>Connected to Supabase</strong> â€” data is saved permanently to the cloud`;
-        banner.style.borderColor = 'rgba(52,211,153,0.3)';
-        banner.style.background = 'rgba(52,211,153,0.07)';
-        setTimeout(() => banner.style.display = 'none', 4000); // Auto-hide when connected
+        statusDot.classList.add('connected');
+        banner.classList.add('connected');
+        statusText.innerHTML = `<strong>Connected to Supabase</strong> — data is saved permanently to the cloud`;
+        setTimeout(() => { banner.style.display = 'none'; }, 4000); // Auto-hide when connected
       } else {
-        statusDot.style.background = '#f87171';
-        statusDot.style.boxShadow = '0 0 8px #f87171';
-        statusDot.style.animation = 'pulse 1.5s infinite';
+        statusDot.classList.add('error');
+        banner.classList.add('error');
         if (result.mode === 'demo') {
-          statusText.innerHTML = `<strong>Demo / Offline Mode</strong> â€” data is in-memory only and will be lost on page reload`;
+          statusText.innerHTML = `<strong>Demo / Offline Mode</strong> — data is in-memory only and will be lost on page reload`;
         } else {
-          statusText.innerHTML = `<strong>Database Error</strong> â€” ${result.error}. <a href="docs/DATABASE.md" target="_blank" style="color:#f87171;">Check setup guide</a>`;
+          statusText.innerHTML = `<strong>Database Error</strong> — ${result.error}. <a href="docs/DATABASE.md" target="_blank" style="color:#f87171;">Check setup guide</a>`;
         }
-      banner.style.borderColor = 'rgba(248,113,113,0.4)';
-        banner.style.background = 'rgba(248,113,113,0.08)';
       }
     }
 
@@ -4570,11 +4564,8 @@
       }
     });
 
-    // Sidebar toggle for mobile
-    document.getElementById('sidebar-toggle').addEventListener('click', () => {
-      document.getElementById('admin-sidebar').classList.toggle('open');
-    });
-    if (window.innerWidth <= 1024) document.getElementById('sidebar-toggle').style.display = 'flex';
+    // Note: Sidebar toggle is already wired above (openSidebar/closeSidebar functions).
+    // Duplicate handler removed — single handler at initConsole() is authoritative.
   
 
 

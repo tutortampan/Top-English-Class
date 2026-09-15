@@ -1,155 +1,1710 @@
+/* ============================================================
+   TOP ENGLISH CLASS — ADMIN CONSOLE
+   Football Manager-Inspired Matte Management Workstation
+   Tactile, High-Density, Professional Academy Interface
+   ============================================================ */
 
-    /* Sleek Admin Login Styling */
-    #admin-login-screen {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--clr-bg-1, #0a0a1a);
-      position: relative;
-      overflow: hidden;
-    }
-    #admin-login-screen .auth-card {
-      width: 100%;
-      max-width: 400px;
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(40px);
-      -webkit-backdrop-filter: blur(40px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 20px;
-      padding: 2.5rem 2rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      position: relative;
-      z-index: 10;
-      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    #admin-login-screen .auth-brand {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    #admin-login-screen .brand-icon {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
-      filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.4));
-    }
-    #admin-login-screen h1 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.6rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin-bottom: 0.2rem;
-      background: linear-gradient(135deg, #38bdf8, #818cf8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    #admin-login-screen .auth-brand p {
-      font-size: 0.8rem;
-      color: rgba(255, 255, 255, 0.5);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-    #admin-login-screen .form-group {
-      margin-bottom: 1.25rem;
-    }
-    #admin-login-screen .form-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.6);
-      margin-bottom: 0.4rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    #admin-login-screen .form-control {
-      background: rgba(0, 0, 0, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      padding: 0.8rem 1rem;
-      font-size: 0.9rem;
-      color: #fff;
-      transition: all 0.2s;
-    }
-    #admin-login-screen .form-control:focus {
-      background: rgba(0, 0, 0, 0.4);
-      border-color: #38bdf8;
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
-      outline: none;
-    }
-    #admin-login-screen .btn-primary {
-      background: linear-gradient(135deg, #0ea5e9, #3b82f6);
-      border: none;
-      border-radius: 10px;
-      padding: 0.9rem;
-      font-weight: 700;
-      font-size: 0.95rem;
-      letter-spacing: 0.02em;
-      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
-      transition: all 0.3s ease;
-      margin-top: 0.5rem;
-    }
-    #admin-login-screen .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4);
-    }
-    #admin-login-screen .auth-footer-link {
-      text-align: center;
-      margin-top: 1.5rem;
-    }
-    #admin-login-screen .auth-footer-link a {
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 0.8rem;
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    #admin-login-screen .auth-footer-link a:hover {
-      color: #38bdf8;
-    }
-    
-    /* Elegant Orbs */
-    #admin-login-screen .orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      z-index: 0;
-      opacity: 0.6;
-    }
-    #admin-login-screen .orb-1 {
-      width: 400px; height: 400px;
-      background: rgba(56, 189, 248, 0.15);
-      top: -100px; right: -100px;
-    }
-    #admin-login-screen .orb-2 {
-      width: 400px; height: 400px;
-      background: rgba(129, 140, 248, 0.15);
-      bottom: -100px; left: -100px;
-    }
-    
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  
+:root {
+  /* Matte Palette Tokens (Restrained, Tactical, Low-Saturation) */
+  --fm-bg-main: #0a0e17;            /* Pitch-dark tactical workstation base */
+  --fm-bg-sidebar: #0e1422;         /* Deep matte graphite / navy rail */
+  --fm-bg-topbar: #101726;          /* Header ribbon */
+  --fm-bg-panel: #131b2e;           /* Solid matte panel surface */
+  --fm-bg-panel-elevated: #18223a;  /* Elevated tile / active item */
+  --fm-bg-hover: #1b2640;           /* Clean interactive row hover */
+  --fm-bg-input: #090d16;           /* Recessed matte input */
+
+  /* Tactile Matte Borders */
+  --fm-border-subtle: #1c263c;      /* Clean 1px panel separator */
+  --fm-border-medium: #273756;      /* Active / interactive border */
+  --fm-border-strong: #384d78;      /* Focused border */
+
+  /* Tactical Status & Accent Tokens (Restrained & Muted) */
+  --fm-accent-pitch: #10b981;       /* Academy pitch green (Completed, Passing, Online) */
+  --fm-accent-tactical: #38bdf8;    /* Tactical blue (Primary highlight, Selected tab) */
+  --fm-accent-indigo: #6366f1;      /* Academy crest indigo */
+  --fm-accent-amber: #f59e0b;       /* Tactical amber (Pending review, Deadlines) */
+  --fm-accent-crimson: #ef4444;     /* Urgent / Danger / Below threshold */
+  --fm-accent-slate: #64748b;       /* Neutral status */
+
+  /* High-Legibility Tabular Typography */
+  --fm-text-primary: #f8fafc;       /* Crisp white header and body */
+  --fm-text-secondary: #94a3b8;     /* Muted metadata slate */
+  --fm-text-muted: #64748b;         /* Low-contrast subtitles and labels */
+  --fm-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --fm-font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Dimensions */
+  --fm-sidebar-w: 250px;
+  --fm-topbar-h: 54px;
+  --fm-bottom-tab-h: 56px;
+  --fm-radius-sm: 4px;
+  --fm-radius-md: 8px;
+  --fm-radius-lg: 12px;
+}
+
+/* ============================================================
+   1. GLOBAL ADMIN LAYOUT (FM WORKSTATION SHELL)
+   ============================================================ */
+
+body, html {
+  background-color: var(--fm-bg-main) !important;
+  color: var(--fm-text-primary);
+  font-family: var(--fm-font-sans);
+  overflow-x: hidden;
+}
+
+#admin-console.admin-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--fm-bg-main);
+  position: relative;
+}
+
+/* ============================================================
+   2. TACTICAL SIDEBAR NAVIGATION RAIL
+   ============================================================ */
+
+.admin-sidebar {
+  width: var(--fm-sidebar-w);
+  height: 100vh;
+  background: var(--fm-bg-sidebar);
+  border-right: 1px solid var(--fm-border-subtle);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  z-index: 50;
+  user-select: none;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-logo {
+  height: var(--fm-topbar-h);
+  padding: 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-bottom: 1px solid var(--fm-border-subtle);
+  background: var(--fm-bg-topbar);
+  flex-shrink: 0;
+}
+
+.sidebar-logo .logo-text {
+  font-family: var(--fm-font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--fm-text-primary);
+  line-height: 1.2;
+}
+
+.sidebar-logo .logo-sub {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fm-accent-tactical);
+  opacity: 0.9;
+}
+
+/* Navigation Scroll Area */
+.admin-nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.75rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.admin-nav::-webkit-scrollbar {
+  width: 4px;
+}
+.admin-nav::-webkit-scrollbar-thumb {
+  background: var(--fm-border-subtle);
+  border-radius: 4px;
+}
+
+/* ABCD Domain Headers */
+.nav-domain-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-domain-header {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fm-text-muted);
+  padding: 0.35rem 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.nav-domain-header .domain-icon {
+  font-size: 0.85rem;
+}
+
+/* Tactical Nav Items */
 .admin-nav-item {
   display: flex;
   align-items: center;
-  padding: 0.65rem 1rem;
-  border-radius: var(--radius-md);
-  margin-bottom: 2px;
-  color: var(--clr-text-2);
+  gap: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--fm-radius-sm);
+  color: var(--fm-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
   cursor: pointer;
-  font-size: 0.88rem;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s ease;
   border: 1px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin-nav-item .nav-icon {
+  font-size: 0.95rem;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+  opacity: 0.85;
 }
 
 .admin-nav-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  transform: translateX(4px);
-  color: #fff;
+  background: var(--fm-bg-hover);
+  color: var(--fm-text-primary);
+  border-color: rgba(255, 255, 255, 0.03);
 }
 
 .admin-nav-item.active {
-  background: var(--clr-surface-2);
-  color: var(--clr-primary);
-  font-weight: 600;
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: var(--fm-bg-panel-elevated);
+  color: #ffffff;
+  font-weight: 700;
+  border-color: var(--fm-border-medium);
+  border-left: 3px solid var(--fm-accent-tactical);
 }
+
+.admin-nav-item.active .nav-icon {
+  opacity: 1;
+}
+
+/* Sidebar Footer & User Profile */
+.sidebar-footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--fm-border-subtle);
+  background: var(--fm-bg-sidebar);
+  flex-shrink: 0;
+}
+
+.admin-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.admin-user-chip .user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--fm-radius-sm);
+  background: var(--fm-bg-panel-elevated);
+  border: 1px solid var(--fm-border-medium);
+  color: var(--fm-accent-tactical);
+  font-weight: 800;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.admin-user-chip .user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.admin-user-chip .user-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--fm-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-user-chip .user-role {
+  font-size: 0.68rem;
+  color: var(--fm-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ============================================================
+   3. TOPBAR RIBBON & BREADCRUMB
+   ============================================================ */
+
+.admin-main {
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--fm-bg-main);
+}
+
+.admin-topbar {
+  height: var(--fm-topbar-h);
+  background: var(--fm-bg-topbar);
+  border-bottom: 1px solid var(--fm-border-subtle);
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: 40;
+}
+
+#sidebar-toggle {
+  display: none;
+  font-size: 1.2rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--fm-radius-sm);
+  color: var(--fm-text-secondary);
+  background: transparent;
+  border: 1px solid var(--fm-border-subtle);
+  cursor: pointer;
+}
+
+.topbar-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.breadcrumb-domain {
+  background: var(--fm-bg-panel-elevated);
+  color: var(--fm-accent-tactical);
+  border: 1px solid var(--fm-border-subtle);
+  padding: 2px 8px;
+  border-radius: var(--fm-radius-sm);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.breadcrumb-sep {
+  color: var(--fm-text-muted);
+  font-weight: 400;
+}
+
+.breadcrumb-page {
+  color: var(--fm-text-primary);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* Topbar Actions */
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+/* ============================================================
+   4. WORKSPACE CANVAS & TACTICAL STRIP
+   ============================================================ */
+
+.admin-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.25rem 1.5rem 3rem 1.5rem;
+  scroll-behavior: smooth;
+}
+
+.admin-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.admin-content::-webkit-scrollbar-thumb {
+  background: var(--fm-border-medium);
+  border-radius: 4px;
+}
+
+/* Database Connection Banner */
+#db-connection-banner {
+  background: rgba(245, 158, 11, 0.06) !important;
+  border: 1px solid rgba(245, 158, 11, 0.25) !important;
+  border-radius: var(--fm-radius-sm) !important;
+  font-size: 0.8rem !important;
+  color: var(--fm-text-primary) !important;
+}
+
+/* ABCD Status Overview Strip */
+#admin-kpi-banner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+#admin-kpi-banner > div {
+  background: var(--fm-bg-panel) !important;
+  border: 1px solid var(--fm-border-subtle) !important;
+  border-radius: var(--fm-radius-md) !important;
+  padding: 0.75rem 1rem !important;
+  box-shadow: none !important;
+  transition: border-color 0.15s ease;
+}
+
+#admin-kpi-banner > div:hover {
+  border-color: var(--fm-border-medium) !important;
+}
+
+#admin-kpi-banner div[id^="kpi-"] {
+  font-family: var(--fm-font-display) !important;
+  font-size: 1.4rem !important;
+  font-weight: 800 !important;
+  color: var(--fm-text-primary) !important;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+/* Section Header Bar */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.section-title {
+  font-family: var(--fm-font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--fm-text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.section-subtitle {
+  font-size: 0.78rem;
+  color: var(--fm-text-muted);
+  margin-top: 2px;
+}
+
+.count-chip {
+  background: var(--fm-bg-panel-elevated);
+  border: 1px solid var(--fm-border-subtle);
+  color: var(--fm-accent-tactical);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--fm-radius-sm);
+  letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   5. DENSE SQUAD / DATA TABLES (FOOTBALL MANAGER STYLE)
+   ============================================================ */
+
+.table-wrap {
+  width: 100%;
+  max-width: 100%;
+  background: var(--fm-bg-panel);
+  border: 1px solid var(--fm-border-subtle);
+  border-radius: var(--fm-radius-md);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1.5rem;
+}
+
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.table-wrap th {
+  padding: 0.55rem 0.85rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fm-text-muted);
+  border-bottom: 1px solid var(--fm-border-subtle);
+  background: var(--fm-bg-topbar);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table-wrap td {
+  padding: 0.55rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--fm-text-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table-wrap tbody tr {
+  transition: background 0.12s ease;
+}
+
+.table-wrap tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.012);
+}
+
+.table-wrap tbody tr:hover {
+  background: var(--fm-bg-hover);
+}
+
+.table-wrap tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Table Column Helpers */
+.text-left   { text-align: left !important; }
+.text-center { text-align: center !important; }
+.text-right  { text-align: right !important; }
+
+/* Status Badges & Form Pills */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--fm-radius-sm);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 1px solid transparent;
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--fm-accent-pitch);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.badge-primary {
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--fm-accent-tactical);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--fm-accent-amber);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--fm-accent-crimson);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.badge-neutral {
+  background: rgba(100, 116, 139, 0.12);
+  color: var(--fm-text-secondary);
+  border-color: rgba(100, 116, 139, 0.25);
+}
+
+/* Recent Form Guide Pills (W/D/L or Grade badges) */
+.form-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--fm-radius-sm);
+  font-size: 0.72rem;
+  font-weight: 800;
+  margin-right: 3px;
+}
+.form-pill.grade-s { background: #d97706; color: #fff; }
+.form-pill.grade-a { background: #059669; color: #fff; }
+.form-pill.grade-b { background: #2563eb; color: #fff; }
+.form-pill.grade-c { background: #d97706; color: #fff; }
+.form-pill.grade-d { background: #ea580c; color: #fff; }
+.form-pill.grade-f { background: #dc2626; color: #fff; }
+
+/* ============================================================
+   6. MATTE BUTTONS & FILTER CONTROLS
+   ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: var(--fm-radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn-sm {
+  padding: 0.32rem 0.65rem;
+  font-size: 0.75rem;
+}
+
+.btn-primary {
+  background: var(--fm-accent-tactical);
+  color: #060b14;
+  font-weight: 700;
+  border-color: var(--fm-accent-tactical);
+}
+.btn-primary:hover {
+  background: #7dd3fc;
+  border-color: #7dd3fc;
+}
+
+.btn-secondary {
+  background: var(--fm-bg-panel-elevated);
+  color: var(--fm-text-primary);
+  border-color: var(--fm-border-subtle);
+}
+.btn-secondary:hover {
+  background: var(--fm-bg-hover);
+  border-color: var(--fm-border-medium);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--fm-text-secondary);
+  border-color: transparent;
+}
+.btn-ghost:hover {
+  background: var(--fm-bg-hover);
+  color: var(--fm-text-primary);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+.btn-danger:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+.btn-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+.btn-warning:hover {
+  background: #d97706;
+  color: #fff;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--fm-accent-tactical);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.btn-outline:hover {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: var(--fm-accent-tactical);
+  color: #fff;
+}
+
+.btn-success {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--fm-accent-pitch);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+.btn-success:hover {
+  background: var(--fm-accent-pitch);
+  color: #060b14;
+}
+
+.btn-info {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.35);
+}
+.btn-info:hover {
+  background: var(--fm-accent-indigo);
+  color: #fff;
+}
+
+.badge-info {
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Pill Filter Bar */
+.pill-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.pill-filter-btn {
+  padding: 4px 12px;
+  border-radius: var(--fm-radius-sm);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--fm-text-secondary);
+  background: var(--fm-bg-panel);
+  border: 1px solid var(--fm-border-subtle);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.pill-filter-btn:hover {
+  color: var(--fm-text-primary);
+  border-color: var(--fm-border-medium);
+  background: var(--fm-bg-hover);
+}
+
+.pill-filter-btn.active {
+  background: var(--fm-bg-panel-elevated);
+  color: var(--fm-accent-tactical);
+  border-color: var(--fm-accent-tactical);
+  font-weight: 700;
+}
+
+/* High-Contrast Inputs & Selects */
+.form-label {
+  color: var(--fm-text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 0.76rem !important;
+  margin-bottom: 4px !important;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.form-control {
+  background: var(--fm-bg-input) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--fm-border-subtle) !important;
+  border-radius: var(--fm-radius-sm) !important;
+  font-size: 0.82rem !important;
+  padding: 0.45rem 0.75rem !important;
+  width: 100%;
+  transition: border-color 0.15s ease;
+}
+
+.form-control:focus {
+  border-color: var(--fm-accent-tactical) !important;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+  outline: none !important;
+}
+
+/* ============================================================
+   7. MODAL DIALOGS & DRAWERS (MATTE TACTICAL)
+   ============================================================ */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-backdrop.hidden {
+  display: none !important;
+}
+
+.modal-box {
+  background: var(--fm-bg-panel);
+  border: 1px solid var(--fm-border-medium);
+  border-radius: var(--fm-radius-md);
+  width: 100%;
+  max-width: 580px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--fm-border-subtle);
+  padding-bottom: 0.75rem;
+}
+
+.modal-header h3 {
+  font-family: var(--fm-font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--fm-text-primary);
+  margin: 0;
+}
+
+/* ============================================================
+   8. MOBILE RESPONSIVENESS & BOTTOM TABS
+   ============================================================ */
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 45;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-overlay.hidden {
+  display: none !important;
+}
+
+.mobile-bottom-tabs {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  #sidebar-toggle {
+    display: inline-flex;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.7);
+    z-index: 100;
+  }
+
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .admin-content {
+    padding: 1rem 1rem calc(var(--fm-bottom-tab-h) + 1.5rem) 1rem;
+  }
+
+  /* Mobile Bottom Navigation Bar */
+  .mobile-bottom-tabs {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--fm-bottom-tab-h);
+    background: var(--fm-bg-sidebar);
+    border-top: 1px solid var(--fm-border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 90;
+    padding: 0 4px;
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.5);
+  }
+
+  .mobile-tab {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--fm-text-secondary);
+    cursor: pointer;
+    font-size: 0.68rem;
+    font-weight: 600;
+    gap: 2px;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-tab-icon {
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+
+  .mobile-tab.active {
+    color: var(--fm-accent-tactical);
+    background: rgba(56, 189, 248, 0.06);
+    border-top: 2px solid var(--fm-accent-tactical);
+  }
+}
+
+/* Extra small mobile adjustments */
+@media (max-width: 480px) {
+  .admin-topbar {
+    padding: 0 1rem;
+  }
+  .breadcrumb-domain {
+    display: none;
+  }
+  .breadcrumb-sep {
+    display: none;
+  }
+  #admin-kpi-banner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ============================================================
+   9. SLEEK ADMIN LOGIN SCREEN
+   ============================================================ */
+
+#admin-login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fm-bg-main);
+  position: relative;
+  overflow: hidden;
+}
+
+#admin-login-screen .auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--fm-bg-panel);
+  border: 1px solid var(--fm-border-medium);
+  border-radius: var(--fm-radius-md);
+  padding: 2.25rem 1.75rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+  position: relative;
+  z-index: 10;
+}
+
+#admin-login-screen .auth-brand {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+#admin-login-screen .brand-icon {
+  font-size: 2.2rem;
+  margin-bottom: 0.4rem;
+}
+
+#admin-login-screen h1 {
+  font-family: var(--fm-font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  color: var(--fm-text-primary);
+}
+
+#admin-login-screen .auth-brand p {
+  font-size: 0.75rem;
+  color: var(--fm-text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#admin-login-screen .btn-primary {
+  width: 100%;
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+#admin-login-screen .auth-footer-link a {
+  color: var(--fm-text-muted);
+  text-decoration: none;
+  font-size: 0.78rem;
+  transition: color 0.15s;
+}
+
+#admin-login-screen .auth-footer-link a:hover {
+  color: var(--fm-accent-tactical);
+}
+
+/* ============================================================
+   10. DATAGRID & TACTICAL SQUAD SPREADSHEET STYLING
+   ============================================================ */
+
+.datagrid-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.datagrid-search {
+  flex: 1;
+  min-width: 220px;
+}
+
+.datagrid-search-input {
+  max-width: 320px;
+  width: 100%;
+  background: var(--fm-bg-input) !important;
+  border: 1px solid var(--fm-border-subtle) !important;
+  border-radius: var(--fm-radius-sm) !important;
+  padding: 0.4rem 0.75rem !important;
+  font-size: 0.82rem !important;
+  color: var(--fm-text-primary) !important;
+}
+
+.datagrid-search-input:focus {
+  border-color: var(--fm-accent-tactical) !important;
+  outline: none !important;
+}
+
+.datagrid-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.datagrid-count {
+  font-size: 0.76rem;
+  color: var(--fm-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.datagrid-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.datagrid-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.datagrid-sortable:hover {
+  color: var(--fm-text-primary) !important;
+}
+
+.sort-icon {
+  font-size: 0.7rem;
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+.datagrid-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 1rem;
+}
+
+.datagrid-pagination .btn {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  font-size: 0.78rem;
+}
+
+/* Universal Card & Surface Overrides for Admin Console */
+.card, .glass-card {
+  background: var(--fm-bg-panel) !important;
+  border: 1px solid var(--fm-border-subtle) !important;
+  border-radius: var(--fm-radius-md) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.card:hover, .glass-card:hover {
+  border-color: var(--fm-border-medium) !important;
+}
+
+/* Empty States & Spinners */
+.empty-state {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--fm-text-muted);
+}
+
+.empty-state__icon {
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.8;
+}
+
+.empty-state h3 {
+  font-family: var(--fm-font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--fm-text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.empty-state p {
+  font-size: 0.82rem;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 2.5px solid var(--fm-border-medium);
+  border-top-color: var(--fm-accent-tactical);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 0.75rem auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Form Checkbox & Radio Controls */
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--fm-accent-tactical);
+  cursor: pointer;
+}
+
+/* ============================================================
+   11. TEXT UTILITIES & LEGACY CLASS COMPATIBILITY
+   ============================================================ */
+
+/* Matte tactical "gradient" — replaces old neon gradients with
+   a crisp high-contrast tactical blue label */
+.text-gradient {
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+  background-clip: unset !important;
+  color: var(--fm-text-primary) !important;
+  font-weight: 800 !important;
+}
+
+/* Utility helpers used across all rendered sections */
+.d-flex       { display: flex !important; }
+.align-center { align-items: center !important; }
+.justify-between { justify-content: space-between !important; }
+.flex-wrap    { flex-wrap: wrap !important; }
+.gap-2        { gap: 0.5rem !important; }
+.gap-3        { gap: 0.75rem !important; }
+.gap-4        { gap: 1rem !important; }
+.mb-2         { margin-bottom: 0.5rem !important; }
+.mb-3         { margin-bottom: 0.75rem !important; }
+.mb-4         { margin-bottom: 1rem !important; }
+.mb-5         { margin-bottom: 1.25rem !important; }
+.mb-6         { margin-bottom: 1.5rem !important; }
+.mt-4         { margin-top: 1rem !important; }
+.mt-6         { margin-top: 1.5rem !important; }
+.p-3          { padding: 0.75rem !important; }
+.p-4          { padding: 1rem !important; }
+.p-6          { padding: 1.5rem !important; }
+.rounded      { border-radius: var(--fm-radius-md) !important; }
+.text-center  { text-align: center !important; }
+.text-right   { text-align: right !important; }
+.text-sm      { font-size: 0.82rem !important; }
+.text-xs      { font-size: 0.72rem !important; }
+.text-muted   { color: var(--fm-text-muted) !important; }
+.text-xl      { font-size: 1.25rem !important; }
+.fw-700       { font-weight: 700 !important; }
+.fw-800       { font-weight: 800 !important; }
+.m-0          { margin: 0 !important; }
+.w-full       { width: 100% !important; }
+.flex-1       { flex: 1 !important; }
+.hidden       { display: none !important; }
+
+/* ============================================================
+   12. TACTICAL KPI GRID (Inside Domain Section Views)
+   ============================================================ */
+
+/* KPI grid used inside rendered section views (e.g., Challenges Hub) */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.kpi-card {
+  background: var(--fm-bg-panel) !important;
+  border: 1px solid var(--fm-border-subtle) !important;
+  border-radius: var(--fm-radius-md) !important;
+  padding: 0.85rem 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  transition: border-color 0.15s ease;
+  box-shadow: none !important;
+}
+
+.kpi-card:hover {
+  border-color: var(--fm-border-medium) !important;
+}
+
+/* KPI label (top of the admin KPI strip) */
+.kpi-label {
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--fm-text-muted) !important;
+  margin-bottom: 4px !important;
+}
+
+/* KPI value (large number on admin KPI strip) */
+.kpi-value {
+  font-family: var(--fm-font-display) !important;
+  font-size: 1.45rem !important;
+  font-weight: 800 !important;
+  color: var(--fm-text-primary) !important;
+  line-height: 1.2 !important;
+}
+
+/* KPI icon (inside domain section kpi-cards) */
+.kpi-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fm-bg-panel-elevated);
+  border: 1px solid var(--fm-border-subtle);
+  border-radius: var(--fm-radius-sm);
+}
+
+/* KPI value inside section kpi-cards */
+.kpi-val {
+  font-family: var(--fm-font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--fm-text-primary);
+  line-height: 1.1;
+}
+
+/* KPI label inside section kpi-cards */
+.kpi-lbl {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--fm-text-muted);
+  margin-top: 2px;
+}
+
+/* ============================================================
+   13. EXAM HERO / SECTION HERO PANEL
+   ============================================================ */
+
+.exam-hero {
+  background: var(--fm-bg-panel);
+  border: 1px solid var(--fm-border-subtle);
+  border-radius: var(--fm-radius-md);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.exam-hero .section-title {
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+}
+
+/* ============================================================
+   14. SEARCH BAR (Global Tactical Search)
+   ============================================================ */
+
+.search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--fm-bg-input) !important;
+  border: 1px solid var(--fm-border-subtle) !important;
+  border-radius: var(--fm-radius-sm) !important;
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+  width: 100%;
+}
+
+.search-bar:focus-within {
+  border-color: var(--fm-accent-tactical) !important;
+}
+
+.search-bar .search-icon {
+  padding: 0 0.6rem 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--fm-text-muted);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.search-bar input {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: var(--fm-text-primary) !important;
+  font-size: 0.82rem !important;
+  padding: 0.42rem 0.75rem 0.42rem 0 !important;
+  width: 100% !important;
+  box-shadow: none !important;
+}
+
+.search-bar input::placeholder {
+  color: var(--fm-text-muted) !important;
+}
+
+/* ============================================================
+   15. COMPACT TABLE VARIANT
+   ============================================================ */
+
+.table-compact th {
+  padding: 0.45rem 0.75rem !important;
+  font-size: 0.66rem !important;
+}
+
+.table-compact td {
+  padding: 0.42rem 0.75rem !important;
+  font-size: 0.78rem !important;
+}
+
+/* ============================================================
+   16. DB STATUS BANNER IMPROVEMENTS
+   ============================================================ */
+
+.db-status-banner {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.65rem !important;
+  padding: 0.55rem 1rem !important;
+  margin-bottom: 1.25rem !important;
+  background: rgba(245, 158, 11, 0.06) !important;
+  border: 1px solid rgba(245, 158, 11, 0.25) !important;
+  border-radius: var(--fm-radius-sm) !important;
+  font-size: 0.78rem !important;
+  color: var(--fm-text-secondary) !important;
+  position: relative;
+}
+
+.db-status-banner.connected {
+  background: rgba(16, 185, 129, 0.06) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+.db-status-banner.error {
+  background: rgba(239, 68, 68, 0.06) !important;
+  border-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fm-accent-amber);
+  flex-shrink: 0;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.status-dot.connected {
+  background: var(--fm-accent-pitch);
+  animation: none;
+}
+
+.status-dot.error {
+  background: var(--fm-accent-crimson);
+  animation: pulse-dot 0.8s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.8); }
+}
+
+.btn-dismiss-banner {
+  background: transparent;
+  border: none;
+  color: var(--fm-text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  margin-left: auto;
+  line-height: 1;
+  transition: color 0.12s ease;
+}
+
+.btn-dismiss-banner:hover {
+  color: var(--fm-text-primary);
+}
+
+/* ============================================================
+   17. FORM LAYOUT & GROUP SPACING
+   ============================================================ */
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Select styling */
+select.form-control {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2364748b' d='M1 1l5 5 5-5'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  padding-right: 2rem !important;
+}
+
+/* Textarea */
+textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ============================================================
+   18. TOAST NOTIFICATIONS (FM TACTICAL STYLE)
+   ============================================================ */
+
+#toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+  max-width: 360px;
+}
+
+.toast {
+  background: var(--fm-bg-panel-elevated) !important;
+  border: 1px solid var(--fm-border-medium) !important;
+  border-radius: var(--fm-radius-sm) !important;
+  padding: 0.75rem 1rem !important;
+  color: var(--fm-text-primary) !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  pointer-events: all;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 0.6rem !important;
+  animation: toast-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  border-left: 3px solid var(--fm-border-medium) !important;
+}
+
+.toast.success { border-left-color: var(--fm-accent-pitch) !important; }
+.toast.error   { border-left-color: var(--fm-accent-crimson) !important; }
+.toast.warning { border-left-color: var(--fm-accent-amber) !important; }
+.toast.info    { border-left-color: var(--fm-accent-tactical) !important; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ============================================================
+   19. ADMIN LOGIN SCREEN — ORB AMBIENT EFFECTS
+   ============================================================ */
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.orb-1 {
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
+  top: -100px;
+  right: -100px;
+}
+
+.orb-2 {
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%);
+  bottom: -80px;
+  left: -80px;
+}
+
+/* ============================================================
+   20. SECTION-SPECIFIC DOMAIN VIEW POLISH
+   ============================================================ */
+
+/* Recalibrator, Import, and Settings sections use inline styles — 
+   provide sensible defaults for their containers */
+.admin-content > div > h2.section-title {
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  color: var(--fm-text-primary) !important;
+}
+
+/* Settings Cards Grid */
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+/* Grid fallback for JS-generated inline grid */
+.admin-content .grid {
+  display: grid;
+}
+
+/* Info / warning boxes used inside sections */
+.info-box {
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: var(--fm-radius-sm);
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  color: var(--fm-text-secondary);
+  margin-bottom: 1rem;
+}
+
+.warning-box {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: var(--fm-radius-sm);
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  color: var(--fm-accent-amber);
+  margin-bottom: 1rem;
+}
+
+.error-box {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  border-radius: var(--fm-radius-sm);
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  color: var(--fm-accent-crimson);
+  margin-bottom: 1rem;
+}
+
+/* Action Button Groups (used on row actions in tables) */
+.action-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ============================================================
+   21. STUDENT PROFILE CARD (Inside Students Roster)
+   ============================================================ */
+
+.student-card {
+  background: var(--fm-bg-panel);
+  border: 1px solid var(--fm-border-subtle);
+  border-radius: var(--fm-radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: border-color 0.15s, background 0.15s;
+  cursor: default;
+}
+
+.student-card:hover {
+  border-color: var(--fm-border-medium);
+  background: var(--fm-bg-hover);
+}
+
+.student-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--fm-radius-sm);
+  background: var(--fm-bg-panel-elevated);
+  border: 1px solid var(--fm-border-medium);
+  color: var(--fm-accent-tactical);
+  font-weight: 800;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   22. EXAM STATUS INDICATORS (Tactical)
+   ============================================================ */
+
+.exam-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: var(--fm-radius-sm);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.exam-status.published  { background: rgba(16, 185, 129, 0.12); color: var(--fm-accent-pitch);    border: 1px solid rgba(16, 185, 129, 0.3); }
+.exam-status.draft      { background: rgba(245, 158, 11, 0.12); color: var(--fm-accent-amber);    border: 1px solid rgba(245, 158, 11, 0.3); }
+.exam-status.unpublished{ background: rgba(100, 116, 139, 0.1); color: var(--fm-text-muted);      border: 1px solid rgba(100, 116, 139, 0.2); }
+.exam-status.archived   { background: rgba(239, 68, 68, 0.1);   color: var(--fm-accent-crimson);  border: 1px solid rgba(239, 68, 68, 0.2); }
+
+/* ============================================================
+   23. IMPORT / UPLOAD ZONES
+   ============================================================ */
+
+.upload-zone {
+  border: 2px dashed var(--fm-border-medium);
+  border-radius: var(--fm-radius-md);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: var(--fm-text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--fm-bg-panel);
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+  border-color: var(--fm-accent-tactical);
+  background: rgba(56, 189, 248, 0.04);
+  color: var(--fm-text-primary);
+}
+
+/* ============================================================
+   24. PROGRESS BARS (Level Progression)
+   ============================================================ */
+
+.progress-track {
+  width: 100%;
+  height: 5px;
+  background: var(--fm-bg-panel-elevated);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--fm-accent-pitch);
+  transition: width 0.4s ease;
+}
+
+.progress-fill.danger  { background: var(--fm-accent-crimson); }
+.progress-fill.warning { background: var(--fm-accent-amber); }
+.progress-fill.success { background: var(--fm-accent-pitch); }
+.progress-fill.primary { background: var(--fm-accent-tactical); }
+
+/* ============================================================
+   25. ADDITIONAL ADMIN CONTENT AREA OVERRIDES
+   ============================================================ */
+
+/* Override any global style.css card/glass-card backgrounds that 
+   might bleed into admin views with wrong colors */
+.admin-content .card,
+.admin-content .glass-card,
+.admin-content [class*="card-"] {
+  background: var(--fm-bg-panel) !important;
+  border: 1px solid var(--fm-border-subtle) !important;
+  border-radius: var(--fm-radius-md) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Override any stray color utility classes from style.css */
+.admin-content .text-muted,
+.admin-content .text-sm {
+  color: var(--fm-text-muted) !important;
+}
+
+/* Recycle bin / soft-delete row indicator */
+tr.deleted-row td {
+  color: var(--fm-text-muted) !important;
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
+/* ============================================================
+   26. DUPLICATE RESOLVER MODAL FM OVERRIDES
+   ============================================================ */
+
+#duplicate-students-modal .modal-box,
+#duplicate-questions-modal .modal-box {
+  background: var(--fm-bg-panel) !important;
+  border-color: var(--fm-border-medium) !important;
+}
+
+.dup-group-card {
+  background: var(--fm-bg-panel-elevated);
+  border: 1px solid var(--fm-border-subtle);
+  border-radius: var(--fm-radius-md);
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.dup-group-card:hover {
+  border-color: var(--fm-border-medium);
+}
+
+/* ============================================================
+   27. SCROLLBAR GLOBAL (Tactical Thin Dark)
+   ============================================================ */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--fm-border-medium) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--fm-border-medium);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--fm-border-strong);
+}
+
