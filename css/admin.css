@@ -11,10 +11,10 @@
     }
     #admin-login-screen .auth-card {
       width: 100%;
-      max-width: 400px; /* More compact */
-      background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      max-width: 400px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 20px;
       padding: 2.5rem 2rem;
@@ -71,7 +71,8 @@
     #admin-login-screen .form-control:focus {
       background: rgba(0, 0, 0, 0.4);
       border-color: #38bdf8;
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+      outline: none;
     }
     #admin-login-screen .btn-primary {
       background: linear-gradient(135deg, #0ea5e9, #3b82f6);
@@ -127,3 +128,28 @@
       to { opacity: 1; transform: translateY(0); }
     }
   
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 2px;
+  color: var(--clr-text-2);
+  cursor: pointer;
+  font-size: 0.88rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+}
+
+.admin-nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(4px);
+  color: #fff;
+}
+
+.admin-nav-item.active {
+  background: var(--clr-surface-2);
+  color: var(--clr-primary);
+  font-weight: 600;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
