@@ -1,5 +1,33 @@
 # SESSION LOG
 
+## SESSION-20260915-1025
+
+Start: 2026-09-15 10:15 UTC
+End: 2026-09-15 10:25 UTC
+Agent: Antigravity
+
+### User Request
+"PUSH TO MAIN NOT TO MASTER"
+
+### Objective
+Ensure that local git tracking, remote upstream, documentation, and all future pushes target the `main` branch exclusively, completely avoiding `master`.
+
+### Work Performed
+1. Confirmed local repository branch is `main` tracking `origin/main`.
+2. Updated `docs/DEPLOYMENT.md` to specify `main` as the sole deployment branch for Netlify / Vercel.
+3. Updated `docs/CURRENT_STATE.md` and `docs/CHANGELOG.md` to reflect strict `main` branch enforcement.
+4. Committed all pending documentation and pushed directly to `origin main`.
+5. Verified clean working tree and synchronized state on `origin/main`.
+
+### Results
+- Local branch: `main`
+- Upstream: `origin/main`
+- Push target: `origin main`
+- All changes deployed live to Netlify from `origin/main`.
+
+### Resume From
+Complete.
+
 ## SESSION-20260915-1015
 
 Start: 2026-09-15 09:45 UTC

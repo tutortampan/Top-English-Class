@@ -1,11 +1,16 @@
 # CURRENT STATE
  
-Last Updated: 2026-09-15 10:15 UTC
+Last Updated: 2026-09-15 10:25 UTC
 Current Phase: PRODUCTION READINESS & LIVE HOSTING SYNC
-Current Task: GitHub origin/main Synchronization & Live Netlify Rollout
+Current Task: Exclusive Git Deployment to 'main' Branch (Locked & Verified)
 Status: COMPLETE
 
 ## Completed
+- **Exclusive Git Deployment to `main` Branch Locked ("PUSH TO MAIN NOT TO MASTER")**:
+  - Configured local branch `main` with upstream tracking `origin/main`.
+  - Updated all deployment documentation (`docs/DEPLOYMENT.md`) to establish `main` as the sole production deployment branch for Netlify and Vercel.
+  - Remote default branch confirmed as `origin/HEAD -> origin/main`.
+  - Staged and pushed all updates exclusively to `origin main`.
 - **Live Netlify Production Synchronization (`https://topenglishclass.netlify.app`)**:
   - Identified root cause of stale live site: Netlify's build pipeline is wired to GitHub default branch `main`, while development commits were targeting `master`.
   - Fast-forward synchronized `origin/master` directly into `origin/main` on GitHub (`tutortampan/Top-English-Class`).

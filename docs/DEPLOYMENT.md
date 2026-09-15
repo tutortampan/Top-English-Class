@@ -11,7 +11,7 @@ The application uses a serverless static-first architecture:
 - **Hosting**: Netlify or Vercel (serves directly from root `.`, zero compilation needed).
 - **Backend**: Supabase PostgreSQL + Storage + Auth + Edge Functions.
 - **Client SDK**: `@supabase/supabase-js@2` loaded via ESM CDN (`esm.sh`).
-- **Repository**: [tutortampan/Top-English-Class](https://github.com/tutortampan/Top-English-Class) (branch: `master`).
+- **Repository**: [tutortampan/Top-English-Class](https://github.com/tutortampan/Top-English-Class) (branch: `main`).
 
 ---
 
@@ -25,7 +25,7 @@ The application uses a serverless static-first architecture:
 3. Choose **GitHub** as the Git provider and authorize access.
 4. Select the repository: `tutortampan/Top-English-Class`.
 5. Configuration settings:
-   - **Branch to deploy**: `master`
+   - **Branch to deploy**: `main`
    - **Base directory**: *(leave empty)*
    - **Build command**: *(leave empty)*
    - **Publish directory**: `.`
@@ -85,4 +85,4 @@ Both credentials are baked into `js/supabase.js` with optional override via `win
 
 ## 6. CONTINUOUS DEPLOYMENT (GIT PUSH)
 
-Every time code is pushed to `origin master`, both Netlify and Vercel will automatically trigger a new deployment preview and update the production URL within seconds.
+Every time code is pushed to `origin main`, both Netlify and Vercel will automatically trigger a new deployment preview and update the production URL within seconds.

@@ -1,3 +1,31 @@
+## [2026-09-15 10:25 UTC] — Enforce Main Branch as Exclusive Deployment Target
+
+**Agent/Session:** Antigravity
+**Phase:** Git Architecture & Continuous Deployment
+**Status:** PASS
+
+### Why
+- Enforce `main` as the exclusive deployment branch ("PUSH TO MAIN NOT TO MASTER") to ensure Netlify's live production auto-deployments remain directly aligned with GitHub.
+
+### Changed
+- Set local working branch to `main` with upstream tracking `origin/main`.
+- Updated `docs/DEPLOYMENT.md` to declare `main` as the sole deployment branch.
+- Verified remote default branch `origin/HEAD -> origin/main`.
+- Pushed all updates directly to `origin/main`.
+
+### Files
+- `docs/DEPLOYMENT.md`
+- `docs/CURRENT_STATE.md`
+- `docs/CHANGELOG.md`
+- `docs/SESSION_LOG.md`
+
+### Tests
+- `git branch -vv` confirms `main` tracking `origin/main`.
+- `git push origin main` succeeds with zero errors.
+
+### Next Action
+- Complete.
+
 ## [2026-09-15 10:15 UTC] - Live Netlify Production Deployment (Synced origin/main)
 
 **Agent/Session:** Antigravity
