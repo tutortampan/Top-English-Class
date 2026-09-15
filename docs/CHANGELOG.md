@@ -1,3 +1,27 @@
+## [2026-09-15 11:55 UTC] — Cache-Busting, Service Worker Network-First Strategy & Syntax Fixes
+
+**Agent/Session:** Antigravity
+**Phase:** Maintenance & Stability
+**Status:** PASS
+
+### Why
+- The user encountered `SyntaxError: Identifier 'clearAdminCache' has already been declared (at app.js?v=2.1.0:8:7)`.
+- Investigation revealed that while the duplicate import had been removed from the file on disk, `sw.js` was serving a stale cached copy of `app.js?v=2.1.0` due to a Cache-First strategy and non-bumped script query versions in `admin.html`.
+- Additionally, `sw.js` had obsolete files in `ASSETS_TO_CACHE` causing cache installation failures, and `uploadFile` was erroneously imported in `js/admin/app.js`.
+
+### Changed
+- `sw.js`: Bumped cache name to `abcd-system-v3.1.2`, implemented Network-First caching strategy for all scripts and documents, and removed obsolete file paths (`css/auth.css`, `css/exam.css`, `css/result.css`).
+- `admin.html`: Updated script reference from `js/admin/app.js?v=2.1.0` to `js/admin/app.js?v=3.1.0`.
+- `js/admin/app.js`: Updated all internal module imports to `?v=3.1.0`, and removed unused non-existent `uploadFile` import.
+- `index.html`, `dashboard.html`, `exam.html`, `result.html`: Updated module imports to `?v=3.1.0` and removed obsolete `css/auth.css` stylesheet link.
+
+### Tests
+- `scratch/audit_online_readiness.ps1`: 163 PASSED, 0 FAILED (100% pass rate).
+- Pushed to `origin main` (commit `5a7556e` and `ebf2531`).
+
+### Next Action
+- Notify user to refresh browser.
+
 ## [2026-09-15 10:30 UTC] — Single-Branch Enforcement & Deletion of 'master' Branch
 
 **Agent/Session:** Antigravity
