@@ -303,7 +303,9 @@
 
     window.addEventListener('beforeunload', (e) => {
       if (isExamActive) {
-        submitOnPageExit();
+        // BUG FIX: Do NOT call submitOnPageExit() here! 
+        // If the user clicks 'Cancel' on the browser's reload warning, they should be able to continue.
+        // Actual forceful submission is handled reliably by the 'pagehide' event if they do leave.
         e.preventDefault();
         e.returnValue = 'Exam is in progress! Closing or reloading this page will automatically submit the exam.';
         return e.returnValue;
