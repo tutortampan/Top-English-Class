@@ -1,3 +1,4 @@
+// @ts-nocheck
 // TOP ENGLISH CLASS â€” Edge Function: student-login
 // Server verifies: program/class relationship, student membership, active status, PIN hash.
 // Never stores or returns plaintext PINs.

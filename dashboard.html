@@ -1308,6 +1308,136 @@
       });
     }
 
+    // ── openSubjectModal: Opens the Level Modal for a Subject ──
+    // Called when a student clicks a subject card on the dashboard.
+    async function openSubjectModal(subj, progress) {
+      const modal       = document.getElementById('level-modal');
+      const titleEl     = document.getElementById('level-modal-title');
+      const subjectEl   = document.getElementById('level-modal-subject');
+      const container   = document.getElementById('levels-container');
+      if (!modal || !container) return;
+
+      // Open modal immediately with a loading state
+      titleEl.textContent  = subj.name || 'Subject';
+      subjectEl.textContent = '';
+      container.innerHTML  = `<div style="padding:2rem;text-align:center;color:var(--clr-text-3);">
+        <div class="spinner" style="margin:0 auto 1rem;"></div>
+        <p>Loading exams…</p></div>`;
+      modal.classList.remove('hidden');
+
+      try {
+        const exams = await fetchExamsForStudentSubject(
+          session.program_id, subj.id, session.institution_id
+        );
+
+        if (!exams || exams.length === 0) {
+          container.innerHTML = `<div style="padding:2.5rem 1.5rem;text-align:center;color:var(--clr-text-3);">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">📭</div>
+            <p style="font-size:0.9rem;">No published exams for this subject yet.</p></div>`;
+          return;
+        }
+
+        // Group exams by level (level_id or level name)
+        const levelMap = new Map();
+        for (const exam of exams) {
+          const lvlId   = exam.level_id || '_default';
+          const lvlName = exam.levels?.name || exam.level_name || (lvlId === '_default' ? 'General' : `Level ${lvlId}`);
+          const lvlOrder = exam.levels?.level_number ?? exam.level_order ?? 99;
+          if (!levelMap.has(lvlId)) levelMap.set(lvlId, { name: lvlName, order: lvlOrder, exams: [] });
+          levelMap.get(lvlId).exams.push(exam);
+        }
+
+        // Sort levels by order
+        const sortedLevels = [...levelMap.values()].sort((a, b) => a.order - b.order);
+
+        // Build attempts quick-lookup for this student
+        const attemptsRaw = await fetchAllStudentAttempts(session.student_id).catch(() => []);
+        const bestByExam = {};
+        const inProgByExam = {};
+        for (const att of attemptsRaw) {
+          const eid = att.assessment_id || att.exam_id;
+          if (!eid) continue;
+          const pct = parseFloat(att.percentage || 0);
+          const st  = (att.status || '').toLowerCase();
+          if (st === 'in_progress') { inProgByExam[eid] = att; continue; }
+          if (!bestByExam[eid] || (att.is_best_score) || pct > parseFloat(bestByExam[eid].percentage || 0)) {
+            if (!bestByExam[eid]?.is_best_score) bestByExam[eid] = att;
+          }
+        }
+
+        // Render
+        let html = '';
+        for (const lvl of sortedLevels) {
+          html += `<div style="margin-bottom:1.5rem;">
+            <div style="font-size:0.75rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;
+                        color:var(--clr-text-3);padding:0.4rem 0;border-bottom:1px solid var(--clr-border);
+                        margin-bottom:0.75rem;">${lvl.name}</div>`;
+          for (const exam of lvl.exams) {
+            const best      = bestByExam[exam.id];
+            const inProg    = inProgByExam[exam.id];
+            const bestPct   = best ? parseFloat(best.percentage || 0) : null;
+            const passed    = bestPct !== null && bestPct >= (exam.pass_threshold || 60);
+            const grade     = bestPct !== null ? getGrade(bestPct) : null;
+            const gradeColors = { S:'#f59e0b',A:'#10b981',B:'#3b82f6',C:'#f59e0b',D:'#ea580c',E:'#ef4444',F:'#94a3b8' };
+            const gradeColor  = grade ? (gradeColors[grade] || '#94a3b8') : null;
+
+            let statusBadge = '';
+            let actionBtn   = '';
+            if (inProg) {
+              statusBadge = `<span style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);
+                              padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">⏳ In Progress</span>`;
+              actionBtn   = `<button onclick="location.href='exam.html?attempt_id=${inProg.id}'"
+                              style="background:var(--clr-accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;
+                              font-size:0.78rem;font-weight:700;cursor:pointer;">Resume →</button>`;
+            } else if (best) {
+              const badgeBg = passed ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.12)';
+              const badgeClr= passed ? '#10b981' : '#f87171';
+              statusBadge = `<span style="background:${badgeBg};color:${badgeClr};border:1px solid ${badgeClr}33;
+                              padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">
+                              ${passed ? '✓ Passed' : '✗ Failed'} ${bestPct.toFixed(0)}%</span>`;
+              actionBtn   = `<button onclick="location.href='result.html?attempt_id=${best.id}'"
+                              style="background:rgba(255,255,255,0.06);color:var(--clr-text-2);border:1px solid var(--clr-border);
+                              padding:6px 14px;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;">View Result</button>`;
+            } else {
+              statusBadge = `<span style="background:rgba(99,102,241,0.12);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);
+                              padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">Not Started</span>`;
+              actionBtn   = `<button onclick="location.href='exam.html?exam_id=${exam.id}'"
+                              style="background:var(--clr-accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;
+                              font-size:0.78rem;font-weight:700;cursor:pointer;">Start Exam →</button>`;
+            }
+
+            const gradeChip = grade ? `<span style="background:${gradeColor}22;color:${gradeColor};border:1px solid ${gradeColor}44;
+              padding:2px 7px;border-radius:4px;font-size:0.72rem;font-weight:800;">${grade}</span>` : '';
+
+            html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;
+                      padding:0.7rem 0.9rem;border-radius:8px;margin-bottom:0.4rem;
+                      background:rgba(255,255,255,0.025);border:1px solid var(--clr-border);
+                      transition:background 0.15s;" 
+                      onmouseover="this.style.background='rgba(255,255,255,0.05)'" 
+                      onmouseout="this.style.background='rgba(255,255,255,0.025)'">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:0.85rem;font-weight:600;color:var(--clr-text-1);white-space:nowrap;
+                            overflow:hidden;text-overflow:ellipsis;">${exam.exam_title || exam.title || 'Exam'}</div>
+                <div style="font-size:0.72rem;color:var(--clr-text-3);margin-top:2px;">${formatAnswerType(exam.answer_type)} · ${exam.time_limit_minutes || 0} min</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
+                ${gradeChip}
+                ${statusBadge}
+                ${actionBtn}
+              </div>
+            </div>`;
+          }
+          html += `</div>`;
+        }
+        container.innerHTML = html;
+
+      } catch(err) {
+        container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--clr-text-3);">
+          <div style="font-size:1.5rem;margin-bottom:0.5rem;">⚠️</div>
+          <p style="font-size:0.85rem;">Could not load exams: ${err.message}</p></div>`;
+      }
+    }
+
     function formatAnswerType(atype) {
       if (!atype) return 'Written Test';
       if (atype === 'speech_to_text') return 'Speaking Test';
@@ -1317,60 +1447,7 @@
       return atype.replace('_', ' ');
     }
 
-      for (const exam of exams) {
-        let attempts = [];
-        try {
-          attempts = await fetchStudentAttemptsForExam(session.student_id, exam.id);
-        } catch (attErr) {
-          console.warn('Attempt fetch notice for exam:', exam.id, attErr);
-        }
-        const minPassScore = exam.prerequisite_min_score || 60;
-        const bestPct = attempts.length > 0 ? Math.max(...attempts.map(a => parseFloat(a.percentage || 0))) : null;
-        const passed = bestPct !== null && bestPct >= minPassScore;
 
-        // Prerequisite exam verification (strictly optional)
-        let prereqMet = true;
-        let prereqExamTitle = '';
-        if (exam.prerequisite_exam_id) {
-          let prereqAttempts = [];
-          try {
-            prereqAttempts = await fetchStudentAttemptsForExam(session.student_id, exam.prerequisite_exam_id);
-          } catch (pErr) {
-            console.warn('Prereq attempt fetch notice:', pErr);
-          }
-          const prereqBest = prereqAttempts.length > 0 ? Math.max(...prereqAttempts.map(a => parseFloat(a.percentage || 0))) : null;
-          prereqMet = prereqBest !== null && prereqBest >= minPassScore;
-          const pObj = rawExams.find(e => e.id === exam.prerequisite_exam_id);
-          prereqExamTitle = pObj ? (pObj.exam_title || pObj.display_name) : 'Prerequisite Exam';
-        }
-
-        const canStart = isUnlocked && prereqMet;
-
-        const examEl = document.createElement('div');
-        examEl.className = 'd-flex align-center justify-between p-4 rounded mb-2';
-        examEl.style.background = 'rgba(255,255,255,0.03)';
-        examEl.style.border = '1px solid var(--clr-border)';
-        examEl.innerHTML = `
-          <div>
-            <div class="fw-600 text-sm">${escapeHtml(exam.exam_type)} — ${escapeHtml(exam.exam_title)} ${exam.exam_order ? `<span class="badge badge-neutral" style="font-size:0.7rem;margin-left:4px;">Order ${escapeHtml(exam.exam_order)}</span>` : ''}</div>
-            <div class="text-xs text-muted mt-1">⏳ ${exam.time_limit_minutes || 60} min · ${formatAnswerType(exam.answer_type)}</div>
-            ${!prereqMet ? `<div class="mt-1"><span class="badge badge-warning" style="font-size:0.7rem;">🔒 Prerequisite Required: ${escapeHtml(prereqExamTitle)} (Min. ${minPassScore}% to unlock)</span></div>` : ''}
-          </div>
-          <div class="d-flex align-center gap-3">
-            ${bestPct !== null ? `<span class="badge ${passed ? 'badge-success' : 'badge-danger'}">${bestPct.toFixed(0)}% (${getGrade(bestPct)})</span>` : ''}
-            ${canStart ? `<button class="btn btn-primary btn-sm" data-exam-id="${exam.id}" id="start-${exam.id}">Start</button>` : (!prereqMet ? `<button class="btn btn-secondary btn-sm" disabled style="opacity:0.6;cursor:not-allowed;">Locked</button>` : '')}
-          </div>
-        `;
-        examsEl.appendChild(examEl);
-
-        if (canStart) {
-          examEl.querySelector(`#start-${exam.id}`).addEventListener('click', () => {
-            sessionStorage.setItem('tec_exam_id', exam.id);
-            window.location.href = 'exam.html';
-          });
-        }
-      }
-    }
 
     // ── V1: Render Assigned Assessments Section ──
     async function renderAssignedAssessments(assessments, allAttempts) {
