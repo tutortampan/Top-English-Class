@@ -1,6 +1,6 @@
     import {
       adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete,
-      adminFetchDeleted, adminRestore, clearAdminCache, uploadFile,
+      adminFetchDeleted, adminRestore, clearAdminCache,
       mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
       detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions,
       fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
