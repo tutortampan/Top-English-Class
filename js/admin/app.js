@@ -146,7 +146,7 @@
 
         // Neither matched
         hideLoading();
-        showToast('Invalid admin credentials. Use admin / admin123', 'error');
+        showToast('Invalid admin credentials. Please try again.', 'error');
       } catch(e) {
         hideLoading();
         if (user.toLowerCase() === 'admin' && pass === 'admin123') {
@@ -154,7 +154,7 @@
           showToast('Welcome, Administrator!', 'success');
           showConsole();
         } else {
-          showToast(e.message || 'Authentication failed. Use admin / admin123', 'error');
+          showToast(e.message || 'Authentication failed. Please check your credentials.', 'error');
         }
       }
     });

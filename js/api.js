@@ -116,22 +116,26 @@ export async function fetchInstitutions() {
   return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
 
-/** Fetch all active programs for a program (alphabetical order) */
+/** Fetch all active programs for an institution (alphabetical order) */
 export async function fetchPrograms(institutionId) {
   let list = MOCK_PROGRAMS.filter(c => c.institution_id === institutionId);
   if (!isPlaceholderUrl()) {
     try {
       const sb = await getSupabase();
+      // NOTE: Live DB uses 'program_id' as the FK to institutions (not 'institution_id')
       const { data, error } = await sb.from('programs')
-        .select('id, name, institution_id')
-        .eq('institution_id', institutionId)
+        .select('id, name, program_id')
+        .eq('program_id', institutionId)
         .eq('is_active', true)
         .is('deleted_at', null)
         .order('name');
       if (error) throw error;
-      if (data && data.length) list = data;
+      if (data && data.length) {
+        // Normalize to expected shape (institution_id) for rest of app
+        list = data.map(r => ({ ...r, institution_id: r.program_id }));
+      }
     } catch (e) {
-      console.warn('Supabase fetch failed, falling back to mock data:', e.message);
+      console.warn('Supabase fetch programs failed, falling back to mock data:', e.message);
     }
   }
   return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
