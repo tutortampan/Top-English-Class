@@ -1,3 +1,31 @@
+## [2026-09-15 10:15 UTC] - Live Netlify Production Deployment (Synced origin/main)
+
+**Agent/Session:** Antigravity
+**Phase:** Live Hosting Synchronization & Verification
+**Status:** PASS
+
+### Why
+- The live production website at `https://topenglishclass.netlify.app` was still showing the stale pre-ABCD layout because Netlify's automatic build hook was monitoring the default GitHub branch `main`, while commits had been pushed to `master`.
+
+### Changed
+- Synchronized `origin/master` (commit `1dbfc0f`) directly into `origin/main` on GitHub (`tutortampan/Top-English-Class`).
+- Netlify immediately picked up the webhook trigger and deployed the latest build to production.
+- Verified live Netlify production environment:
+  - `https://topenglishclass.netlify.app/admin.html`: Successfully serving `A — ACADEMY`, `B — BLUEPRINT`, `C — CHALLENGES`, and `D — DESK`.
+  - `https://topenglishclass.netlify.app/js/admin/app.js?v=2.1.0`: Successfully serving HTTP 200 with complete `aliasSectionMap` router.
+  - Old `DATABASE & CURRICULUM` sidebar completely removed.
+
+### Files
+- `docs/CURRENT_STATE.md`
+- `docs/CHANGELOG.md`
+- `docs/SESSION_LOG.md`
+
+### Tests
+- Live HTTP query verification on `https://topenglishclass.netlify.app/admin.html` and `app.js?v=2.1.0`.
+
+### Next Action
+- Complete.
+
 ## [2026-09-15 09:45 UTC] - Fix IDE Syntax Errors & Template Literal Normalization
 
 **Agent/Session:** Antigravity

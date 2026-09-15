@@ -1,11 +1,18 @@
 # CURRENT STATE
  
-Last Updated: 2026-09-15 10:00 UTC
-Current Phase: PRODUCTION READINESS & ZERO-ERROR IDE POLISH
-Current Task: UI Navigation Linkage & Browser Cache Purge
+Last Updated: 2026-09-15 10:15 UTC
+Current Phase: PRODUCTION READINESS & LIVE HOSTING SYNC
+Current Task: GitHub origin/main Synchronization & Live Netlify Rollout
 Status: COMPLETE
 
 ## Completed
+- **Live Netlify Production Synchronization (`https://topenglishclass.netlify.app`)**:
+  - Identified root cause of stale live site: Netlify's build pipeline is wired to GitHub default branch `main`, while development commits were targeting `master`.
+  - Fast-forward synchronized `origin/master` directly into `origin/main` on GitHub (`tutortampan/Top-English-Class`).
+  - Verified live deployment on `topenglishclass.netlify.app`:
+    - `admin.html`: Returns HTTP 200, contains `A — ACADEMY`, `Has DATABASE & CURRICULUM: False`.
+    - `js/admin/app.js?v=2.1.0`: Returns HTTP 200, contains full `aliasSectionMap` and ABCD router.
+    - `index.html`: Contains top `🛡️ Admin Portal (ABCD Hub) →` button.
 - **UI Navigation & Cache Busting (`index.html`, `admin.html`, `dashboard.html`, `exam.html`, `result.html`)**:
   - Added visible, direct navigation button to `admin.html` from `index.html` (`🛡️ Admin Portal (ABCD Hub) →`).
   - Added pre-filled credentials hint on `admin.html` (`admin` / `admin123`) to streamline admin console access.
