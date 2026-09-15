@@ -4,8 +4,7 @@
       mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
       detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions,
       fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
-      testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage,
-      clearAdminCache
+      testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
     } from '../api.js?v=2.1.0';
     import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=2.1.0';
     import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=2.1.0';
