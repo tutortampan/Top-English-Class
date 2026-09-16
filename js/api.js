@@ -3417,4 +3417,21 @@ export async function submitChallengeAttempt(attemptId, answersMap, options = {}
   return updatedAtt;
 }
 
-
+export async function fetchChallengeDefinitionQuestions(challengeDefinitionId) {
+  const sb = await getSupabase();
+  const { data, error } = await sb
+    .from('assessment_questions')
+    .select('*, questions(*)')
+    .eq('assessment_id', challengeDefinitionId)
+    .order('question_order', { ascending: true });
+  if (error) {
+    const { data: qData, error: qErr } = await sb
+      .from('questions')
+      .select('*')
+      .eq('exam_id', challengeDefinitionId)
+      .order('created_at', { ascending: true });
+    if (qErr) throw qErr;
+    return qData || [];
+  }
+  return data || [];
+}

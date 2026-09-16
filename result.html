@@ -80,9 +80,9 @@
   </div>
 
   <script type="module">
-    import { fetchAttemptResult, fetchAttemptAnswers, fetchAllStudentAttempts, startExam } from './js/api.js?v=4.0.6';
-    import { requireStudentSession } from './js/session.js?v=4.0.6';
-    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=4.0.6';
+    import { fetchAttemptResult, fetchAttemptAnswers, fetchAllStudentAttempts, startExam } from './js/api.js?v=4.0.7';
+    import { requireStudentSession } from './js/session.js?v=4.0.7';
+    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=4.0.7';
 
     const session = requireStudentSession();
     if (!session) throw new Error('Not authenticated');
