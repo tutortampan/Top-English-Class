@@ -7,18 +7,19 @@ import {
   testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
 } from '../api.js?v=3.1.0';
 import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=3.1.0';
-import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=3.1.0';
-import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=3.1.0';
-import { getSupabase } from '../supabase.js?v=3.1.0';
-import { openAssessmentBuilder } from './exam-builder.js?v=3.1.0';
-import { renderStudents as _renderStudentsModule } from './student-management.js?v=3.1.0';
-import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=3.1.0';
-import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport } from './central-assessment.js?v=3.1.0';
-import { renderExams } from './exam-management.js?v=3.1.0';
-import { renderResults, renderProgressView, renderRecalibrator } from './challenges-management.js?v=3.1.0';
-import { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin } from './desk-management.js?v=3.1.0';
-import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=3.1.0';
-import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin } from './crud-modals.js?v=3.1.0';
+import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=3.2.0';
+import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=3.2.0';
+import { getSupabase } from '../supabase.js?v=3.2.0';
+import { openAssessmentBuilder } from './exam-builder.js?v=3.2.0';
+import { renderStudents as _renderStudentsModule } from './student-management.js?v=3.2.0';
+import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=3.2.0';
+import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport } from './central-assessment.js?v=3.2.0';
+import { renderExams } from './exam-management.js?v=3.2.0';
+import { renderResults, renderProgressView, renderRecalibrator } from './challenges-management.js?v=3.2.0';
+import { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin } from './desk-management.js?v=3.2.0';
+import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=3.2.0';
+import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin } from './crud-modals.js?v=3.2.0';
+
 
     // -- Primary Tab Switching Variables --
     const mobileTabs = document.querySelectorAll('.mobile-tab');

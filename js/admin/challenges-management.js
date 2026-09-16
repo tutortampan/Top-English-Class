@@ -1,4 +1,4 @@
-﻿import { adminFetchAll, adminUpdate, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage, formatStudentName } from '../api.js?v=3.1.0';
+import { adminFetchAll, adminUpdate, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage, formatStudentName } from '../api.js?v=3.1.0';
 import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=3.1.0';
 import { openStudentProfile } from './student-management.js?v=3.1.0';
 
@@ -193,7 +193,8 @@ function toLevelLetter(num) {
             }
           }
         });
-        const deduplicated = Array.from(mergedResults.values());`r`n        currentDeduplicatedResults = deduplicated;
+        const deduplicated = Array.from(mergedResults.values());
+        currentDeduplicatedResults = deduplicated;
 
         countChip.textContent = `${deduplicated.length} attempts (Merged)`;
 
