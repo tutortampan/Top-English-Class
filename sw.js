@@ -1,4 +1,4 @@
-const CACHE_NAME = 'abcd-system-v3.1.2';
+const CACHE_NAME = 'abcd-system-v3.2.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
