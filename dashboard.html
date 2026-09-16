@@ -1320,7 +1320,7 @@
             fetchAllStudentAttempts(session.student_id),
             // V1: fetch assignments for this student's batch + individual
             fetchAssignments({ batch_id: session.batch_id, student_id: session.student_id }).catch(() => []),
-            fetchAssessments({ status: 'PUBLISHED' }).catch(() => [])
+            fetchAssessments({ program_id: session.program_id, batch_id: session.batch_id }).catch(() => [])
           ]),
           20000,
           'Fetching dashboard data'
@@ -1329,10 +1329,8 @@
         hideLoading();
         renderSubjects(subjects, progress);
 
-        // V1: build eligible assessment list from assignments
-        const eligibleIds = new Set();
-        (assignmentsRaw || []).forEach(a => { if (a.assessment_id) eligibleIds.add(a.assessment_id); });
-        const v1Assessments = (assessmentsRaw || []).filter(a => eligibleIds.has(a.id));
+        // V1: assessments are directly assigned to program or batch, so no need to cross-check with challenge_instances
+        const v1Assessments = assessmentsRaw || [];
         if (v1Assessments.length > 0) {
           await renderAssignedAssessments(v1Assessments, attempts);
         }

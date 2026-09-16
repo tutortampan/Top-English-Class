@@ -3452,3 +3452,27 @@ export async function fetchChallengeDefinitionQuestions(challengeDefinitionId) {
   }
   return data || [];
 }
+
+export async function fetchAssessments(filters = {}) {
+  const sb = await getSupabase();
+  try {
+    let query = sb.from('assessments').select('*, modules(name, cover_image_url)');
+    
+    let orConditions = [];
+    if (filters.program_id) orConditions.push(`program_id.eq.${filters.program_id}`);
+    if (filters.batch_id) orConditions.push(`batch_id.eq.${filters.batch_id}`);
+    
+    if (orConditions.length > 0) {
+      query = query.or(orConditions.join(','));
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Assessments table query fallback:', err.message);
+  }
+  return [];
+}
