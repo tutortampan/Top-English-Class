@@ -1968,3 +1968,23 @@
 ### Next Action
 - All FM redesign phases complete. Ready for user acceptance testing.
 - Next potential task: student progress tracking improvements, or any new feature requests.
+
+## [2026-09-17 07:58] - Fix Auth and Dashboard Assessment Logic
+
+**Agent/Session:** Antigravity
+**Phase:** 6
+**Status:** PASS
+
+### Why
+- The user reported login failing. This was caused by the Supabase credentials pointing to the new scaffold DB (`xvpwmjpazmfkfffkfypx`) which had no real student data, despite previous logs claiming it was reverted.
+- The dashboard was failing to show new AI assessments because it incorrectly filtered them through the legacy `challenge_instances` table.
+
+### Changed
+- Hard-reverted `js/supabase.js` to point back to the original `xuiszvwfjccvucqpactf` Supabase instance.
+- Added `fetchAssessments` in `js/api.js` to correctly query assessments by `program_id` and `batch_id`.
+- Updated `dashboard.html` to load and display assessments assigned to the student's program/batch directly, removing the legacy assignment filter loop.
+
+### Files
+- `js/supabase.js`
+- `js/api.js`
+- `dashboard.html`
