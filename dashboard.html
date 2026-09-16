@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard â€” TOPS CORE</title>
-  <meta name="description" content="Your TOPS CORE learning dashboard â€” track progress, view subjects, and start exams." />
+  <title>Dashboard — TOPS CORE</title>
+  <meta name="description" content="Your TOPS CORE learning dashboard — track progress, view subjects, and start exams." />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/dashboard.css" />
   <style>
@@ -358,17 +358,17 @@
 
   <!-- Top Navigation -->
   <header class="dashboard-header">
-    <div class="dashboard-header-brand">ðŸŽ“ TOPS CORE</div>
+    <div class="dashboard-header-brand">🎓 TOPS CORE</div>
     <div class="d-flex align-center gap-3">
       <!-- Microphone Status Button -->
       <button class="btn btn-ghost btn-sm d-flex align-center gap-1" id="header-mic-btn" title="Check microphone capability for speaking tests" style="padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid var(--clr-border);">
-        <span id="header-mic-icon">ðŸŽ™ï¸</span>
+        <span id="header-mic-icon">🎙️</span>
         <span id="header-mic-text" class="text-xs" style="font-weight:600;">Mic Check</span>
       </button>
 
       <!-- Header Avatar -->
       <div id="header-avatar" class="header-avatar" title="View Profile" style="cursor:pointer;">
-        <span id="header-avatar-icon">ðŸ‘¤</span>
+        <span id="header-avatar-icon">👤</span>
         <img id="header-avatar-img" class="hidden" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
       </div>
       <span id="header-student-name" class="text-muted text-sm fw-600"></span>
@@ -387,27 +387,27 @@
         <div id="banner-avatar-container" class="banner-avatar-box" title="Click to view or change profile">
           <span id="banner-avatar-initial">S</span>
           <img id="banner-avatar-img" class="hidden" alt="Profile Photo" style="width:100%;height:100%;object-fit:cover;" />
-          <div class="banner-camera-badge" title="Change photo">ðŸ“·</div>
+          <div class="banner-camera-badge" title="Change photo">📷</div>
         </div>
 
         <!-- Student Info & Greeting -->
         <div class="hero-greeting-box">
           <div class="d-flex align-center gap-2 mb-1">
-            <span class="badge badge-success session-pill">â— Active</span>
+            <span class="badge badge-success session-pill">● Active</span>
             <span class="text-xs text-muted hidden" id="stat-exams-done">0</span>
             <span id="overview-exams-count" class="hidden">0</span>
             <span id="overview-subjects-count" class="hidden">0</span>
             <span id="overview-mic-status" class="hidden">Ready</span>
           </div>
-          <h1 class="welcome-name" id="welcome-heading">Hello, <span id="welcome-name" class="text-gradient">Student</span>! ðŸ‘‹</h1>
-          <p class="welcome-meta" id="welcome-meta">Loading your detailsâ€¦</p>
+          <h1 class="welcome-name" id="welcome-heading">Hello, <span id="welcome-name" class="text-gradient">Student</span>! 👋</h1>
+          <p class="welcome-meta" id="welcome-meta">Loading your details…</p>
         </div>
 
         <!-- Micro Stat Cards: Grade & Score -->
         <div class="hero-stats-strip">
           <div class="hero-stat-pill" title="Overall Grade">
             <span class="stat-pill-label">Grade</span>
-            <span class="stat-pill-val banner-grade-text" id="stat-overall-grade-badge">â€”</span>
+            <span class="stat-pill-val banner-grade-text" id="stat-overall-grade-badge">—</span>
           </div>
           <div class="hero-stat-pill" title="Overall Average Score">
             <span class="stat-pill-label">Score</span>
@@ -429,7 +429,7 @@
       <div class="subjects-grid" id="subjects-grid">
         <div class="empty-state">
           <div class="spinner"></div>
-          <p>Loading subjectsâ€¦</p>
+          <p>Loading subjects…</p>
         </div>
       </div>
     </section>
@@ -439,7 +439,7 @@
       <div class="section-header d-flex align-center justify-between flex-wrap gap-3">
         <div>
           <h2 class="section-title d-flex align-center gap-2" id="completed-exams-heading" style="margin-bottom:var(--space-1);">
-            <span>ðŸ“‹</span> My Completed Exams
+            <span>📋</span> My Completed Exams
           </h2>
           <p class="section-subtitle">Review your past test performance, scores, and grade achievements</p>
         </div>
@@ -449,21 +449,21 @@
       <!-- Completed Exams Summary Bar -->
       <div class="completed-summary-bar">
         <div class="completed-summary-card glass-card">
-          <div class="completed-summary-icon">ðŸ“</div>
+          <div class="completed-summary-icon">📝</div>
           <div>
             <div class="completed-summary-val" id="bottom-stat-total-exams">0</div>
             <div class="completed-summary-lbl">Completed Exams</div>
           </div>
         </div>
         <div class="completed-summary-card glass-card">
-          <div class="completed-summary-icon">â­</div>
+          <div class="completed-summary-icon">⭐</div>
           <div>
             <div class="completed-summary-val" id="bottom-stat-avg-score">0%</div>
             <div class="completed-summary-lbl">Average Score</div>
           </div>
         </div>
         <div class="completed-summary-card glass-card">
-          <div class="completed-summary-icon">ðŸ†</div>
+          <div class="completed-summary-icon">🏆</div>
           <div>
             <div class="completed-summary-val" id="bottom-stat-best-score">0%</div>
             <div class="completed-summary-lbl">Highest Score</div>
@@ -476,7 +476,7 @@
         <div class="table-responsive" id="completed-exams-container">
           <div class="empty-state p-6">
             <div class="spinner"></div>
-            <p>Loading your exam historyâ€¦</p>
+            <p>Loading your exam history…</p>
           </div>
         </div>
       </div>
@@ -487,10 +487,10 @@
       <div class="modal-box" style="max-width:640px;">
         <div class="modal-header">
           <div>
-            <h3 id="profile-modal-title">ðŸ‘¨â€ðŸŽ“ Student Profile</h3>
+            <h3 id="profile-modal-title">👨‍🎓 Student Profile</h3>
             <p class="text-muted text-sm">Manage profile photo, personal PIN & view history</p>
           </div>
-          <button class="btn btn-ghost btn-icon" id="close-profile-modal" aria-label="Close">âœ•</button>
+          <button class="btn btn-ghost btn-icon" id="close-profile-modal" aria-label="Close">✕</button>
         </div>
         <div class="p-4" style="display:flex;flex-direction:column;gap:var(--space-5);">
           
@@ -498,17 +498,17 @@
           <div class="glass-card p-5 d-flex align-center gap-5" style="position:relative;">
             <div style="position:relative;cursor:pointer;flex-shrink:0;" id="avatar-container" title="Click to upload profile photo">
               <div id="avatar-img-wrapper" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--clr-primary),var(--clr-accent-1));display:flex;align-items:center;justify-content:center;font-size:2.4rem;font-weight:700;overflow:hidden;border:3px solid var(--clr-accent-1);box-shadow:0 0 0 4px rgba(99,102,241,0.15);">
-                <span id="avatar-icon">ðŸ‘¤</span>
+                <span id="avatar-icon">👤</span>
                 <img id="prof-photo-img" class="hidden" style="width:100%;height:100%;object-fit:cover;" alt="Profile Photo" />
               </div>
-              <div style="position:absolute;bottom:2px;right:2px;background:var(--clr-accent-1);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65rem;box-shadow:var(--shadow-md);border:2px solid var(--clr-base);">ðŸ“·</div>
+              <div style="position:absolute;bottom:2px;right:2px;background:var(--clr-accent-1);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65rem;box-shadow:var(--shadow-md);border:2px solid var(--clr-base);">📷</div>
               <input type="file" id="photo-file-input" accept="image/*" class="hidden" />
             </div>
             <div style="flex:1;min-width:0;">
-              <h4 class="fw-700 text-lg" id="prof-student-name" style="margin-bottom:var(--space-1);">â€”</h4>
-              <p class="text-xs text-muted" id="prof-student-prog">â€”</p>
-              <p class="text-sm text-muted" id="prof-student-class" style="margin-bottom:var(--space-1);">â€”</p>
-              <p class="text-xs text-muted hidden" id="prof-student-batch" style="margin-bottom:var(--space-1);">â€”</p>
+              <h4 class="fw-700 text-lg" id="prof-student-name" style="margin-bottom:var(--space-1);">—</h4>
+              <p class="text-xs text-muted" id="prof-student-prog">—</p>
+              <p class="text-sm text-muted" id="prof-student-class" style="margin-bottom:var(--space-1);">—</p>
+              <p class="text-xs text-muted hidden" id="prof-student-batch" style="margin-bottom:var(--space-1);">—</p>
               <p class="text-xs text-muted mt-2" style="color:var(--clr-accent-1);">Click photo to change</p>
             </div>
           </div>
@@ -517,20 +517,20 @@
           <div class="glass-card p-5">
             <div class="d-flex justify-between align-center mb-2" style="flex-wrap:wrap;gap:var(--space-2);">
               <div>
-                <h4 class="fw-700 text-sm d-flex align-center gap-2">ðŸ‘¤ Gender &amp; Honorific Title</h4>
+                <h4 class="fw-700 text-sm d-flex align-center gap-2">👤 Gender &amp; Honorific Title</h4>
                 <p class="text-xs text-muted">Your title appears as <strong>Mr.</strong> or <strong>Miss</strong> across exams, reports, and rankings.</p>
               </div>
-              <span id="prof-gender-badge" class="badge badge-neutral">â€”</span>
+              <span id="prof-gender-badge" class="badge badge-neutral">—</span>
             </div>
             <div class="d-flex gap-3 mt-3" id="prof-gender-btns">
-              <button type="button" class="btn btn-secondary btn-sm flex-1" id="btn-prof-male">ðŸ‘¨ Male (Mr.)</button>
-              <button type="button" class="btn btn-secondary btn-sm flex-1" id="btn-prof-female">ðŸ‘© Female (Miss)</button>
+              <button type="button" class="btn btn-secondary btn-sm flex-1" id="btn-prof-male">👨 Male (Mr.)</button>
+              <button type="button" class="btn btn-secondary btn-sm flex-1" id="btn-prof-female">👩 Female (Miss)</button>
             </div>
           </div>
 
           <!-- Change PIN Form Card -->
           <div class="glass-card p-5">
-            <h4 class="fw-700 text-sm d-flex align-center gap-2" style="margin-bottom:var(--space-4);">ðŸ”‘ Change Personal PIN</h4>
+            <h4 class="fw-700 text-sm d-flex align-center gap-2" style="margin-bottom:var(--space-4);">🔑 Change Personal PIN</h4>
             <form id="change-pin-form">
               <div class="d-flex gap-3" style="flex-wrap:wrap;margin-bottom:var(--space-4);">
                 <div style="flex:1;min-width:130px;">
@@ -552,7 +552,7 @@
 
           <!-- Exam History -->
           <div class="glass-card p-5">
-            <h4 class="fw-700 text-sm" style="margin-bottom:var(--space-4);">ðŸ“‹ Recent Exam Attempts &amp; Scores</h4>
+            <h4 class="fw-700 text-sm" style="margin-bottom:var(--space-4);">📋 Recent Exam Attempts &amp; Scores</h4>
             <div class="table-wrap" style="max-height:220px;overflow-y:auto;">
               <table>
                 <thead>
@@ -564,7 +564,7 @@
                   </tr>
                 </thead>
                 <tbody id="tbl-profile-history">
-                  <tr><td colspan="4" class="text-center text-muted p-4">Loading historyâ€¦</td></tr>
+                  <tr><td colspan="4" class="text-center text-muted p-4">Loading history…</td></tr>
                 </tbody>
               </table>
             </div>
@@ -581,7 +581,7 @@
             <h3 id="level-modal-title">Subject Levels</h3>
             <p class="text-muted text-sm" id="level-modal-subject"></p>
           </div>
-          <button class="btn btn-ghost btn-icon" id="close-level-modal" aria-label="Close">âœ•</button>
+          <button class="btn btn-ghost btn-icon" id="close-level-modal" aria-label="Close">✕</button>
         </div>
         <div id="levels-container"></div>
       </div>
@@ -591,7 +591,7 @@
     <div class="modal-backdrop hidden" id="gender-setup-modal" role="dialog" aria-modal="true" aria-labelledby="gender-setup-title">
       <div class="modal-box" style="max-width:540px;text-align:center;">
         <div class="p-6">
-          <div style="font-size:3rem;margin-bottom:var(--space-2);">ðŸŒŸ</div>
+          <div style="font-size:3rem;margin-bottom:var(--space-2);">🌟</div>
           <h2 id="gender-setup-title" style="font-size:1.5rem;font-weight:800;color:var(--clr-text-1);margin-bottom:var(--space-2);">Personalize Your Account</h2>
           <p class="text-sm text-muted mb-6">
             Welcome to TOPS CORE! Please select your gender to personalize your title (<strong>Mr.</strong> / <strong>Miss</strong>):
@@ -600,24 +600,24 @@
           <!-- Gender Choice Cards -->
           <div class="d-flex gap-4 justify-center mb-6" style="flex-wrap:wrap;">
             <div class="gender-card p-5" id="opt-gender-male" style="flex:1;min-width:180px;cursor:pointer;border:2px solid var(--clr-border);border-radius:var(--radius-lg);background:rgba(255,255,255,0.03);transition:all 0.25s ease;">
-              <div style="font-size:3.2rem;margin-bottom:var(--space-2);">ðŸ‘¨</div>
+              <div style="font-size:3.2rem;margin-bottom:var(--space-2);">👨</div>
               <div class="fw-800 text-lg" style="color:var(--clr-text-1);">Male</div>
               <div class="badge badge-primary mt-2">Title: Mr.</div>
             </div>
             <div class="gender-card p-5" id="opt-gender-female" style="flex:1;min-width:180px;cursor:pointer;border:2px solid var(--clr-border);border-radius:var(--radius-lg);background:rgba(255,255,255,0.03);transition:all 0.25s ease;">
-              <div style="font-size:3.2rem;margin-bottom:var(--space-2);">ðŸ‘©</div>
+              <div style="font-size:3.2rem;margin-bottom:var(--space-2);">👩</div>
               <div class="fw-800 text-lg" style="color:var(--clr-text-1);">Female</div>
               <div class="badge badge-accent mt-2">Title: Miss</div>
             </div>
           </div>
 
-          <p class="text-xs text-muted mb-6">â„¹ï¸ You can change this anytime later from your Profile settings.</p>
+          <p class="text-xs text-muted mb-6">ℹ️ You can change this anytime later from your Profile settings.</p>
 
           <button class="btn btn-primary btn-block" id="btn-confirm-gender" disabled style="padding:var(--space-3) var(--space-6);font-size:1rem;font-weight:700;">
-            Confirm &amp; Continue â†’
+            Confirm &amp; Continue →
           </button>
           <button type="button" class="btn btn-ghost btn-block" id="btn-skip-gender" style="margin-top:var(--space-2);font-size:0.85rem;color:var(--clr-text-3);">
-            Skip for now &amp; Continue â†’
+            Skip for now &amp; Continue →
           </button>
         </div>
       </div>
@@ -627,7 +627,7 @@
     <div class="modal-backdrop hidden" id="photo-setup-modal" role="dialog" aria-modal="true" aria-labelledby="photo-setup-title">
       <div class="modal-box" style="max-width:540px;text-align:center;">
         <div class="p-6">
-          <div style="font-size:3rem;margin-bottom:var(--space-2);">ðŸ“¸</div>
+          <div style="font-size:3rem;margin-bottom:var(--space-2);">📸</div>
           <h2 id="photo-setup-title" style="font-size:1.5rem;font-weight:800;color:var(--clr-text-1);margin-bottom:var(--space-2);">Student Photo &amp; Device Setup</h2>
           <p class="text-sm text-muted mb-4">
             Welcome to TOPS CORE! Please register your official profile photo and verify your microphone for speaking tests before entering the dashboard.
@@ -640,16 +640,16 @@
             <canvas id="webcam-canvas" class="hidden" width="320" height="320"></canvas>
             <div id="camera-loading-overlay" class="d-flex flex-column align-center justify-center" style="position:absolute;inset:0;background:rgba(0,0,0,0.75);color:#fff;font-size:0.8rem;padding:12px;">
               <div class="spinner mb-2"></div>
-              <span>Connecting webcamâ€¦</span>
+              <span>Connecting webcam…</span>
             </div>
           </div>
 
           <!-- Camera Controls -->
           <div class="d-flex gap-2 justify-center mb-4" style="flex-wrap:wrap;">
-            <button type="button" class="btn btn-primary btn-sm" id="btn-snap-photo">ðŸ“¸ Capture Photo</button>
-            <button type="button" class="btn btn-secondary btn-sm hidden" id="btn-retake-photo">ðŸ”„ Retake Photo</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-snap-photo">📸 Capture Photo</button>
+            <button type="button" class="btn btn-secondary btn-sm hidden" id="btn-retake-photo">🔄 Retake Photo</button>
             <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0;">
-              ðŸ“ Upload Image File
+              📁 Upload Image File
               <input type="file" id="onboard-photo-file" accept="image/*" class="hidden" />
             </label>
           </div>
@@ -658,9 +658,9 @@
           <div class="p-3 rounded text-left mb-4" id="mic-status-card" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);border-radius:var(--radius-md);">
             <div class="d-flex align-center justify-between">
               <div class="d-flex align-center gap-2">
-                <span id="mic-status-icon" style="font-size:1.3rem;">ðŸŽ™ï¸</span>
+                <span id="mic-status-icon" style="font-size:1.3rem;">🎙️</span>
                 <div>
-                  <div class="text-xs fw-700" id="mic-status-title">Checking microphoneâ€¦</div>
+                  <div class="text-xs fw-700" id="mic-status-title">Checking microphone…</div>
                   <div class="text-xs text-muted" id="mic-status-desc">Verifying audio device permissions for speaking tests</div>
                 </div>
               </div>
@@ -669,10 +669,10 @@
           </div>
 
           <button class="btn btn-primary btn-block" id="btn-confirm-photo-setup" style="padding:var(--space-3) var(--space-6);font-size:1rem;font-weight:700;">
-            âœ“ Save Photo &amp; Enter Dashboard
+            ✓ Save Photo &amp; Enter Dashboard
           </button>
           <button type="button" class="btn btn-ghost btn-block" id="btn-skip-photo-setup" style="margin-top:var(--space-2);font-size:0.85rem;color:var(--clr-text-3);">
-            Skip for now &amp; Continue to Dashboard â†’
+            Skip for now &amp; Continue to Dashboard →
           </button>
         </div>
       </div>
@@ -691,18 +691,18 @@
         <label style="display: block; font-size: 0.85rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">Date of Birth</label>
         <input type="date" id="onboard-birth-date" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;">
       </div>
-      <button id="btn-confirm-birthday-setup" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 8px;">âœ“ Save &amp; Continue</button>
+      <button id="btn-confirm-birthday-setup" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 8px;">✓ Save &amp; Continue</button>
       <button type="button" id="btn-skip-birthday-setup" class="btn btn-ghost" style="width: 100%; margin-top: 0.5rem; font-size: 0.85rem; color: #64748b;">
-        Skip for now &amp; Continue â†’
+        Skip for now &amp; Continue →
       </button>
     </div>
   </div>
 
   <script type="module">
-    import { fetchStudentSubjects, fetchStudentProgress, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, formatStudentName, fetchAssignments, fetchAssessments } from './js/api.js?v=3.2.0';
-    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=3.2.0';
-    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=3.2.0';
-    import { testMicrophoneCapability } from './js/speech.js?v=3.2.0';
+    import { fetchStudentSubjects, fetchStudentProgress, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, formatStudentName, fetchAssignments, fetchAssessments } from './js/api.js?v=4.0.0';
+    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.0.0';
+    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.0.0';
+    import { testMicrophoneCapability } from './js/speech.js?v=4.0.0';
 
 
     function escapeHtml(str) {
@@ -721,7 +721,7 @@
     // Populate header & Welcome Banner
     document.getElementById('header-student-name').textContent = session.student_name;
     document.getElementById('welcome-name').textContent = session.student_name;
-    document.getElementById('welcome-meta').textContent = `${session.institution_name} â€º ${session.program_name}${session.batch_name ? ' â€º ' + session.batch_name : ''}`;
+    document.getElementById('welcome-meta').textContent = `${session.institution_name} › ${session.program_name}${session.batch_name ? ' › ' + session.batch_name : ''}`;
 
     // Compute first initial for banner avatar placeholder
     const cleanStudentName = (session.student_name || 'Student').replace(/^(mr\.?|miss\.?|mrs\.?|ms\.?)\s+/i, '').trim();
@@ -734,7 +734,7 @@
       window.location.href = 'index.html';
     });
 
-    // â”€â”€ Global Profile Photo Synchronization â”€â”€
+    // ── Global Profile Photo Synchronization ──
     function applyPhotoEverywhere(url) {
       if (!url) return;
       const photoImg = document.getElementById('prof-photo-img');
@@ -757,14 +757,14 @@
       document.getElementById('profile-modal')?.classList.remove('hidden');
     });
 
-    // â”€â”€ Microphone Capability Detection & Header Indicator â”€â”€
+    // ── Microphone Capability Detection & Header Indicator ──
     async function updateHeaderMicStatus(res) {
       const icon = document.getElementById('header-mic-icon');
       const text = document.getElementById('header-mic-text');
       const btn = document.getElementById('header-mic-btn');
       const ovMic = document.getElementById('overview-mic-status');
       if (res && res.ok) {
-        if (icon) icon.textContent = 'âœ…';
+        if (icon) icon.textContent = '✅';
         if (text) text.textContent = 'Mic Ready';
         if (btn) {
           btn.style.borderColor = 'rgba(16, 185, 129, 0.5)';
@@ -772,11 +772,11 @@
           btn.title = 'Microphone verified and ready for speaking tests.';
         }
         if (ovMic) {
-          ovMic.textContent = 'Ready âœ…';
+          ovMic.textContent = 'Ready ✅';
           ovMic.style.color = '#10b981';
         }
       } else {
-        if (icon) icon.textContent = 'âš ï¸';
+        if (icon) icon.textContent = '⚠️';
         if (text) text.textContent = 'Mic Check';
         if (btn) {
           btn.style.borderColor = 'rgba(245, 158, 11, 0.5)';
@@ -784,22 +784,22 @@
           btn.title = res?.message || 'Click to test microphone capability';
         }
         if (ovMic) {
-          ovMic.textContent = 'Check âš ï¸';
+          ovMic.textContent = 'Check ⚠️';
           ovMic.style.color = '#f59e0b';
         }
       }
     }
 
     document.getElementById('header-mic-btn')?.addEventListener('click', async () => {
-      showLoading('Testing microphone capabilityâ€¦');
+      showLoading('Testing microphone capability…');
       try {
         const res = await testMicrophoneCapability();
         hideLoading();
         await updateHeaderMicStatus(res);
         if (res.ok) {
-          showToast('âœ… Microphone is working properly! Ready for speaking tests.', 'success');
+          showToast('✅ Microphone is working properly! Ready for speaking tests.', 'success');
         } else {
-          showToast(`âš ï¸ ${res.message}`, 'warning', 6000);
+          showToast(`⚠️ ${res.message}`, 'warning', 6000);
         }
       } catch (err) {
         hideLoading();
@@ -807,7 +807,7 @@
       }
     });
 
-    // â”€â”€ Gender & Title Synchronization â”€â”€
+    // ── Gender & Title Synchronization ──
     function applyStudentGenderUI(g) {
       const cleanName = (session.student_name || '').replace(/^(mr\.?|miss\.?|mrs\.?|ms\.?)\s+/i, '').trim();
       const formattedName = formatStudentName(cleanName, g);
@@ -824,13 +824,13 @@
       if (badge) {
         if (g === 'male') {
           badge.className = 'badge badge-primary';
-          badge.textContent = 'ðŸ‘¨ Male (Mr.)';
+          badge.textContent = '👨 Male (Mr.)';
         } else if (g === 'female') {
           badge.className = 'badge badge-accent';
-          badge.textContent = 'ðŸ‘© Female (Miss)';
+          badge.textContent = '👩 Female (Miss)';
         } else {
           badge.className = 'badge badge-neutral';
-          badge.textContent = 'â³ Unassigned';
+          badge.textContent = '⏳ Unassigned';
         }
       }
 
@@ -863,7 +863,7 @@
         return;
       }
 
-      // Gender is unassigned â€” trigger First-Entry Gender Setup Modal
+      // Gender is unassigned — trigger First-Entry Gender Setup Modal
       hideLoading();
       const modal = document.getElementById('gender-setup-modal');
       const optMale = document.getElementById('opt-gender-male');
@@ -896,7 +896,7 @@
           optFemale.style.background = 'rgba(255, 255, 255, 0.03)';
           optFemale.style.boxShadow = 'none';
           confirmBtn.disabled = false;
-          confirmBtn.textContent = 'Confirm as Male (Mr.) â†’';
+          confirmBtn.textContent = 'Confirm as Male (Mr.) →';
         };
 
         optFemale.onclick = () => {
@@ -908,13 +908,13 @@
           optMale.style.background = 'rgba(255, 255, 255, 0.03)';
           optMale.style.boxShadow = 'none';
           confirmBtn.disabled = false;
-          confirmBtn.textContent = 'Confirm as Female (Miss) â†’';
+          confirmBtn.textContent = 'Confirm as Female (Miss) →';
         };
 
         confirmBtn.onclick = async () => {
           if (!selectedGender) return;
           confirmBtn.disabled = true;
-          confirmBtn.textContent = 'Savingâ€¦';
+          confirmBtn.textContent = 'Saving…';
           try {
             await updateStudentGender(session.student_id, selectedGender);
             applyStudentGenderUI(selectedGender);
@@ -929,7 +929,7 @@
       });
     }
 
-    // â”€â”€ First-Entry Photo & Microphone Onboarding (Phase 12) â”€â”€
+    // ── First-Entry Photo & Microphone Onboarding (Phase 12) ──
     let webcamStream = null;
     let onboardPhotoData = null;
 
@@ -950,7 +950,7 @@
           if (overlay) overlay.classList.add('hidden');
           if (confirmBtn) {
             confirmBtn.disabled = false;
-            confirmBtn.textContent = 'âœ“ Save Photo & Enter Dashboard';
+            confirmBtn.textContent = '✓ Save Photo & Enter Dashboard';
           }
         } else {
           throw new Error('Webcam not supported.');
@@ -958,11 +958,11 @@
       } catch (err) {
         console.warn('Webcam initialization notice:', err.message);
         if (overlay) {
-          overlay.innerHTML = `<span style="text-align:center;padding:10px;">ðŸ“· Camera preview unavailable.<br><span class="text-xs text-muted">Please use "Upload Image File" below or click Skip.</span></span>`;
+          overlay.innerHTML = `<span style="text-align:center;padding:10px;">📷 Camera preview unavailable.<br><span class="text-xs text-muted">Please use "Upload Image File" below or click Skip.</span></span>`;
         }
         if (confirmBtn) {
           confirmBtn.disabled = false;
-          confirmBtn.textContent = 'Continue to Dashboard â†’';
+          confirmBtn.textContent = 'Continue to Dashboard →';
         }
       }
     }
@@ -988,7 +988,7 @@
         if (res.ok) {
           if (titleEl) titleEl.textContent = 'Microphone Ready (Active)';
           if (descEl) descEl.textContent = 'Device tested and verified for speaking tests.';
-          if (iconEl) iconEl.textContent = 'âœ…';
+          if (iconEl) iconEl.textContent = '✅';
           if (cardEl) {
             cardEl.style.borderColor = 'rgba(16, 185, 129, 0.4)';
             cardEl.style.background = 'rgba(16, 185, 129, 0.08)';
@@ -996,7 +996,7 @@
         } else {
           if (titleEl) titleEl.textContent = res.state === 'permission_denied' ? 'Microphone Permission Needed' : 'Microphone Check';
           if (descEl) descEl.textContent = res.message;
-          if (iconEl) iconEl.textContent = 'âš ï¸';
+          if (iconEl) iconEl.textContent = '⚠️';
           if (cardEl) {
             cardEl.style.borderColor = 'rgba(245, 158, 11, 0.4)';
             cardEl.style.background = 'rgba(245, 158, 11, 0.08)';
@@ -1076,7 +1076,7 @@
     document.getElementById('btn-confirm-photo-setup')?.addEventListener('click', async () => {
       const btn = document.getElementById('btn-confirm-photo-setup');
       btn.disabled = true;
-      btn.textContent = 'Entering dashboardâ€¦';
+      btn.textContent = 'Entering dashboard…';
       
       try {
         // If student did not manually click "Capture Photo", auto-capture from active webcam stream!
@@ -1099,7 +1099,7 @@
         }
 
         if (onboardPhotoData) {
-          btn.textContent = 'Saving photoâ€¦';
+          btn.textContent = 'Saving photo…';
           try {
             await uploadStudentPhoto(session.student_id, onboardPhotoData);
             applyPhotoEverywhere(onboardPhotoData);
@@ -1217,7 +1217,7 @@
       });
     }
 
-    // â”€â”€ Load Subjects & Dashboard â”€â”€
+    // ── Load Subjects & Dashboard ──
     async function loadDashboard() {
       try {
         hideLoading();
@@ -1225,7 +1225,7 @@
         await checkAndPromptPhoto();
         await checkAndPromptBirthday();
 
-        showLoading('Loading your dashboardâ€¦');
+        showLoading('Loading your dashboard…');
 
         // Fetch legacy data + V1 assignments concurrently
         const [subjects, progress, attempts, assignmentsRaw, assessmentsRaw] = await withTimeout(
@@ -1267,7 +1267,7 @@
       const grid = document.getElementById('subjects-grid');
       if (!rawSubjects.length) {
         grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
-          <div class="empty-state__icon">ðŸ“š</div>
+          <div class="empty-state__icon">📚</div>
           <h3>No subjects assigned</h3>
           <p>Your class doesn't have any subjects assigned yet. Please contact your teacher.</p>
         </div>`;
@@ -1277,7 +1277,7 @@
       // Strict alphabetical sorting (A to Z)
       const subjects = [...rawSubjects].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-      const subjectIcons = ['ðŸ“–', 'âœï¸', 'ðŸ—£ï¸', 'ðŸŽ§', 'ðŸ“', 'ðŸŒ', 'ðŸ“š', 'ðŸ’¬'];
+      const subjectIcons = ['📖', '✏️', '🗣️', '🎧', '📝', '🌐', '📚', '💬'];
       grid.innerHTML = '';
 
       subjects.forEach((subj, idx) => {
@@ -1309,7 +1309,7 @@
       });
     }
 
-    // â”€â”€ openSubjectModal: Opens the Level Modal for a Subject â”€â”€
+    // ── openSubjectModal: Opens the Level Modal for a Subject ──
     // Called when a student clicks a subject card on the dashboard.
     async function openSubjectModal(subj, progress) {
       const modal       = document.getElementById('level-modal');
@@ -1323,7 +1323,7 @@
       subjectEl.textContent = '';
       container.innerHTML  = `<div style="padding:2rem;text-align:center;color:var(--clr-text-3);">
         <div class="spinner" style="margin:0 auto 1rem;"></div>
-        <p>Loading examsâ€¦</p></div>`;
+        <p>Loading exams…</p></div>`;
       modal.classList.remove('hidden');
 
       try {
@@ -1333,7 +1333,7 @@
 
         if (!exams || exams.length === 0) {
           container.innerHTML = `<div style="padding:2.5rem 1.5rem;text-align:center;color:var(--clr-text-3);">
-            <div style="font-size:2.5rem;margin-bottom:0.75rem;">ðŸ“­</div>
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">📭</div>
             <p style="font-size:0.9rem;">No published exams for this subject yet.</p></div>`;
           return;
         }
@@ -1386,16 +1386,16 @@
             let actionBtn   = '';
             if (inProg) {
               statusBadge = `<span style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);
-                              padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">â³ In Progress</span>`;
+                              padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">⏳ In Progress</span>`;
               actionBtn   = `<button onclick="location.href='exam.html?attempt_id=${inProg.id}'"
                               style="background:var(--clr-accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;
-                              font-size:0.78rem;font-weight:700;cursor:pointer;">Resume â†’</button>`;
+                              font-size:0.78rem;font-weight:700;cursor:pointer;">Resume →</button>`;
             } else if (best) {
               const badgeBg = passed ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.12)';
               const badgeClr= passed ? '#10b981' : '#f87171';
               statusBadge = `<span style="background:${badgeBg};color:${badgeClr};border:1px solid ${badgeClr}33;
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">
-                              ${passed ? 'âœ“ Passed' : 'âœ— Failed'} ${bestPct.toFixed(0)}%</span>`;
+                              ${passed ? '✓ Passed' : '✗ Failed'} ${bestPct.toFixed(0)}%</span>`;
               actionBtn   = `<button onclick="location.href='result.html?attempt_id=${best.id}'"
                               style="background:rgba(255,255,255,0.06);color:var(--clr-text-2);border:1px solid var(--clr-border);
                               padding:6px 14px;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;">View Result</button>`;
@@ -1404,7 +1404,7 @@
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">Not Started</span>`;
               actionBtn   = `<button onclick="location.href='exam.html?exam_id=${exam.id}'"
                               style="background:var(--clr-accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;
-                              font-size:0.78rem;font-weight:700;cursor:pointer;">Start Exam â†’</button>`;
+                              font-size:0.78rem;font-weight:700;cursor:pointer;">Start Exam →</button>`;
             }
 
             const gradeChip = grade ? `<span style="background:${gradeColor}22;color:${gradeColor};border:1px solid ${gradeColor}44;
@@ -1419,7 +1419,7 @@
               <div style="flex:1;min-width:0;">
                 <div style="font-size:0.85rem;font-weight:600;color:var(--clr-text-1);white-space:nowrap;
                             overflow:hidden;text-overflow:ellipsis;">${exam.exam_title || exam.title || 'Exam'}</div>
-                <div style="font-size:0.72rem;color:var(--clr-text-3);margin-top:2px;">${formatAnswerType(exam.answer_type)} Â· ${exam.time_limit_minutes || 0} min</div>
+                <div style="font-size:0.72rem;color:var(--clr-text-3);margin-top:2px;">${formatAnswerType(exam.answer_type)} · ${exam.time_limit_minutes || 0} min</div>
               </div>
               <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
                 ${gradeChip}
@@ -1434,7 +1434,7 @@
 
       } catch(err) {
         container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--clr-text-3);">
-          <div style="font-size:1.5rem;margin-bottom:0.5rem;">âš ï¸</div>
+          <div style="font-size:1.5rem;margin-bottom:0.5rem;">⚠️</div>
           <p style="font-size:0.85rem;">Could not load exams: ${err.message}</p></div>`;
       }
     }
@@ -1450,7 +1450,7 @@
 
 
 
-    // â”€â”€ V1: Render Assigned Assessments Section â”€â”€
+    // ── V1: Render Assigned Assessments Section ──
     async function renderAssignedAssessments(assessments, allAttempts) {
       // Find or create the assigned-assessments section
       let section = document.getElementById('v1-assessments-section');
@@ -1543,7 +1543,7 @@
         }
 
         const duration = asm.working_duration_minutes || asm.time_limit_minutes || 60;
-        const qCount = asm.question_count || 'â€”';
+        const qCount = asm.question_count || '—';
         const asmType = asm.assessment_type || asm.exam_type || 'Assessment';
         const asmTitle = asm.title || asm.exam_title || 'Assessment';
         const subjectName = asm.subjects?.name || '';
@@ -1570,7 +1570,7 @@
               </div>
               <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
                 <span style="font-size:0.78rem;color:var(--clr-text-3);">\u23F1 ${duration} min</span>
-                ${qCount !== 'â€”' ? `<span style="font-size:0.78rem;color:var(--clr-text-3);">\uD83D\uDCCB ${qCount} Questions</span>` : ''}
+                ${qCount !== '—' ? `<span style="font-size:0.78rem;color:var(--clr-text-3);">\uD83D\uDCCB ${qCount} Questions</span>` : ''}
                 ${statusBadge}
               </div>
               ${!prereqMet && prereqTitle ? `<div style="margin-top:0.5rem;"><span style="font-size:0.72rem;color:#f87171;">\uD83D\uDD12 Complete prerequisite first: <em>${escapeHtml(prereqTitle)}</em></span></div>` : ''}
@@ -1610,7 +1610,7 @@
       });
     }
 
-    // â”€â”€ Overall Stats Calculation (AGENTS.md Â§2.8 & Â§2.10) â”€â”€
+    // ── Overall Stats Calculation (AGENTS.md §2.8 & §2.10) ──
     async function computeOverallStats(attempts) {
       // V1: prefer is_best_score flag; fallback to highest percentage per exam/assessment
       const bestAttemptsMap = {};
@@ -1660,7 +1660,7 @@
       renderCompletedExamsBottom(attempts);
     }
 
-    // â”€â”€ Render Completed Exams Section (Bottom of Dashboard) â”€â”€
+    // ── Render Completed Exams Section (Bottom of Dashboard) ──
     function renderCompletedExamsBottom(attempts) {
       const container = document.getElementById('completed-exams-container');
       const badgeEl = document.getElementById('bottom-completed-badge');
@@ -1676,7 +1676,7 @@
         if (container) {
           container.innerHTML = `
             <div class="empty-state p-8 text-center" style="padding: 40px 20px;">
-              <div class="empty-state__icon" style="font-size:2.5rem;margin-bottom:12px;">ðŸ“</div>
+              <div class="empty-state__icon" style="font-size:2.5rem;margin-bottom:12px;">📝</div>
               <h3 class="fw-700 text-base mb-1" style="color:var(--clr-text-1);">No completed exams yet</h3>
               <p class="text-sm text-muted" style="max-width:440px;margin:0 auto;">
                 Pick a subject above to start taking your assigned English assessments. Your scores, grades, and completion records will appear here.
@@ -1752,14 +1752,14 @@
           year: 'numeric',
           month: 'short',
           day: 'numeric'
-        }) : 'â€”';
+        }) : '—';
         const isPassed = parseFloat(pct) >= 60;
         const statusBadgeDesktop = isPassed
-          ? `<span class="badge badge-success" style="font-size:0.75rem;padding:3px 8px;">âœ“ Passed</span>`
-          : `<span class="badge badge-warning" style="font-size:0.75rem;padding:3px 8px;">âš ï¸ Retake Needed</span>`;
+          ? `<span class="badge badge-success" style="font-size:0.75rem;padding:3px 8px;">✓ Passed</span>`
+          : `<span class="badge badge-warning" style="font-size:0.75rem;padding:3px 8px;">⚠️ Retake Needed</span>`;
         const statusBadgeMobile = isPassed
-          ? `<span style="color:#10b981;font-weight:700;">âœ“ Passed</span>`
-          : `<span style="color:#f59e0b;font-weight:700;">âš ï¸ Retake</span>`;
+          ? `<span style="color:#10b981;font-weight:700;">✓ Passed</span>`
+          : `<span style="color:#f59e0b;font-weight:700;">⚠️ Retake</span>`;
 
         const attemptId = escapeHtml(a.id);
         const navLink = `window.location.href='result.html?attempt_id=${attemptId}'`;
@@ -1827,7 +1827,7 @@
       }
     }
 
-    // â”€â”€ Profile Modal & History â”€â”€
+    // ── Profile Modal & History ──
     function setupProfileModal(attempts) {
       const modal = document.getElementById('profile-modal');
       const openBtn = document.getElementById('view-profile-btn');
@@ -1863,7 +1863,7 @@
       } else {
         attempts.forEach(a => {
           const tr = document.createElement('tr');
-          const title = a.exams ? `${a.exams.exam_type || ''} â€” ${a.exams.exam_title || 'Exam'}` : 'Exam';
+          const title = a.exams ? `${a.exams.exam_type || ''} — ${a.exams.exam_title || 'Exam'}` : 'Exam';
           const pct = parseFloat(a.percentage || 0).toFixed(1);
           const grade = a.grade || getGrade(pct);
 
@@ -1871,7 +1871,7 @@
             <td class="fw-600">${title}</td>
             <td class="fw-700 text-grade-${grade}">${pct}%</td>
             <td><span class="grade-badge grade-${grade}" style="width:24px;height:24px;font-size:0.75rem;display:inline-flex;">${grade}</span></td>
-            <td class="text-muted text-sm">${a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : 'â€”'}</td>
+            <td class="text-muted text-sm">${a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : '—'}</td>
           `;
           tbody.appendChild(tr);
         });
@@ -1893,7 +1893,7 @@
         const reader = new FileReader();
         reader.onload = async (evt) => {
           const base64 = evt.target.result;
-          showLoading('Mengunggah foto profilâ€¦');
+          showLoading('Mengunggah foto profil…');
           try {
             await uploadStudentPhoto(session.student_id, base64);
             applyPhotoEverywhere(base64);
@@ -1924,7 +1924,7 @@
           return;
         }
 
-        showLoading('Mengubah PINâ€¦');
+        showLoading('Mengubah PIN…');
         try {
           await updateStudentPin(session.student_id, oldPin, newPin);
           hideLoading();
@@ -1939,7 +1939,7 @@
       // Gender & Title Buttons in Profile Modal
       document.getElementById('btn-prof-male')?.addEventListener('click', async () => {
         if (session.gender === 'male') return;
-        showLoading('Updating title to Mr.â€¦');
+        showLoading('Updating title to Mr.…');
         try {
           await updateStudentGender(session.student_id, 'male');
           applyStudentGenderUI('male');
@@ -1953,7 +1953,7 @@
 
       document.getElementById('btn-prof-female')?.addEventListener('click', async () => {
         if (session.gender === 'female') return;
-        showLoading('Updating title to Miss.â€¦');
+        showLoading('Updating title to Miss.…');
         try {
           await updateStudentGender(session.student_id, 'female');
           applyStudentGenderUI('female');
@@ -1981,7 +1981,7 @@
       });
     }
 
-    // â”€â”€ Level Modal close â”€â”€
+    // ── Level Modal close ──
     document.getElementById('close-level-modal').addEventListener('click', () => {
       document.getElementById('level-modal').classList.add('hidden');
     });
@@ -1989,7 +1989,7 @@
       if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
     });
 
-    // â”€â”€ Gamification: Show Level Up Popup â”€â”€
+    // ── Gamification: Show Level Up Popup ──
     window.showLevelUpPopup = function(newLevel) {
       const overlay = document.getElementById('level-up-overlay');
       const badgeText = document.getElementById('lu-badge-text');

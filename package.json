@@ -1,0 +1,13 @@
+{
+  "name": "top-english-program",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.42.1",
+    "@types/node": "^20.11.24",
+    "serve": "^14.2.1"
+  }
+}

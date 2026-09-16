@@ -1,57 +1,60 @@
-﻿import {
+import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete,
-  adminFetchDeleted, adminRestore, clearAdminCache,
+  adminFetchDeleted, adminRestore,
   mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
   detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions,
   fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
   testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
-} from '../api.js?v=3.2.0';
-import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=3.2.0';
-import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=3.2.0';
-import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=3.2.0';
-import { getSupabase } from '../supabase.js?v=3.2.0';
-import { openAssessmentBuilder } from './exam-builder.js?v=3.2.0';
-import { renderStudents as _renderStudentsModule } from './student-management.js?v=3.2.0';
-import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=3.2.0';
-import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport } from './central-assessment.js?v=3.2.0';
-import { renderExams } from './exam-management.js?v=3.2.0';
-import { renderResults, renderProgressView, renderRecalibrator } from './challenges-management.js?v=3.2.0';
-import { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin } from './desk-management.js?v=3.2.0';
-import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=3.2.0';
-import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin } from './crud-modals.js?v=3.2.0';
-
-
+} from '../api.js?v=4.0.0';
+import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.0.0';
+import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=4.0.0';
+import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.0.0';
+import { getSupabase } from '../supabase.js?v=4.0.0';
+import { openAssessmentBuilder } from './exam-builder.js?v=4.0.0';
+import { renderStudents as _renderStudentsModule } from './student-management.js?v=4.0.0';
+import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=4.0.0';
+import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport } from './central-assessment.js?v=4.0.0';
+import { renderExams } from './exam-management.js?v=4.0.0';
+import { renderResults, renderProgressView, renderRecalibrator, renderClassInstances } from './challenges-management.js?v=4.0.0';
+import { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin } from './desk-management.js?v=4.0.0';
+import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=4.0.0';
+import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin } from './crud-modals.js?v=4.0.0';
+import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } from './affairs.js?v=4.0.0';
     // -- Primary Tab Switching Variables --
     const mobileTabs = document.querySelectorAll('.mobile-tab');
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ ABCD Primary Architecture Section Titles Ã¢â€â‚¬Ã¢â€â‚¬
+    // ——— ABCD Primary Architecture Section Titles ———
     const sectionTitles = {
+      profile: 'My Profile', schedule: 'Personal Schedule', work_records: 'Work Records', cv_generator: 'CV Generator',
       institutions: 'Institutions', programs: 'Programs', batches: 'Batches', students: 'Students Roster', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
-      subjects: 'Curriculum Subjects', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', word_types: 'Word Types & Lexicon', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
-      exams: 'All Challenges', assignments: 'Assignments & Rosters', results: 'Challenge Results', recalibrator: 'Recalibration Engine',
+      subjects: 'Classes (Subjects)', classes: 'Classes', class_instances: 'Class Instances', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', word_types: 'Validation Dictionary', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
+      exams: 'All Challenges', challenge_definitions: 'Challenge Definitions', challenge_instances: 'Challenge Instances', assignments: 'Assignments & Rosters', results: 'Challenge Results', recalibrator: 'Recalibration Engine',
       audit: 'Activity & Audit Logs', settings: 'System Settings', recycle: 'Recycle Bin', health: 'Data Health & Diagnostics'
     };
 
     // ABCD 4-Domain Mapping
     const sectionDomainMap = {
-      institutions: 'ACADEMY', programs: 'ACADEMY', batches: 'ACADEMY', students: 'ACADEMY', 'import-students': 'ACADEMY', 'progress-view': 'ACADEMY',
-      subjects: 'BLUEPRINT', levels: 'BLUEPRINT', topics: 'BLUEPRINT', questions: 'BLUEPRINT', word_types: 'BLUEPRINT', 'import-questions': 'BLUEPRINT', 'export-questions': 'BLUEPRINT',
-      exams: 'CHALLENGES', assignments: 'CHALLENGES', results: 'CHALLENGES', recalibrator: 'CHALLENGES',
+      profile: 'AFFAIRS', schedule: 'AFFAIRS', work_records: 'AFFAIRS', cv_generator: 'AFFAIRS',
+      institutions: 'BLUEPRINTS', programs: 'BLUEPRINTS', batches: 'BLUEPRINTS', students: 'BLUEPRINTS', 'import-students': 'BLUEPRINTS', 'progress-view': 'BLUEPRINTS',
+      subjects: 'CHALLENGES', classes: 'CHALLENGES', class_instances: 'CHALLENGES', levels: 'CHALLENGES', topics: 'CHALLENGES', questions: 'CHALLENGES', word_types: 'CHALLENGES', 'import-questions': 'CHALLENGES', 'export-questions': 'CHALLENGES',
+      exams: 'CHALLENGES', challenge_definitions: 'CHALLENGES', challenge_instances: 'CHALLENGES', assignments: 'CHALLENGES', results: 'CHALLENGES', recalibrator: 'CHALLENGES',
       audit: 'DESK', settings: 'DESK', recycle: 'DESK', health: 'DESK'
     };
 
     // Mobile Bottom Tab Panels -> Primary Domain
     const domainToPanelMap = {
-      ACADEMY: 'academy', BLUEPRINT: 'blueprint', CHALLENGES: 'challenges', DESK: 'desk',
-      DATABASE: 'blueprint', CLASS: 'academy', STUDENT: 'academy', EXAM: 'challenges'
+      AFFAIRS: 'affairs', BLUEPRINTS: 'blueprints', CHALLENGES: 'challenges', DESK: 'desk',
+      DATABASE: 'blueprints', CLASS: 'blueprints', STUDENT: 'blueprints', EXAM: 'challenges',
+      ACADEMY: 'blueprints', BLUEPRINT: 'challenges' // Legacy mappings
     };
 
     const tabDefaultSections = {
-      academy: 'institutions',
-      blueprint: 'subjects',
-      challenges: 'exams',
+      affairs: 'profile',
+      blueprints: 'institutions',
+      challenges: 'subjects',
       desk: 'audit',
-      database: 'subjects', class: 'programs', student: 'students', exam: 'exams'
+      database: 'subjects', class: 'programs', student: 'students', exam: 'exams',
+      academy: 'institutions', blueprint: 'subjects' // Legacy mappings
     };
 
     // Section alias map to guarantee 100% backward compatibility
@@ -79,20 +82,20 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
 
     async function updateAdminKpiBanner() {
       try {
-        const [stds, qList, asms, atts] = await Promise.all([
+        const [stds, asms, atts, profs] = await Promise.all([
           adminFetchAll('students'),
-          adminFetchAll('questions'),
           adminFetchAll('exams'),
-          adminFetchAll('attempts')
+          adminFetchAll('attempts'),
+          adminFetchAll('user_professionals')
         ]);
-        const kpiAcad = document.getElementById('kpi-academy');
+        const kpiAcad = document.getElementById('kpi-blueprints');
         if (kpiAcad) kpiAcad.textContent = stds.filter(s => !s.deleted_at).length;
-        const kpiQ = document.getElementById('kpi-qbank');
-        if (kpiQ) kpiQ.textContent = qList.filter(q => !q.deleted_at).length;
-        const kpiAsm = document.getElementById('kpi-assessments');
-        if (kpiAsm) kpiAsm.textContent = asms.filter(a => !a.deleted_at && a.exam_status === 'published').length;
-        const kpiAtt = document.getElementById('kpi-attempts');
-        if (kpiAtt) kpiAtt.textContent = atts.length;
+        const kpiChal = document.getElementById('kpi-challenges');
+        if (kpiChal) kpiChal.textContent = asms.filter(a => !a.deleted_at && a.exam_status === 'published').length;
+        const kpiDesk = document.getElementById('kpi-desk');
+        if (kpiDesk) kpiDesk.textContent = atts.length;
+        const kpiAffairs = document.getElementById('kpi-affairs');
+        if (kpiAffairs) kpiAffairs.textContent = profs ? profs.length : 0;
       } catch (err) {
         console.warn('Could not refresh admin KPI banner:', err.message);
       }
@@ -186,7 +189,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
         loadSection(targetSec, true);
       } else if (hash && hash.startsWith('profile-')) {
         const studentId = hash.replace('profile-', '');
-        activatePrimaryTab('academy');
+        activatePrimaryTab('blueprints');
         openStudentProfile(studentId, [], true);
       } else {
         activatePrimaryTab('challenges');
@@ -214,10 +217,12 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       const domainEl = document.getElementById('topbar-domain');
       if (domainEl) {
         const domainNameMap = {
-          academy: 'ACADEMY',
-          blueprint: 'BLUEPRINT',
+          affairs: 'AFFAIRS',
+          blueprints: 'BLUEPRINTS',
           challenges: 'CHALLENGES',
-          desk: 'DESK'
+          desk: 'DESK',
+          academy: 'BLUEPRINTS', // Legacy fallback
+          blueprint: 'CHALLENGES' // Legacy fallback
         };
         domainEl.textContent = domainNameMap[panel.toLowerCase()] || panel.toUpperCase();
       }
@@ -356,7 +361,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
         window._cleanupProfileView();
         window._cleanupProfileView = null;
       }
-      const domain = sectionDomainMap[section] || 'BLUEPRINT';
+      const domain = sectionDomainMap[section] || 'BLUEPRINTS';
       const panel = domainToPanelMap[domain] || domain.toLowerCase();
       activatePrimaryTab(panel);
 
@@ -387,6 +392,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
         switch(section) {
           case 'institutions':        await renderPrograms(area); break;
           case 'subjects':            await renderSubjects(area); break;
+          case 'class_instances':     await renderClassInstances(area); break;
           case 'levels':              await renderLevels(area); break;
           case 'topics':              await renderTopics(area); break;
           case 'word_types':          await renderWordTypes(area); break;
@@ -406,6 +412,10 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
           case 'import-questions':    await renderCentralQuestionImport(area); break;
           case 'export-questions':    renderExportQuestions(area); break;
           case 'recalibrator':        await renderRecalibrator(area); break;
+          case 'profile':             await renderProfile(area); break;
+          case 'schedule':            await renderSchedule(area); break;
+          case 'work_records':        await renderWorkRecords(area); break;
+          case 'cv_generator':        await renderCvGenerator(area); break;
           default: area.innerHTML = `<div class="empty-state"><div class="empty-state__icon">Ã°Å¸Å¡Â§</div><h3>${sectionTitles[section] || section}</h3><p>This section is under development.</p></div>`;
         }
       } catch(e) {
@@ -488,10 +498,10 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       });
     }
 
-    // â”€â”€ SUBJECTS â”€â”€
+    // â”€â”€ CLASSES (Formerly Subjects) â”€â”€
     async function renderSubjects(area) {
       const [rawData, institutions] = await Promise.all([adminFetchAll('subjects', '*, institutions(name)'), adminFetchAll('institutions')]);
-      // Sort by Institution Name (A-Z), then Subject Name (A-Z)
+      // Sort by Institution Name (A-Z), then Class Name (A-Z)
       const data = [...rawData].sort((a, b) => {
         const pA = a.institutions?.name || '';
         const pB = b.institutions?.name || '';
@@ -501,8 +511,8 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       area.innerHTML = `
         <div class="section-header">
           <div>
-            <h2 class="section-title">Subjects <span class="count-chip">${data.length} Total</span></h2>
-            <p class="section-subtitle">Manage subjects grouped by program in alphabetical order</p>
+            <h2 class="section-title">Class Blueprints <span class="count-chip">${data.length} Total</span></h2>
+            <p class="section-subtitle">Manage class blueprints grouped by program in alphabetical order</p>
           </div>
         </div>
         <div class="table-wrap">
@@ -510,7 +520,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
             <thead>
               <tr>
                 <th class="text-left">Program</th>
-                <th class="text-left">Subject Name</th>
+                <th class="text-left">Class Blueprint Name</th>
                 <th class="text-center">Status</th>
                 <th class="text-right">Actions</th>
               </tr>
@@ -520,7 +530,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
         </div>
       `;
       const tbody = document.getElementById('tbl-subjects');
-      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">No subjects yet.</td></tr>'; return; }
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">No class blueprints yet.</td></tr>'; return; }
       window._subjRecords = {};
       data.forEach(r => {
         window._subjRecords[r.id] = r;
@@ -560,7 +570,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
         btn.addEventListener('click', () => {
           const sid = btn.getAttribute('data-del-subj');
           const rec = window._subjRecords[sid];
-          if (rec) window._deleteRecord('subjects', sid, rec.name || 'Subject');
+          if (rec) window._deleteRecord('subjects', sid, rec.name || 'Class Blueprint');
         });
       });
     }
@@ -598,7 +608,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
               <tr>
                 <th class="text-left">Program</th>
                 <th class="text-left">Class</th>
-                <th class="text-left">Subject</th>
+                <th class="text-left">Class Blueprint</th>
                 <th class="text-center">Level #</th>
                 <th class="text-left">Level Name</th>
                 <th class="text-center">Status</th>

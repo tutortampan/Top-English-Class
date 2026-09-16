@@ -1,4 +1,4 @@
-﻿import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js';
+import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js';
 import { openAssessmentBuilder } from './exam-builder.js';
 import { showToast, showLoading, hideLoading } from '../app.js';
 import { getSupabase } from '../supabase.js';
@@ -29,7 +29,7 @@ export async function renderExams(area) {
     <div class="exam-hero">
       <div class="d-flex align-center justify-between flex-wrap gap-4">
         <div>
-          <h2 class="section-title text-gradient" style="font-size:1.75rem;">Challenges Hub (C â€” CHALLENGES)</h2>
+          <h2 class="section-title text-gradient" style="font-size:1.75rem;">Challenges Hub (C — CHALLENGES)</h2>
           <p class="section-subtitle">Create, organize, publish, and inspect all online examinations</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
@@ -78,7 +78,7 @@ export async function renderExams(area) {
       id: r.id,
       title: r.exam_title,
       programName,
-      subject: r.subjects?.name || 'â€”',
+      subject: r.subjects?.name || '—',
       level: window.toLevelLetter ? window.toLevelLetter(r.levels?.level_number || 1) : r.levels?.level_number,
       order: r.exam_order || 1,
       prereq: prereqExam ? prereqExam.exam_title : '',
@@ -123,8 +123,8 @@ export async function renderExams(area) {
           <hr style="border-color:var(--fm-border-subtle); margin:0;">
           <div>
             <div class="text-sm text-muted mb-1">Target</div>
-            <div class="fw-600">Class: ${escapeHtml(row.programName)}</div>
-            <div class="fw-600">Subject: ${escapeHtml(row.subject)}</div>
+            <div class="fw-600">Program: ${escapeHtml(row.programName)}</div>
+            <div class="fw-600">Class Blueprint: ${escapeHtml(row.subject)}</div>
           </div>
           <div>
             <div class="text-sm text-muted mb-1">Structure</div>
@@ -156,14 +156,14 @@ export async function renderExams(area) {
         render: (val, row) => `
           <div class="fw-800" style="color:var(--clr-text-1); font-size:1rem;">${escapeHtml(val)}</div>
           <div class="text-muted text-xs mt-1 fw-600 d-flex gap-2 flex-wrap align-center">
-            <span><span class="text-accent">CLASS:</span> ${escapeHtml(row.programName)}</span>
-            <span>â€¢</span>
-            <span><span class="text-accent">SUBJ:</span> ${escapeHtml(row.subject)}</span>
-            <span>â€¢</span>
+            <span><span class="text-accent">PROGRAM:</span> ${escapeHtml(row.programName)}</span>
+            <span>•</span>
+            <span><span class="text-accent">CLASS:</span> ${escapeHtml(row.subject)}</span>
+            <span>•</span>
             <span><span class="badge badge-primary" style="font-size:0.6rem; padding: 2px 6px;">LVL ${row.level}</span></span>
             <span><span class="badge badge-neutral" style="font-size:0.6rem; padding: 2px 6px;">ORD ${row.order}</span></span>
           </div>
-          ${row.prereq ? `<div class="mt-2"><span class="badge badge-warning text-xs">âš ï¸ Prereq: ${escapeHtml(row.prereq)}</span></div>` : ''}
+          ${row.prereq ? `<div class="mt-2"><span class="badge badge-warning text-xs">âš ï¸  Prereq: ${escapeHtml(row.prereq)}</span></div>` : ''}
         `
       },
       { 
@@ -329,7 +329,7 @@ export async function renderQuestions(area) {
   questions.forEach(q => { window._qRecords[q.id] = q; });
 
   const gridData = questions.map(q => {
-    const examDisplay = q.exams ? window.formatExamDisplayName(q.exams) : ((q.exam_sections && q.exam_sections.exams) ? window.formatExamDisplayName(q.exam_sections.exams) + ` (Sec: ${q.exam_sections.title})` : 'â€”');
+    const examDisplay = q.exams ? window.formatExamDisplayName(q.exams) : ((q.exam_sections && q.exam_sections.exams) ? window.formatExamDisplayName(q.exam_sections.exams) + ` (Sec: ${q.exam_sections.title})` : '—');
     return {
       id: q.id,
       order: q.question_order,
@@ -443,16 +443,16 @@ export async function renderResults(area) {
       id: r.id,
       studentId: r.student_id,
       studentName: r.students?.name || 'Unknown',
-      program: r.students?.programs?.institutions?.name || 'â€”',
-      className: r.students?.programs?.name || 'â€”',
-      batch: r.students?.batches?.name || 'â€”',
+      program: r.students?.programs?.institutions?.name || '—',
+      className: r.students?.programs?.name || '—',
+      batch: r.students?.batches?.name || '—',
       examTitle: r.exams?.exam_title || 'Unknown Exam',
       score: r.percentage ? parseFloat(r.percentage).toFixed(1) : '0.0',
       grade: r.grade || '-',
       correct: attCorrect,
       minor: attMinor,
       wrong: attWrong,
-      submittedAt: r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'â€”',
+      submittedAt: r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '—',
       _raw: r
     };
   });

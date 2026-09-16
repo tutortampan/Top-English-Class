@@ -1,5 +1,5 @@
-﻿import { adminFetchAll, formatStudentName, adminSoftDelete } from '../api.js?v=1.4';
-import { getGrade, showToast } from '../app.js?v=1.4';
+import { adminFetchAll, formatStudentName, adminSoftDelete } from '../api.js?v=4.0.0';
+import { getGrade, showToast } from '../app.js?v=4.0.0';
 import { DataGrid } from './datagrid.js';
 
 let studentGrid = null;

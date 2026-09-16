@@ -1,4 +1,4 @@
-﻿export class DataGrid {
+export class DataGrid {
   constructor({ container, data = [], columns = [], pageSize = 50, searchKeys = [], emptyStateHtml = '<p>No records found.</p>', bulkActions = false, onBulkAction = null, onRowClick = null, stickyActionCol = false }) {
     this.container = typeof container === 'string' ? document.getElementById(container) : container;
     this.rawData = data;
@@ -26,7 +26,7 @@
         <div class="datagrid-search" style="flex:1; min-width:200px; display:flex; gap:0.5rem; align-items:center;">
           <div class="datagrid-search-wrap" style="position:relative; max-width:320px; width:100%;">
             <input type="text" class="form-control datagrid-search-input" placeholder="Search... (Ctrl+K)" style="width:100%; padding-right:2rem;" />
-            <button type="button" class="datagrid-search-clear hidden" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:var(--clr-text-3); cursor:pointer; font-size:0.85rem; padding:2px 4px;" title="Clear search">âœ•</button>
+            <button type="button" class="datagrid-search-clear hidden" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:var(--clr-text-3); cursor:pointer; font-size:0.85rem; padding:2px 4px;" title="Clear search">✕</button>
           </div>
           <div class="datagrid-columns-dropdown" style="position:relative;">
             <button class="btn btn-secondary btn-sm datagrid-cols-btn" style="height:100%;">Columns</button>
@@ -157,7 +157,7 @@
             data-idx="${this.columns.indexOf(col)}"
             draggable="true"
             style="${col.sortable ? 'cursor:pointer; user-select:none;' : ''} ${col.width ? `width:${col.width};` : ''} ${stickyStyle}">
-          ${col.label} ${col.sortable ? `<span class="sort-icon">${this.sortKey === col.key ? (this.sortAsc ? 'â†‘' : 'â†“') : 'â‡…'}</span>` : ''}
+          ${col.label} ${col.sortable ? `<span class="sort-icon">${this.sortKey === col.key ? (this.sortAsc ? '↑' : '↓') : '⇅'}</span>` : ''}
         </th>
       `;
     });
@@ -378,8 +378,8 @@
       return btn;
     };
 
-    this.paginationContainer.appendChild(createBtn('Â«', 1, this.currentPage === 1));
-    this.paginationContainer.appendChild(createBtn('â€¹', this.currentPage - 1, this.currentPage === 1));
+    this.paginationContainer.appendChild(createBtn('«', 1, this.currentPage === 1));
+    this.paginationContainer.appendChild(createBtn('‹', this.currentPage - 1, this.currentPage === 1));
 
     let startPage = Math.max(1, this.currentPage - 2);
     let endPage = Math.min(totalPages, this.currentPage + 2);
@@ -391,7 +391,7 @@
       this.paginationContainer.appendChild(createBtn(String(i), i, false, this.currentPage === i));
     }
 
-    this.paginationContainer.appendChild(createBtn('â€º', this.currentPage + 1, this.currentPage === totalPages));
-    this.paginationContainer.appendChild(createBtn('Â»', totalPages, this.currentPage === totalPages));
+    this.paginationContainer.appendChild(createBtn('›', this.currentPage + 1, this.currentPage === totalPages));
+    this.paginationContainer.appendChild(createBtn('»', totalPages, this.currentPage === totalPages));
   }
 }

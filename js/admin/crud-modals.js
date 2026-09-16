@@ -1,9 +1,9 @@
-﻿import {
+import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete,
   mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
   detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions
-} from '../api.js?v=3.2.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=3.2.0';
+} from '../api.js?v=4.0.0';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.0';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -20,7 +20,124 @@ async function hashPin(pin) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
-    async function openCrudModal(section, record) {
+// -- Module-level state & DOM references (assigned lazily on first use) --
+let crudModal   = null;
+let crudForm    = null;
+let _currentSection = null;
+let _editId     = null;
+let openDuplicateStudentsModal = null;
+let openDuplicateQuestionsModal = null;
+
+const formFields = {
+  user_professionals: [
+    { id: 'full_name', label: 'Full Name', type: 'text', required: true },
+    { id: 'title', label: 'Professional Title', type: 'text', required: false },
+    { id: 'bio', label: 'Biography', type: 'textarea', required: false },
+    { id: 'contact_email', label: 'Email Address', type: 'text', required: false },
+    { id: 'contact_phone', label: 'Phone Number', type: 'text', required: false }
+  ],
+  work_records: [
+    { id: 'company_name', label: 'Company / Organization', type: 'text', required: true },
+    { id: 'role_title', label: 'Role / Job Title', type: 'text', required: true },
+    { id: 'start_date', label: 'Start Date', type: 'date', required: true },
+    { id: 'end_date', label: 'End Date', type: 'date', required: false },
+    { id: 'description', label: 'Description', type: 'textarea', required: false }
+  ],
+  professional_skills: [
+    { id: 'skill_name', label: 'Skill Name', type: 'text', required: true },
+    { id: 'proficiency_level', label: 'Proficiency Level', type: 'select', options: ['Beginner', 'Intermediate', 'Advanced', 'Expert'], required: true }
+  ],
+  institutions: [
+    { id: 'name', label: 'Institution Name', type: 'text', required: true },
+    { id: 'is_active', label: 'Active', type: 'checkbox' },
+  ],
+  subjects: [
+    { id: 'name', label: 'Class Name', type: 'text', required: true },
+    { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
+    { id: 'is_active', label: 'Active', type: 'checkbox' },
+  ],
+  class_instances: [
+    { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: true },
+    { id: 'subject_id', label: 'Class Blueprint', type: 'select', source: 'subjects', required: true },
+    { id: 'start_date', label: 'Start Date', type: 'date', required: false },
+    { id: 'estimated_finish', label: 'Estimated Finish Date', type: 'date', required: false },
+    { id: 'recurring_schedule', label: 'Recurring Schedule (JSON)', type: 'textarea', placeholder: 'e.g. ["Monday", "Wednesday"]', required: false },
+    { id: 'status', label: 'Status', type: 'select', options: [{val:'active',text:'Active'},{val:'finished',text:'Finished'},{val:'inactive',text:'Inactive'}], required: true }
+  ],
+  levels: [
+    { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true, uiOnly: true },
+    { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
+    { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: true, dependsOn: 'institution_id' },
+    { id: 'level_number', label: 'Level Number', type: 'number', required: true, placeholder: 'e.g. 1' },
+    { id: 'name', label: 'Level Name', type: 'text', required: true, placeholder: 'e.g. Level 1 - Beginner' },
+    { id: 'is_active', label: 'Active', type: 'checkbox' },
+  ],
+  programs: [
+    { id: 'name', label: 'Program Name', type: 'text', required: true },
+    { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
+    { id: 'is_active', label: 'Active', type: 'checkbox' },
+  ],
+  batches: [
+    { id: 'institution_id', label: 'Program (filter only)', type: 'select', source: 'institutions', required: false, uiOnly: true },
+    { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: true, dependsOn: 'institution_id' },
+    { id: 'name', label: 'Batch Name', type: 'text', required: true, placeholder: 'e.g. Batch 2026-A' },
+    { id: 'is_active', label: 'Active', type: 'checkbox' },
+  ],
+  students: [
+    { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
+    { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: true, dependsOn: 'institution_id' },
+    { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: false, dependsOn: 'program_id' },
+    
+    { id: 'name', label: 'Full Name', type: 'text', required: true },
+    { id: 'gender', label: 'Gender', type: 'select', options: [
+      { value: '', label: '— Unassigned (Student will choose) —' },
+      { value: 'male', label: 'Male (Mr.)' },
+      { value: 'female', label: 'Female (Miss)' }
+    ]},
+    { id: 'birth_date', label: 'Birth Date', type: 'date' },
+    { id: 'pin_hash', label: 'PIN (4 digits)', type: 'password', placeholder: '****' },
+    { id: 'is_active', label: 'Active', type: 'checkbox' },
+  ],
+  exams: [
+    { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
+    { id: 'program_id', label: 'Class (Optional / Assigned)', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
+    { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: false, dependsOn: 'institution_id' },
+    { id: 'exam_type', label: 'Exam Type', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Final'], required: true, defaultValue: 'Daily' },
+    
+    { id: 'exam_order', label: 'Order (1, 2, 3...)', type: 'select', options: ['1','2','3','4','5','6','7','8','9','10'], required: true, defaultValue: '1' },
+    { id: 'exam_title', label: 'Exam Title (Auto-Generated)', type: 'text', required: true, placeholder: 'Auto-generated as: [Program] [Class] [Subject] [Type] [Level] [Order]' },
+    { id: 'prerequisite_exam_id', label: 'Prerequisite Exam (Optional)', type: 'select', source: 'exams', required: false },
+    { id: 'minimum_required_score', label: 'Passing Score % (Default: 60%)', type: 'number', required: true, defaultValue: 60 },
+    { id: 'prerequisite_min_score', label: 'Prerequisite Min % (Default: 60%)', type: 'number', required: false, defaultValue: 60 },
+    { id: 'time_limit_minutes', label: 'Global Time Limit (minutes)', type: 'number', required: true, defaultValue: 60 },
+    { id: 'exam_status', label: 'Exam Status', type: 'select', options: ['published','draft','unpublished','archived'], required: true },
+    { id: 'question_order', label: 'Question Order', type: 'select', options: [{ value: 'sequential', label: 'Sequential' }, { value: 'random', label: 'Random' }], required: true },
+    { id: 'retake_allowed', label: 'Retake Allowed', type: 'checkbox' },
+    { id: 'max_attempts', label: 'Max Attempts (blank = unlimited)', type: 'number' },
+  ],
+  questions: [
+    { id: 'question_text', label: 'Question Text', type: 'textarea', required: true },
+    { id: 'question_order', label: 'Order', type: 'number', required: true },
+    { id: 'exam_id', label: 'Examination', type: 'select', source: 'exams', required: true },
+    { id: 'answer_type', label: 'Answer Type', type: 'select', options: [
+      {value:'multiple_choice',label:'Multiple Choice'},
+      {value:'dropdown',label:'Dropdown'},
+      {value:'speech_to_text',label:'Speaking Test'},
+      {value:'written',label:'Written Test'}
+    ], required: true },
+    { id: 'correct_answer', label: 'Correct Answer', type: 'text', required: true, placeholder: 'e.g. run / jog / sprint  (use / ; or | to separate multiple accepted answers)' },
+    { id: 'options_json', label: 'Options (separated by / ; or JSON array)', type: 'textarea', placeholder: 'e.g. Option A / Option B / Option C  (use / or ; to separate choices)' },
+    { id: 'metadata', label: 'Metadata / Word Type', type: 'text', placeholder: 'e.g. 1 - VERB' },
+  ],
+};
+
+function _ensureDomRefs() {
+  if (!crudModal) crudModal = document.getElementById('crud-modal');
+  if (!crudForm)  crudForm  = document.getElementById('crud-form');
+}
+
+async function openCrudModal(section, record) {
+      _ensureDomRefs();
       _currentSection = section;
       _editId = record?.id || null;
       document.getElementById('crud-modal-title').textContent = record ? `Edit ${sectionTitles[section]}` : `Add ${sectionTitles[section]}`;
@@ -57,11 +174,21 @@ async function hashPin(pin) {
             sel.innerHTML = `<option value="">None (Optional)</option>`;
             sel.disabled = false;
 
-            sel.innerHTML = `<option value="">— No Level / Optional —</option>`;
+            sel.innerHTML = `<option value="">â€” No Level / Optional â€”</option>`;
             sel.disabled = false;
           } else if (!f.dependsOn) {
-            sel.innerHTML = `<option value="">— Select —</option>`;
-            const opts = await adminFetchAll(f.source);
+            sel.innerHTML = `<option value="">â€” Select â€”</option>`;
+            let opts = await adminFetchAll(f.source);
+            opts = opts.filter(o => !o.deleted_at);
+            
+            // Phase 5: Filter out inactive items in dropdowns
+            opts = opts.filter(o => {
+              if (o.is_active !== undefined) return o.is_active === true;
+              if (o.status !== undefined) return o.status !== 'cancelled' && o.status !== 'archived';
+              if (o.exam_status !== undefined) return o.exam_status === 'published';
+              return true;
+            });
+
             opts.forEach(o => {
               const opt = document.createElement('option');
               opt.value = o.id;
@@ -70,7 +197,7 @@ async function hashPin(pin) {
               sel.appendChild(opt);
             });
           } else {
-            sel.innerHTML = `<option value="">— Select Previous First —</option>`;
+            sel.innerHTML = `<option value="">â€” Select Previous First â€”</option>`;
             sel.disabled = true;
           }
           group.appendChild(sel);
@@ -80,7 +207,7 @@ async function hashPin(pin) {
           sel.id = `field-${f.id}`;
           sel.name = f.id;
           if (f.required) sel.required = true;
-          sel.innerHTML = `<option value="">— Select —</option>` + f.options.map(o => {
+          sel.innerHTML = `<option value="">â€” Select â€”</option>` + f.options.map(o => {
             const val = typeof o === 'object' ? o.value : o;
             const labelStr = typeof o === 'object' ? o.label : o;
             const isSelected = record?.[f.id] === val || (!record && val === 'sequential');
@@ -133,6 +260,12 @@ async function hashPin(pin) {
       const batchSelect = crudForm.querySelector('#field-batch_id');
       const subjectSelect = crudForm.querySelector('#field-subject_id');
 
+      const updatePrereqRequirement = () => {
+        if (!prereqSelect) return;
+        // Keep prerequisite optional unless business rules require it later
+        prereqSelect.required = false; 
+      };
+
       if (prereqSelect) {
         prereqSelect.disabled = false;
         const isNoneSelected = !record || !record.prerequisite_exam_id;
@@ -174,7 +307,7 @@ async function hashPin(pin) {
 
       const populateLevelsForSection = async () => {
         if (!levelSelect) return;
-        levelSelect.innerHTML = `<option value="">— No Level / Optional —</option>`;
+        levelSelect.innerHTML = `<option value="">â€” No Level / Optional â€”</option>`;
         levelSelect.disabled = false;
 
         try {
@@ -215,15 +348,15 @@ async function hashPin(pin) {
       if (progSelect && classSelect) {
         const populateBatchesForClass = async (selectedClassId) => {
           if (!batchSelect) return;
-          batchSelect.innerHTML = `<option value="">— Select Batch —</option>`;
+          batchSelect.innerHTML = `<option value="">â€” Select Batch â€”</option>`;
           if (!selectedClassId) {
             batchSelect.disabled = true;
-            batchSelect.innerHTML = `<option value="">— Select Program First —</option>`;
+            batchSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
             return;
           }
           batchSelect.disabled = false;
           const allBatches = await adminFetchAll('batches');
-          const filteredBatches = allBatches.filter(b => b.program_id === selectedClassId && !b.deleted_at);
+          const filteredBatches = allBatches.filter(b => b.program_id === selectedClassId && !b.deleted_at && (b.is_active === undefined || b.is_active === true));
           filteredBatches.sort((a, b) => (a.name || '').localeCompare(b.name || '')).forEach(b => {
             const opt = document.createElement('option');
             opt.value = b.id;
@@ -234,9 +367,9 @@ async function hashPin(pin) {
         };
 
         const populateClassesForProgram = async (selectedProgId) => {
-          classSelect.innerHTML = `<option value="">${_currentSection === 'levels' ? '— Select Program (Optional / All Programs) —' : '— Select Program —'}</option>`;
+          classSelect.innerHTML = `<option value="">${_currentSection === 'levels' ? 'â€” Select Program (Optional / All Programs) â€”' : 'â€” Select Program â€”'}</option>`;
           if (batchSelect) {
-            batchSelect.innerHTML = `<option value="">— Select Program First —</option>`;
+            batchSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
             batchSelect.disabled = true;
           }
           if (!selectedProgId) {
@@ -245,7 +378,7 @@ async function hashPin(pin) {
           }
           classSelect.disabled = false;
           const allClasses = await adminFetchAll('programs');
-          const filteredClasses = allClasses.filter(c => c.institution_id === selectedProgId && !c.deleted_at);
+          const filteredClasses = allClasses.filter(c => c.institution_id === selectedProgId && !c.deleted_at && (c.is_active === undefined || c.is_active === true));
           filteredClasses.sort((a, b) => (a.name || '').localeCompare(b.name || '')).forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.id;
@@ -273,7 +406,7 @@ async function hashPin(pin) {
           }
         } else {
           classSelect.disabled = true;
-          classSelect.innerHTML = `<option value="">— Select Program First —</option>`;
+          classSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
         }
 
         progSelect.addEventListener('change', async (e) => {
@@ -291,7 +424,7 @@ async function hashPin(pin) {
       // Program -> Subject -> Level cascading dependencies
       if (progSelect && subjectSelect) {
         const populateSubjectsForProgram = async (selectedProgId) => {
-          subjectSelect.innerHTML = `<option value="">— Select Subject —</option>`;
+          subjectSelect.innerHTML = `<option value="">â€” Select Subject â€”</option>`;
           if (!selectedProgId) {
             subjectSelect.disabled = true;
             return;
@@ -315,7 +448,7 @@ async function hashPin(pin) {
           await populateSubjectsForProgram(initialProgIdForSubject);
         } else {
           subjectSelect.disabled = true;
-          subjectSelect.innerHTML = `<option value="">— Select Program First —</option>`;
+          subjectSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
         }
 
         progSelect.addEventListener('change', async (e) => {
@@ -348,7 +481,11 @@ async function hashPin(pin) {
       crudModal.classList.remove('hidden');
     }
 
-    crudForm.addEventListener('submit', async (e) => {
+// Wire up module-level event listeners (DOM must be ready)
+document.addEventListener('DOMContentLoaded', () => {
+  _ensureDomRefs();
+
+  crudForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fields = formFields[_currentSection];
       if (!fields) return;
@@ -360,7 +497,7 @@ async function hashPin(pin) {
         if (!el) continue;
         if (f.type === 'checkbox') payload[f.id] = el.checked;
         else if (f.type === 'number') payload[f.id] = el.value ? parseFloat(el.value) : null;
-        else if (f.id === 'options_json') {
+        else if (f.id === 'options_json' || f.id === 'recurring_schedule') {
           if (!el.value || !el.value.trim()) {
             payload[f.id] = null;
           } else {
@@ -487,11 +624,6 @@ async function hashPin(pin) {
       }
     });
 
-    async function hashPin(pin) {
-      // Simple SHA-256 hash for display — use server-side bcrypt in production
-      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
-      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-    }
 
     // Global edit/delete handlers
     window._editRecord = async (section, id, jsonStr) => {
@@ -511,8 +643,10 @@ async function hashPin(pin) {
         await adminSoftDelete(_deleteSection, _deleteId);
         showToast('Record deleted.', 'success');
         document.getElementById('delete-modal').classList.add('hidden');
-        loadSection(_deleteSection);
-      } catch(e) { showToast(e.message, 'error'); }
+        loadSection(_currentSection);
+      } catch (err) {
+        showToast('Delete failed: ' + err.message, 'error');
+      }
     });
 
     // Modal close handlers
@@ -525,10 +659,10 @@ async function hashPin(pin) {
     let currentDupStudScope = 'same_class';
     let dupStudentGroups = [];
 
-    async function openDuplicateStudentsModal() {
+    openDuplicateStudentsModal = async function() {
       dupStudModal.classList.remove('hidden');
       await loadDuplicateStudents(currentDupStudScope);
-    }
+    };
 
     document.getElementById('close-dup-students-modal')?.addEventListener('click', () => {
       dupStudModal.classList.add('hidden');
@@ -561,7 +695,7 @@ async function hashPin(pin) {
         else document.getElementById('dup-stud-cross-count').textContent = totalDups;
 
         if (dupStudentGroups.length === 0) {
-          dupStudContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No duplicate students found.</p></div>';
+          dupStudContent.innerHTML = '<div class="empty-state p-6 text-center"><p>âœ… No duplicate students found.</p></div>';
           return;
         }
 
@@ -569,7 +703,7 @@ async function hashPin(pin) {
         dupStudentGroups.forEach((group, gIdx) => {
           html += `
             <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-primary);">
-              <div class="fw-700 mb-2">Duplicate Group ${gIdx + 1} — Name: "${escapeHtml(group.name)}"</div>
+              <div class="fw-700 mb-2">Duplicate Group ${gIdx + 1} â€” Name: "${escapeHtml(group.name)}"</div>
               <table class="table-sm w-100 mb-3 text-sm">
                 <thead>
                   <tr>
@@ -656,14 +790,14 @@ async function hashPin(pin) {
     const dupQContent = document.getElementById('dup-questions-content');
     const dupQExamSelect = document.getElementById('dup-q-exam-select');
 
-    async function openDuplicateQuestionsModal() {
+    openDuplicateQuestionsModal = async function() {
       dupQModal.classList.remove('hidden');
       
       // Populate exam select
       try {
         const exams = await adminFetchAll('exams', 'id, exam_title, exam_status');
         const sortedExams = exams.sort((a, b) => a.exam_title.localeCompare(b.exam_title));
-        dupQExamSelect.innerHTML = '<option value="">— All Exams (Global Search) —</option>' + 
+        dupQExamSelect.innerHTML = '<option value="">â€” All Exams (Global Search) â€”</option>' + 
           sortedExams.map(e => `<option value="${e.id}">${escapeHtml(e.exam_title)} (${e.exam_status})</option>`).join('');
       } catch(e) { console.error("Could not load exams for duplicate select:", e); }
         
@@ -685,7 +819,7 @@ async function hashPin(pin) {
         document.getElementById('dup-q-same-count').textContent = data.totalSameExamDupCount;
 
         if (data.sameExamDuplicates.length === 0) {
-          dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No duplicate questions found.</p></div>';
+          dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>âœ… No duplicate questions found.</p></div>';
           return;
         }
 
@@ -807,7 +941,7 @@ async function hashPin(pin) {
 
     // Note: Sidebar toggle is already wired above (openSidebar/closeSidebar functions).
     // Duplicate handler removed â€” single handler at initConsole() is authoritative.
-  
+}); // end DOMContentLoaded
 
 
 

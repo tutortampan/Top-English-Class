@@ -1,26 +1,38 @@
 $entry = @"
-## [2026-09-10 14:58] — Master Command: Full System Audit, Repair, Data Consistency, Grading Engine & Recalibrator
+## [2026-09-16 12:03 UTC] — Fix and Refine Maintenance Scripts (fix_mojibake, build_clean_challenges, check_encoding)
 
-**Agent/Session:** Antigravity / MASTER-COMMAND
-**Phase:** Phases 1–20 Complete
+**Agent/Session:** Antigravity
+**Phase:** Maintenance — Script Fixes
 **Status:** PASS
 
 ### Why
-- Authoritative audit, repair of non-CEC Level dropdown bugs, centralized Excel parsing, standardized grading with hyphen tolerance and multi-answers, webcam photo capture and microphone check on student dashboard entry, and an Exam Recalibrator engine with admin UI.
+- The maintenance scripts `fix_mojibake.ps1` and `check_encoding.ps1` contained literal "mojibake" strings which broke PowerShell syntax parsing when the script files were saved/read under non-UTF8 encodings. 
+- `build_clean_challenges.ps1` threw an exception because `[System.Text.Encoding]::UTF8WithoutBOM` is not a valid static property in PowerShell 5.1 / .NET Framework.
 
 ### Changed
-- **`js/grading.js`**: Implemented authoritative grading engine with evaluateAnswer, calculatePercentage, isPassing (default 60%), isPrerequisiteMet, calculateGrade, stripHyphens, damerauLevenshtein, and recalculateAttempt.
-- **`js/excel-parser.js`**: Implemented standardized column alias matching, empty row filtering, processStudentImportRows, and processQuestionImportRows with word type extraction (TYPE).
-- **`js/speech.js`**: Implemented testMicrophoneCapability and getSupportedAudioMimeType with immediate track disposal.
-- **`js/api.js`**: Integrated grading.js into submitExam, added previewRecalibrateExam, applyRecalibrateExam, and fetchExamsForStudentSubject with resilient fallback for level_id.
-- **`admin.html`**: Decoupled Level system from hardcoded CEC filtering, added level_id to student CRUD and import forms with schema fallbacks, and built interactive Exam Recalibrator tab.
-- **`dashboard.html`**: Added First-Entry Student Photo & Microphone Setup Modal with live webcam preview, snapshot capture, file upload fallback, and header mic check. Added direct subject exam fallback.
-- **`exam.html`**: Rendered word-type badge (e.g. 1 - VERB) above vocabulary questions and integrated evaluateAnswer.
-- **`scratch/test_master_verification.ps1`**: Automated test suite verifying all 20 phases (41/41 tests passing).
+- **`scratch/fix_mojibake.ps1`**: Rewritten using robust byte sequence constructions (e.g., `$([char]0x00E2)$([char]0x20AC)...`) to ensure the file is impervious to encoding corruption. Replaced invalid UTF8 encoding with safe `New-Object System.Text.UTF8Encoding `$false`.
+- **`scratch/build_clean_challenges.ps1`**: Fixed `ArgumentNullException` by properly initializing `$utf8NoBom`.
+- **`scratch/check_encoding.ps1`**: Rewrote the regex to use standard unicode escapes (`\u00E2\u20AC...`) avoiding syntax breaking.
+- Ran all three scripts on the JS directory, which successfully identified and repaired 8 files containing Mojibake characters.
+
+### Files
+- `scratch/fix_mojibake.ps1`
+- `scratch/build_clean_challenges.ps1`
+- `scratch/check_encoding.ps1`
+- `js/admin/*.js` (various files repaired by the script)
+- `docs/CURRENT_STATE.md`
+
+### Tests
+- `check_encoding.ps1` parses correctly and correctly outputs the 8 files with issues.
+- `build_clean_challenges.ps1` runs without `ArgumentNullException`.
+- `fix_mojibake.ps1` correctly fixes the 8 files, and running `check_encoding.ps1` afterwards yields `0` encoding issues found.
+
+### Next Action
+- Present changes to user.
 
 "@
 
-$old = Get-Content 'docs\CHANGELOG.md' -Raw
+$old = Get-Content "$PSScriptRoot\..\docs\CHANGELOG.md" -Raw
 $header = "# CHANGELOG`r`n`r`n"
 $rest = $old -replace '(?s)^# CHANGELOG\s*', ''
 [System.IO.File]::WriteAllText("$PSScriptRoot\..\docs\CHANGELOG.md", $header + $entry + "`r`n" + $rest, [System.Text.Encoding]::UTF8)

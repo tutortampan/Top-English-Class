@@ -1,6 +1,6 @@
-﻿import { adminFetchAll, adminFetchDeleted, adminRestore, clearAdminCache, testSupabaseConnection } from '../api.js?v=3.2.0';
-import { getSupabase } from '../supabase.js?v=3.2.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=3.2.0';
+import { adminFetchAll, adminFetchDeleted, adminRestore, clearAdminCache, testSupabaseConnection } from '../api.js?v=4.0.0';
+import { getSupabase } from '../supabase.js?v=4.0.0';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.0';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -50,7 +50,7 @@ function escapeHtml(str) {
     }
 
 
-    // â”€â”€ SETTINGS & SYSTEM TOOLS (D â€” DESK) â”€â”€
+    // â”€â”€ SETTINGS & SYSTEM TOOLS (D — DESK) â”€â”€
     async function renderSettings(area) {
       const sb = await getSupabase();
       const { data } = await sb.from('site_settings').select('*');
@@ -60,7 +60,7 @@ function escapeHtml(str) {
       area.innerHTML = `
         <div class="section-header">
           <div>
-            <h2 class="section-title text-gradient">System Settings & Administration (D â€” DESK)</h2>
+            <h2 class="section-title text-gradient">System Settings & Administration (D — DESK)</h2>
             <p class="section-subtitle">Platform configuration, security credentials, system tools & diagnostic telemetry</p>
           </div>
         </div>
@@ -79,7 +79,7 @@ function escapeHtml(str) {
             </div>
             <div class="form-group">
               <label class="form-label">Login Background URL (optional)</label>
-              <input class="form-control" id="setting-login_background_url" value="${escapeHtml(settings.login_background_url || '')}" placeholder="https://â€¦" />
+              <input class="form-control" id="setting-login_background_url" value="${escapeHtml(settings.login_background_url || '')}" placeholder="https://…" />
             </div>
             <button class="btn btn-primary btn-sm" id="save-settings-btn">Save Configuration</button>
           </div>

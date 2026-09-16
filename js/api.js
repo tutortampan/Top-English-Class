@@ -1,4 +1,4 @@
-// TOPS CORE — API Module
+﻿// TOPS CORE — API Module
 // All server calls are centralized here.
 import { getSupabase, SUPABASE_URL, callEdgeFunction } from './supabase.js';
 import { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCorrectAnswers, stripHyphens } from './grading.js';
@@ -2992,3 +2992,579 @@ export async function recalculateBestScore(studentId, assessmentId) {
 export const startAssessment = startExam;
 export const submitAssessment = submitExam;
 
+// ============================================================
+// ABCD MIGRATION — PHASE 6 & 9 CORE ENDPOINTS
+// ============================================================
+
+/** Classes (Phase 6) */
+export async function fetchClasses(forceRefresh = false) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('classes')
+    .select('*')
+    .is('deleted_at', null)
+    .order('name');
+  if (error) throw error;
+  return data;
+}
+
+/** Class Instances (Phase 6) */
+export async function fetchClassInstances(batchId = null) {
+  const sb = await getSupabase();
+  let query = sb.from('class_instances').select('*, classes(name), batches(name)');
+  if (batchId) query = query.eq('batch_id', batchId);
+  const { data, error } = await query.is('deleted_at', null).order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+/** Class Meetings (Phase 6) */
+export async function fetchClassMeetings(classInstanceId) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('class_meetings')
+    .select('*')
+    .eq('class_instance_id', classInstanceId)
+    .order('scheduled_date');
+  if (error) throw error;
+  return data;
+}
+
+/** Challenge Definitions (Phase 9) */
+export async function fetchChallengeDefinitions(filters = {}) {
+  const sb = await getSupabase();
+  let query = sb.from('challenge_definitions').select('*, classes(name)').is('deleted_at', null);
+  if (filters.class_id) query = query.eq('class_id', filters.class_id);
+  if (filters.status) query = query.eq('status', filters.status);
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function createChallengeDefinition(payload) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('challenge_definitions')
+    .insert({
+      class_id: payload.class_id,
+      title: payload.title.trim(),
+      description: payload.description || null,
+      challenge_type: payload.challenge_type || 'EVALUATION',
+      status: payload.status || 'DRAFT',
+      question_order: payload.question_order || 'RANDOM',
+      working_duration_minutes: payload.working_duration_minutes || 60,
+      default_max_attempts: payload.default_max_attempts || null,
+      created_by: payload.created_by || 'admin'
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/** Challenge Instances (Phase 9) */
+export async function fetchChallengeInstances(classInstanceId = null) {
+  const sb = await getSupabase();
+  let query = sb.from('challenge_instances').select('*, challenge_definitions(title, challenge_type), class_instances(batches(name), classes(name))').is('deleted_at', null);
+  if (classInstanceId) query = query.eq('class_instance_id', classInstanceId);
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function createChallengeInstance(payload) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('challenge_instances')
+    .insert({
+      class_instance_id: payload.class_instance_id,
+      challenge_definition_id: payload.challenge_definition_id,
+      title_override: payload.title_override || null,
+      availability_start: payload.availability_start || null,
+        if (bId) orConditions.push(`batch_id.eq.${bId}`);
+      });
+    }
+    if (filters.student_id) orConditions.push(`student_id.eq.${filters.student_id}`);
+
+    if (orConditions.length > 1) {
+      query = query.or(orConditions.join(','));
+    } else if (orConditions.length === 1) {
+      if (filters.batch_id) query = query.eq('batch_id', filters.batch_id);
+      else if (filters.student_id) query = query.eq('student_id', filters.student_id);
+      else if (filters.batch_ids && filters.batch_ids.length > 0) query = query.in('batch_id', filters.batch_ids);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (!error && data && data.length > 0) return data;
+  } catch (err) {
+    console.warn('Assignments table query fallback:', err.message);
+  }
+
+  // Fallback: derive assignments from live exam_programs and batches
+  try {
+    const { data: epList } = await sb.from('exam_programs').select('*, exams(id, exam_title, exam_type), programs(id, name)');
+    if (epList && epList.length > 0) {
+      const { data: batches } = await sb.from('batches').select('id, name, program_id').is('deleted_at', null);
+      const derived = [];
+      epList.forEach(ep => {
+        const matchingBatches = (batches || []).filter(b => b.program_id === ep.program_id);
+        matchingBatches.forEach(b => {
+          derived.push({
+            id: `ep-assign-${ep.exam_id}-${b.id}`,
+            assessment_id: ep.exam_id,
+            assignment_type: 'BATCH',
+            batch_id: b.id,
+            status: 'active',
+            created_at: ep.created_at || new Date().toISOString(),
+            assessments: { title: ep.exams?.exam_title || 'Evaluation', assessment_type: ep.exams?.exam_type || 'EVALUATION' },
+            batches: { name: b.name },
+            students: null
+          });
+        });
+      });
+      const mem = (MOCK_ADMIN_STORE.assignments || []).map(a => hydrateMockRelations('assignments', a));
+      let combined = [...mem, ...derived];
+      if (filters.assessment_id) combined = combined.filter(a => a.assessment_id === filters.assessment_id);
+      if (filters.batch_id) combined = combined.filter(a => a.batch_id === filters.batch_id);
+      if (filters.student_id) combined = combined.filter(a => a.student_id === filters.student_id);
+      return combined;
+    }
+  } catch (_) {}
+
+  return (MOCK_ADMIN_STORE.assignments || []).map(a => hydrateMockRelations('assignments', a));
+}
+
+/** Enrollments (Student <-> Batch tracking) */
+export async function fetchStudentEnrollments(studentId) {
+  const sb = await getSupabase();
+  try {
+    const { data, error } = await sb.from('enrollments')
+      .select('*, batches(name, program_id, programs(name))')
+      .eq('student_id', studentId)
+      .order('joined_at', { ascending: false });
+    if (!error && data && data.length > 0) return data;
+  } catch (_) {}
+
+  // Fallback: derive enrollment from student record's batch_id
+  try {
+    const { data: student } = await sb.from('students')
+      .select('id, batch_id, batches(name, program_id, programs(name))')
+      .eq('id', studentId)
+      .single();
+    if (student?.batch_id) {
+      return [{
+        id: 'enrollment-derived-' + studentId,
+        student_id: studentId,
+        batch_id: student.batch_id,
+        status: 'active',
+        batches: student.batches
+      }];
+    }
+  } catch (_) {}
+
+  return [];
+}
+
+/** Student Assessment Runner & Best Score Recalculator */
+export async function recalculateBestScore(studentId, assessmentId) {
+  const sb = await getSupabase();
+  const { data: attempts, error } = await sb.from('attempts')
+    .select('id, score, percentage, effective_score, created_at')
+    .eq('student_id', studentId)
+    .eq('assessment_id', assessmentId)
+    .in('status', ['submitted', 'auto_submitted', 'evaluated', 'SUBMITTED', 'AUTO_SUBMITTED', 'EVALUATED'])
+    .order('percentage', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (error || !attempts || !attempts.length) return null;
+
+  const bestAttemptId = attempts[0].id;
+  for (const a of attempts) {
+    await sb.from('attempts')
+      .update({ is_best_score: a.id === bestAttemptId })
+      .eq('id', a.id);
+  }
+  return attempts[0];
+}
+
+/** Aliases for backward compatibility with existing views */
+export const startAssessment = startExam;
+export const submitAssessment = submitExam;
+
+// ============================================================
+// ABCD MIGRATION — PHASE 6 & 9 CORE ENDPOINTS
+// ============================================================
+
+/** Classes (Phase 6) */
+export async function fetchClasses(forceRefresh = false) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('classes')
+    .select('*')
+    .is('deleted_at', null)
+    .order('name');
+  if (error) throw error;
+  return data;
+}
+
+/** Class Instances (Phase 6) */
+export async function fetchClassInstances(batchId = null) {
+  const sb = await getSupabase();
+  let query = sb.from('class_instances').select('*, classes(name), batches(name)');
+  if (batchId) query = query.eq('batch_id', batchId);
+  const { data, error } = await query.is('deleted_at', null).order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+/** Class Meetings (Phase 6) */
+export async function fetchClassMeetings(classInstanceId) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('class_meetings')
+    .select('*')
+    .eq('class_instance_id', classInstanceId)
+    .order('scheduled_date');
+  if (error) throw error;
+  return data;
+}
+
+/** Challenge Definitions (Phase 9) */
+export async function fetchChallengeDefinitions(filters = {}) {
+  const sb = await getSupabase();
+  let query = sb.from('challenge_definitions').select('*, classes(name)').is('deleted_at', null);
+  if (filters.class_id) query = query.eq('class_id', filters.class_id);
+  if (filters.status) query = query.eq('status', filters.status);
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchChallengeDefinitionTopics(id) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('challenge_definition_topics').select('topic_id').eq('challenge_definition_id', id);
+  if (error) throw error;
+  return (data || []).map(d => d.topic_id);
+}
+
+export async function createChallengeDefinition(payload, topicIds = []) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('challenge_definitions')
+    .insert({
+      class_id: payload.class_id,
+      title: payload.title.trim(),
+      description: payload.description || null,
+      challenge_type: payload.challenge_type || 'EVALUATION',
+      status: payload.status || 'DRAFT',
+      question_order: payload.question_order || 'RANDOM',
+      working_duration_minutes: payload.working_duration_minutes || 60,
+      default_max_attempts: payload.default_max_attempts || null,
+      created_by: payload.created_by || 'admin'
+    })
+    .select()
+    .single();
+  if (error) throw error;
+
+  if (topicIds && topicIds.length > 0) {
+    const topicInserts = topicIds.map(tid => ({
+      challenge_definition_id: data.id,
+      topic_id: tid
+    }));
+    await sb.from('challenge_definition_topics').insert(topicInserts);
+  }
+
+  return data;
+}
+
+export async function updateChallengeDefinition(id, payload, topicIds = null) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('challenge_definitions')
+    .update({
+      title: payload.title.trim(),
+      description: payload.description || null,
+      challenge_type: payload.challenge_type || 'EVALUATION',
+      status: payload.status || 'DRAFT',
+      question_order: payload.question_order || 'RANDOM',
+      working_duration_minutes: payload.working_duration_minutes || 60,
+      default_max_attempts: payload.default_max_attempts || null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+
+  if (topicIds !== null) {
+    await sb.from('challenge_definition_topics').delete().eq('challenge_definition_id', id);
+    if (topicIds.length > 0) {
+      const topicInserts = topicIds.map(tid => ({
+        challenge_definition_id: id,
+        topic_id: tid
+      }));
+      await sb.from('challenge_definition_topics').insert(topicInserts);
+    }
+  }
+  return data;
+}
+
+export async function publishChallengeDefinition(id) {
+  const sb = await getSupabase();
+  const { data: topics, error: tErr } = await sb.from('challenge_definition_topics')
+    .select('topic_id')
+    .eq('challenge_definition_id', id);
+  if (tErr) throw tErr;
+  
+  let questionIds = [];
+  if (topics && topics.length > 0) {
+    const tIds = topics.map(t => t.topic_id);
+    const { data: qData, error: qErr } = await sb.from('questions')
+      .select('id')
+      .in('topic_id', tIds)
+      .is('deleted_at', null)
+      .eq('is_active', true);
+    if (qErr) throw qErr;
+    questionIds = (qData || []).map(q => q.id);
+  }
+  
+  if (questionIds.length > 0) {
+    await sb.from('challenge_definition_questions').delete().eq('challenge_definition_id', id);
+    const inserts = questionIds.map(qid => ({
+      challenge_definition_id: id,
+      question_id: qid
+    }));
+    await sb.from('challenge_definition_questions').insert(inserts);
+  }
+
+  const { data, error } = await sb.from('challenge_definitions')
+    .update({ status: 'READY', updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return { ...data, _frozenCount: questionIds.length };
+}
+
+/** Challenge Instances (Phase 9) */
+export async function fetchChallengeInstances(classInstanceId = null) {
+  const sb = await getSupabase();
+  let query = sb.from('challenge_instances').select('*, challenge_definitions(title, challenge_type), class_instances(batches(name), classes(name))').is('deleted_at', null);
+  if (classInstanceId) query = query.eq('class_instance_id', classInstanceId);
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function createChallengeInstance(payload) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('challenge_instances')
+    .insert({
+      class_instance_id: payload.class_instance_id,
+      challenge_definition_id: payload.challenge_definition_id,
+      title_override: payload.title_override || null,
+      availability_start: payload.availability_start || null,
+      availability_end: payload.availability_end || null,
+      working_duration_minutes: payload.working_duration_minutes || 60,
+      max_attempts: payload.max_attempts || null,
+      status: payload.status || 'DRAFT',
+      assigned_by: payload.assigned_by || 'admin'
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function startChallengeAttempt(studentId, challengeInstanceId) {
+  const sb = await getSupabase();
+
+  // 1. Fetch Challenge Instance and Definition Details
+  const { data: instData, error: instErr } = await sb.from('challenge_instances')
+    .select('*, challenge_definitions(*)')
+    .eq('id', challengeInstanceId)
+    .single();
+
+  if (instErr || !instData) throw new Error('Challenge instance not found.');
+  const definition = instData.challenge_definitions;
+
+  // 2. Determine max attempts
+  const maxAttempts = instData.max_attempts || definition.default_max_attempts || 1;
+
+  // 3. Check existing attempts
+  const { data: existAtt, error: existErr } = await sb.from('challenge_attempts')
+    .select('id, status')
+    .eq('student_id', studentId)
+    .eq('challenge_instance_id', challengeInstanceId)
+    .order('created_at', { ascending: false });
+
+  if (!existErr && existAtt && existAtt.length > 0) {
+    const inProgress = existAtt.find(a => a.status === 'IN_PROGRESS');
+    if (inProgress) {
+      return { attemptId: inProgress.id, status: 'RESUMED' }; // Resume existing
+    }
+    if (existAtt.length >= maxAttempts) {
+      throw new Error(`Maximum attempts (${maxAttempts}) reached for this challenge.`);
+    }
+  }
+
+  // 4. Create new attempt
+  const duration = instData.working_duration_minutes || definition.working_duration_minutes || 60;
+  const now = new Date();
+  const deadline = new Date(now.getTime() + duration * 60000);
+
+  const { data: newAtt, error: attErr } = await sb.from('challenge_attempts')
+    .insert({
+      student_id: studentId,
+      challenge_instance_id: challengeInstanceId,
+      status: 'IN_PROGRESS',
+      expected_end_at: deadline.toISOString(),
+      score: 0,
+      percentage: 0
+    })
+    .select()
+    .single();
+
+  if (attErr) throw attErr;
+
+  // 5. Build snapshots from definitions
+  const { data: defQuestions, error: qErr } = await sb.from('challenge_definition_questions')
+    .select('question_id, questions(question_text, topic_id, word_type, correct_answer, topics(name))')
+    .eq('challenge_definition_id', definition.id);
+
+  if (qErr) throw qErr;
+
+  const answerInserts = (defQuestions || []).map(dq => {
+    const q = dq.questions;
+    let acceptedAnswers = [];
+    if (q.correct_answer) {
+      acceptedAnswers = q.correct_answer.split(/[\/;]/).map(s => s.trim()).filter(Boolean);
+    }
+
+    return {
+      challenge_attempt_id: newAtt.id,
+      question_id: dq.question_id,
+      question_snapshot: JSON.stringify(q),
+      topic_snapshot: q.topics?.name || '',
+      word_type_snapshot: q.word_type || '',
+      accepted_answers_snapshot: JSON.stringify(acceptedAnswers),
+      correct_answer_snapshot: q.correct_answer || '',
+      student_answer: '',
+      is_correct: false,
+      score: 0,
+      evaluation_result: null
+    };
+  });
+
+  if (answerInserts.length > 0) {
+    const { error: insErr } = await sb.from('challenge_attempt_answers').insert(answerInserts);
+    if (insErr) throw insErr;
+  }
+
+  return { attemptId: newAtt.id, status: 'STARTED' };
+}
+
+export async function submitChallengeAttempt(attemptId, answersMap, options = {}) {
+  const sb = await getSupabase();
+
+  // 1. Fetch the attempt to ensure it's valid and not already submitted
+  const { data: att, error: attErr } = await sb.from('challenge_attempts')
+    .select('*, challenge_instances(*)')
+    .eq('id', attemptId)
+    .single();
+
+  if (attErr || !att) throw new Error('Attempt not found.');
+  if (att.status !== 'IN_PROGRESS') throw new Error(`Attempt already ${att.status}`);
+
+  // 2. Fetch all pre-existing challenge_attempt_answers to evaluate
+  const { data: attemptAnswers, error: fetchErr } = await sb.from('challenge_attempt_answers')
+    .select('*')
+    .eq('challenge_attempt_id', attemptId);
+
+  if (fetchErr) throw fetchErr;
+
+  let totalPoints = 0;
+  let correctCount = 0;
+  let maxPoints = attemptAnswers?.length || 1; // prevent div by zero
+
+  const evalTasks = [];
+
+  for (const a of (attemptAnswers || [])) {
+    // Determine the student answer provided in answersMap
+    // answersMap could be keyed by question_id or answer_id. We'll check both.
+    let studentAns = answersMap[a.question_id] || answersMap[a.id];
+    
+    // If it's an object from UI (like in some versions), extract value
+    if (studentAns && typeof studentAns === 'object') {
+      studentAns = studentAns.student_answer || studentAns.answerText || '';
+    } else if (studentAns === undefined || studentAns === null) {
+      studentAns = '';
+    }
+
+    // Default to Incorrect
+    let isCorrect = false;
+    let evalResult = 'incorrect';
+    let similarityScore = 0;
+    let score = 0;
+
+    let accepted = [];
+    try {
+      if (a.accepted_answers_snapshot) {
+        if (typeof a.accepted_answers_snapshot === 'string') {
+          accepted = JSON.parse(a.accepted_answers_snapshot);
+        } else {
+          accepted = a.accepted_answers_snapshot;
+        }
+      }
+    } catch(e) {}
+
+    const cleanInput = (str) => (str || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanStudent = cleanInput(studentAns);
+
+    if (cleanStudent) {
+      for (const validAns of accepted) {
+        const cleanValid = cleanInput(validAns);
+        if (cleanValid && cleanValid === cleanStudent) {
+          isCorrect = true;
+          evalResult = 'correct';
+          similarityScore = 1.0;
+          score = 1;
+          break;
+        }
+      }
+    }
+
+    if (isCorrect) {
+      totalPoints += 1;
+      correctCount += 1;
+    }
+
+    evalTasks.push(
+      sb.from('challenge_attempt_answers')
+        .update({
+          student_answer: studentAns,
+          is_correct: isCorrect,
+          evaluation_result: evalResult,
+          similarity_score: similarityScore,
+          score: score,
+          answered_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', a.id)
+    );
+  }
+
+  // Await all answer evaluations
+  if (evalTasks.length > 0) {
+    await Promise.all(evalTasks);
+  }
+
+  const percentage = Math.round((totalPoints / maxPoints) * 100);
+
+  // 3. Update Attempt Status
+  const { data: updatedAtt, error: upErr } = await sb.from('challenge_attempts')
+    .update({
+      status: options.isAutoSubmit ? 'AUTO_SUBMITTED' : 'SUBMITTED',
+      score: totalPoints,
+      percentage: percentage,
+      submitted_at: new Date().toISOString()
+    })
+    .eq('id', attemptId)
+    .select()
+    .single();
+
+  if (upErr) throw upErr;
+  return updatedAtt;
+}

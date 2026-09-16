@@ -1,16 +1,17 @@
-﻿// TOPS CORE â€” Centralized Assessment Wizard V1
+﻿// TOPS CORE — Centralized Assessment Wizard V1
 // Implements multi-step Evaluation & Exam creation, topic derivation from Evaluations,
 // live question counts, inline assignments, and frozen snapshots on publish.
 import {
-  fetchGlobalSubjects,
+  fetchClasses,
   fetchTopics,
   fetchCentralQuestions,
-  fetchAssessments,
-  createAssessmentWithTopics,
-  updateAssessmentWithTopics,
-  publishAssessment,
-  assignAssessment,
+  fetchChallengeDefinitions,
+  createChallengeDefinition,
+  updateChallengeDefinition,
+  publishChallengeDefinition,
+  createChallengeInstance,
   fetchBatches,
+  fetchClassInstances,
   createTopic,
   adminFetchAll,
   clearAdminCache
@@ -87,8 +88,8 @@ export async function openAssessmentBuilder(assessmentId = null) {
                 </div>
 
                 <div class="form-group mb-3">
-                  <label class="form-label">Subject *</label>
-                  <select class="form-control" id="wiz-subject"></select>
+                  <label class="form-label">Class *</label>
+                  <select class="form-control" id="wiz-class"></select>
                 </div>
 
                 <div class="form-group mb-3">
@@ -104,17 +105,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
                   </select>
                 </div>
 
-                <div class="form-group mb-3">
-                  <label class="form-label">Prerequisite Assessment (Optional)</label>
-                  <select class="form-control" id="wiz-prereq">
-                    <option value="">None (Available immediately)</option>
-                  </select>
-                </div>
-
-                <div class="form-group mb-3">
-                  <label class="form-label">Availability Start (Optional)</label>
-                  <input type="datetime-local" class="form-control" id="wiz-start" />
-                </div>
+                
 
                 <div class="form-group mb-3">
                   <label class="form-label">Availability End (Optional)</label>
@@ -190,13 +181,28 @@ export async function openAssessmentBuilder(assessmentId = null) {
               <h3 style="font-size:1.1rem;margin-bottom:0.5rem;">Access &amp; Assignment (Who can take this?)</h3>
               <p class="text-muted text-xs mb-4">You can assign this assessment immediately to a Batch or selected Students, or skip and assign later.</p>
 
-              <div class="form-group mb-3">
+                            <div class="form-group mb-3">
                 <label class="form-label">Assignment Strategy</label>
                 <select class="form-control" id="wiz-assign-strategy" style="max-width:360px;">
-                  <option value="NONE">Assign Later (Draft or Open to Subject)</option>
-                  <option value="BATCH" selected>Assign to Specific Batch</option>
-                  <option value="STUDENT">Assign to Individual Student</option>
+                  <option value="NONE">Assign Later (Draft or Open to Class)</option>
+                  <option value="BATCH" selected>Assign to Specific Batch (Class Instance)</option>
                 </select>
+              </div>
+
+              <div class="form-group mb-3" id="wiz-assign-batch-group">
+                <label class="form-label">Target Batch *</label>
+                <select class="form-control" id="wiz-assign-batch-select" style="max-width:360px;">
+                  <!-- Batches populated here -->
+                </select>
+              </div>
+
+              <div class="form-group mb-3" id="wiz-assign-time-group1">
+                  <label class="form-label">Availability Start (Optional)</label>
+                  <input type="datetime-local" class="form-control" id="wiz-start" style="max-width:360px;" />
+              </div>
+              <div class="form-group mb-3" id="wiz-assign-time-group2">
+                  <label class="form-label">Availability End (Optional)</label>
+                  <input type="datetime-local" class="form-control" id="wiz-end" style="max-width:360px;" />
               </div>
 
               <div class="form-group mb-3" id="wiz-assign-batch-group">
@@ -227,17 +233,17 @@ export async function openAssessmentBuilder(assessmentId = null) {
               
               <div class="p-4 rounded mb-4" style="background:rgba(0,0,0,0.25);border:1px solid var(--clr-border);">
                 <div class="d-flex justify-between align-center mb-3">
-                  <h4 class="m-0" id="rev-title" style="font-size:1.15rem;font-weight:700;">â€”</h4>
+                  <h4 class="m-0" id="rev-title" style="font-size:1.15rem;font-weight:700;">—</h4>
                   <span id="rev-type" class="badge badge-info">EVALUATION</span>
                 </div>
                 <div class="d-flex gap-4 flex-wrap text-sm mb-3">
-                  <div><strong>Subject:</strong> <span id="rev-subject">â€”</span></div>
+                  <div><strong>Class Blueprint:</strong> <span id="rev-class">—</span></div>
                   <div><strong>Duration:</strong> <span id="rev-duration">60 min</span></div>
                   <div><strong>Order:</strong> <span id="rev-order">Random</span></div>
                   <div><strong>Assignment:</strong> <span id="rev-assignment" class="badge badge-neutral">Batch</span></div>
                 </div>
                 <div class="mb-3">
-                  <strong>Included Topics:</strong> <span id="rev-topics" class="text-muted">â€”</span>
+                  <strong>Included Topics:</strong> <span id="rev-topics" class="text-muted">—</span>
                 </div>
                 <div class="d-flex align-center gap-2 p-3 rounded" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);">
                   <div style="font-size:1.5rem;">ðŸ”’</div>
@@ -296,18 +302,20 @@ export async function openAssessmentBuilder(assessmentId = null) {
   let existingAssessments = [];
   let allBatches = [];
   let allStudents = [];
+  let allClassInstances = [];
   let selectedTopicIds = new Set();
   let selectedEvalIds = new Set();
   let createdAssessmentId = assessmentId;
 
   try {
-    const [subjs, topcs, qList, asms, btchs, stds] = await Promise.all([
-      fetchGlobalSubjects(),
+        const [subjs, topcs, qList, asms, btchs, stds, classInsts] = await Promise.all([
+      fetchClasses(),
       fetchTopics(),
       fetchCentralQuestions({ status: 'active' }),
-      fetchAssessments(),
+      fetchChallengeDefinitions(),
       fetchBatches(),
-      adminFetchAll('students')
+      adminFetchAll('students'),
+      fetchClassInstances()
     ]);
 
     allSubjects = subjs;
@@ -316,6 +324,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
     existingAssessments = asms;
     allBatches = btchs;
     allStudents = stds.filter(s => !s.deleted_at);
+    allClassInstances = classInsts;
 
     hideLoading();
 
@@ -327,7 +336,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
     const prereqSel = document.getElementById('wiz-prereq');
     prereqSel.innerHTML = `<option value="">None (Available immediately)</option>` +
       existingAssessments.filter(a => a.id !== assessmentId).map(a => `
-        <option value="${a.id}">${escapeHtml(a.title)} (${escapeHtml(a.assessment_type || 'EVALUATION')})</option>
+        <option value="${a.id}">${escapeHtml(a.title)} (${escapeHtml(a.challenge_type || 'EVALUATION')})</option>
       `).join('');
 
     // Populate Batches dropdown
@@ -390,7 +399,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
             return;
           }
           try {
-            const newT = await createTopic({ subject_id: currentSubjectId, name: tName });
+            const newT = await createTopic({ class_id: currentSubjectId, name: tName });
             allTopics.push(newT);
             selectedTopicIds.add(newT.id);
             renderTopicCheckboxes();
@@ -435,7 +444,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
     // Render source Evaluations checkboxes (EXAM mode)
     const renderExamEvaluations = () => {
       const currentSubjectId = subSel.value;
-      const evals = existingAssessments.filter(a => a.subject_id === currentSubjectId && (a.assessment_type || 'EVALUATION') === 'EVALUATION');
+      const evals = existingAssessments.filter(a => a.class_id === currentSubjectId && (a.challenge_type || 'EVALUATION') === 'EVALUATION');
       const container = document.getElementById('wiz-evaluations-container');
 
       if (!evals.length) {
@@ -468,12 +477,12 @@ export async function openAssessmentBuilder(assessmentId = null) {
 
       for (const evId of selectedEvalIds) {
         const ev = existingAssessments.find(a => a.id === evId);
-        if (ev && ev.assessment_topics) {
-          ev.assessment_topics.forEach(t => derivedTopicIds.add(t.topic_id));
+        if (ev && ev.challenge_definition_topics) {
+          ev.challenge_definition_topics.forEach(t => derivedTopicIds.add(t.topic_id));
         }
       }
 
-      // If assessment_topics is empty locally, fallback to all active topics in subject
+      // If challenge_definition_topics is empty locally, fallback to all active topics in subject
       selectedTopicIds = derivedTopicIds;
 
       const chipsContainer = document.getElementById('wiz-derived-topics-chips');
@@ -510,15 +519,15 @@ export async function openAssessmentBuilder(assessmentId = null) {
     }
 
     if (editAssessment) {
-      const isExam = (editAssessment.assessment_type || '').toUpperCase() === 'EXAM';
+      const isExam = (editAssessment.challenge_type || '').toUpperCase() === 'EXAM';
       const typeRadio = builderDiv.querySelector(`input[name="wiz-type"][value="${isExam ? 'EXAM' : 'EVALUATION'}"]`);
       if (typeRadio) typeRadio.checked = true;
 
       const titleInput = document.getElementById('wiz-title');
       if (titleInput) titleInput.value = editAssessment.title || editAssessment.exam_title || '';
 
-      if (editAssessment.subject_id && subSel) {
-        subSel.value = editAssessment.subject_id;
+      if (editAssessment.class_id && subSel) {
+        subSel.value = editAssessment.class_id;
       }
 
       const durInput = document.getElementById('wiz-duration');
@@ -545,8 +554,8 @@ export async function openAssessmentBuilder(assessmentId = null) {
       }
 
       // Pre-select topics linked to this assessment/exam
-      if (Array.isArray(editAssessment.assessment_topics)) {
-        editAssessment.assessment_topics.forEach(t => selectedTopicIds.add(t.topic_id));
+      if (Array.isArray(editAssessment.challenge_definition_topics)) {
+        editAssessment.challenge_definition_topics.forEach(t => selectedTopicIds.add(t.topic_id));
       }
       // Also check questions linked to this exam for topic_ids
       const linkedQuestions = allQuestions.filter(q => q.exam_id === assessmentId || q.assessment_id === assessmentId);
@@ -609,7 +618,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
 
       document.getElementById('rev-title').textContent = title;
       document.getElementById('rev-type').textContent = typeVal;
-      document.getElementById('rev-subject').textContent = subSel.options[subSel.selectedIndex]?.text || '';
+      document.getElementById('rev-class').textContent = subSel.options[subSel.selectedIndex]?.text || '';
       document.getElementById('rev-duration').textContent = `${duration} minutes`;
       document.getElementById('rev-order').textContent = order;
 
@@ -666,7 +675,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
         if (!asmId) {
           const newAsm = await createAssessmentWithTopics({
             subject_id: subjectId,
-            assessment_type: typeVal,
+            challenge_type: typeVal,
             title,
             working_duration_minutes: duration,
             question_order: order,
@@ -679,7 +688,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
         } else {
           await updateAssessmentWithTopics(asmId, {
             subject_id: subjectId,
-            assessment_type: typeVal,
+            challenge_type: typeVal,
             title,
             working_duration_minutes: duration,
             question_order: order,

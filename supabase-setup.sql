@@ -13,6 +13,8 @@ DROP TABLE IF EXISTS question_usage_history CASCADE;
 DROP TABLE IF EXISTS assessment_questions CASCADE;
 DROP TABLE IF EXISTS assessment_topics CASCADE;
 DROP TABLE IF EXISTS assignments CASCADE;
+DROP TABLE IF EXISTS additional_members CASCADE;
+DROP TABLE IF EXISTS class_instances CASCADE;
 DROP TABLE IF EXISTS enrollments CASCADE;
 DROP TABLE IF EXISTS questions CASCADE;
 DROP TABLE IF EXISTS topics CASCADE;
@@ -42,6 +44,7 @@ DROP TABLE IF EXISTS exam_sections CASCADE;
 CREATE TABLE institutions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
+  map_location TEXT,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -64,6 +67,8 @@ CREATE TABLE batches (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  enrollment_date DATE,
+  actual_final_date DATE,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -129,6 +134,30 @@ CREATE TABLE topics (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
+);
+
+-- CLASS INSTANCES (Batch + Subject/Class)
+CREATE TABLE class_instances (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  batch_id UUID NOT NULL REFERENCES batches(id) ON DELETE CASCADE,
+  subject_id UUID NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+  start_date DATE,
+  estimated_finish DATE,
+  actual_finish DATE,
+  recurring_schedule JSONB,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'finished')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
+);
+
+-- ADDITIONAL MEMBERS
+CREATE TABLE additional_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  class_instance_id UUID NOT NULL REFERENCES class_instances(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (class_instance_id, student_id)
 );
 
 -- WORD TYPES (Configurable + System Suggestions)
@@ -329,6 +358,7 @@ CREATE TRIGGER trg_programs_updated_at BEFORE UPDATE ON programs FOR EACH ROW EX
 CREATE TRIGGER trg_batches_updated_at BEFORE UPDATE ON batches FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_students_updated_at BEFORE UPDATE ON students FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_enrollments_updated_at BEFORE UPDATE ON enrollments FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER trg_class_instances_updated_at BEFORE UPDATE ON class_instances FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_subjects_updated_at BEFORE UPDATE ON subjects FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_topics_updated_at BEFORE UPDATE ON topics FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_questions_updated_at BEFORE UPDATE ON questions FOR EACH ROW EXECUTE FUNCTION update_updated_at();
@@ -344,6 +374,8 @@ ALTER TABLE programs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE batches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE enrollments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE class_instances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE additional_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE word_types ENABLE ROW LEVEL SECURITY;
@@ -365,6 +397,8 @@ CREATE POLICY "service_role_all_programs" ON programs FOR ALL TO service_role US
 CREATE POLICY "service_role_all_batches" ON batches FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_students" ON students FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_enrollments" ON enrollments FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "service_role_all_class_instances" ON class_instances FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "service_role_all_additional_members" ON additional_members FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_subjects" ON subjects FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_topics" ON topics FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_word_types" ON word_types FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
@@ -386,6 +420,8 @@ CREATE POLICY "admin_all_programs" ON programs FOR ALL TO anon USING (TRUE) WITH
 CREATE POLICY "admin_all_batches" ON batches FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_students" ON students FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_enrollments" ON enrollments FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "admin_all_class_instances" ON class_instances FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "admin_all_additional_members" ON additional_members FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_subjects" ON subjects FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_topics" ON topics FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_word_types" ON word_types FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
@@ -433,3 +469,57 @@ INSERT INTO subjects (id, name, code, status, is_active) VALUES
   ('00000000-0000-0000-0000-000000000002', 'Grammar', 'GRM', 'active', TRUE),
   ('00000000-0000-0000-0000-000000000003', 'Speaking', 'SPK', 'active', TRUE)
 ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- 9. PHASE 4 A-AFFAIRS (Professional Profiles & CV)
+-- ============================================================
+
+CREATE TABLE user_professionals (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  full_name TEXT NOT NULL,
+  title TEXT,
+  bio TEXT,
+  contact_email TEXT,
+  contact_phone TEXT,
+  cv_data JSONB, -- For CV generator specific layouts
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE work_records (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_professional_id UUID REFERENCES user_professionals(id) ON DELETE CASCADE,
+  company_name TEXT NOT NULL,
+  role_title TEXT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE,
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE professional_skills (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_professional_id UUID REFERENCES user_professionals(id) ON DELETE CASCADE,
+  skill_name TEXT NOT NULL,
+  proficiency_level TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Triggers for Phase 4
+CREATE TRIGGER trg_user_professionals_updated_at BEFORE UPDATE ON user_professionals FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER trg_work_records_updated_at BEFORE UPDATE ON work_records FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER trg_professional_skills_updated_at BEFORE UPDATE ON professional_skills FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- RLS for Phase 4
+ALTER TABLE user_professionals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE work_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE professional_skills ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "admin_all_user_professionals" ON user_professionals FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "admin_all_work_records" ON work_records FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "admin_all_professional_skills" ON professional_skills FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "service_role_all_user_professionals" ON user_professionals FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "service_role_all_work_records" ON work_records FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "service_role_all_professional_skills" ON professional_skills FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);

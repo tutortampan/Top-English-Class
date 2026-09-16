@@ -1,6 +1,6 @@
-﻿import { adminFetchAll, adminInsert, adminUpdate } from '../api.js?v=3.2.0';
-import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=3.2.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=3.2.0';
+import { adminFetchAll, adminInsert, adminUpdate } from '../api.js?v=4.0.0';
+import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.0.0';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.0';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -18,7 +18,7 @@ async function hashPin(pin) {
 }
 
     async function renderImportStudents(area) {
-      showLoading('Loading institutions & programsâ€¦');
+      showLoading('Loading institutions & programs…');
       const [allProgs, allCls, allBatches, allLevels] = await Promise.all([
         adminFetchAll('institutions'),
         adminFetchAll('programs', '*, institutions(name)'),
@@ -203,7 +203,7 @@ async function hashPin(pin) {
       const batchSelect = document.getElementById('import-student-batch');
 
       const updateBatchDropdown = (selectedClassId) => {
-        batchSelect.innerHTML = `<option value="">â€” Use Batch from Excel File â€”</option>`;
+        batchSelect.innerHTML = `<option value="">— Use Batch from Excel File —</option>`;
         if (!selectedClassId) {
           batchSelect.disabled = true;
           batchSelect.innerHTML = `<option value="">- Select Program First -</option>`;
@@ -263,7 +263,7 @@ async function hashPin(pin) {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        showLoading('Reading spreadsheet fileâ€¦');
+        showLoading('Reading spreadsheet file…');
         const reader = new FileReader();
         reader.onload = async (evt) => {
           try {
@@ -321,7 +321,7 @@ async function hashPin(pin) {
               const rawBirth = getRowVal(row, ['birthdate', 'dob', 'tanggallahir', 'tgllahir', 'tgl', 'birth_date']);
               const rawAge = getRowVal(row, ['age', 'usia']);
               let birthDate = '';
-              let ageDisplay = 'â€”';
+              let ageDisplay = '—';
 
               if (rawBirth) {
                 if (!isNaN(rawBirth) && Number(rawBirth) > 1000) {
@@ -474,7 +474,7 @@ async function hashPin(pin) {
                 programId: finalClassId,
                 programName: finalClassName || 'Class',
                 batchId: finalBatchId,
-                batchName: finalBatchName || 'â€”',
+                batchName: finalBatchName || '—',
                 levelId: finalLevelId,
                 levelName: finalLevelName || '',
                 status,
@@ -549,10 +549,10 @@ async function hashPin(pin) {
               <td class="text-center text-muted fw-700">${i + 1}</td>
               <td class="fw-600">${escapeHtml(s.name)}</td>
               <td class="text-center">${genderBadge}</td>
-              <td class="text-center text-muted text-sm">${escapeHtml(s.birthDate || 'â€”')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${escapeHtml(s.ageDisplay)}</span></td>
+              <td class="text-center text-muted text-sm">${escapeHtml(s.birthDate || '—')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${escapeHtml(s.ageDisplay)}</span></td>
               <td class="text-muted text-sm">${escapeHtml(s.institutionName)}</td>
               <td class="fw-600 text-sm">${escapeHtml(s.programName)}</td>
-              <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(s.batchName || 'â€”')}</td>
+              <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(s.batchName || '—')}</td>
               <td class="text-center text-sm" style="font-family:monospace;letter-spacing:2px;">â€¢â€¢â€¢â€¢ <span class="text-muted text-xs" title="PIN: ${escapeHtml(s.pin)}">(${escapeHtml(s.pin)})</span></td>
               <td class="text-center">${badgeHtml}</td>
             `;
@@ -590,7 +590,7 @@ async function hashPin(pin) {
           return;
         }
 
-              showLoading(`Processing ${readyStudents.length} students (saving new & merging existing)â€¦`);
+              showLoading(`Processing ${readyStudents.length} students (saving new & merging existing)…`);
         try {
           let insertedCount = 0;
           let mergedCount = 0;
@@ -599,7 +599,7 @@ async function hashPin(pin) {
           // Collect unique (programId, batchName) pairs that don't have a batchId yet
           const batchesToCreate = new Map(); // key: programId::batchName -> { programId, batchName }
           for (const s of readyStudents) {
-            if (!s.batchId && s.batchName && s.batchName !== 'â€”' && s.programId) {
+            if (!s.batchId && s.batchName && s.batchName !== '—' && s.programId) {
               const key = `${s.programId}::${s.batchName.toLowerCase().trim()}`;
               if (!batchesToCreate.has(key)) {
                 batchesToCreate.set(key, { programId: s.programId, batchName: s.batchName.trim() });
@@ -627,7 +627,7 @@ async function hashPin(pin) {
 
           // Resolve batch IDs for students that needed auto-creation
           for (const s of readyStudents) {
-            if (!s.batchId && s.batchName && s.batchName !== 'â€”' && s.programId) {
+            if (!s.batchId && s.batchName && s.batchName !== '—' && s.programId) {
               const key = `${s.programId}::${s.batchName.toLowerCase().trim()}`;
               if (newBatchMap.has(key)) s.batchId = newBatchMap.get(key);
             }
@@ -651,7 +651,7 @@ async function hashPin(pin) {
             } catch (e) {
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
                 _dbHasBatchId = false;
-                showToast('âš ï¸ Column batch_id missing in DB â€” saving without batch. Run the SQL patch to fix this.', 'warning');
+                showToast('âš ï¸ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
                 delete p.batch_id;
                 return await adminInsert('students', p);
               }
@@ -680,7 +680,7 @@ async function hashPin(pin) {
             } catch (e) {
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
                 _dbHasBatchId = false;
-                showToast('âš ï¸ Column batch_id missing in DB â€” saving without batch. Run the SQL patch to fix this.', 'warning');
+                showToast('âš ï¸ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
                 delete p.batch_id;
                 return await adminUpdate('students', id, p);
               }
@@ -738,7 +738,7 @@ async function hashPin(pin) {
           }
 
           hideLoading();
-          const batchWarning = !_dbHasBatchId ? ' (batch_id column missing â€” run SQL patch to enable full batch support)' : '';
+          const batchWarning = !_dbHasBatchId ? ' (batch_id column missing — run SQL patch to enable full batch support)' : '';
           showToast(`Done! ${insertedCount} new students added, ${mergedCount} updated/merged!${batchWarning}`, 'success');
           
           // Stay on page and reset preview box
@@ -923,7 +923,7 @@ async function hashPin(pin) {
           return nameA.localeCompare(nameB);
         });
         const sel = document.getElementById('import-exam-select');
-        sel.innerHTML = '<option value="">â€” Select Target Exam â€”</option>' +
+        sel.innerHTML = '<option value="">— Select Target Exam —</option>' +
           sortedExams.map(e => `<option value="${e.id}">${escapeHtml(formatExamDisplayName(e))} (${formatAnswerType(e.answer_type)})</option>`).join('');
       });
 
@@ -967,7 +967,7 @@ async function hashPin(pin) {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        showLoading('Reading Excel file previewâ€¦');
+        showLoading('Reading Excel file preview…');
         const reader = new FileReader();
 
         reader.onload = (evt) => {
@@ -1129,7 +1129,7 @@ async function hashPin(pin) {
         if (!examId) { showToast('Please select a target exam before saving.', 'warning'); return; }
         if (!parsedQuestionsState.length) { showToast('No questions to save.', 'warning'); return; }
 
-        showLoading('Menyimpan & merge questions ke databaseâ€¦');
+        showLoading('Menyimpan & merge questions ke database…');
         try {
           const sb = await getSupabase();
           let defaultSectionId = null;
@@ -1217,7 +1217,7 @@ async function hashPin(pin) {
           </div>
           <div class="form-group"><label class="form-label">Select Exam to Export</label>
             <select class="form-control" id="export-exam-select">
-              <option value="">â€” Select Exam â€”</option>
+              <option value="">— Select Exam —</option>
               ${[...exams].sort((a, b) => {
                 const labelA = `${a.exam_type ? a.exam_type + ' - ' : ''}${a.exam_title}`;
                 const labelB = `${b.exam_type ? b.exam_type + ' - ' : ''}${b.exam_title}`;
@@ -1234,7 +1234,7 @@ async function hashPin(pin) {
         if (!examId) { showToast('Please select an exam to export.', 'warning'); return; }
 
         const selectedExam = exams.find(e => e.id === examId);
-        showLoading('Preparing Excel exportâ€¦');
+        showLoading('Preparing Excel export…');
 
         try {
           const sb = await getSupabase();
@@ -1301,88 +1301,6 @@ async function hashPin(pin) {
         }
       });
     }
-
-    // â”€â”€ CRUD Modal â”€â”€
-    const crudModal = document.getElementById('crud-modal');
-    const crudForm  = document.getElementById('crud-form');
-    let _editId = null;
-
-    const formFields = {
-      institutions: [
-        { id: 'name', label: 'Institution Name', type: 'text', required: true },
-        { id: 'is_active', label: 'Active', type: 'checkbox' },
-      ],
-      subjects: [
-        { id: 'name', label: 'Subject Name', type: 'text', required: true },
-        { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
-        { id: 'is_active', label: 'Active', type: 'checkbox' },
-      ],
-      levels: [
-        { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true, uiOnly: true },
-        { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
-        { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: true, dependsOn: 'institution_id' },
-        { id: 'level_number', label: 'Level Number', type: 'number', required: true, placeholder: 'e.g. 1' },
-        { id: 'name', label: 'Level Name', type: 'text', required: true, placeholder: 'e.g. Level 1 - Beginner' },
-        { id: 'is_active', label: 'Active', type: 'checkbox' },
-      ],
-      programs: [
-        { id: 'name', label: 'Program Name', type: 'text', required: true },
-        { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
-        { id: 'is_active', label: 'Active', type: 'checkbox' },
-      ],
-      batches: [
-        { id: 'institution_id', label: 'Program (filter only)', type: 'select', source: 'institutions', required: false, uiOnly: true },
-        { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: true, dependsOn: 'institution_id' },
-        { id: 'name', label: 'Batch Name', type: 'text', required: true, placeholder: 'e.g. Batch 2026-A' },
-        { id: 'is_active', label: 'Active', type: 'checkbox' },
-      ],
-      students: [
-        { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
-        { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: true, dependsOn: 'institution_id' },
-        { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: false, dependsOn: 'program_id' },
-        
-        { id: 'name', label: 'Full Name', type: 'text', required: true },
-        { id: 'gender', label: 'Gender', type: 'select', options: [
-          { value: '', label: 'â€” Unassigned (Student will choose) â€”' },
-          { value: 'male', label: 'Male (Mr.)' },
-          { value: 'female', label: 'Female (Miss)' }
-        ]},
-        { id: 'birth_date', label: 'Birth Date', type: 'date' },
-        { id: 'pin_hash', label: 'PIN (4 digits)', type: 'password', placeholder: '****' },
-        { id: 'is_active', label: 'Active', type: 'checkbox' },
-      ],
-      exams: [
-        { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
-        { id: 'program_id', label: 'Class (Optional / Assigned)', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
-        { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: false, dependsOn: 'institution_id' },
-        { id: 'exam_type', label: 'Exam Type', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Final'], required: true, defaultValue: 'Daily' },
-        
-        { id: 'exam_order', label: 'Order (1, 2, 3...)', type: 'select', options: ['1','2','3','4','5','6','7','8','9','10'], required: true, defaultValue: '1' },
-        { id: 'exam_title', label: 'Exam Title (Auto-Generated)', type: 'text', required: true, placeholder: 'Auto-generated as: [Program] [Class] [Subject] [Type] [Level] [Order]' },
-        { id: 'prerequisite_exam_id', label: 'Prerequisite Exam (Optional)', type: 'select', source: 'exams', required: false },
-        { id: 'minimum_required_score', label: 'Passing Score % (Default: 60%)', type: 'number', required: true, defaultValue: 60 },
-        { id: 'prerequisite_min_score', label: 'Prerequisite Min % (Default: 60%)', type: 'number', required: false, defaultValue: 60 },
-        { id: 'time_limit_minutes', label: 'Global Time Limit (minutes)', type: 'number', required: true, defaultValue: 60 },
-        { id: 'exam_status', label: 'Exam Status', type: 'select', options: ['published','draft','unpublished','archived'], required: true },
-        { id: 'question_order', label: 'Question Order', type: 'select', options: [{ value: 'sequential', label: 'Sequential' }, { value: 'random', label: 'Random' }], required: true },
-        { id: 'retake_allowed', label: 'Retake Allowed', type: 'checkbox' },
-        { id: 'max_attempts', label: 'Max Attempts (blank = unlimited)', type: 'number' },
-      ],
-      questions: [
-        { id: 'question_text', label: 'Question Text', type: 'textarea', required: true },
-        { id: 'question_order', label: 'Order', type: 'number', required: true },
-        { id: 'exam_id', label: 'Examination', type: 'select', source: 'exams', required: true },
-        { id: 'answer_type', label: 'Answer Type', type: 'select', options: [
-          {value:'multiple_choice',label:'Multiple Choice'},
-          {value:'dropdown',label:'Dropdown'},
-          {value:'speech_to_text',label:'Speaking Test'},
-          {value:'written',label:'Written Test'}
-        ], required: true },
-        { id: 'correct_answer', label: 'Correct Answer', type: 'text', required: true, placeholder: 'e.g. run / jog / sprint  (use / ; or | to separate multiple accepted answers)' },
-        { id: 'options_json', label: 'Options (separated by / ; or JSON array)', type: 'textarea', placeholder: 'e.g. Option A / Option B / Option C  (use / or ; to separate choices)' },
-        { id: 'metadata', label: 'Metadata / Word Type', type: 'text', placeholder: 'e.g. 1 - VERB' },
-      ],
-    };
 
 
 export { renderImportStudents, renderImportQuestions, renderExportQuestions };
