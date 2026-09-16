@@ -2,8 +2,8 @@ import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete,
   mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
   detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions
-} from '../api.js?v=4.0.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.0';
+} from '../api.js?v=4.0.5';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.5';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';

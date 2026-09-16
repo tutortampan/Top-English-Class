@@ -135,12 +135,13 @@
   </div>
 
   <script type="module">
-    import { startExam, saveAnswer, submitExam, logCheatingEvent } from './js/api.js?v=4.0.0';
-    import { evaluateAnswer } from './js/grading.js?v=4.0.0';
-    import { requireStudentSession } from './js/session.js?v=4.0.0';
-    import { showToast, showLoading, hideLoading, formatTime, escapeHtml as appEscapeHtml } from './js/app.js?v=4.0.0';
-    import { startCountdown, isExpired } from './js/timer.js?v=4.0.0';
-    import { createSpeechSession, isSpeechSupported } from './js/speech.js?v=4.0.0';
+    import { startExam, saveAnswer, submitExam, logCheatingEvent } from './js/api.js?v=4.0.5';
+    import { evaluateAnswer } from './js/grading.js?v=4.0.5';
+    import { requireStudentSession } from './js/session.js?v=4.0.5';
+    import { showToast, showLoading, hideLoading, formatTime, escapeHtml as appEscapeHtml } from './js/app.js?v=4.0.5';
+    import { startCountdown, isExpired } from './js/timer.js?v=4.0.5';
+    import { createSpeechSession, isSpeechSupported } from './js/speech.js?v=4.0.5';
+    import { SUPABASE_URL, SUPABASE_ANON_KEY } from './js/supabase.js?v=4.0.5';
 
     function escapeHtml(str) {
       if (typeof appEscapeHtml === 'function') return appEscapeHtml(str);
@@ -273,45 +274,16 @@
       if (!isExamActive || !attemptData?.id) return;
       saveCurrentAnswer();
       isExamActive = false;
-
-      const sbKey = 'sb_publishable_dvMkwNJpPlryF0KNiaJRfQ_-fR1WW_4';
-      const endpoint = `https://xuiszvwfjccvucqpactf.supabase.co/rest/v1/attempts?id=eq.${attemptData.id}`;
-      
-      try {
-        fetch(endpoint, {
-          method: 'PATCH',
-          headers: {
-            'apikey': sbKey,
-            'Authorization': `Bearer ${sbKey}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({
-            status: 'auto_submitted',
-            submitted_at: new Date().toISOString()
-          }),
-          keepalive: true
-        });
-      } catch (e) {}
-
-      // Background persist pending answers
-      for (const row of (answerRows || [])) {
-        const val = answeredMap[row.id];
-        if (val) {
-          try {
-            fetch(`https://xuiszvwfjccvucqpactf.supabase.co/rest/v1/attempt_answers?id=eq.${row.id}`, {
-              method: 'PATCH',
-              headers: {
-                'apikey': sbKey,
-                'Authorization': `Bearer ${sbKey}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
-              },
-              body: JSON.stringify({ student_answer: val, updated_at: new Date().toISOString() }),
-              keepalive: true
-            });
-          } catch(e) {}
-        }
+      const token = sessionStorage.getItem('tec_student_token') || '';
+      const payload = JSON.stringify({
+        attempt_id: attemptData.id,
+        token: token,
+        status: 'auto_submitted',
+        answers: answeredMap
+      });
+      const blob = new Blob([payload], { type: 'application/json' });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/functions/v1/emergency-submit', blob);
       }
     }
 
@@ -1156,8 +1128,8 @@
         if (isAuto) {
           // Direct fallback patch in background if RPC failed
           try {
-            const sbKey = 'sb_publishable_dvMkwNJpPlryF0KNiaJRfQ_-fR1WW_4';
-            await fetch(`https://xuiszvwfjccvucqpactf.supabase.co/rest/v1/attempts?id=eq.${attemptData.id}`, {
+            const sbKey = SUPABASE_ANON_KEY;
+            await fetch(`${SUPABASE_URL}/rest/v1/attempts?id=eq.${attemptData.id}`, {
               method: 'PATCH',
               headers: {
                 'apikey': sbKey,

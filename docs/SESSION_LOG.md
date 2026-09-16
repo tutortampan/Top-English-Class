@@ -1712,8 +1712,35 @@ Modularize the monolithic admin codebase (pp.js), remove dead scratch scripts, 
 5. Verified all 5 automated regression test suites (370 checks total, 100% pass).
 
 ### Results
-- pp.js reduced from 248 KB (4,729 lines) to 62 KB (1,153 lines).
+-  pp.js reduced from 248 KB (4,729 lines) to 62 KB (1,153 lines).
 - 370 automated verifications passed across 5 test suites.
 
 ### Resume From
 User acceptance testing and production deployment.
+
+## SESSION-20260916-1647
+
+Start: 2026-09-16 16:44 UTC
+End: 2026-09-16 16:47 UTC
+Agent: Antigravity
+
+### User Request
+"check the syttem , examine and fix errors"
+
+### Objective
+Perform system audit, identify bugs introduced during earlier refactoring, and patch them.
+
+### Work Performed
+- Identified hardcoded Supabase keys and endpoints in `exam.html` `submitOnPageExit` and fallback mechanisms.
+- Removed hardcoded credentials and replaced them with `SUPABASE_ANON_KEY` and `SUPABASE_URL` dynamically imported from `supabase.js`.
+- Identified and fixed mojibake emoji corruption in `admin.html` (e.g. `ðŸ–¥ï¸ ` to `🖥️`).
+- Verified `dashboard.html` for similar issues (none found).
+
+### Files Changed
+- `exam.html`
+- `admin.html`
+- `docs/CURRENT_STATE.md`
+- `docs/CHANGELOG.md`
+
+### Resume From
+Proceed to logic implementations.

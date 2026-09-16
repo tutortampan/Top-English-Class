@@ -1,6 +1,6 @@
-import { adminFetchAll, adminFetchDeleted, adminRestore, clearAdminCache, testSupabaseConnection } from '../api.js?v=4.0.0';
-import { getSupabase } from '../supabase.js?v=4.0.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.0';
+import { adminFetchAll, adminFetchDeleted, adminRestore, clearAdminCache, testSupabaseConnection } from '../api.js?v=4.0.5';
+import { getSupabase } from '../supabase.js?v=4.0.5';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.5';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';

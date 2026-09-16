@@ -1,6 +1,6 @@
-import { adminFetchAll, adminInsert, adminUpdate } from '../api.js?v=4.0.0';
-import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.0.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.0';
+import { adminFetchAll, adminInsert, adminUpdate } from '../api.js?v=4.0.5';
+import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.0.5';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.5';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';

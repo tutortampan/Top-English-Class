@@ -1,7 +1,7 @@
-import { adminFetchAll, adminUpdate, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage, formatStudentName } from '../api.js?v=4.0.0';
+import { adminFetchAll, adminUpdate, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage, formatStudentName } from '../api.js?v=4.0.5';
 import { fetchClassInstanceRoster, addAdditionalMember } from '../api.js';
-import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.0.0';
-import { openStudentProfile } from './student-management.js?v=4.0.0';
+import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.0.5';
+import { openStudentProfile } from './student-management.js?v=4.0.5';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';

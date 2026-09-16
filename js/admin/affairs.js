@@ -1,5 +1,5 @@
-﻿import { adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete } from '../api.js?v=4.0.0';
-import { getSupabase } from '../supabase.js?v=4.0.0';
+import { adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete } from '../api.js?v=4.0.5';
+import { getSupabase } from '../supabase.js?v=4.0.5';
 
 let currentProfessionalId = null;
 
@@ -22,7 +22,7 @@ export async function renderProfile(container) {
         <button class="btn btn-primary" id="btn-create-profile">Create Profile</button>
       </div>
       <div class="empty-state">
-        <div class="empty-state__icon">👤</div>
+        <div class="empty-state__icon">??</div>
         <h3>No Profile Found</h3>
         <p>Set up your professional profile to begin.</p>
       </div>
@@ -176,7 +176,7 @@ export async function renderWorkRecords(container) {
         <tr>
           <td><strong>${r.company_name}</strong></td>
           <td>${r.role_title}</td>
-          <td>${r.start_date} — ${r.end_date || 'Present'}</td>
+          <td>${r.start_date} � ${r.end_date || 'Present'}</td>
           <td>
             <button class="btn btn-ghost btn-sm btn-edit-work" data-id="${r.id}">Edit</button>
             <button class="btn btn-ghost btn-sm btn-del-work text-danger" data-id="${r.id}">Delete</button>
@@ -312,7 +312,7 @@ export async function renderCvGenerator(container) {
       <div style="margin-top: 1rem;">
         <div style="display: flex; justify-content: space-between;">
           <strong>${r.role_title}</strong>
-          <span>${r.start_date} — ${r.end_date || 'Present'}</span>
+          <span>${r.start_date} � ${r.end_date || 'Present'}</span>
         </div>
         <div><em>${r.company_name}</em></div>
         <p style="margin-top: 0.5rem; white-space: pre-wrap;">${r.description || ''}</p>

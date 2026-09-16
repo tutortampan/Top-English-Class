@@ -3080,16 +3080,7 @@ export async function fetchClassMeetings(classInstanceId) {
   return data;
 }
 
-/** Challenge Definitions (Phase 9) */
-export async function fetchChallengeDefinitions(filters = {}) {
-  const sb = await getSupabase();
-  let query = sb.from('challenge_definitions').select('*, classes(name)').is('deleted_at', null);
-  if (filters.class_id) query = query.eq('class_id', filters.class_id);
-  if (filters.status) query = query.eq('status', filters.status);
-  const { data, error } = await query.order('created_at', { ascending: false });
-  if (error) throw error;
-  return data;
-}
+
 
 export async function fetchChallengeDefinitionTopics(id) {
   const sb = await getSupabase();

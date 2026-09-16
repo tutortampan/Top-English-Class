@@ -421,8 +421,8 @@
     <section class="subjects-section" aria-labelledby="subjects-heading">
       <div class="section-header">
         <div>
-          <h2 class="section-title" id="subjects-heading">My Subjects</h2>
-          <p class="section-subtitle">Choose a subject to view levels and available exams</p>
+          <h2 class="section-title" id="subjects-heading">📚 My Classes</h2>
+          <p class="section-subtitle">Choose a class to view levels and available exams</p>
         </div>
       </div>
 
@@ -699,10 +699,10 @@
   </div>
 
   <script type="module">
-    import { fetchStudentSubjects, fetchStudentProgress, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, formatStudentName, fetchAssignments, fetchAssessments } from './js/api.js?v=4.0.0';
-    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.0.0';
-    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.0.0';
-    import { testMicrophoneCapability } from './js/speech.js?v=4.0.0';
+    import { fetchStudentSubjects, fetchStudentProgress, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, formatStudentName, fetchAssignments, fetchAssessments } from './js/api.js?v=4.0.5';
+    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.0.5';
+    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.0.5';
+    import { testMicrophoneCapability } from './js/speech.js?v=4.0.5';
 
 
     function escapeHtml(str) {
@@ -1612,22 +1612,22 @@
 
     // ── Overall Stats Calculation (AGENTS.md §2.8 & §2.10) ──
     async function computeOverallStats(attempts) {
-      // V1: prefer is_best_score flag; fallback to highest percentage per exam/assessment
-      const bestAttemptsMap = {};
+      // V1: prefer is_best_score flag; fallback to highest percentage per exam/assessment/instance
+      const bestMap = {};
       attempts.forEach(att => {
-        const aid = att.assessment_id || att.exam_id;
-        if (!aid) return;
+        const uniqueKey = att.challenge_instance_id || att.assessment_id || att.exam_id;
+        if (!uniqueKey) return;
         const pct = parseFloat(att.percentage || 0);
         if (att.is_best_score) {
-          bestAttemptsMap[aid] = pct;
-        } else if (bestAttemptsMap[aid] == null || pct > bestAttemptsMap[aid]) {
-          if (!Object.hasOwn(bestAttemptsMap, aid + '_locked')) {
-            bestAttemptsMap[aid] = pct;
+          bestMap[uniqueKey] = pct;
+        } else if (bestMap[uniqueKey] == null || pct > bestMap[uniqueKey]) {
+          if (!Object.hasOwn(bestMap, uniqueKey + '_locked')) {
+            bestMap[uniqueKey] = pct;
           }
         }
-        if (att.is_best_score) bestAttemptsMap[aid + '_locked'] = true;
+        if (att.is_best_score) bestMap[uniqueKey + '_locked'] = true;
       });
-      const uniqueScores = Object.entries(bestAttemptsMap)
+      const uniqueScores = Object.entries(bestMap)
         .filter(([k]) => !k.endsWith('_locked'))
         .map(([, v]) => v);
 
