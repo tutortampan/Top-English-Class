@@ -3,11 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Result — TOP ENGLISH CLASS</title>
-  <meta name="description" content="View your exam results and answer breakdown on TOP ENGLISH CLASS." />
+  <title>Result — TOPS CORE</title>
+  <meta name="description" content="View your exam results and answer breakdown on TOPS CORE." />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/dashboard.css" />
   <meta name="view-transition" content="same-origin" />
+  <style>
+    @media print {
+      body { background: #ffffff !important; color: #000000 !important; }
+      .dashboard-header, .btn, #try-again-btn, #toggle-answers-btn, #print-result-btn, a[href="dashboard.html"], #toast-container {
+        display: none !important;
+      }
+      .result-page { padding: 0 !important; }
+      .result-hero { padding: 1.5rem 0 !important; box-shadow: none !important; border: 1px solid #e2e8f0 !important; background: #f8fafc !important; }
+      .answers-list { display: block !important; }
+      .answer-card { break-inside: avoid; border: 1px solid #cbd5e1 !important; color: #0f172a !important; background: #fff !important; margin-bottom: 12px !important; }
+      .result-grade-display { border-color: #000 !important; }
+      .text-gradient { -webkit-text-fill-color: #000 !important; color: #000 !important; }
+    }
+  </style>
 </head>
 <body class="result-page">
 
@@ -15,7 +29,7 @@
 
   <!-- Header -->
   <header class="dashboard-header" style="justify-content: center;">
-    <div class="dashboard-header-brand">🎓 TOP ENGLISH CLASS</div>
+    <div class="dashboard-header-brand">🎓 TOPS CORE</div>
   </header>
 
   <div id="result-loading" class="empty-state" style="padding:var(--space-16);">
@@ -53,6 +67,7 @@
         <a href="dashboard.html" class="btn btn-primary">Back to Dashboard</a>
         <button class="btn btn-primary" id="try-again-btn" style="background:var(--clr-success);border-color:var(--clr-success);">Try Again</button>
         <button class="btn btn-secondary" id="toggle-answers-btn">View Answer Breakdown</button>
+        <button class="btn btn-secondary" id="print-result-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;">🖨️ Print / Save Report</button>
       </div>
     </section>
 
@@ -308,6 +323,12 @@
       const isHidden = section.classList.toggle('hidden');
       document.getElementById('toggle-answers-btn').textContent =
         isHidden ? 'View Answer Breakdown' : 'Hide Breakdown';
+    });
+
+    document.getElementById('print-result-btn')?.addEventListener('click', () => {
+      // Ensure answer breakdown is visible when printing
+      document.getElementById('answers-section')?.classList.remove('hidden');
+      window.print();
     });
 
     loadResult();

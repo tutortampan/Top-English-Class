@@ -1,4 +1,5 @@
-import { adminFetchAll } from '../api.js';
+import { adminFetchAll, adminSoftDelete } from '../api.js';
+import { showToast } from '../app.js';
 
 let programsGrid, batchesGrid;
 
@@ -58,6 +59,31 @@ export async function renderClasses(area) {
     pageSize: 50,
     searchKeys: ['institutionName', 'name'],
     bulkActions: true,
+    onRowClick: (row) => {
+      const body = `
+        <div style="display:flex; flex-direction:column; gap:1rem;">
+          <div>
+            <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.name)}</h4>
+            <div class="text-muted text-sm">Status: <strong class="${row._raw.is_active ? 'text-success' : 'text-muted'}">${row.status}</strong></div>
+          </div>
+          <hr style="border-color:var(--fm-border-subtle); margin:0;">
+          <div>
+            <div class="text-sm text-muted mb-1">Institution</div>
+            <div class="fw-600">${escapeHtml(row.institutionName)}</div>
+          </div>
+          <div>
+            <div class="text-sm text-muted mb-1">Details</div>
+            <div class="text-sm">More details about this program would go here.</div>
+          </div>
+        </div>
+      `;
+      const footer = `
+        <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
+        <button class="btn btn-outline" onclick='window._filterProgramId="${row.id}"; window._filterProgramName="${escapeHtml(row.name)}"; window.loadSection("batches"); closeRecordDrawer();'>View Batches</button>
+        <button class="btn btn-primary" onclick='window._editRecord("programs", "${row.id}", ${JSON.stringify(JSON.stringify(row._raw))}); closeRecordDrawer();'>Edit Program</button>
+      `;
+      if (window.openRecordDrawer) window.openRecordDrawer('Program Details', body, footer);
+    },
     columns: [
       { key: 'institutionName', label: 'Institution', sortable: true },
       { key: 'name', label: 'Program Name', sortable: true, render: (val) => `<span class="fw-600">${escapeHtml(val)}</span>` },
@@ -148,6 +174,31 @@ export async function renderBatches(area) {
     pageSize: 50,
     searchKeys: ['program', 'className', 'name'],
     bulkActions: true,
+    onRowClick: (row) => {
+      const body = `
+        <div style="display:flex; flex-direction:column; gap:1rem;">
+          <div>
+            <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.name)}</h4>
+            <div class="text-muted text-sm">Status: <strong class="${row._raw.is_active ? 'text-success' : 'text-muted'}">${row.status}</strong></div>
+          </div>
+          <hr style="border-color:var(--fm-border-subtle); margin:0;">
+          <div>
+            <div class="text-sm text-muted mb-1">Program & Class</div>
+            <div class="fw-600">${escapeHtml(row.program)} / ${escapeHtml(row.className)}</div>
+          </div>
+          <div>
+            <div class="text-sm text-muted mb-1">Enrollment</div>
+            <div class="fw-600">${row.studentCount} Active Students</div>
+          </div>
+        </div>
+      `;
+      const footer = `
+        <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
+        <button class="btn btn-outline" onclick='window._filterBatchId="${row.id}"; window._filterBatchName="${escapeHtml(row.name)}"; window.loadSection("students"); closeRecordDrawer();'>View Students</button>
+        <button class="btn btn-primary" onclick='window._editRecord("batches", "${row.id}", ${JSON.stringify(JSON.stringify(row._raw))}); closeRecordDrawer();'>Edit Batch</button>
+      `;
+      if (window.openRecordDrawer) window.openRecordDrawer('Batch Details', body, footer);
+    },
     columns: [
       { key: 'program', label: 'Program', sortable: true },
       { key: 'className', label: 'Class', sortable: true },

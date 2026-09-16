@@ -1,4 +1,4 @@
-// TOP ENGLISH CLASS — Centralized Assessment Wizard V1
+// TOPS CORE — Centralized Assessment Wizard V1
 // Implements multi-step Evaluation & Exam creation, topic derivation from Evaluations,
 // live question counts, inline assignments, and frozen snapshots on publish.
 import {

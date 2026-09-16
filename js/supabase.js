@@ -1,4 +1,4 @@
-// TOP ENGLISH CLASS — Supabase Configuration & Client Init
+// TOPS CORE — Supabase Configuration & Client Init
 // Replace SUPABASE_URL and SUPABASE_ANON_KEY with your project credentials.
 
 export const SUPABASE_URL = window.__ENV__?.SUPABASE_URL || 'https://xuiszvwfjccvucqpactf.supabase.co';

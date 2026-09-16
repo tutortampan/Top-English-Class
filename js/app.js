@@ -1,6 +1,6 @@
 import { calculateGrade } from './grading.js';
 
-// TOP ENGLISH CLASS — Toast Notification System
+// TOPS CORE — Toast Notification System
 let toastContainer = null;
 
 function getContainer() {
@@ -36,7 +36,7 @@ export function showToast(message, type = 'info', duration = 3500) {
   el.addEventListener('click', () => { clearTimeout(timer); remove(); });
 }
 
-// TOP ENGLISH CLASS — Loading overlay helpers
+// TOPS CORE — Loading overlay helpers
 let _overlay = null;
 
 export function showLoading(message = 'Loading…') {
@@ -76,7 +76,7 @@ export function withTimeout(promise, ms, actionName = 'Operation') {
   ]);
 }
 
-// TOP ENGLISH CLASS — Scoring & Grade (client-display only, NOT authoritative)
+// TOPS CORE — Scoring & Grade (client-display only, NOT authoritative)
 // The authoritative calculation is in submit-exam Edge Function.
 
 /** Escape HTML special characters */

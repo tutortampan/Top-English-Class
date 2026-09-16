@@ -81,7 +81,7 @@ if ($apiContent -match "import\s*\{[^}]*evaluateAnswer[^}]*\}\s*from\s*'./gradin
 # 5. Check admin.html & js/admin/app.js Level & Recalibrator UI
 Write-Host "`n[5] ADMIN CONSOLE (admin.html & js/admin/app.js)" -ForegroundColor Magenta
 $adminContent = Get-Content "$root\admin.html" -Raw
-$adminJsContent = Get-Content "$root\js\admin\app.js" -Raw
+$adminJsContent = (Get-Content "$root\js\admin\app.js" -Raw) + "`n" + (Get-Content "$root\js\admin\imports-exports.js" -Raw)
 if ($adminContent -match "recalibrator" -or $adminJsContent -match "recalibrator") {
   OK "Recalibrator section registered in navigation"
 } else {

@@ -29,14 +29,16 @@ export async function renderExams(area) {
     <div class="exam-hero">
       <div class="d-flex align-center justify-between flex-wrap gap-4">
         <div>
-          <h2 class="section-title text-gradient" style="font-size:1.75rem;">Exam Management Hub</h2>
+          <h2 class="section-title text-gradient" style="font-size:1.75rem;">Challenges Hub (C — CHALLENGES)</h2>
           <p class="section-subtitle">Create, organize, publish, and inspect all online examinations</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
           <button class="btn btn-primary btn-sm" id="hub-add-exam">+ Create Exam</button>
+          <button class="btn btn-secondary btn-sm" id="hub-btn-assignments" onclick="window.loadSection('assignments')">👥 Cohorts & Assignments</button>
+          <button class="btn btn-secondary btn-sm" id="hub-btn-results" onclick="window.loadSection('results')">📊 Inspect Results</button>
+          <button class="btn btn-warning btn-sm" id="hub-btn-recalibrate" onclick="window.loadSection('recalibrator')" style="font-weight:700;">⚖️ Recalibrate</button>
           <button class="btn btn-secondary btn-sm" onclick="window.loadSection('import-questions')">📥 Import Questions</button>
           <button class="btn btn-secondary btn-sm" onclick="window.loadSection('export-questions')">📤 Export Questions</button>
-          <button class="btn btn-warning btn-sm" onclick="window.loadSection('recalibrator')" style="font-weight:700;">⚖️ Recalibrate</button>
         </div>
       </div>
 
@@ -99,6 +101,53 @@ export async function renderExams(area) {
     pageSize: 50,
     searchKeys: ['title', 'programName', 'subject', 'status'],
     bulkActions: true,
+    onBulkAction: async (selectedIds) => {
+      const action = prompt(`Bulk Action for ${selectedIds.length} exams.\nOptions: delete`);
+      if (action === 'delete') {
+        if (confirm(`Are you sure you want to permanently soft-delete ${selectedIds.length} exams?`)) {
+          for (const id of selectedIds) {
+            await adminSoftDelete('exams', id);
+          }
+          showToast(`Deleted ${selectedIds.length} exams.`, 'success');
+          renderExams(area);
+        }
+      }
+    },
+    onRowClick: (row) => {
+      const body = `
+        <div style="display:flex; flex-direction:column; gap:1rem;">
+          <div>
+            <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.title)}</h4>
+            <div class="text-muted text-sm">Status: <strong class="${statusColors[row.status] || 'text-muted'}" style="text-transform:uppercase;">${row.status}</strong></div>
+          </div>
+          <hr style="border-color:var(--fm-border-subtle); margin:0;">
+          <div>
+            <div class="text-sm text-muted mb-1">Target</div>
+            <div class="fw-600">Class: ${escapeHtml(row.programName)}</div>
+            <div class="fw-600">Subject: ${escapeHtml(row.subject)}</div>
+          </div>
+          <div>
+            <div class="text-sm text-muted mb-1">Structure</div>
+            <div class="fw-600">Type: ${escapeHtml(row.examCategory)} &bull; ${row.qCount} Qs</div>
+            <div class="fw-600">Answer: ${formatAnswerType(row.answerType)}</div>
+          </div>
+          <div>
+            <div class="text-sm text-muted mb-1">Constraints</div>
+            <div class="fw-600">Time Limit: ${row.timeLimit} min</div>
+            <div class="fw-600">Pass Mark: ${row.minScore}%</div>
+            ${row.prereq ? `<div class="fw-600 text-warning">Prerequisite: ${escapeHtml(row.prereq)}</div>` : ''}
+          </div>
+        </div>
+      `;
+      const footer = `
+        <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
+        <button class="btn btn-outline" onclick="window.openAssessmentBuilder('${row.id}'); closeRecordDrawer();">Edit Builder</button>
+        <button class="btn ${row.status === 'published' ? 'btn-danger' : 'btn-success'}" onclick="window._publishExam('${row.id}', '${row.status}'); closeRecordDrawer();">
+          ${row.status === 'published' ? 'Unpublish' : 'Publish'}
+        </button>
+      `;
+      if (window.openRecordDrawer) window.openRecordDrawer('Exam Details', body, footer);
+    },
     columns: [
       { 
         key: 'title', 
@@ -150,6 +199,8 @@ export async function renderExams(area) {
         sortable: false,
         render: (val, row) => `
           <div class="d-flex gap-2 justify-end">
+            <button class="btn btn-ghost btn-sm" title="View Results" onclick="window._filterExamResults='${row.id}'; window.loadSection('results');">📊 Results</button>
+            <button class="btn btn-ghost btn-sm" title="Recalibrate Exam" onclick="window._filterRecalibrateExam='${row.id}'; window.loadSection('recalibrator');">⚖️</button>
             <button class="btn btn-secondary btn-sm" onclick="window._duplicateExam('${row.id}')" title="Duplicate Exam">Copy</button>
             <button class="btn ${row.status === 'published' ? 'btn-danger' : 'btn-success'} btn-sm" onclick="window._publishExam('${row.id}', '${row.status}')">
               ${row.status === 'published' ? 'Unpublish' : 'Publish'}
@@ -296,6 +347,34 @@ export async function renderQuestions(area) {
     pageSize: 50,
     searchKeys: ['text', 'correctAnswer', 'examDisplay'],
     bulkActions: false,
+    onRowClick: (row) => {
+      const body = `
+        <div style="display:flex; flex-direction:column; gap:1rem;">
+          <div>
+            <h4 style="margin:0; font-size:1.2rem;">Question #${row.order}</h4>
+            <div class="text-muted text-sm">Exam: <strong style="color:var(--fm-text-primary);">${escapeHtml(row.examDisplay)}</strong></div>
+          </div>
+          <hr style="border-color:var(--fm-border-subtle); margin:0;">
+          <div>
+            <div class="text-sm text-muted mb-1">Question Text</div>
+            <div class="fw-600 p-2 rounded" style="background:var(--fm-bg-1);">${escapeHtml(row.text)}</div>
+          </div>
+          <div>
+            <div class="text-sm text-muted mb-1">Correct Answer</div>
+            <div class="fw-600 p-2 rounded" style="background:rgba(74,222,128,0.1);color:var(--clr-success,#4ade80);font-family:monospace;">${escapeHtml(row.correctAnswer)}</div>
+          </div>
+          <div>
+            <div class="text-sm text-muted mb-1">Answer Type</div>
+            <div class="fw-600"><span class="badge badge-info">${formatAnswerType(row.type)}</span></div>
+          </div>
+        </div>
+      `;
+      const footer = `
+        <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
+        <button class="btn btn-primary" onclick="window.openCrudModal('questions', window._qRecords['${row.id}']); closeRecordDrawer();">Edit Question</button>
+      `;
+      if (window.openRecordDrawer) window.openRecordDrawer('Question Details', body, footer);
+    },
     columns: [
       { key: 'order', label: 'No', sortable: true, render: (val) => `<div class="text-center text-muted fw-700">${val}</div>` },
       { key: 'text', label: 'Question Text', sortable: true, render: (val) => `<div class="fw-600">${escapeHtml(val.slice(0, 70))}${val.length > 70 ? '...' : ''}</div>` },
@@ -384,6 +463,48 @@ export async function renderResults(area) {
     pageSize: 50,
     searchKeys: ['studentName', 'program', 'className', 'batch', 'examTitle'],
     bulkActions: false,
+    onRowClick: (row) => {
+      const body = `
+        <div style="display:flex; flex-direction:column; gap:1rem;">
+          <div>
+            <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.studentName)}</h4>
+            <div class="text-muted text-sm">Exam: <strong style="color:var(--fm-text-primary);">${escapeHtml(row.examTitle)}</strong></div>
+          </div>
+          <hr style="border-color:var(--fm-border-subtle); margin:0;">
+          <div>
+            <div class="text-sm text-muted mb-1">Enrollment</div>
+            <div class="fw-600">${escapeHtml(row.program)} / ${escapeHtml(row.className)} / ${escapeHtml(row.batch)}</div>
+          </div>
+          <div>
+            <div class="text-sm text-muted mb-1">Performance</div>
+            <div class="fw-600" style="font-size:1.5rem;">${row.score}% <span class="badge badge-primary text-sm ml-2">${escapeHtml(row.grade)}</span></div>
+          </div>
+          <div class="d-flex gap-2">
+             <div class="p-2 rounded text-center" style="background:rgba(74,222,128,0.1);flex:1;">
+               <div class="text-xs text-muted">Correct</div>
+               <div class="fw-800" style="color:var(--clr-success,#4ade80);">${row.correct}</div>
+             </div>
+             <div class="p-2 rounded text-center" style="background:rgba(251,191,36,0.1);flex:1;">
+               <div class="text-xs text-muted">Half</div>
+               <div class="fw-800" style="color:var(--clr-warning,#fbbf24);">${row.minor}</div>
+             </div>
+             <div class="p-2 rounded text-center" style="background:rgba(248,113,113,0.1);flex:1;">
+               <div class="text-xs text-muted">Wrong</div>
+               <div class="fw-800" style="color:var(--clr-danger,#f87171);">${row.wrong}</div>
+             </div>
+          </div>
+          <div>
+            <div class="text-sm text-muted mb-1">Submitted At</div>
+            <div class="fw-600">${row.submittedAt}</div>
+          </div>
+        </div>
+      `;
+      const footer = `
+        <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
+        <button class="btn btn-primary" onclick="window.openStudentProfile('${row.studentId}'); closeRecordDrawer();">View Profile</button>
+      `;
+      if (window.openRecordDrawer) window.openRecordDrawer('Attempt Details', body, footer);
+    },
     columns: [
       { key: 'studentName', label: 'Student', sortable: true, render: (val) => `<div class="fw-700" style="color:var(--clr-text-1);">${escapeHtml(val)}</div>` },
       { key: 'program', label: 'Program', sortable: true, render: (val) => `<div class="text-xs text-muted">${escapeHtml(val)}</div>` },

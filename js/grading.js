@@ -1,4 +1,4 @@
-// TOP ENGLISH CLASS — Authoritative Centralized Grading & Vocabulary Engine
+// TOPS CORE — Authoritative Centralized Grading & Vocabulary Engine
 // Phases 9, 10, 11, 15, 16
 
 /**

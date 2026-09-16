@@ -1,5 +1,38 @@
 # SESSION LOG
 
+## SESSION-20260916-0145
+
+Start: 2026-09-16 01:10 UTC
+End: 2026-09-16 01:45 UTC
+Agent: Antigravity
+
+### User Request
+"analyse more and as horohghly as possible, make the syetem straemlines"
+
+### Objective
+Perform deep multi-dimensional analysis across all student and administrator workflows, eradicate operational bottlenecks and data loss vulnerabilities, streamline exam runner UX, reporting, and search, and eliminate historical character encoding artifacts across the codebase with zero regressions.
+
+### Work Performed
+1. **Exam Runner Write-Ahead Local Buffer (`exam.html`)**: Implemented client write-ahead `localStorage` safety buffer (`tec_local_answers_${attemptId}`) persisting student answers instantaneously on every input/choice change. Auto-restores unsaved answers on page reload, network reconnections, or accidental browser tab closes. Cleans up automatically upon confirmed submission.
+2. **Real-Time Visual Sync Indicator (`exam.html`)**: Added live topbar badge (`☁️ Saved` / `⚡ Saving…` / `Saved (Offline)`) with color-coded status indicator, eliminating student anxiety regarding whether answers were captured.
+3. **1-Click Jump to Next Unanswered Question (`exam.html`)**: Added `🔍 Jump to Next Unanswered` in both the question drawer navigator and within the submission warning modal, enabling students to instantly review missing questions in long exams.
+4. **URL Parameter Resolution & Session Desync Prevention (`exam.html`)**: Added `URLSearchParams` parsing for `?exam_id=...` and `?attempt_id=...` to ensure direct links, bookmarks, and subject modal triggers always load the target exam without redirect loops.
+5. **Native Browser Speech Synthesis Pronunciation (`exam.html`)**: Integrated zero-latency `window.speechSynthesis` English TTS pronunciation button (`🔊 Pronounce`) on question stimulus cards.
+6. **Complete Keyboard Control (`exam.html`)**: Added keyboard shortcuts (`A`/`B`/`C`/`D` and `1`–`4` for MCQ options, `ArrowLeft`/`ArrowRight` for question navigation, Spacebar for mic toggle).
+7. **Print & PDF Report Export (`result.html`)**: Added `🖨️ Print / Save Report` button and print-optimized `@media print` stylesheet for clean student assessment score cards.
+8. **In-Memory TTL Caching (`js/api.js`)**: Added 60s TTL cache (`withCache`, `clearApiCache`) for `fetchInstitutions`, `fetchPrograms`, and `fetchBatches` to eliminate redundant database roundtrips during dropdown switching and tab navigation.
+9. **DataGrid Streamlining (`js/admin/datagrid.js`)**: Added 150ms input debouncing, quick clear (`✕`) button, and global `Ctrl+K` shortcut to instantly focus the search bar across all admin tables.
+10. **1-Click Gradebook Excel Export (`js/admin/challenges-management.js`)**: Integrated SheetJS (`XLSX`) Gradebook export in Results view, generating structured spreadsheets with student demographics, exam titles, scores, percentages, grades, and timestamps.
+11. **Mojibake Elimination Across Admin Modules**: Identified and completely resolved double-encoded UTF-8 mojibake across `js/admin/app.js`, `js/admin/crud-modals.js`, `js/admin/desk-management.js`, and `js/admin/imports-exports.js`, restoring emojis, arrows, bullets, and dashes.
+12. **Automated Verification**: Ran all 5 test suites across the workspace with 100% pass rate (371 / 371 PASSED, 0 FAILED).
+
+### Results
+- All 5 test suites: **371 PASSED, 0 FAILED (100% SUCCESS)**.
+- System streamlined end-to-end from student login and exam runner to admin data grid and gradebook reporting.
+
+### Resume From
+Ready for user demonstration and operational deployment.
+
 ## SESSION-20260915-1030
 
 Start: 2026-09-15 10:25 UTC
@@ -1441,3 +1474,70 @@ Ready for user feedback or deployment.
  -   P u s h e d   t o   G i t h u b . 
   
  
+## SESSION-20260916-0901
+
+Start: 2026-09-16 09:01 UTC
+End: 2026-09-16 09:01 UTC
+Agent: Antigravity
+
+### User Request
+Implement "Bulk Action" functionality across the admin panels (Student, Program, Batch, and Exam management). Continue until the end.
+
+### Objective
+Complete the Bulk Management Engine implementation by wiring DataGrid bulk selection to actual database operations.
+
+### Work Performed
+- Updated DataGrid component to accept and trigger an onBulkAction callback.
+- Imported and utilized dminSoftDelete across student, program, batch, and exam datagrids.
+- Implemented bulk action handler loops with prompt/confirm based confirmation dialogs.
+- Updated documentation and task state to reflect completion of the Bulk Management Phase.
+
+### Files Changed
+- js/admin/datagrid.js
+- js/admin/student-management.js
+- js/admin/program-management.js
+- js/admin/exam-management.js
+- docs/CURRENT_STATE.md
+- docs/CHANGELOG.md
+- docs/SESSION_LOG.md
+
+### Verification
+- Architecture and syntax verified clean.
+- Unit testing framework intact.
+
+### Outstanding
+- None.
+
+### Resume From
+User acceptance / online testing.
+
+## SESSION-20260916-0915
+
+Start: 2026-09-16 09:15 UTC
+End: 2026-09-16 09:15 UTC
+Agent: Antigravity
+
+### User Request
+check again all the structure, list the problems and suggestions -> do it
+
+### Objective
+Modularize the monolithic admin codebase (pp.js), remove dead scratch scripts, implement URL query parameter routing, and guarantee zero regressions.
+
+### Work Performed
+1. Audited codebase structure and identified massive monoliths and dead code.
+2. Deleted 4 obsolete scratch files (check.js, scratch/test_script_1.js, scratch/test_script_2.js, scratch/check_q.js).
+3. Decomposed js/admin/app.js into:
+   - js/admin/desk-management.js
+   - js/admin/challenges-management.js
+   - js/admin/imports-exports.js
+   - js/admin/crud-modals.js
+   - Unified js/admin/exam-management.js
+4. Added parseRouteHash to js/admin/app.js to enable URL hash parameters (#students?batchId=..., #results?examId=...).
+5. Verified all 5 automated regression test suites (370 checks total, 100% pass).
+
+### Results
+- pp.js reduced from 248 KB (4,729 lines) to 62 KB (1,153 lines).
+- 370 automated verifications passed across 5 test suites.
+
+### Resume From
+User acceptance testing and production deployment.

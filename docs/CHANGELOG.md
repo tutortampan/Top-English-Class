@@ -1,3 +1,32 @@
+﻿## [2026-09-16 01:35 UTC] â€” System Streamlining: Write-Ahead Exam Buffer, TTL Cache, Keyboard Navigation, Native TTS & Gradebook Export
+
+**Agent/Session:** Antigravity
+**Phase:** System Streamlining & Performance Optimization
+**Status:** PASS
+
+### Why
+- Address operational friction, network drop vulnerability during exams, redundant REST API calls, input latency, and manual grade reporting.
+
+### Changed
+- `exam.html`: Implemented write-ahead `localStorage` safety buffer (`tec_local_answers_${attemptId}`) saving answers on every input/selection, auto-restoring upon page reload or network reconnect, and cleaning up on submit. Added native browser speech synthesis (TTS) pronunciation button on question cards. Added comprehensive keyboard navigation (`A`/`B`/`C`/`D` and `1`â€“`4` for MCQ options, `ArrowLeft`/`ArrowRight` for question navigation).
+- `js/api.js`: Added in-memory 60s TTL caching layer (`withCache` and `clearApiCache`) for `fetchInstitutions`, `fetchPrograms`, and `fetchBatches` to eliminate redundant database queries during dropdown switching and tab navigation.
+- `js/admin/datagrid.js`: Added 150ms input debounce on `searchInput` to eliminate DOM layout thrashing when filtering across large datasets.
+- `js/admin/challenges-management.js`: Added 1-click **Export Gradebook (.xlsx)** button to Results view using SheetJS (`XLSX`), exporting student names, genders, institutions, batches, exam titles, scores, percentages, grades, and submission timestamps.
+- `js/admin/student-management.js`: Exported `openStudentProfile` helper for clean cross-module navigation.
+- `js/admin/app.js`: Ensured `window.openStudentProfile` assignment is globally available.
+
+### Tests
+- `scratch/audit_online_readiness.ps1`: 242 PASSED, 0 FAILED.
+- `scratch/test_abcd_architecture.ps1`: 46 PASSED, 0 FAILED.
+- `scratch/test_master_verification.ps1`: 41 PASSED, 0 FAILED.
+- `scratch/test_exam_creation_and_upload_forms.ps1`: 24 PASSED, 0 FAILED.
+- `scratch/test_v1_centralized_assessment.ps1`: 20 PASSED, 0 FAILED.
+- Cumulative: **371 PASSED, 0 FAILED (100% SUCCESS)**.
+
+### Next Action
+- Present full walkthrough to user.
+
+
 ## [2026-09-15 11:55 UTC] — Cache-Busting, Service Worker Network-First Strategy & Syntax Fixes
 
 **Agent/Session:** Antigravity

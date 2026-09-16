@@ -1,4 +1,4 @@
-// TOP ENGLISH CLASS — Centralized Assessment System V1 Admin UI
+// TOPS CORE — Centralized Assessment System V1 Admin UI
 import {
   fetchGlobalSubjects,
   fetchWordTypes,

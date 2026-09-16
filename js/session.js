@@ -1,4 +1,4 @@
-// TOP ENGLISH CLASS — Session Management
+// TOPS CORE — Session Management
 // Stores authenticated student/admin session in sessionStorage only.
 // Never stores plaintext PINs.
 

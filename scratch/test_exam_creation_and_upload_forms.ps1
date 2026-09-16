@@ -20,7 +20,7 @@ function Assert-Check($title, $condition) {
 
 # 1. Broken HTML Tags Check
 Write-Host "`n[1] HTML & FORM STRUCTURE INTEGRITY" -ForegroundColor Yellow
-$appJs = Get-Content "js/admin/app.js" -Raw
+$appJs = (Get-Content "js/admin/app.js" -Raw) + "`n" + (Get-Content "js/admin/imports-exports.js" -Raw) + "`n" + (Get-Content "js/admin/challenges-management.js" -Raw)
 $brokenSelects = Select-String -Path "js/**/*.js", "admin.html", "*.html" -Pattern '<select program=' -CaseSensitive:$false
 Assert-Check "Zero '<Select Program=' or malformed select tags across workspace" ($brokenSelects.Count -eq 0)
 

@@ -93,28 +93,30 @@ Assert-Check "Central Question Bank has filter by topic banner and pre-select" (
 # 5. CHALLENGES EXECUTION & CONTEXTUAL ACTIONS
 # -------------------------------------------------------------
 Write-Host "`n[5] CHALLENGES EXECUTION AND CONTEXTUAL ACTIONS" -ForegroundColor Yellow
+$challengesJs = (Get-Content "js/admin/challenges-management.js" -Raw) + "`n" + (Get-Content "js/admin/exam-management.js" -Raw)
 
-Assert-Check "Challenges Hub title updated" ($appJs -match 'Challenges Hub')
+Assert-Check "Challenges Hub title updated" ($challengesJs -match 'Challenges Hub')
 Assert-Check "Challenges Hub header has quick shortcuts" (
-    $appJs -match 'hub-btn-assignments' -and
-    $appJs -match 'hub-btn-results' -and
-    $appJs -match 'hub-btn-recalibrate'
+    $challengesJs -match 'hub-btn-assignments' -and
+    $challengesJs -match 'hub-btn-results' -and
+    $challengesJs -match 'hub-btn-recalibrate'
 )
-Assert-Check "Challenge row has Results contextual button" ($appJs -match 'window\._filterExamResults=')
-Assert-Check "Challenge row has Recalibrate contextual button" ($appJs -match 'window\._filterRecalibrateExam=')
-Assert-Check "Results view filters by challenge when navigated" ($appJs -match 'if\s*\(window\._filterExamResults\)')
-Assert-Check "Recalibrator pre-selects challenge when navigated" ($appJs -match 'if\s*\(window\._filterRecalibrateExam\)')
+Assert-Check "Challenge row has Results contextual button" ($challengesJs -match 'window\._filterExamResults=')
+Assert-Check "Challenge row has Recalibrate contextual button" ($challengesJs -match 'window\._filterRecalibrateExam=')
+Assert-Check "Results view filters by challenge when navigated" ($challengesJs -match 'if\s*\(window\._filterExamResults\)')
+Assert-Check "Recalibrator pre-selects challenge when navigated" ($challengesJs -match 'if\s*\(window\._filterRecalibrateExam\)')
 
 # -------------------------------------------------------------
 # 6. DESK ADMINISTRATION & DIAGNOSTICS
 # -------------------------------------------------------------
 Write-Host "`n[6] DESK ADMINISTRATION AND DIAGNOSTICS" -ForegroundColor Yellow
+$deskJs = Get-Content "js/admin/desk-management.js" -Raw
 
-Assert-Check "Settings section has DESK header" ($appJs -match 'D — DESK')
-Assert-Check "Settings section includes Custom Admin Password override" ($appJs -match 'tec_admin_custom_password')
-Assert-Check "Settings section includes DB Connectivity and Latency tool" ($appJs -match 'diag-db-status')
-Assert-Check "Settings section includes Local Browser Cache cleaner" ($appJs -match 'btn-diag-clear-cache')
-Assert-Check "Settings section includes Activity and Audit Log navigation" ($appJs -match 'btn-diag-view-audit')
+Assert-Check "Settings section has DESK header" ($deskJs -match 'D — DESK')
+Assert-Check "Settings section includes Custom Admin Password override" ($deskJs -match 'tec_admin_custom_password')
+Assert-Check "Settings section includes DB Connectivity and Latency tool" ($deskJs -match 'diag-db-status')
+Assert-Check "Settings section includes Local Browser Cache cleaner" ($deskJs -match 'btn-diag-clear-cache')
+Assert-Check "Settings section includes Activity and Audit Log navigation" ($deskJs -match 'btn-diag-view-audit')
 
 # -------------------------------------------------------------
 # 7. LIVE DATABASE INTEGRITY (Zero Data Loss)

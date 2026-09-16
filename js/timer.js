@@ -1,4 +1,4 @@
-// TOP ENGLISH CLASS — Server-Authoritative Timer Module
+// TOPS CORE — Server-Authoritative Timer Module
 // Client timer is UI-only. Server validates deadline on submit.
 
 /** 

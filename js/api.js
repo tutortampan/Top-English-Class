@@ -1,4 +1,4 @@
-// TOP ENGLISH CLASS — API Module
+// TOPS CORE — API Module
 // All server calls are centralized here.
 import { getSupabase, SUPABASE_URL, callEdgeFunction } from './supabase.js';
 import { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCorrectAnswers, stripHyphens } from './grading.js';
@@ -85,6 +85,31 @@ function isPlaceholderUrl() {
   return !SUPABASE_URL || SUPABASE_URL.includes('YOUR_PROJECT');
 }
 
+// Lightweight in-memory TTL cache to streamline data fetching and eliminate redundant roundtrips
+const _apiCache = new Map();
+const DEFAULT_CACHE_TTL = 60 * 1000; // 60 seconds
+
+export function clearApiCache(prefix = null) {
+  if (!prefix) {
+    _apiCache.clear();
+  } else {
+    for (const key of _apiCache.keys()) {
+      if (key.startsWith(prefix)) _apiCache.delete(key);
+    }
+  }
+}
+
+async function withCache(key, fetcher, ttl = DEFAULT_CACHE_TTL) {
+  const cached = _apiCache.get(key);
+  const now = Date.now();
+  if (cached && (now - cached.timestamp < ttl)) {
+    return Array.isArray(cached.data) ? [...cached.data] : { ...cached.data };
+  }
+  const data = await fetcher();
+  _apiCache.set(key, { data, timestamp: now });
+  return Array.isArray(data) ? [...data] : { ...data };
+}
+
 export async function testSupabaseConnection() {
   if (isPlaceholderUrl()) return { connected: false, error: 'Placeholder URL' };
   try {
@@ -97,69 +122,80 @@ export async function testSupabaseConnection() {
 }
 
 /** Fetch all active institutions for login step 1 (alphabetical order) */
-export async function fetchInstitutions() {
-  let list = MOCK_INSTITUTIONS;
-  if (!isPlaceholderUrl()) {
-    try {
-      const sb = await getSupabase();
-      const { data, error } = await sb.from('institutions')
-        .select('id, name')
-        .eq('is_active', true)
-        .is('deleted_at', null)
-        .order('name');
-      if (error) throw error;
-      if (data && data.length) list = data;
-    } catch (e) {
-      console.warn('Supabase fetch failed, falling back to mock data:', e.message);
+export async function fetchInstitutions(forceRefresh = false) {
+  if (forceRefresh) clearApiCache('institutions');
+  return withCache('institutions', async () => {
+    let list = MOCK_INSTITUTIONS;
+    if (!isPlaceholderUrl()) {
+      try {
+        const sb = await getSupabase();
+        const { data, error } = await sb.from('institutions')
+          .select('id, name')
+          .eq('is_active', true)
+          .is('deleted_at', null)
+          .order('name');
+        if (error) throw error;
+        if (data && data.length) list = data;
+      } catch (e) {
+        console.warn('Supabase fetch failed, falling back to mock data:', e.message);
+      }
     }
-  }
-  return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  });
 }
 
 /** Fetch all active programs for an institution (alphabetical order) */
-export async function fetchPrograms(institutionId) {
-  let list = MOCK_PROGRAMS.filter(c => c.institution_id === institutionId);
-  if (!isPlaceholderUrl()) {
-    try {
-      const sb = await getSupabase();
-      // NOTE: Live DB uses 'program_id' as the FK to institutions (not 'institution_id')
-      const { data, error } = await sb.from('programs')
-        .select('id, name, program_id')
-        .eq('program_id', institutionId)
-        .eq('is_active', true)
-        .is('deleted_at', null)
-        .order('name');
-      if (error) throw error;
-      if (data && data.length) {
-        // Normalize to expected shape (institution_id) for rest of app
-        list = data.map(r => ({ ...r, institution_id: r.program_id }));
+export async function fetchPrograms(institutionId, forceRefresh = false) {
+  const cacheKey = `programs_${institutionId}`;
+  if (forceRefresh) clearApiCache(cacheKey);
+  return withCache(cacheKey, async () => {
+    let list = MOCK_PROGRAMS.filter(c => c.institution_id === institutionId);
+    if (!isPlaceholderUrl()) {
+      try {
+        const sb = await getSupabase();
+        // NOTE: Live DB uses 'program_id' as the FK to institutions (not 'institution_id')
+        const { data, error } = await sb.from('programs')
+          .select('id, name, program_id')
+          .eq('program_id', institutionId)
+          .eq('is_active', true)
+          .is('deleted_at', null)
+          .order('name');
+        if (error) throw error;
+        if (data && data.length) {
+          // Normalize to expected shape (institution_id) for rest of app
+          list = data.map(r => ({ ...r, institution_id: r.program_id }));
+        }
+      } catch (e) {
+        console.warn('Supabase fetch programs failed, falling back to mock data:', e.message);
       }
-    } catch (e) {
-      console.warn('Supabase fetch programs failed, falling back to mock data:', e.message);
     }
-  }
-  return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  });
 }
 
 /** Fetch all active batches for a class (alphabetical order) */
-export async function fetchBatches(programId) {
-  let list = MOCK_BATCHES.filter(b => b.program_id === programId);
-  if (!isPlaceholderUrl()) {
-    try {
-      const sb = await getSupabase();
-      const { data, error } = await sb.from('batches')
-        .select('id, name, program_id')
-        .eq('program_id', programId)
-        .eq('is_active', true)
-        .is('deleted_at', null)
-        .order('name');
-      if (error) throw error;
-      if (data && data.length) list = data;
-    } catch (e) {
-      console.warn('Supabase fetch batches failed, falling back to mock data:', e.message);
+export async function fetchBatches(programId, forceRefresh = false) {
+  const cacheKey = `batches_${programId}`;
+  if (forceRefresh) clearApiCache(cacheKey);
+  return withCache(cacheKey, async () => {
+    let list = MOCK_BATCHES.filter(b => b.program_id === programId);
+    if (!isPlaceholderUrl()) {
+      try {
+        const sb = await getSupabase();
+        const { data, error } = await sb.from('batches')
+          .select('id, name, program_id')
+          .eq('program_id', programId)
+          .eq('is_active', true)
+          .is('deleted_at', null)
+          .order('name');
+        if (error) throw error;
+        if (data && data.length) list = data;
+      } catch (e) {
+        console.warn('Supabase fetch batches failed, falling back to mock data:', e.message);
+      }
     }
-  }
-  return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  });
 }
 
 /** Fetch students by class and optional batch — formatted with Miss/Mr. titles in alphabetical order */

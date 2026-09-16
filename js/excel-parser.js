@@ -1,4 +1,4 @@
-// TOP ENGLISH CLASS — Centralized Excel Parser & Normalizer
+// TOPS CORE — Centralized Excel Parser & Normalizer
 // Phases 5, 6, 7
 
 /**

@@ -6,8 +6,8 @@
   <meta name="google" content="notranslate" />
   <meta name="googlebot" content="notranslate" />
   <meta name="robots" content="notranslate" />
-  <title>Exam — TOP ENGLISH CLASS</title>
-  <meta name="description" content="Complete your English exam on TOP ENGLISH CLASS." />
+  <title>Exam — TOPS CORE</title>
+  <meta name="description" content="Complete your English exam on TOPS CORE." />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/dashboard.css" />
   <meta name="view-transition" content="same-origin" />
@@ -21,6 +21,12 @@
     <div class="exam-title-bar">
       <div class="exam-name-display" id="exam-name">Loading exam…</div>
       <div class="exam-meta-display" id="exam-meta"></div>
+    </div>
+
+    <!-- Real-time Sync & Buffer Status Indicator -->
+    <div class="exam-sync-status" id="exam-sync-status" title="Write-ahead safety buffer & server auto-sync active" style="display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;font-weight:600;color:#10b981;background:rgba(16,185,129,0.1);padding:4px 10px;border-radius:20px;border:1px solid rgba(16,185,129,0.25);">
+      <span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;transition:background 0.2s;"></span>
+      <span id="sync-status-text">Saved</span>
     </div>
 
     <!-- Timer -->
@@ -68,7 +74,10 @@
           </div>
         </div>
   
-        <div class="mt-4 pt-3" style="border-top:1px solid var(--clr-border); flex-shrink:0;">
+        <div class="mt-3 pt-3" style="border-top:1px solid var(--clr-border); flex-shrink:0; display:flex; flex-direction:column; gap:8px;">
+          <button class="btn btn-secondary w-100 btn-sm" id="btn-sidebar-jump-unanswered" style="font-size:0.78rem;padding:7px 10px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;">
+            🔍 Jump to Next Unanswered
+          </button>
           <button class="btn btn-success w-100" id="global-submit-btn" style="padding:10px;font-weight:600;">
             Submit Exam 📋
           </button>
@@ -148,7 +157,14 @@
     const session = requireStudentSession();
     if (!session) throw new Error('Not authenticated');
 
-    const examId = sessionStorage.getItem('tec_exam_id');
+    const urlParams = new URLSearchParams(window.location.search);
+    let examId = urlParams.get('exam_id') || sessionStorage.getItem('tec_exam_id');
+    if (urlParams.get('exam_id')) {
+      sessionStorage.setItem('tec_exam_id', urlParams.get('exam_id'));
+    }
+    if (urlParams.get('attempt_id')) {
+      sessionStorage.setItem('tec_attempt_id', urlParams.get('attempt_id'));
+    }
     if (!examId) { window.location.href = 'dashboard.html'; }
 
     let currentIndex = 0;
@@ -366,13 +382,31 @@
           allAnswerRows = shuffleWithSeed(allAnswerRows, attemptData.id || examId);
         }
 
-        // Prefill any existing answers (resume)
+        // Prefill any existing answers (resume from server)
         if (result.resumed) {
           allAnswerRows.forEach(row => {
             if (row.student_answer) answeredMap[row.id] = row.student_answer;
           });
           showToast('Resuming your previous attempt.', 'info');
         }
+
+        // Reconcile with client Write-Ahead Buffer (prevents data loss across reloads/disconnects)
+        try {
+          const localBufferRaw = localStorage.getItem(`tec_local_answers_${attemptData.id}`);
+          if (localBufferRaw) {
+            const localBuffer = JSON.parse(localBufferRaw);
+            let restoredCount = 0;
+            for (const [ansId, ansVal] of Object.entries(localBuffer)) {
+              if (ansVal && !answeredMap[ansId]) {
+                answeredMap[ansId] = ansVal;
+                restoredCount++;
+              }
+            }
+            if (restoredCount > 0) {
+              showToast(`Restored ${restoredCount} unsaved answer(s) from safety buffer.`, 'info');
+            }
+          }
+        } catch (_) {}
 
         // Populate exam base name
         examDisplayName = examData?.display_name || examData?.name || '';
@@ -622,7 +656,12 @@
       card.innerHTML = `
         <div class="d-flex align-center justify-between flex-wrap gap-2 mb-3">
           <div class="question-number" style="margin-bottom:0;">Question ${idx + 1} of ${answerRows.length}</div>
-          ${wordType ? `<span id="word-type-badge" class="badge badge-info word-type-badge" style="font-size:0.75rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:4px 10px;border-radius:12px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);"># ${escapeHtml(wordType)}</span>` : ''}
+          <div class="d-flex align-center gap-2">
+            <button class="btn btn-secondary btn-sm tts-speak-btn" id="tts-speak-btn" type="button" title="Listen to pronunciation (Speech Synthesis)" style="padding:3px 8px;font-size:0.8rem;display:inline-flex;align-items:center;gap:4px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid var(--clr-border);cursor:pointer;">
+              🔊 <span style="font-size:0.75rem;font-weight:600;">Pronounce</span>
+            </button>
+            ${wordType ? `<span id="word-type-badge" class="badge badge-info word-type-badge" style="font-size:0.75rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:4px 10px;border-radius:12px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);"># ${escapeHtml(wordType)}</span>` : ''}
+          </div>
         </div>
         <div class="question-text">${questionText}</div>
         <div id="answer-area"></div>
@@ -639,6 +678,22 @@
         </div>
       `;
       main.appendChild(card);
+
+      // Native Browser Speech Synthesis (TTS) Pronunciation
+      document.getElementById('tts-speak-btn')?.addEventListener('click', () => {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const cleanText = questionText.replace(/<[^>]+>/g, '').trim();
+          if (cleanText) {
+            const utter = new SpeechSynthesisUtterance(cleanText);
+            utter.lang = 'en-US';
+            utter.rate = 0.9;
+            window.speechSynthesis.speak(utter);
+          }
+        } else {
+          showToast('Speech synthesis not available in this browser.', 'info');
+        }
+      });
 
       // Render answer area
       const answerArea = document.getElementById('answer-area');
@@ -914,26 +969,76 @@
 
     // ── Global Keyboard Shortcuts ──
     document.addEventListener('keydown', (e) => {
-      // Streamlined UI: Spacebar toggles microphone if active question is Speech to Text
-      if (e.code === 'Space') {
-        const activeElement = document.activeElement;
-        const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
-        if (!isTyping) {
-          const micBtn = document.querySelector('.mic-btn');
-          if (micBtn) {
-            e.preventDefault();
-            micBtn.click();
-          }
+      const activeElement = document.activeElement;
+      const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
+
+      // Spacebar toggles microphone if active question is Speech to Text
+      if (e.code === 'Space' && !isTyping) {
+        const micBtn = document.querySelector('.mic-btn');
+        if (micBtn) {
+          e.preventDefault();
+          micBtn.click();
+          return;
+        }
+      }
+
+      if (isTyping) return; // Don't intercept when student is typing written answers
+
+      // Question Navigation: ArrowLeft for previous, ArrowRight for next
+      if (e.key === 'ArrowLeft') {
+        const prevBtn = document.getElementById('prev-btn');
+        if (prevBtn && !prevBtn.disabled) {
+          e.preventDefault();
+          prevBtn.click();
+        }
+      } else if (e.key === 'ArrowRight') {
+        const nextBtn = document.getElementById('next-btn') || document.getElementById('next-section-btn');
+        if (nextBtn) {
+          e.preventDefault();
+          nextBtn.click();
+        }
+      }
+
+      // Multiple Choice Option Selection: A, B, C, D or 1, 2, 3, 4
+      const keyUpper = e.key.toUpperCase();
+      const mcOptions = document.querySelectorAll('.mc-option');
+      if (mcOptions.length > 0) {
+        let optIndex = -1;
+        if (keyUpper === 'A' || e.key === '1') optIndex = 0;
+        else if (keyUpper === 'B' || e.key === '2') optIndex = 1;
+        else if (keyUpper === 'C' || e.key === '3') optIndex = 2;
+        else if (keyUpper === 'D' || e.key === '4') optIndex = 3;
+
+        if (optIndex >= 0 && optIndex < mcOptions.length) {
+          e.preventDefault();
+          mcOptions[optIndex].click();
         }
       }
     });
 
+    // ── Write-Ahead Buffer Persistence ──
+    function persistLocalBuffer() {
+      if (attemptData?.id && answeredMap) {
+        try {
+          localStorage.setItem(`tec_local_answers_${attemptData.id}`, JSON.stringify(answeredMap));
+        } catch (_) {}
+      }
+    }
+
     // ── Auto-save ──
     async function autoSave(attemptAnswerId, studentAnswer) {
+      persistLocalBuffer();
+      const statusText = document.getElementById('sync-status-text');
+      const syncDot = document.getElementById('sync-dot');
+      if (statusText) statusText.textContent = 'Saving…';
+      if (syncDot) syncDot.style.background = '#38bdf8';
       try {
         await saveAnswer(attemptAnswerId, studentAnswer);
+        if (statusText) statusText.textContent = 'Saved';
+        if (syncDot) syncDot.style.background = '#10b981';
       } catch(e) {
-        // Silently fail autosave — data is in memory
+        if (statusText) statusText.textContent = 'Saved (Offline)';
+        if (syncDot) syncDot.style.background = '#fbbf24';
       }
     }
 
@@ -944,6 +1049,7 @@
       if (ta) answeredMap[row.id] = ta.value;
       const dd = document.getElementById(`dropdown-${row.id}`);
       if (dd) answeredMap[row.id] = dd.value;
+      persistLocalBuffer();
     }
 
     // ── Submit Modal ──
@@ -962,7 +1068,13 @@
 
       if (unanswered > 0) {
         document.getElementById('unanswered-warning-banner')?.classList.remove('hidden');
-        if (warningText) warningText.textContent = `You have ${unanswered} question(s) that have not been answered!`;
+        if (warningText) {
+          warningText.innerHTML = `You have <strong>${unanswered}</strong> question(s) that have not been answered! <br/><button id="btn-jump-unanswered" class="btn btn-secondary btn-sm mt-2" style="padding:4px 10px;font-size:0.75rem;font-weight:700;">🔍 Review Unanswered Questions</button>`;
+          document.getElementById('btn-jump-unanswered')?.addEventListener('click', () => {
+            document.getElementById('submit-modal').classList.add('hidden');
+            jumpToNextUnanswered();
+          });
+        }
         confirmBtn?.classList.remove('btn-primary');
         confirmBtn?.classList.add('btn-danger');
         if (confirmBtn) confirmBtn.textContent = `Submit Anyway (${unanswered} Unanswered)`;
@@ -977,6 +1089,22 @@
 
       document.getElementById('submit-modal').classList.remove('hidden');
     }
+
+    function jumpToNextUnanswered() {
+      saveCurrentAnswer();
+      const firstUnansweredIdx = answerRows.findIndex(r => !answeredMap[r.id] || !answeredMap[r.id].trim());
+      if (firstUnansweredIdx >= 0) {
+        renderQuestion(firstUnansweredIdx);
+        showToast(`Jumped to Question ${firstUnansweredIdx + 1}`, 'info');
+      } else {
+        showToast('All questions in this section are answered! Great job!', 'success');
+      }
+      document.getElementById('qNavDrawer')?.classList.remove('open');
+    }
+
+    document.getElementById('btn-sidebar-jump-unanswered')?.addEventListener('click', () => {
+      jumpToNextUnanswered();
+    });
 
     document.getElementById('cancel-submit-btn').addEventListener('click', () => {
       document.getElementById('submit-modal').classList.add('hidden');
@@ -1017,6 +1145,8 @@
       try {
         const targetStatus = isAuto ? 'auto_submitted' : 'submitted';
         const result = await submitExam(attemptData.id, payload, { status: targetStatus });
+        // Clean up safety buffer on successful submission
+        try { localStorage.removeItem(`tec_local_answers_${attemptData.id}`); } catch (_) {}
         hideLoading();
         sessionStorage.setItem('tec_attempt_id', attemptData.id);
         window.location.href = 'result.html';

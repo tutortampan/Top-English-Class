@@ -1708,3 +1708,77 @@ tr.deleted-row td {
   background: var(--fm-border-strong);
 }
 
+/* ============================================================
+   12. DATAGRID RECORD DRAWER & DRAG/DROP
+   ============================================================ */
+
+.datagrid-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1040;
+  backdrop-filter: blur(2px);
+  transition: opacity 0.3s ease;
+}
+
+.datagrid-drawer-overlay.hidden {
+  display: none !important;
+  opacity: 0;
+}
+
+.datagrid-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 450px;
+  background: var(--fm-bg-panel);
+  box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+  z-index: 1050;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.datagrid-drawer.open {
+  transform: translateX(0);
+}
+
+.datagrid-drawer-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--fm-border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--fm-bg-sidebar);
+}
+
+.datagrid-drawer-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--fm-text-primary);
+}
+
+.datagrid-drawer-body {
+  padding: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.datagrid-drawer-footer {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--fm-border-subtle);
+  background: var(--fm-bg-sidebar);
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* Datagrid Columns Checkbox Menu */
+.datagrid-cols-menu label:hover {
+  color: var(--fm-text-primary);
+}
+
