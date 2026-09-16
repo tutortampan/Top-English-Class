@@ -607,7 +607,6 @@ function toLevelLetter(num) {
         console.error('Failed to load progress', err);
         area.innerHTML = `<div class="p-5 text-center text-error">Failed to load progression data: ${err.message}</div>`;
       }
-  }
 }
 
 window.viewClassInstanceRoster = async function(classInstanceId) {
