@@ -14,7 +14,6 @@ import {
   deleteCentralQuestion,
   fetchChallengeDefinitions,
   publishChallengeDefinition,
-  fetchChallengeDefinitionQuestions,
   fetchChallengeInstances,
   createChallengeInstance,
   adminFetchAll,
