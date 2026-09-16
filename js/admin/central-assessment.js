@@ -1,4 +1,4 @@
-// TOPS CORE — Centralized Assessment System V1 Admin UI
+﻿// TOPS CORE â€” Centralized Assessment System V1 Admin UI
 import {
   fetchGlobalSubjects,
   fetchWordTypes,
@@ -59,7 +59,7 @@ export async function renderTopics(area) {
 
       ${window._filterSubjectId ? `
         <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
-          <span>📐 Filtered by Subject: <strong>${escapeHtml(window._filterSubjectName || 'Selected Subject')}</strong></span>
+          <span>ðŸ“ Filtered by Subject: <strong>${escapeHtml(window._filterSubjectName || 'Selected Subject')}</strong></span>
           <button class="btn btn-ghost btn-xs" id="clear-subj-filter-btn" style="text-decoration:underline;color:#93c5fd;">Show All Subjects</button>
         </div>
       ` : ''}
@@ -172,7 +172,7 @@ function renderTopicRows(topicsList) {
   return topicsList.map(t => `
     <tr>
       <td><strong style="color:var(--clr-text-1);">${escapeHtml(t.name)}</strong></td>
-      <td><code>${escapeHtml(t.code || '—')}</code></td>
+      <td><code>${escapeHtml(t.code || 'â€”')}</code></td>
       <td><span class="badge badge-info">${escapeHtml(t.subjects?.name || 'General')}</span></td>
       <td>
         <span class="badge ${t.status === 'active' ? 'badge-success' : 'badge-secondary'}">
@@ -182,9 +182,9 @@ function renderTopicRows(topicsList) {
       <td style="font-size:0.8rem;color:var(--clr-text-muted);">${new Date(t.created_at).toLocaleDateString()}</td>
       <td style="text-align:right;">
         <div class="d-flex gap-1 justify-end">
-          <button class="btn btn-outline btn-xs btn-nav-questions" data-id="${t.id}" data-name="${escapeHtml(t.name)}" title="View Questions in this Topic">Questions →</button>
-          <button class="btn btn-ghost btn-sm btn-edit-topic" data-id="${t.id}" title="Edit Topic">✏️</button>
-          <button class="btn btn-ghost btn-sm text-danger btn-del-topic" data-id="${t.id}" title="Delete Topic">🗑️</button>
+          <button class="btn btn-outline btn-xs btn-nav-questions" data-id="${t.id}" data-name="${escapeHtml(t.name)}" title="View Questions in this Topic">Questions â†’</button>
+          <button class="btn btn-ghost btn-sm btn-edit-topic" data-id="${t.id}" title="Edit Topic">âœï¸</button>
+          <button class="btn btn-ghost btn-sm text-danger btn-del-topic" data-id="${t.id}" title="Delete Topic">ðŸ—‘ï¸</button>
         </div>
       </td>
     </tr>
@@ -292,7 +292,7 @@ export async function renderWordTypes(area) {
       </div>
 
       <div class="card p-4 mb-4" style="background:rgba(255,255,255,0.02);border:1px solid var(--clr-border);">
-        <h4 style="font-size:0.95rem;margin-bottom:0.75rem;">➕ Add Custom Word Type</h4>
+        <h4 style="font-size:0.95rem;margin-bottom:0.75rem;">âž• Add Custom Word Type</h4>
         <div class="d-flex gap-2 flex-wrap" style="max-width:500px;">
           <input type="text" class="form-control" id="new-word-type-input" placeholder="e.g. Phrasal Verb, Slang, Collocation" />
           <button class="btn btn-primary btn-sm" id="btn-add-word-type">+ Add</button>
@@ -305,7 +305,7 @@ export async function renderWordTypes(area) {
               const exists = wordTypes.some(wt => wt.name.toLowerCase() === st.toLowerCase());
               return `
                 <button class="btn btn-sm ${exists ? 'btn-ghost' : 'btn-outline-primary'} btn-suggest-wt" data-name="${st}" ${exists ? 'disabled title="Already added"' : ''}>
-                  ${st} ${exists ? '✓' : '+'}
+                  ${st} ${exists ? 'âœ“' : '+'}
                 </button>
               `;
             }).join('')}
@@ -420,13 +420,13 @@ export async function renderCentralQuestionBank(area) {
         </div>
         <div class="d-flex gap-2 flex-wrap">
           <button class="btn btn-primary btn-sm" id="btn-add-question">+ Add New Question</button>
-          <button class="btn btn-secondary btn-sm" onclick="window.loadSection('import-questions')">📥 Import Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="window.loadSection('import-questions')">ðŸ“¥ Import Excel</button>
         </div>
       </div>
 
       ${window._filterTopicId ? `
         <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
-          <span>📐 Filtered by Topic: <strong>${escapeHtml(window._filterTopicName || 'Selected Topic')}</strong></span>
+          <span>ðŸ“ Filtered by Topic: <strong>${escapeHtml(window._filterTopicName || 'Selected Topic')}</strong></span>
           <button class="btn btn-ghost btn-xs" id="clear-topic-filter-btn" style="text-decoration:underline;color:#93c5fd;">Show All Topics</button>
         </div>
       ` : ''}
@@ -435,7 +435,7 @@ export async function renderCentralQuestionBank(area) {
       <div class="card p-3 mb-4" style="background:rgba(255,255,255,0.02);border:1px solid var(--clr-border);">
         <div class="d-flex gap-3 flex-wrap align-center">
           <div style="flex:1;min-width:200px;">
-            <input type="text" class="form-control" id="q-search-input" placeholder="🔍 Search question or answer..." />
+            <input type="text" class="form-control" id="q-search-input" placeholder="ðŸ” Search question or answer..." />
           </div>
           <div style="min-width:160px;">
             <select class="form-control" id="q-topic-filter">
@@ -571,7 +571,7 @@ function renderQuestionRows(list) {
           </span>
         </td>
         <td>
-          ${q.word_type ? `<span class="badge badge-secondary" style="font-size:0.75rem;">${escapeHtml(q.word_type)}</span>` : '<span class="text-muted">—</span>'}
+          ${q.word_type ? `<span class="badge badge-secondary" style="font-size:0.75rem;">${escapeHtml(q.word_type)}</span>` : '<span class="text-muted">â€”</span>'}
         </td>
         <td>
           <strong style="color:var(--clr-text-1);font-size:0.95rem;">${escapeHtml(q.question_text)}</strong>
@@ -587,8 +587,8 @@ function renderQuestionRows(list) {
           </span>
         </td>
         <td style="text-align:right;">
-          <button class="btn btn-ghost btn-sm btn-edit-q" data-id="${q.id}" title="Edit Question">✏️</button>
-          <button class="btn btn-ghost btn-sm text-danger btn-del-q" data-id="${q.id}" title="Delete Question">🗑️</button>
+          <button class="btn btn-ghost btn-sm btn-edit-q" data-id="${q.id}" title="Edit Question">âœï¸</button>
+          <button class="btn btn-ghost btn-sm text-danger btn-del-q" data-id="${q.id}" title="Delete Question">ðŸ—‘ï¸</button>
         </td>
       </tr>
     `;
@@ -793,11 +793,11 @@ function renderAssignmentRows(list) {
   }
   return list.map(a => {
     const targetName = a.assignment_type === 'BATCH'
-      ? `👥 Batch: ${escapeHtml(a.batches?.name || 'Unknown')}`
-      : `👨‍🎓 Student: ${escapeHtml(a.students?.name || 'Unknown')}`;
+      ? `ðŸ‘¥ Batch: ${escapeHtml(a.batches?.name || 'Unknown')}`
+      : `ðŸ‘¨â€ðŸŽ“ Student: ${escapeHtml(a.students?.name || 'Unknown')}`;
 
     const windowText = (a.availability_start || a.availability_end)
-      ? `${a.availability_start ? new Date(a.availability_start).toLocaleDateString() : 'Now'} → ${a.availability_end ? new Date(a.availability_end).toLocaleDateString() : 'Forever'}`
+      ? `${a.availability_start ? new Date(a.availability_start).toLocaleDateString() : 'Now'} â†’ ${a.availability_end ? new Date(a.availability_end).toLocaleDateString() : 'Forever'}`
       : '<span class="text-success">Always Open</span>';
 
     return `
@@ -808,7 +808,7 @@ function renderAssignmentRows(list) {
         <td><small>${windowText}</small></td>
         <td><span class="badge badge-success">Active</span></td>
         <td style="text-align:right;">
-          <button class="btn btn-ghost btn-sm text-danger btn-revoke-assignment" data-id="${a.id}" title="Revoke Assignment">🗑️ Revoke</button>
+          <button class="btn btn-ghost btn-sm text-danger btn-revoke-assignment" data-id="${a.id}" title="Revoke Assignment">ðŸ—‘ï¸ Revoke</button>
         </td>
       </tr>
     `;
@@ -936,7 +936,7 @@ export async function renderCentralQuestionImport(area) {
           <p class="section-subtitle">Safely parse, validate word types, detect duplicates, and preview before committing.</p>
         </div>
         <div>
-          <button class="btn btn-secondary btn-sm" id="btn-download-central-tmpl">📥 Download Excel Template</button>
+          <button class="btn btn-secondary btn-sm" id="btn-download-central-tmpl">ðŸ“¥ Download Excel Template</button>
         </div>
       </div>
 
@@ -952,7 +952,7 @@ export async function renderCentralQuestionImport(area) {
         </div>
 
         <div class="drop-zone p-5 text-center rounded" id="question-drop-zone" style="border:2px dashed var(--clr-border);cursor:pointer;background:rgba(255,255,255,0.01);transition:all 0.2s;">
-          <div style="font-size:2.8rem;margin-bottom:0.75rem;">📁</div>
+          <div style="font-size:2.8rem;margin-bottom:0.75rem;">ðŸ“</div>
           <h3 style="font-size:1.1rem;margin-bottom:0.5rem;">Click to select Excel file or drag &amp; drop</h3>
           <p class="text-muted text-xs mb-3">Accepts .xlsx, .xls, .csv with columns: <strong>Topic | Word Type | Question | Answer</strong></p>
           <input type="file" id="central-excel-file-input" accept=".xlsx,.xls,.csv" style="display:none;" />
@@ -969,7 +969,7 @@ export async function renderCentralQuestionImport(area) {
           </div>
           <div class="d-flex gap-2">
             <button class="btn btn-secondary btn-sm" id="btn-cancel-preview">Cancel / Choose Another File</button>
-            <button class="btn btn-success btn-sm" id="btn-confirm-commit-import">🚀 Confirm &amp; Commit Import</button>
+            <button class="btn btn-success btn-sm" id="btn-confirm-commit-import">ðŸš€ Confirm &amp; Commit Import</button>
           </div>
         </div>
 
@@ -1117,14 +1117,14 @@ export async function renderCentralQuestionImport(area) {
       if (summary.possibleDuplicates > 0) {
         alertHtml += `
           <div class="alert alert-warning p-3 mb-3 text-xs" style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:8px;">
-            ⚠️ <strong>${summary.possibleDuplicates} Possible Duplicate(s) Found:</strong> High similarity detected. Review the comparisons below and choose whether to <em>Use Existing</em> or <em>Create New</em>.
+            âš ï¸ <strong>${summary.possibleDuplicates} Possible Duplicate(s) Found:</strong> High similarity detected. Review the comparisons below and choose whether to <em>Use Existing</em> or <em>Create New</em>.
           </div>
         `;
       }
       if (summary.invalidWordTypes > 0) {
         alertHtml += `
           <div class="alert alert-info p-3 mb-3 text-xs" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;">
-            💡 <strong>${summary.invalidWordTypes} Word Type Suggestion(s):</strong> Non-standard word types detected. Suggested standard types have been applied, or you can register them as custom types.
+            ðŸ’¡ <strong>${summary.invalidWordTypes} Word Type Suggestion(s):</strong> Non-standard word types detected. Suggested standard types have been applied, or you can register them as custom types.
           </div>
         `;
       }
@@ -1139,7 +1139,7 @@ export async function renderCentralQuestionImport(area) {
         if (r.duplicateStatus === 'EXACT_DUPLICATE') {
           statusBadge = `<span class="badge badge-info">Exact Match</span>`;
           if (r.answerKeyChanged) {
-            statusBadge += `<br/><span class="badge badge-warning mt-1" title="Existing: ${escapeHtml(r.existingAnswers.join(' / '))} -> New: ${escapeHtml(r.accepted_answers.join(' / '))}">⚡ Answer Update</span>`;
+            statusBadge += `<br/><span class="badge badge-warning mt-1" title="Existing: ${escapeHtml(r.existingAnswers.join(' / '))} -> New: ${escapeHtml(r.accepted_answers.join(' / '))}">âš¡ Answer Update</span>`;
           }
           actionCol = `
             <select class="form-control form-control-sm row-action-choice" data-idx="${idx}">
@@ -1166,9 +1166,9 @@ export async function renderCentralQuestionImport(area) {
           qDisplay += `<div class="text-muted text-xs mt-1" style="font-style:italic;">Existing: "${escapeHtml(r.existingQuestionText)}"</div>`;
         }
 
-        let wtDisplay = escapeHtml(r.wordType || '—');
+        let wtDisplay = escapeHtml(r.wordType || 'â€”');
         if (r.wordTypeWarning) {
-          wtDisplay += `<div class="text-danger text-xs mt-1" title="${escapeHtml(r.wordTypeWarning)}">⚠️ ${escapeHtml(r.wordTypeWarning)}</div>`;
+          wtDisplay += `<div class="text-danger text-xs mt-1" title="${escapeHtml(r.wordTypeWarning)}">âš ï¸ ${escapeHtml(r.wordTypeWarning)}</div>`;
         }
 
         return `
@@ -1201,8 +1201,8 @@ export async function renderCentralQuestionImport(area) {
       const rows = currentParsedResult.rows;
 
       const confirmMsg = `Are you sure you want to commit this import?
-• ${currentParsedResult.summary.newQuestions} new questions will be added
-• ${currentParsedResult.summary.answerChanges} answer keys will be updated
+â€¢ ${currentParsedResult.summary.newQuestions} new questions will be added
+â€¢ ${currentParsedResult.summary.answerChanges} answer keys will be updated
 Existing historical attempt records will NOT be modified.`;
 
       if (!confirm(confirmMsg)) return;

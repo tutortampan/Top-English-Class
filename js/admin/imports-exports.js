@@ -1,6 +1,6 @@
-import { adminFetchAll, adminInsert, adminUpdate } from '../api.js?v=3.1.0';
-import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=3.1.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=3.1.0';
+﻿import { adminFetchAll, adminInsert, adminUpdate } from '../api.js?v=3.2.0';
+import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=3.2.0';
+import { showToast, showLoading, hideLoading } from '../app.js?v=3.2.0';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -18,7 +18,7 @@ async function hashPin(pin) {
 }
 
     async function renderImportStudents(area) {
-      showLoading('Loading institutions & programs…');
+      showLoading('Loading institutions & programsâ€¦');
       const [allProgs, allCls, allBatches, allLevels] = await Promise.all([
         adminFetchAll('institutions'),
         adminFetchAll('programs', '*, institutions(name)'),
@@ -41,7 +41,7 @@ async function hashPin(pin) {
             </div>
             <div class="d-flex gap-2">
               <button class="btn btn-secondary btn-sm" id="btn-back-to-students">Back to Students</button>
-              <button class="btn btn-primary btn-sm" id="btn-dl-student-template">📥 Download Student Template (.xlsx)</button>
+              <button class="btn btn-primary btn-sm" id="btn-dl-student-template">ðŸ“¥ Download Student Template (.xlsx)</button>
             </div>
           </div>
 
@@ -98,11 +98,11 @@ async function hashPin(pin) {
                   <span class="badge badge-info" style="font-size:0.75rem;">Supports English Columns</span>
                 </div>
                 <div class="text-xs text-muted d-flex flex-column gap-1">
-                  <div>• <b>Name:</b> Column <code>NAME</code>, <code>Student Name</code> (Required).</div>
-                  <div>• <b>Gender (Optional):</b> Column <code>GENDER</code>. <em>If left blank, students will select their own gender (Mr. / Miss) upon first login.</em></div>
-                  <div>• <b>Birth Date / Age:</b> Column <code>BIRTH_DATE</code> or <code>AGE</code> (Format: YYYY-MM-DD or age number).</div>
-                  <div>• <b>PIN:</b> Column <code>PIN</code> or <code>Password</code> (Defaults to <code>1234</code> if left blank).</div>
-                  <div>• <b>Program &amp; Class &amp; Batch:</b> If left blank in the Excel file, the Target Program, Class, and Batch selected above will be used.</div>
+                  <div>â€¢ <b>Name:</b> Column <code>NAME</code>, <code>Student Name</code> (Required).</div>
+                  <div>â€¢ <b>Gender (Optional):</b> Column <code>GENDER</code>. <em>If left blank, students will select their own gender (Mr. / Miss) upon first login.</em></div>
+                  <div>â€¢ <b>Birth Date / Age:</b> Column <code>BIRTH_DATE</code> or <code>AGE</code> (Format: YYYY-MM-DD or age number).</div>
+                  <div>â€¢ <b>PIN:</b> Column <code>PIN</code> or <code>Password</code> (Defaults to <code>1234</code> if left blank).</div>
+                  <div>â€¢ <b>Program &amp; Class &amp; Batch:</b> If left blank in the Excel file, the Target Program, Class, and Batch selected above will be used.</div>
                 </div>
               </div>
             </div>
@@ -117,7 +117,7 @@ async function hashPin(pin) {
                   </div>
                   <div class="d-flex align-center gap-3">
                     <button class="btn btn-secondary btn-sm" id="btn-cancel-students-import">Cancel</button>
-                    <button class="btn btn-primary btn-sm" id="btn-confirm-students-import">✓ Confirm &amp; Save Students</button>
+                    <button class="btn btn-primary btn-sm" id="btn-confirm-students-import">âœ“ Confirm &amp; Save Students</button>
                   </div>
                 </div>
 
@@ -203,7 +203,7 @@ async function hashPin(pin) {
       const batchSelect = document.getElementById('import-student-batch');
 
       const updateBatchDropdown = (selectedClassId) => {
-        batchSelect.innerHTML = `<option value="">— Use Batch from Excel File —</option>`;
+        batchSelect.innerHTML = `<option value="">â€” Use Batch from Excel File â€”</option>`;
         if (!selectedClassId) {
           batchSelect.disabled = true;
           batchSelect.innerHTML = `<option value="">- Select Program First -</option>`;
@@ -263,7 +263,7 @@ async function hashPin(pin) {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        showLoading('Reading spreadsheet file…');
+        showLoading('Reading spreadsheet fileâ€¦');
         const reader = new FileReader();
         reader.onload = async (evt) => {
           try {
@@ -321,7 +321,7 @@ async function hashPin(pin) {
               const rawBirth = getRowVal(row, ['birthdate', 'dob', 'tanggallahir', 'tgllahir', 'tgl', 'birth_date']);
               const rawAge = getRowVal(row, ['age', 'usia']);
               let birthDate = '';
-              let ageDisplay = '—';
+              let ageDisplay = 'â€”';
 
               if (rawBirth) {
                 if (!isNaN(rawBirth) && Number(rawBirth) > 1000) {
@@ -436,7 +436,7 @@ async function hashPin(pin) {
               // Check if student already in database
               const existingDbStudent = existingStudentsMap.get(batchKey);
               let status = 'valid';
-              let statusMsg = '✨ New Student';
+              let statusMsg = 'âœ¨ New Student';
               let isExisting = false;
               let existingId = null;
 
@@ -445,7 +445,7 @@ async function hashPin(pin) {
                 statusMsg = 'No Class Assigned';
               } else if (existingDbStudent) {
                 status = 'merge';
-                statusMsg = '🔄 Merge Existing';
+                statusMsg = 'ðŸ”„ Merge Existing';
                 isExisting = true;
                 existingId = existingDbStudent.id;
               }
@@ -474,7 +474,7 @@ async function hashPin(pin) {
                 programId: finalClassId,
                 programName: finalClassName || 'Class',
                 batchId: finalBatchId,
-                batchName: finalBatchName || '—',
+                batchName: finalBatchName || 'â€”',
                 levelId: finalLevelId,
                 levelName: finalLevelName || '',
                 status,
@@ -528,32 +528,32 @@ async function hashPin(pin) {
             const tr = document.createElement('tr');
             let badgeHtml = '';
             if (s.status === 'valid') {
-              badgeHtml = `<span class="badge badge-success">✨ New Student</span>`;
+              badgeHtml = `<span class="badge badge-success">âœ¨ New Student</span>`;
             } else if (s.status === 'merge') {
-              badgeHtml = `<span class="badge badge-info">🔄 Merge / Update</span>`;
+              badgeHtml = `<span class="badge badge-info">ðŸ”„ Merge / Update</span>`;
             } else {
               badgeHtml = `<span class="badge badge-danger">Error</span>`;
             }
 
             if (s.duplicateInFile) {
-              badgeHtml += ` <span class="badge badge-warning ml-1" title="Dimerge dari baris kembar dalam spreadsheet">⚡ Dimerge dari File</span>`;
+              badgeHtml += ` <span class="badge badge-warning ml-1" title="Dimerge dari baris kembar dalam spreadsheet">âš¡ Dimerge dari File</span>`;
             }
 
             const genderBadge = s.gender === 'male'
-              ? '<span class="badge badge-primary">👨 Male</span>'
+              ? '<span class="badge badge-primary">ðŸ‘¨ Male</span>'
               : s.gender === 'female'
-              ? '<span class="badge badge-accent">👩 Female</span>'
-              : '<span class="badge badge-neutral" style="font-size:0.7rem;" title="Student will select gender upon first login">⏳ Unassigned</span>';
+              ? '<span class="badge badge-accent">ðŸ‘© Female</span>'
+              : '<span class="badge badge-neutral" style="font-size:0.7rem;" title="Student will select gender upon first login">â³ Unassigned</span>';
 
             tr.innerHTML = `
               <td class="text-center text-muted fw-700">${i + 1}</td>
               <td class="fw-600">${escapeHtml(s.name)}</td>
               <td class="text-center">${genderBadge}</td>
-              <td class="text-center text-muted text-sm">${escapeHtml(s.birthDate || '—')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${escapeHtml(s.ageDisplay)}</span></td>
+              <td class="text-center text-muted text-sm">${escapeHtml(s.birthDate || 'â€”')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${escapeHtml(s.ageDisplay)}</span></td>
               <td class="text-muted text-sm">${escapeHtml(s.institutionName)}</td>
               <td class="fw-600 text-sm">${escapeHtml(s.programName)}</td>
-              <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(s.batchName || '—')}</td>
-              <td class="text-center text-sm" style="font-family:monospace;letter-spacing:2px;">•••• <span class="text-muted text-xs" title="PIN: ${escapeHtml(s.pin)}">(${escapeHtml(s.pin)})</span></td>
+              <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(s.batchName || 'â€”')}</td>
+              <td class="text-center text-sm" style="font-family:monospace;letter-spacing:2px;">â€¢â€¢â€¢â€¢ <span class="text-muted text-xs" title="PIN: ${escapeHtml(s.pin)}">(${escapeHtml(s.pin)})</span></td>
               <td class="text-center">${badgeHtml}</td>
             `;
             tbody.appendChild(tr);
@@ -566,8 +566,8 @@ async function hashPin(pin) {
 
         document.getElementById('students-preview-summary').textContent = `${parsedStudentsState.length} students ready to be processed (${newCount} new records, ${mergeCount} existing records merged).`;
         document.getElementById('chip-total-students').textContent = `Total: ${parsedStudentsState.length}`;
-        document.getElementById('chip-valid-students').textContent = `✨ Baru: ${newCount}`;
-        document.getElementById('chip-warn-students').textContent = `🔄 Merge: ${mergeCount}`;
+        document.getElementById('chip-valid-students').textContent = `âœ¨ Baru: ${newCount}`;
+        document.getElementById('chip-warn-students').textContent = `ðŸ”„ Merge: ${mergeCount}`;
 
         const saveBtn = document.getElementById('btn-confirm-students-import');
         if (saveBtn) {
@@ -590,16 +590,16 @@ async function hashPin(pin) {
           return;
         }
 
-              showLoading(`Processing ${readyStudents.length} students (saving new & merging existing)…`);
+              showLoading(`Processing ${readyStudents.length} students (saving new & merging existing)â€¦`);
         try {
           let insertedCount = 0;
           let mergedCount = 0;
 
-          // ── Auto-create missing batches first (before saving students) ──
+          // â”€â”€ Auto-create missing batches first (before saving students) â”€â”€
           // Collect unique (programId, batchName) pairs that don't have a batchId yet
           const batchesToCreate = new Map(); // key: programId::batchName -> { programId, batchName }
           for (const s of readyStudents) {
-            if (!s.batchId && s.batchName && s.batchName !== '—' && s.programId) {
+            if (!s.batchId && s.batchName && s.batchName !== 'â€”' && s.programId) {
               const key = `${s.programId}::${s.batchName.toLowerCase().trim()}`;
               if (!batchesToCreate.has(key)) {
                 batchesToCreate.set(key, { programId: s.programId, batchName: s.batchName.trim() });
@@ -627,13 +627,13 @@ async function hashPin(pin) {
 
           // Resolve batch IDs for students that needed auto-creation
           for (const s of readyStudents) {
-            if (!s.batchId && s.batchName && s.batchName !== '—' && s.programId) {
+            if (!s.batchId && s.batchName && s.batchName !== 'â€”' && s.programId) {
               const key = `${s.programId}::${s.batchName.toLowerCase().trim()}`;
               if (newBatchMap.has(key)) s.batchId = newBatchMap.get(key);
             }
           }
 
-          // ── Safe student write helper: retries without extended columns if DB schema is old ──
+          // â”€â”€ Safe student write helper: retries without extended columns if DB schema is old â”€â”€
           let _dbHasBatchId = true;  // Assume yes, will be set to false on first schema error
           let _dbHasBirthDate = true;
           let _dbHasProgramId = true;
@@ -651,7 +651,7 @@ async function hashPin(pin) {
             } catch (e) {
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
                 _dbHasBatchId = false;
-                showToast('⚠️ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
+                showToast('âš ï¸ Column batch_id missing in DB â€” saving without batch. Run the SQL patch to fix this.', 'warning');
                 delete p.batch_id;
                 return await adminInsert('students', p);
               }
@@ -680,7 +680,7 @@ async function hashPin(pin) {
             } catch (e) {
               if (e.message && e.message.toLowerCase().includes('batch_id')) {
                 _dbHasBatchId = false;
-                showToast('⚠️ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
+                showToast('âš ï¸ Column batch_id missing in DB â€” saving without batch. Run the SQL patch to fix this.', 'warning');
                 delete p.batch_id;
                 return await adminUpdate('students', id, p);
               }
@@ -738,7 +738,7 @@ async function hashPin(pin) {
           }
 
           hideLoading();
-          const batchWarning = !_dbHasBatchId ? ' (batch_id column missing — run SQL patch to enable full batch support)' : '';
+          const batchWarning = !_dbHasBatchId ? ' (batch_id column missing â€” run SQL patch to enable full batch support)' : '';
           showToast(`Done! ${insertedCount} new students added, ${mergedCount} updated/merged!${batchWarning}`, 'success');
           
           // Stay on page and reset preview box
@@ -770,7 +770,7 @@ async function hashPin(pin) {
               <div class="d-flex flex-column gap-4 mb-4">
                 <div class="form-group w-100">
                   <label class="form-label">1. Select Target Exam</label>
-                  <select class="form-control" id="import-exam-select"><option value="">Loading examsâ€¦</option></select>
+                  <select class="form-control" id="import-exam-select"><option value="">Loading examsÃ¢â‚¬Â¦</option></select>
                 </div>
                 <div class="form-group w-100">
                   <label class="form-label">2. Exam Type (Answer Method)</label>
@@ -791,7 +791,7 @@ async function hashPin(pin) {
               <div class="p-4 rounded mb-4" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);">
                 <div class="d-flex align-center justify-between flex-wrap gap-3 mb-2">
                   <span class="text-xs fw-700 text-gradient" id="format-title-badge">WRITTEN EXCEL FORMAT</span>
-                  <button class="btn btn-primary btn-sm w-100 mt-2" id="download-template-btn">📥 Download Template</button>
+                  <button class="btn btn-primary btn-sm w-100 mt-2" id="download-template-btn">ðŸ“¥ Download Template</button>
                 </div>
                 <p class="text-xs text-muted mb-2" id="format-desc-label">First row header arrangement:</p>
                 <div class="p-2 rounded text-xs mb-3" style="background:rgba(0,0,0,0.3);border:1px dashed var(--clr-border);font-family:monospace;overflow-x:auto;white-space:nowrap;" id="format-columns-code">
@@ -803,10 +803,10 @@ async function hashPin(pin) {
               <div class="p-4 rounded mt-auto" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);">
                 <div class="text-xs fw-700 text-muted uppercase mb-3">Other Templates:</div>
                 <div class="d-flex flex-column gap-2">
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-written">📄 Written (Type)</button>
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-speech">🎙️ Speech to Text</button>
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-mc">🔘 Multiple Choice</button>
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-dropdown">▼ Drop-down</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-written">ðŸ“„ Written (Type)</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-speech">ðŸŽ™ï¸ Speech to Text</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-mc">ðŸ”˜ Multiple Choice</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-dropdown">â–¼ Drop-down</button>
                 </div>
               </div>
             </div>
@@ -841,7 +841,7 @@ async function hashPin(pin) {
                   <span class="text-muted text-sm" id="preview-count-label">0 questions siap di-import.</span>
                   <div class="d-flex gap-2">
                     <button class="btn btn-secondary" id="cancel-import-btn">Cancel</button>
-                    <button class="btn btn-primary" id="confirm-save-import-btn">💾 Save Questions</button>
+                    <button class="btn btn-primary" id="confirm-save-import-btn">ðŸ’¾ Save Questions</button>
                   </div>
                 </div>
               </div>
@@ -923,7 +923,7 @@ async function hashPin(pin) {
           return nameA.localeCompare(nameB);
         });
         const sel = document.getElementById('import-exam-select');
-        sel.innerHTML = '<option value="">— Select Target Exam —</option>' +
+        sel.innerHTML = '<option value="">â€” Select Target Exam â€”</option>' +
           sortedExams.map(e => `<option value="${e.id}">${escapeHtml(formatExamDisplayName(e))} (${formatAnswerType(e.answer_type)})</option>`).join('');
       });
 
@@ -967,7 +967,7 @@ async function hashPin(pin) {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        showLoading('Reading Excel file preview…');
+        showLoading('Reading Excel file previewâ€¦');
         const reader = new FileReader();
 
         reader.onload = (evt) => {
@@ -1129,7 +1129,7 @@ async function hashPin(pin) {
         if (!examId) { showToast('Please select a target exam before saving.', 'warning'); return; }
         if (!parsedQuestionsState.length) { showToast('No questions to save.', 'warning'); return; }
 
-        showLoading('Menyimpan & merge questions ke database…');
+        showLoading('Menyimpan & merge questions ke databaseâ€¦');
         try {
           const sb = await getSupabase();
           let defaultSectionId = null;
@@ -1217,7 +1217,7 @@ async function hashPin(pin) {
           </div>
           <div class="form-group"><label class="form-label">Select Exam to Export</label>
             <select class="form-control" id="export-exam-select">
-              <option value="">— Select Exam —</option>
+              <option value="">â€” Select Exam â€”</option>
               ${[...exams].sort((a, b) => {
                 const labelA = `${a.exam_type ? a.exam_type + ' - ' : ''}${a.exam_title}`;
                 const labelB = `${b.exam_type ? b.exam_type + ' - ' : ''}${b.exam_title}`;
@@ -1225,7 +1225,7 @@ async function hashPin(pin) {
               }).map(e => `<option value="${e.id}">${e.exam_type ? e.exam_type + ' - ' : ''}${e.exam_title}</option>`).join('')}
             </select>
           </div>
-          <button class="btn btn-primary mt-2" id="export-questions-btn">📤 Download Excel (.xlsx)</button>
+          <button class="btn btn-primary mt-2" id="export-questions-btn">ðŸ“¤ Download Excel (.xlsx)</button>
         </div>
       `;
 
@@ -1234,7 +1234,7 @@ async function hashPin(pin) {
         if (!examId) { showToast('Please select an exam to export.', 'warning'); return; }
 
         const selectedExam = exams.find(e => e.id === examId);
-        showLoading('Preparing Excel export…');
+        showLoading('Preparing Excel exportâ€¦');
 
         try {
           const sb = await getSupabase();
@@ -1302,7 +1302,7 @@ async function hashPin(pin) {
       });
     }
 
-    // ── CRUD Modal ──
+    // â”€â”€ CRUD Modal â”€â”€
     const crudModal = document.getElementById('crud-modal');
     const crudForm  = document.getElementById('crud-form');
     let _editId = null;
@@ -1343,7 +1343,7 @@ async function hashPin(pin) {
         
         { id: 'name', label: 'Full Name', type: 'text', required: true },
         { id: 'gender', label: 'Gender', type: 'select', options: [
-          { value: '', label: '— Unassigned (Student will choose) —' },
+          { value: '', label: 'â€” Unassigned (Student will choose) â€”' },
           { value: 'male', label: 'Male (Mr.)' },
           { value: 'female', label: 'Female (Miss)' }
         ]},

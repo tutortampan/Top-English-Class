@@ -1,6 +1,6 @@
-import { adminFetchAll, adminUpdate, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage, formatStudentName } from '../api.js?v=3.1.0';
-import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=3.1.0';
-import { openStudentProfile } from './student-management.js?v=3.1.0';
+﻿import { adminFetchAll, adminUpdate, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage, formatStudentName } from '../api.js?v=3.2.0';
+import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=3.2.0';
+import { openStudentProfile } from './student-management.js?v=3.2.0';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -54,14 +54,14 @@ function toLevelLetter(num) {
           </div>
           <div>
             <button class="btn btn-secondary btn-sm" id="export-gradebook-btn" style="display:inline-flex;align-items:center;gap:6px;font-weight:600;">
-              ðŸ“Š Export Gradebook (.xlsx)
+              Ã°Å¸â€œÅ  Export Gradebook (.xlsx)
             </button>
           </div>
         </div>
 
         ${window._filterExamResults ? `
           <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
-            <span>⚡ Filtered Results for Selected Challenge (${allData.length} attempts)</span>
+            <span>âš¡ Filtered Results for Selected Challenge (${allData.length} attempts)</span>
             <button class="btn btn-ghost btn-xs" id="clear-exam-results-btn" style="text-decoration:underline;color:#93c5fd;">Show All Challenge Results</button>
           </div>
         ` : ''}
@@ -71,7 +71,7 @@ function toLevelLetter(num) {
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Program</label>
             <select id="res-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">â€” All Institutions â€”</option>
+              <option value="">Ã¢â‚¬â€ All Institutions Ã¢â‚¬â€</option>
               ${(allPrograms || []).filter(p => !p.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
             </select>
           </div>
@@ -79,7 +79,7 @@ function toLevelLetter(num) {
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Class</label>
             <select id="res-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">â€” All Programs â€”</option>
+              <option value="">Ã¢â‚¬â€ All Programs Ã¢â‚¬â€</option>
               ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
             </select>
           </div>
@@ -87,18 +87,18 @@ function toLevelLetter(num) {
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
             <select id="res-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">â€” All Batches â€”</option>
+              <option value="">Ã¢â‚¬â€ All Batches Ã¢â‚¬â€</option>
               ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
             </select>
           </div>
 
           <div style="flex:1;min-width:220px;">
             <label class="text-xs text-muted d-block mb-1">Search Student / Exam</label>
-            <input type="text" id="res-filter-search" class="form-control" placeholder="Type student name or exam titleâ€¦" style="padding:6px 10px;font-size:0.85rem;">
+            <input type="text" id="res-filter-search" class="form-control" placeholder="Type student name or exam titleÃ¢â‚¬Â¦" style="padding:6px 10px;font-size:0.85rem;">
           </div>
 
           <div class="d-flex align-end" style="padding-top:18px;">
-            <button class="btn btn-ghost btn-sm" id="res-btn-reset" title="Reset all filters">âœ• Reset</button>
+            <button class="btn btn-ghost btn-sm" id="res-btn-reset" title="Reset all filters">Ã¢Å“â€¢ Reset</button>
           </div>
         </div>
 
@@ -113,9 +113,9 @@ function toLevelLetter(num) {
                 <th class="text-left">Exam Title</th>
                 <th class="text-center">Score</th>
                 <th class="text-center">Grade</th>
-                <th class="text-center">âœ… Correct</th>
-                <th class="text-center">âš ï¸ Half</th>
-                <th class="text-center">âŒ Incorrect</th>
+                <th class="text-center">Ã¢Å“â€¦ Correct</th>
+                <th class="text-center">Ã¢Å¡Â Ã¯Â¸Â Half</th>
+                <th class="text-center">Ã¢ÂÅ’ Incorrect</th>
                 <th class="text-center">Submitted At</th>
                 <th class="text-center" style="width:100px;">Profile</th>
               </tr>
@@ -217,31 +217,31 @@ function toLevelLetter(num) {
           const total = answers.length;
           const correctLabel = total > 0
             ? `<span class="badge badge-success" style="font-size:0.75rem;">${attCorrect}</span>`
-            : '<span class="text-muted text-xs">â€”</span>';
+            : '<span class="text-muted text-xs">Ã¢â‚¬â€</span>';
           const halfLabel = total > 0
             ? `<span class="badge badge-warning" style="font-size:0.75rem;">${attMinor}</span>`
-            : '<span class="text-muted text-xs">â€”</span>';
+            : '<span class="text-muted text-xs">Ã¢â‚¬â€</span>';
           const wrongLabel  = total > 0
             ? `<span class="badge badge-danger" style="font-size:0.75rem;">${attWrong}</span>`
-            : '<span class="text-muted text-xs">â€”</span>';
+            : '<span class="text-muted text-xs">Ã¢â‚¬â€</span>';
 
           const studentId = r.student_id;
 
           return `
           <tr>
-            <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || 'â€”'}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.institutions?.name || 'â€”')}</td>
-            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.name || 'â€”')}</td>
+            <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || 'Ã¢â‚¬â€'}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.institutions?.name || 'Ã¢â‚¬â€')}</td>
+            <td class="text-muted text-sm">${escapeHtml(r.students?.programs?.name || 'Ã¢â‚¬â€')}</td>
             <td><span class="badge ${r.students?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.students?.batches?.name || 'Unassigned')}</span></td>
-            <td class="text-sm fw-600">${r.exams?.exam_type ? escapeHtml(r.exams.exam_type) + ' â€” ' : ''}${escapeHtml(r.exams?.exam_title || 'â€”')}</td>
+            <td class="text-sm fw-600">${r.exams?.exam_type ? escapeHtml(r.exams.exam_type) + ' Ã¢â‚¬â€ ' : ''}${escapeHtml(r.exams?.exam_title || 'Ã¢â‚¬â€')}</td>
             <td class="text-center fw-700 text-grade-${r.grade || 'F'}">${parseFloat(r.percentage || 0).toFixed(1)}%</td>
-            <td class="text-center"><span class="grade-badge grade-${r.grade || 'F'}" style="width:30px;height:30px;font-size:0.85rem;">${r.grade || 'â€”'}</span></td>
+            <td class="text-center"><span class="grade-badge grade-${r.grade || 'F'}" style="width:30px;height:30px;font-size:0.85rem;">${r.grade || 'Ã¢â‚¬â€'}</span></td>
             <td class="text-center">${correctLabel}</td>
             <td class="text-center">${wrongLabel}</td>
-            <td class="text-center text-muted text-xs">${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'â€”'}</td>
+            <td class="text-center text-muted text-xs">${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'Ã¢â‚¬â€'}</td>
             <td class="text-center">
               <button class="btn btn-ghost btn-sm results-view-profile-btn" data-sid="${studentId}" style="font-size:0.75rem; padding:3px 10px; display:inline-flex; align-items:center; gap:4px;" title="View full student profile">
-                ðŸ‘¤ Profile
+                Ã°Å¸â€˜Â¤ Profile
               </button>
             </td>
           </tr>
@@ -263,18 +263,18 @@ function toLevelLetter(num) {
           return;
         }
         const exportData = rowsToExport.map(r => ({
-          'Student Name': r.students?.name || 'â€”',
-          'Gender': r.students?.gender ? (r.students.gender === 'female' ? 'Female' : 'Male') : 'â€”',
-          'Institution': r.students?.programs?.institutions?.name || 'â€”',
-          'Program': r.students?.programs?.name || 'â€”',
-          'Batch': r.students?.batches?.name || 'â€”',
-          'Exam Title': r.exams?.exam_title || 'â€”',
-          'Exam Type': r.exams?.exam_type || 'â€”',
-          'Score': r.score != null ? r.score : 'â€”',
-          'Percentage (%)': r.percentage != null ? `${r.percentage}%` : 'â€”',
-          'Grade': r.grade || (r.percentage != null ? getGrade(r.percentage) : 'â€”'),
-          'Submitted At': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'â€”',
-          'Status': r.status || 'â€”'
+          'Student Name': r.students?.name || 'Ã¢â‚¬â€',
+          'Gender': r.students?.gender ? (r.students.gender === 'female' ? 'Female' : 'Male') : 'Ã¢â‚¬â€',
+          'Institution': r.students?.programs?.institutions?.name || 'Ã¢â‚¬â€',
+          'Program': r.students?.programs?.name || 'Ã¢â‚¬â€',
+          'Batch': r.students?.batches?.name || 'Ã¢â‚¬â€',
+          'Exam Title': r.exams?.exam_title || 'Ã¢â‚¬â€',
+          'Exam Type': r.exams?.exam_type || 'Ã¢â‚¬â€',
+          'Score': r.score != null ? r.score : 'Ã¢â‚¬â€',
+          'Percentage (%)': r.percentage != null ? `${r.percentage}%` : 'Ã¢â‚¬â€',
+          'Grade': r.grade || (r.percentage != null ? getGrade(r.percentage) : 'Ã¢â‚¬â€'),
+          'Submitted At': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'Ã¢â‚¬â€',
+          'Status': r.status || 'Ã¢â‚¬â€'
         }));
 
         const ws = XLSX.utils.json_to_sheet(exportData);
@@ -298,18 +298,18 @@ function toLevelLetter(num) {
           return;
         }
         const exportData = rowsToExport.map(r => ({
-          'Student Name': r.students?.name || 'â€”',
-          'Gender': r.students?.gender ? (r.students.gender === 'female' ? 'Female' : 'Male') : 'â€”',
-          'Institution': r.students?.programs?.institutions?.name || 'â€”',
-          'Program': r.students?.programs?.name || 'â€”',
-          'Batch': r.students?.batches?.name || 'â€”',
-          'Exam Title': r.exams?.exam_title || 'â€”',
-          'Exam Type': r.exams?.exam_type || 'â€”',
-          'Score': r.score != null ? r.score : 'â€”',
-          'Percentage (%)': r.percentage != null ? `${r.percentage}%` : 'â€”',
-          'Grade': r.grade || (r.percentage != null ? getGrade(r.percentage) : 'â€”'),
-          'Submitted At': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'â€”',
-          'Status': r.status || 'â€”'
+          'Student Name': r.students?.name || 'Ã¢â‚¬â€',
+          'Gender': r.students?.gender ? (r.students.gender === 'female' ? 'Female' : 'Male') : 'Ã¢â‚¬â€',
+          'Institution': r.students?.programs?.institutions?.name || 'Ã¢â‚¬â€',
+          'Program': r.students?.programs?.name || 'Ã¢â‚¬â€',
+          'Batch': r.students?.batches?.name || 'Ã¢â‚¬â€',
+          'Exam Title': r.exams?.exam_title || 'Ã¢â‚¬â€',
+          'Exam Type': r.exams?.exam_type || 'Ã¢â‚¬â€',
+          'Score': r.score != null ? r.score : 'Ã¢â‚¬â€',
+          'Percentage (%)': r.percentage != null ? `${r.percentage}%` : 'Ã¢â‚¬â€',
+          'Grade': r.grade || (r.percentage != null ? getGrade(r.percentage) : 'Ã¢â‚¬â€'),
+          'Submitted At': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'Ã¢â‚¬â€',
+          'Status': r.status || 'Ã¢â‚¬â€'
         }));
 
         const ws = XLSX.utils.json_to_sheet(exportData);
@@ -349,18 +349,18 @@ function toLevelLetter(num) {
           return;
         }
         const exportData = rowsToExport.map(r => ({
-          'Student Name': r.students?.name || 'â€”',
-          'Gender': r.students?.gender ? (r.students.gender === 'female' ? 'Female' : 'Male') : 'â€”',
-          'Institution': r.students?.programs?.institutions?.name || 'â€”',
-          'Program': r.students?.programs?.name || 'â€”',
-          'Batch': r.students?.batches?.name || 'â€”',
-          'Exam Title': r.exams?.exam_title || 'â€”',
-          'Exam Type': r.exams?.exam_type || 'â€”',
-          'Score': r.score != null ? r.score : 'â€”',
-          'Percentage (%)': r.percentage != null ? `${r.percentage}%` : 'â€”',
-          'Grade': r.grade || (r.percentage != null ? getGrade(r.percentage) : 'â€”'),
-          'Submitted At': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'â€”',
-          'Status': r.status || 'â€”'
+          'Student Name': r.students?.name || 'Ã¢â‚¬â€',
+          'Gender': r.students?.gender ? (r.students.gender === 'female' ? 'Female' : 'Male') : 'Ã¢â‚¬â€',
+          'Institution': r.students?.programs?.institutions?.name || 'Ã¢â‚¬â€',
+          'Program': r.students?.programs?.name || 'Ã¢â‚¬â€',
+          'Batch': r.students?.batches?.name || 'Ã¢â‚¬â€',
+          'Exam Title': r.exams?.exam_title || 'Ã¢â‚¬â€',
+          'Exam Type': r.exams?.exam_type || 'Ã¢â‚¬â€',
+          'Score': r.score != null ? r.score : 'Ã¢â‚¬â€',
+          'Percentage (%)': r.percentage != null ? `${r.percentage}%` : 'Ã¢â‚¬â€',
+          'Grade': r.grade || (r.percentage != null ? getGrade(r.percentage) : 'Ã¢â‚¬â€'),
+          'Submitted At': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'Ã¢â‚¬â€',
+          'Status': r.status || 'Ã¢â‚¬â€'
         }));
 
         const ws = XLSX.utils.json_to_sheet(exportData);
@@ -385,7 +385,7 @@ function toLevelLetter(num) {
       });
     }
 
-    // â”€â”€ STUDENT PROGRESS (Level Progression with Batch Grouping) â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ STUDENT PROGRESS (Level Progression with Batch Grouping) Ã¢â€â‚¬Ã¢â€â‚¬
 
     export async function renderProgressView(area) {
       area.innerHTML = `
@@ -457,7 +457,7 @@ function toLevelLetter(num) {
             <div style="min-width:180px;">
               <label class="text-xs text-muted d-block mb-1">Filter Program</label>
               <select id="prog-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-                <option value="">â€” All Institutions â€”</option>
+                <option value="">Ã¢â‚¬â€ All Institutions Ã¢â‚¬â€</option>
                 ${(allPrograms || []).filter(p => !p.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
               </select>
             </div>
@@ -465,7 +465,7 @@ function toLevelLetter(num) {
             <div style="min-width:180px;">
               <label class="text-xs text-muted d-block mb-1">Filter Class</label>
               <select id="prog-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-                <option value="">â€” All Programs â€”</option>
+                <option value="">Ã¢â‚¬â€ All Programs Ã¢â‚¬â€</option>
                 ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
               </select>
             </div>
@@ -473,7 +473,7 @@ function toLevelLetter(num) {
             <div style="min-width:180px;">
               <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
               <select id="prog-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-                <option value="">â€” All Batches â€”</option>
+                <option value="">Ã¢â‚¬â€ All Batches Ã¢â‚¬â€</option>
                 ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
               </select>
             </div>
@@ -484,7 +484,7 @@ function toLevelLetter(num) {
             </div>
 
             <div class="d-flex align-end" style="padding-top:18px;">
-              <button class="btn btn-ghost btn-sm" id="prog-btn-reset" title="Reset all filters">âœ• Reset</button>
+              <button class="btn btn-ghost btn-sm" id="prog-btn-reset" title="Reset all filters">Ã¢Å“â€¢ Reset</button>
             </div>
           </div>
 
@@ -567,15 +567,15 @@ function toLevelLetter(num) {
 
           tbody.innerHTML = filtered.map(r => `
             <tr>
-              <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.student?.name, r.student?.gender) || '—'}</td>
-              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.institutions?.name || '—')}</td>
-              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.name || '—')}</td>
+              <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.student?.name, r.student?.gender) || 'â€”'}</td>
+              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.institutions?.name || 'â€”')}</td>
+              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.name || 'â€”')}</td>
               <td><span class="badge ${r.student?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.student?.batches?.name || 'Unassigned')}</span></td>
-              <td class="fw-600 text-sm">${escapeHtml(r.assessmentTitle || '—')}</td>
+              <td class="fw-600 text-sm">${escapeHtml(r.assessmentTitle || 'â€”')}</td>
               <td class="text-center"><span class="badge badge-primary">Level ${toLevelLetter(r.levelNumber)} ${escapeHtml(r.levelName || '')}</span></td>
               <td class="text-center">
                 <span class="badge ${r.is_completed ? 'badge-success' : r.is_in_progress ? 'badge-warning' : 'badge-neutral'}">
-                  ${r.is_completed ? '✓ Completed' : r.is_in_progress ? '▶ In Progress' : '🔒 Not Started'}
+                  ${r.is_completed ? 'âœ“ Completed' : r.is_in_progress ? 'â–¶ In Progress' : 'ðŸ”’ Not Started'}
                 </span>
               </td>
               <td class="text-center">
@@ -607,10 +607,10 @@ function toLevelLetter(num) {
         area.innerHTML = `<div class="p-5 text-center text-error">Failed to load progression data: ${err.message}</div>`;
       }
     }
-    // â”€â”€ AUDIT LOG â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ AUDIT LOG Ã¢â€â‚¬Ã¢â€â‚¬
 
     export async function renderRecalibrator(area) {
-      showLoading('Loading exams for recalibrationâ€¦');
+      showLoading('Loading exams for recalibrationÃ¢â‚¬Â¦');
       const allExams = await adminFetchAll('exams');
       hideLoading();
       const activeExams = allExams.filter(e => !e.deleted_at).sort((a, b) => (a.exam_title || '').localeCompare(b.exam_title || ''));
@@ -618,7 +618,7 @@ function toLevelLetter(num) {
       area.innerHTML = `
         <div class="section-header">
           <div>
-            <h2 class="section-title text-gradient" style="font-size:1.6rem;">âš¡ Exam Recalibrator</h2>
+            <h2 class="section-title text-gradient" style="font-size:1.6rem;">Ã¢Å¡Â¡ Exam Recalibrator</h2>
             <p class="section-subtitle">
               Recalculate historical submitted student attempts after updating questions, adding multiple correct answers (separated by <code>;</code> or <code>|</code>), or enabling hyphen tolerance.
             </p>
@@ -630,13 +630,13 @@ function toLevelLetter(num) {
             <div style="flex: 1; min-width: 280px;">
               <label class="form-label">Select Target Exam</label>
               <select class="form-control" id="recalibrator-exam-select">
-                <option value="">â€” Choose an Exam to Recalibrate â€”</option>
+                <option value="">Ã¢â‚¬â€ Choose an Exam to Recalibrate Ã¢â‚¬â€</option>
                 ${activeExams.map(e => `<option value="${e.id}">[${escapeHtml(e.exam_type || 'Exam')}] ${escapeHtml(e.exam_title || e.display_name || e.id)}</option>`).join('')}
               </select>
             </div>
             <div style="display: flex; gap: 12px; align-items: flex-end; padding-top: 20px;">
-              <button class="btn btn-primary" id="btn-preview-recal" disabled>ðŸ” Preview Recalibration</button>
-              <button class="btn btn-success" id="btn-apply-recal" disabled style="background:linear-gradient(135deg,#10b981,#059669);font-weight:700;">âš¡ Apply Recalibration</button>
+              <button class="btn btn-primary" id="btn-preview-recal" disabled>Ã°Å¸â€Â Preview Recalibration</button>
+              <button class="btn btn-success" id="btn-apply-recal" disabled style="background:linear-gradient(135deg,#10b981,#059669);font-weight:700;">Ã¢Å¡Â¡ Apply Recalibration</button>
             </div>
           </div>
         </div>
@@ -657,11 +657,11 @@ function toLevelLetter(num) {
               <div class="fw-700" style="font-size:1.6rem; color:var(--clr-primary, #a78bfa);" id="recal-metric-affected">0</div>
             </div>
             <div class="glass-card p-4 text-center" style="border-left: 4px solid #10b981;">
-              <div class="text-xs text-muted mb-1">Status: FAIL âž” PASS</div>
+              <div class="text-xs text-muted mb-1">Status: FAIL Ã¢Å¾â€ PASS</div>
               <div class="fw-700" style="font-size:1.6rem; color: #10b981;" id="recal-metric-fail-pass">0</div>
             </div>
             <div class="glass-card p-4 text-center" style="border-left: 4px solid #f43f5e;">
-              <div class="text-xs text-muted mb-1">Status: PASS âž” FAIL</div>
+              <div class="text-xs text-muted mb-1">Status: PASS Ã¢Å¾â€ FAIL</div>
               <div class="fw-700" style="font-size:1.6rem; color: #f43f5e;" id="recal-metric-pass-fail">0</div>
             </div>
             <div class="glass-card p-4 text-center" style="border-left: 4px solid #38bdf8;">
@@ -713,19 +713,19 @@ function toLevelLetter(num) {
         <!-- Confirmation Modal for Recalibration -->
         <div class="modal-backdrop hidden" id="recal-confirm-modal" role="dialog" aria-modal="true">
           <div class="modal-box" style="max-width: 480px; text-align: center;">
-            <div style="font-size: 2.8rem; margin-bottom: 1rem;">âš¡</div>
+            <div style="font-size: 2.8rem; margin-bottom: 1rem;">Ã¢Å¡Â¡</div>
             <h3 class="mb-2">Confirm Exam Recalibration?</h3>
             <p class="text-muted text-sm mb-4" id="recal-modal-desc">
               This will safely update historical submitted scores, percentages, grades, and student progression using the authoritative grading engine.
             </p>
             <div class="p-4 rounded text-left text-xs mb-6" style="background: rgba(255,255,255,0.04); border: 1px solid var(--clr-border);">
-              <div class="mb-1">â€¢ <b>Affected Attempts:</b> <span id="modal-affected-count" class="fw-700 text-primary">0</span></div>
-              <div class="mb-1">â€¢ <b>Status Transitions:</b> <span id="modal-status-changes" class="fw-700">0</span></div>
-              <div>â€¢ <b>Audit Trail:</b> An audit log entry will be permanently recorded.</div>
+              <div class="mb-1">Ã¢â‚¬Â¢ <b>Affected Attempts:</b> <span id="modal-affected-count" class="fw-700 text-primary">0</span></div>
+              <div class="mb-1">Ã¢â‚¬Â¢ <b>Status Transitions:</b> <span id="modal-status-changes" class="fw-700">0</span></div>
+              <div>Ã¢â‚¬Â¢ <b>Audit Trail:</b> An audit log entry will be permanently recorded.</div>
             </div>
             <div class="d-flex gap-3 justify-between">
               <button class="btn btn-secondary" id="btn-recal-cancel" style="flex:1;">Cancel</button>
-              <button class="btn btn-primary" id="btn-recal-confirm-run" style="flex:1; background: linear-gradient(135deg,#10b981,#059669); border:none;">âœ“ Yes, Apply Changes</button>
+              <button class="btn btn-primary" id="btn-recal-confirm-run" style="flex:1; background: linear-gradient(135deg,#10b981,#059669); border:none;">Ã¢Å“â€œ Yes, Apply Changes</button>
             </div>
           </div>
         </div>
@@ -777,9 +777,9 @@ function toLevelLetter(num) {
 
           let statusBadge = '<span class="badge badge-neutral">No Change</span>';
           if (isStatusPass) {
-            statusBadge = '<span class="badge badge-success fw-700">FAIL âž” PASS âœ¨</span>';
+            statusBadge = '<span class="badge badge-success fw-700">FAIL Ã¢Å¾â€ PASS Ã¢Å“Â¨</span>';
           } else if (isStatusFail) {
-            statusBadge = '<span class="badge badge-danger fw-700">PASS âž” FAIL âš ï¸</span>';
+            statusBadge = '<span class="badge badge-danger fw-700">PASS Ã¢Å¾â€ FAIL Ã¢Å¡Â Ã¯Â¸Â</span>';
           } else if (item.isAffected) {
             statusBadge = isScoreUp ? '<span class="badge badge-info">+ Score Up</span>' : '<span class="badge badge-warning">- Score Down</span>';
           }
@@ -809,7 +809,7 @@ function toLevelLetter(num) {
         const examId = examSelect.value;
         if (!examId) return;
 
-        showLoading('Calculating recalibration preview across all attemptsâ€¦');
+        showLoading('Calculating recalibration preview across all attemptsÃ¢â‚¬Â¦');
         try {
           currentPreviewData = await previewRecalibrateExam(examId);
           hideLoading();
@@ -855,7 +855,7 @@ function toLevelLetter(num) {
         const examId = examSelect.value;
         if (!examId) return;
 
-        showLoading('Applying recalibration to historical student resultsâ€¦');
+        showLoading('Applying recalibration to historical student resultsÃ¢â‚¬Â¦');
         try {
           const res = await applyRecalibrateExam(examId);
           hideLoading();
@@ -870,4 +870,4 @@ function toLevelLetter(num) {
       });
     }
 
-    // â”€â”€ Student Import Engine â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Student Import Engine Ã¢â€â‚¬Ã¢â€â‚¬

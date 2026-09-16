@@ -2,8 +2,8 @@
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete,
   mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
   detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions
-} from '../api.js?v=3.1.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=3.1.0';
+} from '../api.js?v=3.2.0';
+import { showToast, showLoading, hideLoading } from '../app.js?v=3.2.0';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';

@@ -1,4 +1,4 @@
-import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js';
+﻿import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js';
 import { openAssessmentBuilder } from './exam-builder.js';
 import { showToast, showLoading, hideLoading } from '../app.js';
 import { getSupabase } from '../supabase.js';
@@ -29,34 +29,34 @@ export async function renderExams(area) {
     <div class="exam-hero">
       <div class="d-flex align-center justify-between flex-wrap gap-4">
         <div>
-          <h2 class="section-title text-gradient" style="font-size:1.75rem;">Challenges Hub (C — CHALLENGES)</h2>
+          <h2 class="section-title text-gradient" style="font-size:1.75rem;">Challenges Hub (C â€” CHALLENGES)</h2>
           <p class="section-subtitle">Create, organize, publish, and inspect all online examinations</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
           <button class="btn btn-primary btn-sm" id="hub-add-exam">+ Create Exam</button>
-          <button class="btn btn-secondary btn-sm" id="hub-btn-assignments" onclick="window.loadSection('assignments')">👥 Cohorts & Assignments</button>
-          <button class="btn btn-secondary btn-sm" id="hub-btn-results" onclick="window.loadSection('results')">📊 Inspect Results</button>
-          <button class="btn btn-warning btn-sm" id="hub-btn-recalibrate" onclick="window.loadSection('recalibrator')" style="font-weight:700;">⚖️ Recalibrate</button>
-          <button class="btn btn-secondary btn-sm" onclick="window.loadSection('import-questions')">📥 Import Questions</button>
-          <button class="btn btn-secondary btn-sm" onclick="window.loadSection('export-questions')">📤 Export Questions</button>
+          <button class="btn btn-secondary btn-sm" id="hub-btn-assignments" onclick="window.loadSection('assignments')">ðŸ‘¥ Cohorts & Assignments</button>
+          <button class="btn btn-secondary btn-sm" id="hub-btn-results" onclick="window.loadSection('results')">ðŸ“Š Inspect Results</button>
+          <button class="btn btn-warning btn-sm" id="hub-btn-recalibrate" onclick="window.loadSection('recalibrator')" style="font-weight:700;">âš–ï¸ Recalibrate</button>
+          <button class="btn btn-secondary btn-sm" onclick="window.loadSection('import-questions')">ðŸ“¥ Import Questions</button>
+          <button class="btn btn-secondary btn-sm" onclick="window.loadSection('export-questions')">ðŸ“¤ Export Questions</button>
         </div>
       </div>
 
       <div class="kpi-grid mt-4">
         <div class="kpi-card">
-          <div class="kpi-icon">📝</div>
+          <div class="kpi-icon">ðŸ“</div>
           <div><div class="kpi-val">${totalExams}</div><div class="kpi-lbl">Total Exams</div></div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-icon" style="color:var(--clr-success,#4ade80);">🟢</div>
+          <div class="kpi-icon" style="color:var(--clr-success,#4ade80);">ðŸŸ¢</div>
           <div><div class="kpi-val" style="color:var(--clr-success,#4ade80);">${publishedCount}</div><div class="kpi-lbl">Published Exams</div></div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-icon" style="color:var(--clr-warning,#fbbf24);">🚧</div>
+          <div class="kpi-icon" style="color:var(--clr-warning,#fbbf24);">ðŸš§</div>
           <div><div class="kpi-val" style="color:var(--clr-warning,#fbbf24);">${draftCount}</div><div class="kpi-lbl">Draft / Inactive</div></div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-icon" style="color:var(--clr-accent-1);">❓</div>
+          <div class="kpi-icon" style="color:var(--clr-accent-1);">â“</div>
           <div><div class="kpi-val">${totalQuestions}</div><div class="kpi-lbl">Questions in Bank</div></div>
         </div>
       </div>
@@ -78,7 +78,7 @@ export async function renderExams(area) {
       id: r.id,
       title: r.exam_title,
       programName,
-      subject: r.subjects?.name || '—',
+      subject: r.subjects?.name || 'â€”',
       level: window.toLevelLetter ? window.toLevelLetter(r.levels?.level_number || 1) : r.levels?.level_number,
       order: r.exam_order || 1,
       prereq: prereqExam ? prereqExam.exam_title : '',
@@ -157,13 +157,13 @@ export async function renderExams(area) {
           <div class="fw-800" style="color:var(--clr-text-1); font-size:1rem;">${escapeHtml(val)}</div>
           <div class="text-muted text-xs mt-1 fw-600 d-flex gap-2 flex-wrap align-center">
             <span><span class="text-accent">CLASS:</span> ${escapeHtml(row.programName)}</span>
-            <span>•</span>
+            <span>â€¢</span>
             <span><span class="text-accent">SUBJ:</span> ${escapeHtml(row.subject)}</span>
-            <span>•</span>
+            <span>â€¢</span>
             <span><span class="badge badge-primary" style="font-size:0.6rem; padding: 2px 6px;">LVL ${row.level}</span></span>
             <span><span class="badge badge-neutral" style="font-size:0.6rem; padding: 2px 6px;">ORD ${row.order}</span></span>
           </div>
-          ${row.prereq ? `<div class="mt-2"><span class="badge badge-warning text-xs">⚠️ Prereq: ${escapeHtml(row.prereq)}</span></div>` : ''}
+          ${row.prereq ? `<div class="mt-2"><span class="badge badge-warning text-xs">âš ï¸ Prereq: ${escapeHtml(row.prereq)}</span></div>` : ''}
         `
       },
       { 
@@ -173,11 +173,11 @@ export async function renderExams(area) {
         render: (val, row) => `
           <div class="d-flex flex-wrap gap-1">
             <span class="badge badge-info text-xs">${val}</span>
-            <span class="badge ${row.questionOrder === 'Random' ? 'badge-primary' : 'badge-neutral'} text-xs">${row.questionOrder === 'Random' ? '🔀 Random' : '➡️ Seq'}</span>
+            <span class="badge ${row.questionOrder === 'Random' ? 'badge-primary' : 'badge-neutral'} text-xs">${row.questionOrder === 'Random' ? 'ðŸ”€ Random' : 'âž¡ï¸ Seq'}</span>
             <span class="badge badge-neutral text-xs">${escapeHtml(row.examCategory)}</span>
           </div>
           <div class="text-muted text-xs mt-2 fw-600">
-            ⏱️ ${row.timeLimit} min &nbsp; | &nbsp; 🎯 Pass: ${row.minScore}%
+            â±ï¸ ${row.timeLimit} min &nbsp; | &nbsp; ðŸŽ¯ Pass: ${row.minScore}%
           </div>
         `
       },
@@ -199,8 +199,8 @@ export async function renderExams(area) {
         sortable: false,
         render: (val, row) => `
           <div class="d-flex gap-2 justify-end">
-            <button class="btn btn-ghost btn-sm" title="View Results" onclick="window._filterExamResults='${row.id}'; window.loadSection('results');">📊 Results</button>
-            <button class="btn btn-ghost btn-sm" title="Recalibrate Exam" onclick="window._filterRecalibrateExam='${row.id}'; window.loadSection('recalibrator');">⚖️</button>
+            <button class="btn btn-ghost btn-sm" title="View Results" onclick="window._filterExamResults='${row.id}'; window.loadSection('results');">ðŸ“Š Results</button>
+            <button class="btn btn-ghost btn-sm" title="Recalibrate Exam" onclick="window._filterRecalibrateExam='${row.id}'; window.loadSection('recalibrator');">âš–ï¸</button>
             <button class="btn btn-secondary btn-sm" onclick="window._duplicateExam('${row.id}')" title="Duplicate Exam">Copy</button>
             <button class="btn ${row.status === 'published' ? 'btn-danger' : 'btn-success'} btn-sm" onclick="window._publishExam('${row.id}', '${row.status}')">
               ${row.status === 'published' ? 'Unpublish' : 'Publish'}
@@ -222,10 +222,10 @@ function escapeHtml(unsafe) {
 
 function formatAnswerType(type) {
   switch(type) {
-    case 'speech_to_text': return '🎙️ Speech';
-    case 'dropdown': return '🔽 Drop-down';
-    case 'multiple_choice': return '🔘 Mult Choice';
-    case 'written': return '✍️ Written';
+    case 'speech_to_text': return 'ðŸŽ™ï¸ Speech';
+    case 'dropdown': return 'ðŸ”½ Drop-down';
+    case 'multiple_choice': return 'ðŸ”˜ Mult Choice';
+    case 'written': return 'âœï¸ Written';
     default: return String(type);
   }
 }
@@ -329,7 +329,7 @@ export async function renderQuestions(area) {
   questions.forEach(q => { window._qRecords[q.id] = q; });
 
   const gridData = questions.map(q => {
-    const examDisplay = q.exams ? window.formatExamDisplayName(q.exams) : ((q.exam_sections && q.exam_sections.exams) ? window.formatExamDisplayName(q.exam_sections.exams) + ` (Sec: ${q.exam_sections.title})` : '—');
+    const examDisplay = q.exams ? window.formatExamDisplayName(q.exams) : ((q.exam_sections && q.exam_sections.exams) ? window.formatExamDisplayName(q.exam_sections.exams) + ` (Sec: ${q.exam_sections.title})` : 'â€”');
     return {
       id: q.id,
       order: q.question_order,
@@ -443,16 +443,16 @@ export async function renderResults(area) {
       id: r.id,
       studentId: r.student_id,
       studentName: r.students?.name || 'Unknown',
-      program: r.students?.programs?.institutions?.name || '—',
-      className: r.students?.programs?.name || '—',
-      batch: r.students?.batches?.name || '—',
+      program: r.students?.programs?.institutions?.name || 'â€”',
+      className: r.students?.programs?.name || 'â€”',
+      batch: r.students?.batches?.name || 'â€”',
       examTitle: r.exams?.exam_title || 'Unknown Exam',
       score: r.percentage ? parseFloat(r.percentage).toFixed(1) : '0.0',
       grade: r.grade || '-',
       correct: attCorrect,
       minor: attMinor,
       wrong: attWrong,
-      submittedAt: r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '—',
+      submittedAt: r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'â€”',
       _raw: r
     };
   });

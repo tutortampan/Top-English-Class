@@ -1,4 +1,4 @@
-import { adminFetchAll, adminSoftDelete } from '../api.js';
+﻿import { adminFetchAll, adminSoftDelete } from '../api.js';
 import { showToast } from '../app.js';
 
 let programsGrid, batchesGrid;
@@ -33,7 +33,7 @@ export async function renderClasses(area) {
     
     ${window._filterInstitutionId ? `
       <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
-        <span>🏛️ Filtered by Institution: <strong>${escapeHtml(window._filterInstitutionName || 'Selected Institution')}</strong> (${filteredData.length} programs)</span>
+        <span>ðŸ›ï¸ Filtered by Institution: <strong>${escapeHtml(window._filterInstitutionName || 'Selected Institution')}</strong> (${filteredData.length} programs)</span>
         <button class="btn btn-ghost btn-xs" onclick="window._filterInstitutionId=null; window._filterInstitutionName=null; window.loadSection('programs');" style="text-decoration:underline;color:#93c5fd;">Show All Institutions</button>
       </div>
     ` : ''}
@@ -94,7 +94,7 @@ export async function renderClasses(area) {
         sortable: false,
         render: (val, row) => `
           <div class="d-flex gap-2 justify-end">
-            <button class="btn btn-outline btn-sm" onclick='window._filterProgramId="${row.id}"; window._filterProgramName="${escapeHtml(row.name)}"; window.loadSection("batches");' title="View Batches in ${escapeHtml(row.name)}">Batches →</button>
+            <button class="btn btn-outline btn-sm" onclick='window._filterProgramId="${row.id}"; window._filterProgramName="${escapeHtml(row.name)}"; window.loadSection("batches");' title="View Batches in ${escapeHtml(row.name)}">Batches â†’</button>
             <button class="btn btn-secondary btn-sm" onclick='window._editRecord("programs", "${row.id}", ${JSON.stringify(JSON.stringify(row._raw))})'>Edit</button>
             <button class="btn btn-danger btn-sm" onclick='window._deleteRecord("programs", "${row.id}", "${escapeHtml(row.name)}")'>Delete</button>
           </div>
@@ -141,7 +141,7 @@ export async function renderBatches(area) {
     
     ${window._filterProgramId ? `
       <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
-        <span>🏛️ Filtered by Program: <strong>${escapeHtml(window._filterProgramName || 'Selected Program')}</strong> (${filteredData.length} batches)</span>
+        <span>ðŸ›ï¸ Filtered by Program: <strong>${escapeHtml(window._filterProgramName || 'Selected Program')}</strong> (${filteredData.length} batches)</span>
         <button class="btn btn-ghost btn-xs" onclick="window._filterProgramId=null; window._filterProgramName=null; window.loadSection('batches');" style="text-decoration:underline;color:#93c5fd;">Show All Programs</button>
       </div>
     ` : ''}
@@ -209,7 +209,7 @@ export async function renderBatches(area) {
         sortable: true,
         render: (val, row) => `
           <button class="btn btn-ghost btn-xs fw-600" onclick='window._filterBatchId="${row.id}"; window._filterBatchName="${escapeHtml(row.name)}"; window.loadSection("students");' title="View ${val} Students in ${escapeHtml(row.name)}">
-            ${val} Students →
+            ${val} Students â†’
           </button>
         `
       },
@@ -220,7 +220,7 @@ export async function renderBatches(area) {
         sortable: false,
         render: (val, row) => `
           <div class="d-flex gap-2 justify-end">
-            <button class="btn btn-outline btn-sm" onclick='window._filterBatchId="${row.id}"; window._filterBatchName="${escapeHtml(row.name)}"; window.loadSection("students");' title="View Students in ${escapeHtml(row.name)}">Students →</button>
+            <button class="btn btn-outline btn-sm" onclick='window._filterBatchId="${row.id}"; window._filterBatchName="${escapeHtml(row.name)}"; window.loadSection("students");' title="View Students in ${escapeHtml(row.name)}">Students â†’</button>
             <button class="btn btn-secondary btn-sm" onclick='window._editRecord("batches", "${row.id}", ${JSON.stringify(JSON.stringify(row._raw))})'>Edit</button>
             <button class="btn btn-danger btn-sm" onclick='window._deleteRecord("batches", "${row.id}", "${escapeHtml(row.name)}")'>Delete</button>
           </div>

@@ -1,12 +1,12 @@
-import {
+﻿import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete,
   adminFetchDeleted, adminRestore, clearAdminCache,
   mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
   detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions,
   fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
   testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
-} from '../api.js?v=3.1.0';
-import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=3.1.0';
+} from '../api.js?v=3.2.0';
+import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=3.2.0';
 import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=3.2.0';
 import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=3.2.0';
 import { getSupabase } from '../supabase.js?v=3.2.0';
@@ -24,7 +24,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
     // -- Primary Tab Switching Variables --
     const mobileTabs = document.querySelectorAll('.mobile-tab');
 
-    // â”€â”€ ABCD Primary Architecture Section Titles â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ ABCD Primary Architecture Section Titles Ã¢â€â‚¬Ã¢â€â‚¬
     const sectionTitles = {
       institutions: 'Institutions', programs: 'Programs', batches: 'Batches', students: 'Students Roster', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
       subjects: 'Curriculum Subjects', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', word_types: 'Word Types & Lexicon', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
@@ -111,7 +111,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       return result;
     }
 
-    // ── Auth ──
+    // â”€â”€ Auth â”€â”€
     const session = getAdminSession();
     if (session) showConsole();
 
@@ -120,7 +120,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       const pass = document.getElementById('admin-password').value;
       if (!user || !pass) { showToast('Please enter credentials.', 'warning'); return; }
 
-      showLoading('Authenticating…');
+      showLoading('Authenticatingâ€¦');
       try {
         // 1. Primary Check: Master credentials (admin / admin123) or custom saved password
         const savedCustomPass = localStorage.getItem('tec_admin_custom_password');
@@ -223,9 +223,9 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       }
     }
 
-    // ── Topbar Domain Switcher Click (removed — no domain pill elements exist) ──
+    // â”€â”€ Topbar Domain Switcher Click (removed â€” no domain pill elements exist) â”€â”€
 
-    // ── Mobile Bottom Tab Switching ──
+    // â”€â”€ Mobile Bottom Tab Switching â”€â”€
     mobileTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         const panel = tab.dataset.panel;
@@ -234,7 +234,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       });
     });
 
-    // ── Sidebar Toggle for Mobile ──
+    // â”€â”€ Sidebar Toggle for Mobile â”€â”€
     const sidebarToggleBtn = document.getElementById('sidebar-toggle');
     const adminSidebar = document.getElementById('admin-sidebar');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -255,7 +255,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
     });
     sidebarOverlay?.addEventListener('click', closeSidebar);
 
-    // ── Sub-nav item click ──
+    // â”€â”€ Sub-nav item click â”€â”€
     document.querySelectorAll('.admin-nav-item').forEach(item => {
       item.addEventListener('click', () => {
         document.querySelectorAll('.admin-nav-item').forEach(i => i.classList.remove('active'));
@@ -265,7 +265,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       });
     });
 
-    // ── Global String & HTML Utilities ──
+    // â”€â”€ Global String & HTML Utilities â”€â”€
     function escapeHtml(str) {
       return String(str || '')
         .replace(/&/g, '&amp;')
@@ -293,7 +293,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
     }
 
     function formatExamDisplayName(exam, classContext = '') {
-      if (!exam) return '—';
+      if (!exam) return 'â€”';
       const parts = [];
       if (exam.institutions?.name) parts.push(`[${exam.institutions.name}]`);
       if (classContext) parts.push(`[${classContext}]`);
@@ -304,32 +304,32 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       }
       if (exam.exam_type) parts.push(exam.exam_type);
       if (exam.exam_title) parts.push(exam.exam_title);
-      return parts.length > 0 ? parts.join(' · ') : (exam.exam_title || 'Exam');
+      return parts.length > 0 ? parts.join(' Â· ') : (exam.exam_title || 'Exam');
     }
 
-    // ── DB Connection Status Banner ──
+    // â”€â”€ DB Connection Status Banner â”€â”€
     async function initConnectionBanner() {
       const banner = document.getElementById('db-connection-banner');
       const statusDot = document.getElementById('db-status-dot');
       const statusText = document.getElementById('db-status-text');
       if (!banner) return;
 
-      // Show checking state â€” use CSS classes, not inline styles
-      statusText.textContent = 'Checking database connectionâ€¦';
+      // Show checking state Ã¢â‚¬â€ use CSS classes, not inline styles
+      statusText.textContent = 'Checking database connectionÃ¢â‚¬Â¦';
 
       const result = await testSupabaseConnection();
       if (result.connected) {
         statusDot.classList.add('connected');
         banner.classList.add('connected');
-        statusText.innerHTML = `<strong>Connected to Supabase</strong> â€” data is saved permanently to the cloud`;
+        statusText.innerHTML = `<strong>Connected to Supabase</strong> Ã¢â‚¬â€ data is saved permanently to the cloud`;
         setTimeout(() => { banner.style.display = 'none'; }, 4000); // Auto-hide when connected
       } else {
         statusDot.classList.add('error');
         banner.classList.add('error');
         if (result.mode === 'demo') {
-          statusText.innerHTML = `<strong>Demo / Offline Mode</strong> â€” data is in-memory only and will be lost on page reload`;
+          statusText.innerHTML = `<strong>Demo / Offline Mode</strong> Ã¢â‚¬â€ data is in-memory only and will be lost on page reload`;
         } else {
-          statusText.innerHTML = `<strong>Database Error</strong> â€” ${result.error}. <a href="docs/DATABASE.md" target="_blank" style="color:#f87171;">Check setup guide</a>`;
+          statusText.innerHTML = `<strong>Database Error</strong> Ã¢â‚¬â€ ${result.error}. <a href="docs/DATABASE.md" target="_blank" style="color:#f87171;">Check setup guide</a>`;
         }
       }
     }
@@ -371,7 +371,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       if (domainEl) domainEl.textContent = domain;
       document.getElementById('topbar-title').textContent = sectionTitles[section] || section;
       const area = document.getElementById('admin-content-area');
-      area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loadingâ€¦</p></div>';
+      area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>LoadingÃ¢â‚¬Â¦</p></div>';
 
       // Set up Add button
       document.getElementById('add-record-btn').onclick = () => {
@@ -406,7 +406,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
           case 'import-questions':    await renderCentralQuestionImport(area); break;
           case 'export-questions':    renderExportQuestions(area); break;
           case 'recalibrator':        await renderRecalibrator(area); break;
-          default: area.innerHTML = `<div class="empty-state"><div class="empty-state__icon">ðŸš§</div><h3>${sectionTitles[section] || section}</h3><p>This section is under development.</p></div>`;
+          default: area.innerHTML = `<div class="empty-state"><div class="empty-state__icon">Ã°Å¸Å¡Â§</div><h3>${sectionTitles[section] || section}</h3><p>This section is under development.</p></div>`;
         }
       } catch(e) {
         console.error('[loadSection] error:', section, e);
@@ -414,7 +414,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       }
     }
 
-    // ── INSTITUTIONS ──
+    // â”€â”€ INSTITUTIONS â”€â”€
 
     async function renderPrograms(area) {
       const rawData = await adminFetchAll('institutions');
@@ -443,7 +443,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
         </div>
       `;
       const tbody = document.getElementById('tbl-institutions');
-      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state__icon">🏢</div><p>No institutions yet.</p></div></td></tr>'; return; }
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state__icon">ðŸ¢</div><p>No institutions yet.</p></div></td></tr>'; return; }
       window._progRecords = {};
       data.forEach(r => {
         window._progRecords[r.id] = r;
@@ -454,7 +454,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
           <td class="text-center text-muted text-sm">${new Date(r.created_at).toLocaleDateString()}</td>
           <td class="text-right">
             <div class="d-flex gap-2 justify-end">
-              <button class="btn btn-outline btn-sm" data-nav-progs="${r.id}" title="View Programs in ${escapeHtml(r.name)}">Programs â†’</button>
+              <button class="btn btn-outline btn-sm" data-nav-progs="${r.id}" title="View Programs in ${escapeHtml(r.name)}">Programs Ã¢â€ â€™</button>
               <button class="btn btn-secondary btn-sm" data-edit-prog="${r.id}">Edit</button>
               <button class="btn btn-danger btn-sm" data-del-prog="${r.id}">Delete</button>
             </div>
@@ -488,7 +488,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       });
     }
 
-    // ── SUBJECTS ──
+    // â”€â”€ SUBJECTS â”€â”€
     async function renderSubjects(area) {
       const [rawData, institutions] = await Promise.all([adminFetchAll('subjects', '*, institutions(name)'), adminFetchAll('institutions')]);
       // Sort by Institution Name (A-Z), then Subject Name (A-Z)
@@ -526,12 +526,12 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
         window._subjRecords[r.id] = r;
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="text-muted fw-600">${escapeHtml(r.institutions?.name || '—')}</td>
+          <td class="text-muted fw-600">${escapeHtml(r.institutions?.name || 'â€”')}</td>
           <td class="fw-600" style="color:var(--clr-text-1);">${escapeHtml(r.name)}</td>
           <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-neutral'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
           <td class="text-right">
             <div class="d-flex gap-2 justify-end">
-              <button class="btn btn-outline btn-sm" data-nav-topics="${r.id}" title="View Topics in ${escapeHtml(r.name)}">Topics â†’</button>
+              <button class="btn btn-outline btn-sm" data-nav-topics="${r.id}" title="View Topics in ${escapeHtml(r.name)}">Topics Ã¢â€ â€™</button>
               <button class="btn btn-secondary btn-sm" data-edit-subj="${r.id}">Edit</button>
               <button class="btn btn-danger btn-sm" data-del-subj="${r.id}">Delete</button>
             </div>
@@ -565,7 +565,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       });
     }
 
-    // ── LEVELS ──
+    // â”€â”€ LEVELS â”€â”€
     async function renderLevels(area) {
       const [rawData, allClasses] = await Promise.all([
         adminFetchAll('levels', '*, subjects(name, institution_id, institutions(name))'),
@@ -621,13 +621,13 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       });
 
       data.forEach(r => {
-        const progName = r.subjects?.institutions?.name || '—';
+        const progName = r.subjects?.institutions?.name || 'â€”';
         const programName = (r.program_id && classMap[r.program_id]?.name) ? classMap[r.program_id].name : 'All Programs';
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><span class="badge badge-neutral">${escapeHtml(progName)}</span></td>
           <td><span class="badge badge-neutral">${escapeHtml(programName)}</span></td>
-          <td class="text-muted fw-600">${escapeHtml(r.subjects?.name || '—')}</td>
+          <td class="text-muted fw-600">${escapeHtml(r.subjects?.name || 'â€”')}</td>
           <td class="text-center"><span class="badge badge-primary">Level ${toLevelLetter(r.level_number)}</span></td>
           <td class="fw-600">${escapeHtml(r.name)}</td>
           <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-neutral'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
@@ -659,20 +659,20 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
 
     // Helper function to calculate age from birth date string (YYYY-MM-DD)
     function calculateAgeFromBirthDate(birthDateStr) {
-      if (!birthDateStr) return '—';
+      if (!birthDateStr) return 'â€”';
       const birthDate = new Date(birthDateStr);
-      if (isNaN(birthDate.getTime())) return '—';
+      if (isNaN(birthDate.getTime())) return 'â€”';
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
       }
-      return age >= 0 ? `${age} yrs` : '—';
+      return age >= 0 ? `${age} yrs` : 'â€”';
     }
 
 
-    // ── INDIVIDUAL STUDENT PROFILE (Detailed Progress, Correct/Incorrect Counts, Batch Navigation) ──
+    // â”€â”€ INDIVIDUAL STUDENT PROFILE (Detailed Progress, Correct/Incorrect Counts, Batch Navigation) â”€â”€
     async function openStudentProfile(studentId, batchStudentIds = [], skipHistory = false) {
       window.openStudentProfile = openStudentProfile;
       if (!skipHistory) {
@@ -687,7 +687,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
       }
 
       const area = document.getElementById('admin-content-area');
-      area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loading student profile &amp; question answer history…</p></div>';
+      area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loading student profile &amp; question answer historyâ€¦</p></div>';
 
       try {
         const sb = await getSupabase();
@@ -730,7 +730,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
         const bestAttempts = Array.from(bestAttemptMap.values());
         const bestAttemptIds = new Set(bestAttempts.map(a => a.id));
 
-        // 4. Compute KPIs (Best attempt per exam only — per agreement)
+        // 4. Compute KPIs (Best attempt per exam only â€” per agreement)
         let totalCorrect = 0;
         let totalMinor = 0;
         let totalIncorrect = 0;
@@ -755,7 +755,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
         const avgScore = bestAttempts.length > 0
           ? bestAttempts.reduce((sum, a) => sum + parseFloat(a.percentage || a.score || 0), 0) / bestAttempts.length
           : 0;
-        const globalGrade = bestAttempts.length > 0 ? getGrade(Math.round(avgScore)) : '—';
+        const globalGrade = bestAttempts.length > 0 ? getGrade(Math.round(avgScore)) : 'â€”';
         const gradeColors = { S: '#f59e0b', A: '#10b981', B: '#3b82f6', C: '#f59e0b', D: '#ea580c', E: '#ef4444', F: '#94a3b8' };
         const gradeColor = gradeColors[globalGrade] || 'var(--clr-text-1)';
 
@@ -772,8 +772,8 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
         const initial = (student.name || 'S').trim().charAt(0).toUpperCase();
         const ageDisplay = calculateAgeFromBirthDate(student.birth_date);
         const batchName = student.batches?.name || 'Unassigned Batch';
-        const programName = student.programs?.name || '—';
-        const institutionName = student.institutions?.name || student.programs?.institutions?.name || '—';
+        const programName = student.programs?.name || 'â€”';
+        const institutionName = student.institutions?.name || student.programs?.institutions?.name || 'â€”';
 
         area.innerHTML = `
           <div class="student-profile-view animate-fade-in" style="display:flex; flex-direction:column; gap:20px;">
@@ -781,10 +781,10 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
             <div class="d-flex align-center justify-between flex-wrap gap-3 p-4 rounded" style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border);">
               <div class="d-flex align-center gap-3">
                 <button class="btn btn-secondary btn-sm" id="btn-back-to-students" style="display:inline-flex; align-items:center; gap:6px;">
-                  <span>←</span> Back to Students
+                  <span>â†</span> Back to Students
                 </button>
                 <div class="d-flex align-center gap-2">
-                  <span class="badge badge-info" style="font-size:0.8rem;">👥 Batch: ${escapeHtml(batchName)}</span>
+                  <span class="badge badge-info" style="font-size:0.8rem;">ðŸ‘¥ Batch: ${escapeHtml(batchName)}</span>
                 </div>
               </div>
 
@@ -792,11 +792,11 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
               ${batchStudentIds.length > 0 ? `
                 <div class="d-flex align-center gap-2">
                   <button class="btn btn-secondary btn-sm" id="btn-prev-student" ${!hasPrev ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''} title="Previous Student (ArrowLeft)">
-                    ◀ Previous
+                    â—€ Previous
                   </button>
                   <span class="text-xs fw-700 text-muted" style="padding:0 6px;">${positionText}</span>
                   <button class="btn btn-secondary btn-sm" id="btn-next-student" ${!hasNext ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''} title="Next Student (ArrowRight)">
-                    Next ▶
+                    Next â–¶
                   </button>
                 </div>
               ` : ''}
@@ -837,10 +837,10 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
                 <div class="glass-card" style="border-radius:20px; padding:16px 20px; box-sizing:border-box;">
                   <div class="d-flex align-center justify-between gap-2 mb-1">
                     <span class="badge ${student.is_active ? 'badge-success' : 'badge-danger'}">${student.is_active ? 'Active Student' : 'Inactive'}</span>
-                    <span class="text-xs text-muted">ID: <code style="font-size:0.75rem;">${escapeHtml(student.id.substring(0, 8))}…</code></span>
+                    <span class="text-xs text-muted">ID: <code style="font-size:0.75rem;">${escapeHtml(student.id.substring(0, 8))}â€¦</code></span>
                   </div>
                   <h2 style="font-size:1.35rem; font-weight:800; margin:0 0 2px; color:var(--clr-text-1);">${escapeHtml(displayName)}</h2>
-                  <p class="text-xs text-muted" style="margin:0;">👥 Batch: <strong>${escapeHtml(batchName)}</strong></p>
+                  <p class="text-xs text-muted" style="margin:0;">ðŸ‘¥ Batch: <strong>${escapeHtml(batchName)}</strong></p>
                 </div>
               </div>
 
@@ -849,36 +849,36 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
                 <div>
                   <div class="d-flex align-center justify-between mb-3 flex-wrap gap-2">
                     <div>
-                      <h3 style="font-size:1.15rem; font-weight:800; margin:0; color:var(--clr-text-1);">🎓 Student Enrollment &amp; Demographics</h3>
+                      <h3 style="font-size:1.15rem; font-weight:800; margin:0; color:var(--clr-text-1);">ðŸŽ“ Student Enrollment &amp; Demographics</h3>
                       <p class="text-xs text-muted" style="margin:2px 0 0;">Official class registration and student profile data</p>
                     </div>
                     <button class="btn btn-secondary btn-sm" id="btn-edit-current-student" style="display:inline-flex; align-items:center; gap:6px;">
-                      ✏️ Edit Student
+                      âœï¸ Edit Student
                     </button>
                   </div>
 
                   <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-top:16px;">
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
-                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">🏢 Program</div>
+                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">ðŸ¢ Program</div>
                       <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${escapeHtml(institutionName)}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
-                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">🏫 Class</div>
+                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">ðŸ« Class</div>
                       <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${escapeHtml(programName)}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
-                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">👤 Gender</div>
-                      <div class="fw-700 text-sm mt-1" style="text-transform:capitalize; color:var(--clr-text-1);">${escapeHtml(student.gender || '—')}</div>
+                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">ðŸ‘¤ Gender</div>
+                      <div class="fw-700 text-sm mt-1" style="text-transform:capitalize; color:var(--clr-text-1);">${escapeHtml(student.gender || 'â€”')}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
-                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">🎂 Age / Birth Date</div>
-                      <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${ageDisplay} <span class="text-xs text-muted fw-400">(${escapeHtml(student.birth_date || '—')})</span></div>
+                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">ðŸŽ‚ Age / Birth Date</div>
+                      <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${ageDisplay} <span class="text-xs text-muted fw-400">(${escapeHtml(student.birth_date || 'â€”')})</span></div>
                     </div>
                   </div>
                 </div>
 
                 <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--clr-border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-                  <span class="text-xs text-muted">Created: ${student.created_at ? new Date(student.created_at).toLocaleDateString() : '—'}</span>
+                  <span class="text-xs text-muted">Created: ${student.created_at ? new Date(student.created_at).toLocaleDateString() : 'â€”'}</span>
                   <span class="badge badge-neutral" style="font-size:0.75rem;">Account Status: ${student.is_active ? 'Active' : 'Inactive'}</span>
                 </div>
               </div>
@@ -892,12 +892,12 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
                 <div class="text-xs text-muted mt-1">${allAttempts.length} total attempt${allAttempts.length === 1 ? '' : 's'}</div>
               </div>
               <div class="glass-card p-4 text-center" style="border-top:3px solid #10b981;">
-                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em; color:#10b981;">✅ CORRECT ANSWERS</div>
+                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em; color:#10b981;">âœ… CORRECT ANSWERS</div>
                 <div class="fw-800" style="font-size:2rem; color:#10b981;">${totalCorrect}</div>
                 <div class="text-xs text-muted mt-1">From best attempts</div>
               </div>
               <div class="glass-card p-4 text-center" style="border-top:3px solid #ef4444;">
-                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em; color:#ef4444;">❌ INCORRECT ANSWERS</div>
+                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em; color:#ef4444;">âŒ INCORRECT ANSWERS</div>
                 <div class="fw-800" style="font-size:2rem; color:#ef4444;">${totalIncorrect}</div>
                 <div class="text-xs text-muted mt-1">${totalMinor > 0 ? `+ ${totalMinor} minor error${totalMinor === 1 ? '' : 's'}` : '0 minor errors'}</div>
               </div>
@@ -907,7 +907,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
             <div class="glass-card p-5">
               <div class="d-flex align-center justify-between mb-3 flex-wrap gap-2">
                 <div>
-                  <h3 style="font-size:1.15rem; font-weight:700; margin:0;">📋 Exam Performance &amp; Question History</h3>
+                  <h3 style="font-size:1.15rem; font-weight:700; margin:0;">ðŸ“‹ Exam Performance &amp; Question History</h3>
                   <p class="text-xs text-muted">Click any exam row below to inspect question-level answers and correct vs. incorrect breakdown</p>
                 </div>
                 <span class="badge badge-neutral">${allAttempts.length} Attempt${allAttempts.length === 1 ? '' : 's'} Logged</span>
@@ -915,7 +915,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
 
               ${allAttempts.length === 0 ? `
                 <div class="empty-state p-6 text-center">
-                  <div style="font-size:2.5rem; margin-bottom:8px;">📝</div>
+                  <div style="font-size:2.5rem; margin-bottom:8px;">ðŸ“</div>
                   <h4 style="font-weight:700;">No Exams Taken Yet</h4>
                   <p class="text-xs text-muted">This student hasn't completed or submitted any exams yet.</p>
                 </div>
@@ -928,9 +928,9 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
                         <th>Subject</th>
                         <th class="text-center">Score</th>
                         <th class="text-center">Grade</th>
-                        <th class="text-center">✅ Correct</th>
-                        <th class="text-center">⚠️ Half</th>
-                        <th class="text-center">❌ Incorrect</th>
+                        <th class="text-center">âœ… Correct</th>
+                        <th class="text-center">âš ï¸ Half</th>
+                        <th class="text-center">âŒ Incorrect</th>
                         <th class="text-center">Submitted At</th>
                         <th class="text-center" style="width:110px;">Details</th>
                       </tr>
@@ -950,8 +950,8 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
                         const pct = parseFloat(att.percentage || att.score || 0).toFixed(1);
                         const grade = att.grade || getGrade(Math.round(pct));
                         const examTitle = att.exams?.exam_title || 'Exam';
-                        const subjectName = att.exams?.subjects?.name || '—';
-                        const submitDate = att.submitted_at ? new Date(att.submitted_at).toLocaleString() : '—';
+                        const subjectName = att.exams?.subjects?.name || 'â€”';
+                        const submitDate = att.submitted_at ? new Date(att.submitted_at).toLocaleString() : 'â€”';
                         const rowId = `att-row-${att.id}`;
                         const detailId = `att-detail-${att.id}`;
 
@@ -959,9 +959,9 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
                           <tr id="${rowId}" class="clickable-attempt-row" data-att-id="${att.id}" style="cursor:pointer; transition:background 0.15s;">
                             <td class="fw-600">
                               <div class="d-flex align-center gap-2">
-                                <span class="toggle-arrow" id="arrow-${att.id}" style="font-size:0.75rem; color:var(--clr-text-muted); transition:transform 0.2s;">▶</span>
+                                <span class="toggle-arrow" id="arrow-${att.id}" style="font-size:0.75rem; color:var(--clr-text-muted); transition:transform 0.2s;">â–¶</span>
                                 <span>${escapeHtml(examTitle)}</span>
-                                ${isBest ? `<span class="badge badge-success" style="font-size:0.65rem;" title="Highest score attempt for this exam">⭐ Best</span>` : ''}
+                                ${isBest ? `<span class="badge badge-success" style="font-size:0.65rem;" title="Highest score attempt for this exam">â­ Best</span>` : ''}
                               </div>
                             </td>
                             <td class="text-sm text-muted">${escapeHtml(subjectName)}</td>
@@ -993,16 +993,16 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
                                     ${[...answers].sort((a, b) => (a.question_order || 0) - (b.question_order || 0)).map((ans, qIdx) => {
                                       const evalRes = (ans.evaluation_result || 'Unknown').toLowerCase();
                                       const sc = parseFloat(ans.score || 0);
-                                      let statusBadge = '<span class="badge badge-danger">❌ Incorrect (0 pt)</span>';
+                                      let statusBadge = '<span class="badge badge-danger">âŒ Incorrect (0 pt)</span>';
                                       if (evalRes === 'correct' || sc >= 1) {
-                                        statusBadge = '<span class="badge badge-success">✅ Correct (+1 pt)</span>';
+                                        statusBadge = '<span class="badge badge-success">âœ… Correct (+1 pt)</span>';
                                       } else if (evalRes.includes('minor') || (sc > 0 && sc < 1)) {
-                                        statusBadge = '<span class="badge badge-warning">⚠️ Minor Error (+0.5 pt)</span>';
+                                        statusBadge = '<span class="badge badge-warning">âš ï¸ Minor Error (+0.5 pt)</span>';
                                       }
                                       
                                       const qText = ans.question_snapshot || `Question #${qIdx + 1}`;
                                       const studentAns = ans.student_answer || '(No Answer)';
-                                      const correctAns = ans.correct_answer_snapshot || '—';
+                                      const correctAns = ans.correct_answer_snapshot || 'â€”';
 
                                       return `
                                         <div style="padding:10px 14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
@@ -1099,7 +1099,7 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
             const arrow = document.getElementById(`arrow-${attId}`);
             if (detailRow) {
               const isNowHidden = detailRow.classList.toggle('hidden');
-              if (arrow) arrow.textContent = isNowHidden ? '▶' : '▼';
+              if (arrow) arrow.textContent = isNowHidden ? 'â–¶' : 'â–¼';
             }
           });
         });
@@ -1108,17 +1108,17 @@ import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal,
         console.error('Failed to render student profile:', err);
         area.innerHTML = `
           <div class="empty-state p-6 text-center">
-            <div style="font-size:2.5rem; margin-bottom:8px;">⚠️</div>
+            <div style="font-size:2.5rem; margin-bottom:8px;">âš ï¸</div>
             <h4 class="text-danger">Failed to load student profile</h4>
             <p class="text-xs text-muted mb-4">${escapeHtml(err.message)}</p>
-            <button class="btn btn-secondary btn-sm" id="btn-err-back">← Back to Students</button>
+            <button class="btn btn-secondary btn-sm" id="btn-err-back">â† Back to Students</button>
           </div>
         `;
         document.getElementById('btn-err-back')?.addEventListener('click', () => loadSection('students'));
       }
     }
 
-    // ── EXAM MANAGEMENT HUB (Restored & Elevated) ──
+    // â”€â”€ EXAM MANAGEMENT HUB (Restored & Elevated) â”€â”€
 
 
 // Global edit/delete handlers
