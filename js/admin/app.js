@@ -27,7 +27,7 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
     const sectionTitles = {
       profile: 'My Profile', schedule: 'Personal Schedule', work_records: 'Work Records', cv_generator: 'CV Generator',
       institutions: 'Institutions', programs: 'Programs', batches: 'Batches', students: 'Students Roster', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
-      subjects: 'Classes (Subjects)', classes: 'Classes', class_instances: 'Class Instances', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', word_types: 'Validation Dictionary', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
+      subjects: 'Classes (Subjects)', classes: 'Classes', class_instances: 'Class Instances', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', question_types: 'Validation Dictionary', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
       exams: 'All Challenges', challenge_definitions: 'Challenge Definitions', challenge_instances: 'Challenge Instances', assignments: 'Assignments & Rosters', results: 'Challenge Results', recalibrator: 'Recalibration Engine',
       audit: 'Activity & Audit Logs', settings: 'System Settings', recycle: 'Recycle Bin', health: 'Data Health & Diagnostics'
     };
@@ -36,7 +36,7 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
     const sectionDomainMap = {
       profile: 'AFFAIRS', schedule: 'AFFAIRS', work_records: 'AFFAIRS', cv_generator: 'AFFAIRS',
       institutions: 'BLUEPRINTS', programs: 'BLUEPRINTS', batches: 'BLUEPRINTS', students: 'BLUEPRINTS', 'import-students': 'BLUEPRINTS', 'progress-view': 'BLUEPRINTS',
-      subjects: 'CHALLENGES', classes: 'CHALLENGES', class_instances: 'CHALLENGES', levels: 'CHALLENGES', topics: 'CHALLENGES', questions: 'CHALLENGES', word_types: 'CHALLENGES', 'import-questions': 'CHALLENGES', 'export-questions': 'CHALLENGES',
+      subjects: 'CHALLENGES', classes: 'CHALLENGES', class_instances: 'CHALLENGES', levels: 'CHALLENGES', topics: 'CHALLENGES', questions: 'CHALLENGES', question_types: 'CHALLENGES', 'import-questions': 'CHALLENGES', 'export-questions': 'CHALLENGES',
       exams: 'CHALLENGES', challenge_definitions: 'CHALLENGES', challenge_instances: 'CHALLENGES', assignments: 'CHALLENGES', results: 'CHALLENGES', recalibrator: 'CHALLENGES',
       audit: 'DESK', settings: 'DESK', recycle: 'DESK', health: 'DESK'
     };
@@ -67,7 +67,7 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
       'blueprint-subjects': 'subjects',
       'blueprint-topics': 'topics',
       'blueprint-bank': 'questions',
-      'blueprint-wordtypes': 'word_types',
+      'blueprint-wordtypes': 'question_types',
       'blueprint-import': 'import-questions',
       'blueprint-export': 'export-questions',
       'challenges-hub': 'exams',
@@ -395,7 +395,7 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
           case 'class_instances':     await renderClassInstances(area); break;
           case 'levels':              await renderLevels(area); break;
           case 'topics':              await renderTopics(area); break;
-          case 'word_types':          await renderWordTypes(area); break;
+          case 'question_types':          await renderWordTypes(area); break;
           case 'programs':            await _renderClassesModule(area); break;
           case 'batches':             await _renderBatchesModule(area); break;
           case 'students':            await _renderStudentsModule(area); break;
@@ -1162,3 +1162,4 @@ window.openDuplicateStudentsModal = openDuplicateStudentsModal;
 window.openDuplicateQuestionsModal = openDuplicateQuestionsModal;
 window.loadSection = loadSection;
 window.openStudentProfile = openStudentProfile;
+

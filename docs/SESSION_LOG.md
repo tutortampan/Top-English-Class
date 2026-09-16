@@ -1,4 +1,29 @@
-﻿# SESSION LOG
+# SESSION LOG
+
+## SESSION-20260916-1525
+
+Start: 2026-09-16 15:20 UTC
+End: 2026-09-16 15:25 UTC
+Agent: Antigravity
+
+### User Request
+"cant login"
+
+### Objective
+Diagnose and permanently fix the "cant login" bug affecting the student login portal (`index.html`).
+
+### Work Performed
+1. **Investigated Login Flow (`index.html`)**: Traced the student login execution path and identified failure within the API client layer when fetching assigned programs during the cascade dropdown workflow.
+2. **Fixed `fetchPrograms` (`js/api.js`)**: Updated `fetchPrograms` from `query.eq('program_id', institutionId)` to `query.eq('institution_id', institutionId)`, correctly matching the live Supabase database schema logic.
+3. **Verified Engine Flow**: Checked both the live `supabase-setup.sql` table configurations and the edge function validations in `supabase/functions/student-login/index.ts` to ensure compatibility and correctness of the provided foreign key.
+4. **Documentation**: Updated `docs/CHANGELOG.md`, `docs/CURRENT_STATE.md`, and `docs/SESSION_LOG.md`.
+
+### Results
+- `fetchPrograms` is now referencing the correct database column and preventing fallback to the mock database.
+- Database integrity aligns with server-side validations.
+
+### Resume From
+Ready for user feedback and verification of the login flow.
 
 ## SESSION-20260916-1203
 

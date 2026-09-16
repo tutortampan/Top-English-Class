@@ -1,4 +1,5 @@
-﻿import { adminFetchAll, adminUpdate, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage, formatStudentName } from '../api.js?v=4.0.0';
+import { adminFetchAll, adminUpdate, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage, formatStudentName } from '../api.js?v=4.0.0';
+import { fetchClassInstanceRoster, addAdditionalMember } from '../api.js';
 import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.0.0';
 import { openStudentProfile } from './student-management.js?v=4.0.0';
 
@@ -606,7 +607,58 @@ function toLevelLetter(num) {
         console.error('Failed to load progress', err);
         area.innerHTML = `<div class="p-5 text-center text-error">Failed to load progression data: ${err.message}</div>`;
       }
+  }
+}
+
+window.viewClassInstanceRoster = async function(classInstanceId) {
+  const modal = document.getElementById('roster-modal');
+  const tbody = document.getElementById('roster-modal-tbody');
+  const select = document.getElementById('roster-add-student-select');
+  const addBtn = document.getElementById('roster-add-student-btn');
+  
+  modal.classList.remove('hidden');
+  tbody.innerHTML = '<tr><td colspan="2" class="text-center">Loading roster...</td></tr>';
+  
+  try {
+    const roster = await fetchClassInstanceRoster(classInstanceId);
+    if (roster.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No students enrolled yet.</td></tr>';
+    } else {
+      tbody.innerHTML = roster.map(s => `
+        <tr style="border-bottom: 1px solid var(--clr-border);">
+          <td style="padding:8px 0;">${escapeHtml(s.name)}</td>
+          <td class="text-right" style="padding:8px 0;">
+            <span class="badge ${s.enrollment_type === 'auto' ? 'badge-primary' : 'badge-warning'}">${s.enrollment_type === 'auto' ? 'Auto-Enrolled' : 'Manual / Dropped'}</span>
+          </td>
+        </tr>
+      `).join('');
     }
+    
+    // Populate dropdown with all students (excluding those already in the roster)
+    const allStudents = window._adminStore?.students || [];
+    const rosterIds = new Set(roster.map(s => s.id));
+    select.innerHTML = '<option value="">Select student to manually enroll...</option>' + 
+      allStudents.filter(s => !rosterIds.has(s.id)).map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+      
+    addBtn.onclick = async () => {
+      const studentId = select.value;
+      if (!studentId) return;
+      addBtn.disabled = true;
+      addBtn.textContent = 'Adding...';
+      try {
+        await addAdditionalMember(classInstanceId, studentId);
+        await window.viewClassInstanceRoster(classInstanceId); // Refresh modal
+      } catch (e) {
+        alert('Failed to add member: ' + e.message);
+      } finally {
+        addBtn.disabled = false;
+        addBtn.textContent = 'Add to Roster';
+      }
+    };
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="2" class="text-center text-danger">Error: ${err.message}</td></tr>`;
+  }
+};
     // Ã¢”â‚¬Ã¢”â‚¬ AUDIT LOG Ã¢”â‚¬Ã¢”â‚¬
 
     export async function renderRecalibrator(area) {
@@ -929,7 +981,7 @@ function toLevelLetter(num) {
                     <div class="text-xs text-muted">${escapeHtml(row.batches?.programs?.institutions?.name || '—')}</div>
                   </td>
                   <td>${escapeHtml(row.batches?.name || '—')}</td>
-                  <td>${escapeHtml(row.subjects?.name || '—')}</td>
+                  <td>${escapeHtml(row.classes?.name || '—')}</td>
                   <td>${row.start_date || '—'}</td>
                   <td>${row.estimated_finish || '—'}</td>
                   <td class="text-xs text-muted" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(scheduleText)}</td>
@@ -937,6 +989,7 @@ function toLevelLetter(num) {
                     <span class="badge ${row.status === 'active' ? 'badge-primary' : (row.status === 'finished' ? 'badge-success' : 'badge-neutral')}">${row.status}</span>
                   </td>
                   <td class="text-right">
+                    <button class="btn btn-ghost btn-sm" onclick="window.viewClassInstanceRoster('${row.id}')">Roster</button>
                     <button class="btn btn-ghost btn-sm" onclick="window.openCrudModal('class_instances', window._ciRecords['${row.id}'])">Edit</button>
                   </td>
                 </tr>

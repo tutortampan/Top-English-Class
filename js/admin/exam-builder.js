@@ -1,4 +1,4 @@
-﻿// TOPS CORE — Centralized Assessment Wizard V1
+// TOPS CORE � Centralized Assessment Wizard V1
 // Implements multi-step Evaluation & Exam creation, topic derivation from Evaluations,
 // live question counts, inline assignments, and frozen snapshots on publish.
 import {
@@ -114,7 +114,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
               </div>
 
               <div class="text-right mt-4">
-                <button class="btn btn-primary" id="btn-details-next">Next: Topic Coverage â†’</button>
+                <button class="btn btn-primary" id="btn-details-next">Next: Topic Coverage →</button>
               </div>
             </div>
           </div>
@@ -170,8 +170,8 @@ export async function openAssessmentBuilder(assessmentId = null) {
             </div>
 
             <div class="d-flex justify-between mt-4">
-              <button class="btn btn-secondary btn-sm" id="btn-topics-prev">â† Back to Details</button>
-              <button class="btn btn-primary btn-sm" id="btn-topics-next">Next: Set Assignment â†’</button>
+              <button class="btn btn-secondary btn-sm" id="btn-topics-prev">← Back to Details</button>
+              <button class="btn btn-primary btn-sm" id="btn-topics-next">Next: Set Assignment →</button>
             </div>
           </div>
 
@@ -220,8 +220,8 @@ export async function openAssessmentBuilder(assessmentId = null) {
               </div>
 
               <div class="d-flex justify-between mt-4">
-                <button class="btn btn-secondary btn-sm" id="btn-assign-prev">â† Back to Topics</button>
-                <button class="btn btn-primary btn-sm" id="btn-assign-next">Next: Review &amp; Publish â†’</button>
+                <button class="btn btn-secondary btn-sm" id="btn-assign-prev">← Back to Topics</button>
+                <button class="btn btn-primary btn-sm" id="btn-assign-next">Next: Review &amp; Publish →</button>
               </div>
             </div>
           </div>
@@ -233,20 +233,20 @@ export async function openAssessmentBuilder(assessmentId = null) {
               
               <div class="p-4 rounded mb-4" style="background:rgba(0,0,0,0.25);border:1px solid var(--clr-border);">
                 <div class="d-flex justify-between align-center mb-3">
-                  <h4 class="m-0" id="rev-title" style="font-size:1.15rem;font-weight:700;">—</h4>
+                  <h4 class="m-0" id="rev-title" style="font-size:1.15rem;font-weight:700;">�</h4>
                   <span id="rev-type" class="badge badge-info">EVALUATION</span>
                 </div>
                 <div class="d-flex gap-4 flex-wrap text-sm mb-3">
-                  <div><strong>Class Blueprint:</strong> <span id="rev-class">—</span></div>
+                  <div><strong>Class Blueprint:</strong> <span id="rev-class">�</span></div>
                   <div><strong>Duration:</strong> <span id="rev-duration">60 min</span></div>
                   <div><strong>Order:</strong> <span id="rev-order">Random</span></div>
                   <div><strong>Assignment:</strong> <span id="rev-assignment" class="badge badge-neutral">Batch</span></div>
                 </div>
                 <div class="mb-3">
-                  <strong>Included Topics:</strong> <span id="rev-topics" class="text-muted">—</span>
+                  <strong>Included Topics:</strong> <span id="rev-topics" class="text-muted">�</span>
                 </div>
                 <div class="d-flex align-center gap-2 p-3 rounded" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);">
-                  <div style="font-size:1.5rem;">ðŸ”’</div>
+                  <div style="font-size:1.5rem;">🔒</div>
                   <div>
                     <div style="font-size:0.85rem;font-weight:700;">Question Snapshot Immutability</div>
                     <div class="text-xs text-muted">
@@ -257,10 +257,10 @@ export async function openAssessmentBuilder(assessmentId = null) {
               </div>
 
               <div class="d-flex justify-between align-center">
-                <button class="btn btn-secondary btn-sm" id="btn-publish-prev">â† Back to Assignment</button>
+                <button class="btn btn-secondary btn-sm" id="btn-publish-prev">← Back to Assignment</button>
                 <div class="d-flex gap-2">
-                  <button class="btn btn-secondary btn-sm" id="btn-save-draft">ðŸ’¾ Save as Draft</button>
-                  <button class="btn btn-success btn-sm" id="btn-publish-assessment">ðŸš€ Publish &amp; Freeze Snapshot</button>
+                  <button class="btn btn-secondary btn-sm" id="btn-save-draft">💾 Save as Draft</button>
+                  <button class="btn btn-success btn-sm" id="btn-publish-assessment">🚀 Publish &amp; Freeze Snapshot</button>
                 </div>
               </div>
             </div>
@@ -378,7 +378,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
     // Render topics checkboxes for current subject (EVALUATION mode)
     const renderTopicCheckboxes = () => {
       const currentSubjectId = subSel.value;
-      const filteredTopics = allTopics.filter(t => t.subject_id === currentSubjectId);
+      const filteredTopics = allTopics.filter(t => t.class_id === currentSubjectId);
       const container = document.getElementById('wiz-topics-container');
 
       if (!filteredTopics.length) {
@@ -558,7 +558,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
         editAssessment.challenge_definition_topics.forEach(t => selectedTopicIds.add(t.topic_id));
       }
       // Also check questions linked to this exam for topic_ids
-      const linkedQuestions = allQuestions.filter(q => q.exam_id === assessmentId || q.assessment_id === assessmentId);
+      const linkedQuestions = allQuestions.filter(q => q.exam_id === assessmentId || q.challenge_definition_id === assessmentId);
       linkedQuestions.forEach(q => {
         if (q.topic_id) selectedTopicIds.add(q.topic_id);
       });
@@ -674,7 +674,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
         let asmId = createdAssessmentId;
         if (!asmId) {
           const newAsm = await createAssessmentWithTopics({
-            subject_id: subjectId,
+            class_id: subjectId,
             challenge_type: typeVal,
             title,
             working_duration_minutes: duration,
@@ -687,7 +687,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
           createdAssessmentId = asmId;
         } else {
           await updateAssessmentWithTopics(asmId, {
-            subject_id: subjectId,
+            class_id: subjectId,
             challenge_type: typeVal,
             title,
             working_duration_minutes: duration,
@@ -702,16 +702,16 @@ export async function openAssessmentBuilder(assessmentId = null) {
         // Inline Assignment if selected
         if (strategy === 'BATCH' && batchId) {
           await assignAssessment({
-            assessment_id: asmId,
-            assignment_type: 'BATCH',
+            challenge_definition_id: asmId,
+            challenge_instance_type: 'BATCH',
             batch_id: batchId,
             availability_start: startVal ? new Date(startVal).toISOString() : null,
             availability_end: endVal ? new Date(endVal).toISOString() : null
           });
         } else if (strategy === 'STUDENT' && studentId) {
           await assignAssessment({
-            assessment_id: asmId,
-            assignment_type: 'STUDENT',
+            challenge_definition_id: asmId,
+            challenge_instance_type: 'STUDENT',
             student_id: studentId,
             availability_start: startVal ? new Date(startVal).toISOString() : null,
             availability_end: endVal ? new Date(endVal).toISOString() : null
@@ -739,3 +739,4 @@ export async function openAssessmentBuilder(assessmentId = null) {
     hideLoading();
   }
 }
+

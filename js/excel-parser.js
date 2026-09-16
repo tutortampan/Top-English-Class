@@ -17,10 +17,10 @@ const HEADER_ALIASES = {
   pin: ['pin', 'password', 'pass', 'kodesandi'],
   title: ['title', 'exam_title', 'examtitle', 'judul', 'nama_ujian'],
   topic: ['topic', 'topik', 'topic_name', 'nama_topik', 'tema', 'theme', 'kategori', 'category'],
-  word_type: ['word_type', 'wordtype', 'part_of_speech', 'pos', 'type', 'tipe', 'jenis_kata', 'tipe_kata', 'tipekata', 'jenis', 'kategori_kata', 'pos_tag'],
+  question_type: ['question_type', 'wordtype', 'part_of_speech', 'pos', 'type', 'tipe', 'jenis_kata', 'tipe_kata', 'tipekata', 'jenis', 'kategori_kata', 'pos_tag'],
   week: ['week', 'minggu', 'wk'],
   day: ['day', 'hari'],
-  type: ['type', 'tipe', 'word_type', 'wordtype', 'part_of_speech', 'partofspeech'],
+  type: ['type', 'tipe', 'question_type', 'wordtype', 'part_of_speech', 'partofspeech'],
   no: ['no', 'nomor', 'num', 'order', 'urutan'],
   question: ['question', 'soal', 'pertanyaan', 'q', 'prompt', 'indonesia', 'kalimat', 'text'],
   answer: ['answer', 'jawaban', 'kunci', 'kunci_jawaban', 'kuncijawaban', 'a', 'accepted_answers', 'english', 'solution', 'jawaban_benar', 'terjemahan'],
@@ -272,7 +272,7 @@ export function processCentralBankQuestionImport(normalizedRows, { existingQuest
     const questionText = String(row.question || '').trim();
     const rawAnswer = String(row.answer || '').trim();
     const topicName = String(row.topic || row.tema || 'General').trim();
-    const rawWordType = String(row.word_type || row.type || '').trim();
+    const rawWordType = String(row.question_type || row.type || '').trim();
 
     if (!questionText) {
       errors.push({ row: rowNum, error: 'Missing Question prompt.' });
@@ -400,4 +400,5 @@ export function processCentralBankQuestionImport(normalizedRows, { existingQuest
     }
   };
 }
+
 

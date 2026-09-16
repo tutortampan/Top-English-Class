@@ -73,13 +73,13 @@
         <!-- DOMAIN C: CHALLENGES (Curriculum, Assessments & Execution) -->
         <div class="nav-domain-group" data-domain="challenges">
           <div class="nav-domain-header"><span class="domain-icon">âš¡</span>C â€” CHALLENGES</div>
-          <div class="admin-nav-item" data-sub="subjects"><span class="nav-icon">📚</span>Classes</div>
+          <div class="admin-nav-item" data-sub="classes"><span class="nav-icon">📚</span>Classes</div>
           <div class="admin-nav-item" data-sub="class_instances"><span class="nav-icon">📅</span>Class Instances</div>
           <div class="admin-nav-item" data-sub="topics"><span class="nav-icon">ðŸ ·ï¸ </span>Question Groups &amp; Topics</div>
           <div class="admin-nav-item" data-sub="questions"><span class="nav-icon">â “</span>Central Question Bank</div>
           <div class="admin-nav-item" data-sub="exams"><span class="nav-icon">ðŸ“ </span>All Challenges</div>
           <div class="admin-nav-item" data-sub="results"><span class="nav-icon">ðŸ“Š</span>Challenge Results</div>
-          <div class="admin-nav-item" data-sub="word_types"><span class="nav-icon">🔤</span>Validation Dictionary</div>
+          <div class="admin-nav-item" data-sub="question_types"><span class="nav-icon">🔤</span>Validation Dictionary</div>
           <div class="admin-nav-item" data-sub="recalibrator"><span class="nav-icon">âš¡</span>Recalibration Engine</div>
         </div>
 
@@ -329,9 +329,40 @@
     };
   </script>
 
+  <!-- Roster Modal -->
+  <div class="modal-backdrop hidden" id="roster-modal" role="dialog" aria-modal="true" aria-labelledby="roster-modal-title" style="z-index:var(--z-modal,1000);">
+    <div class="modal-box" style="max-width:800px; max-height:80vh; display:flex; flex-direction:column; padding:24px;">
+      <div class="modal-header" style="padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--clr-border);">
+        <div>
+          <h3 id="roster-modal-title" style="margin:0; font-size:1.25rem;">Class Roster</h3>
+          <p class="text-xs text-muted" style="margin:4px 0 0;" id="roster-modal-subtitle">Auto-enrolled vs Manually Added Students</p>
+        </div>
+        <button class="btn btn-ghost btn-icon" onclick="document.getElementById('roster-modal').classList.add('hidden')">✕</button>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <select id="roster-add-student-select" class="form-control" style="flex:1;">
+          <option value="">Loading students...</option>
+        </select>
+        <button class="btn btn-primary" id="roster-add-student-btn">Add to Roster</button>
+      </div>
+      <div style="flex:1; overflow-y:auto;">
+        <table style="width:100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--clr-border);"><th class="text-left" style="padding:8px 0;">Student Name</th><th class="text-right" style="padding:8px 0;">Enrollment Type</th></tr>
+          </thead>
+          <tbody id="roster-modal-tbody">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="js/admin/app.js?v=4.0.0"></script>
 </body>
 </html>
+
+
 
 
 

@@ -285,7 +285,7 @@
         const resultIcon  = isCorrect ? '✅' : isPartial ? '⚠️' : '❌';
         const resultText  = isCorrect ? 'Correct' : isPartial ? 'Minor Spelling Error' : 'Incorrect';
         const resultColor = isCorrect ? 'success' : isPartial ? 'warning' : 'danger';
-        const wordType    = snap.word_type || snap.metadata?.type || snap.type || '';
+        const wordType    = snap.question_type || snap.metadata?.type || snap.type || '';
 
         const item = document.createElement('div');
         item.className = 'answer-item';
@@ -335,4 +335,5 @@
   </script>
 </body>
 </html>
+
 

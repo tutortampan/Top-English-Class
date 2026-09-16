@@ -645,7 +645,7 @@
       }
       const answerType = snap?.answer_type || row.answer_type || 'written';
       const questionText = snap?.question_text || snap?.questionText || snap?.question || snap?.text || snap?.soal || snap?.indonesia || (typeof row.question_snapshot === 'string' ? row.question_snapshot : '') || 'Question text unavailable';
-      const wordType = snap?.metadata?.type || snap?.type || snap?.word_type || '';
+      const wordType = snap?.metadata?.type || snap?.type || snap?.question_type || '';
       const savedAnswer = answeredMap[row.id] || '';
 
       const main = document.getElementById('exam-main');
@@ -1184,4 +1184,5 @@
   </script>
 </body>
 </html>
+
 
