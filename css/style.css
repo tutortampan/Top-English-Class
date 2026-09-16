@@ -158,13 +158,14 @@ a:hover { color: var(--clr-accent-3); }
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base);
 }
 
 .glass-card:hover {
   border-color: var(--clr-border-strong);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.5), var(--shadow-glow);
+  transform: translateY(-2px);
 }
 
 .glass-card--elevated {

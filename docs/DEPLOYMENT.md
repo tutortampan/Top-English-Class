@@ -60,8 +60,8 @@ The application uses a serverless static-first architecture:
 ## 4. SUPABASE BACKEND CONNECTIVITY
 
 The frontend connects to the production Supabase cloud project:
-- **Supabase URL**: `https://xuiszvwfjccvucqpactf.supabase.co`
-- **Publishable Key**: `sb_publishable_dvMkwNJpPlryF0KNiaJRfQ_-fR1WW_4`
+- **Supabase URL**: `https://xvpwmjpazmfkfffkfypx.supabase.co`
+- **Publishable Key**: `sb_publishable_WPlqlBdpQLDkEpcrBErayA_RNHkDAl4`
 
 Both credentials are baked into `js/supabase.js` with optional override via `window.__ENV__`.
 

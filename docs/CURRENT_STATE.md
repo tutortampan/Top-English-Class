@@ -1,32 +1,27 @@
 # CURRENT STATE
 
-Last Updated: 2026-09-16 16:47 UTC
-Current Phase: Phase 6 - System Verification & Bug Fixes
-Current Task: Verify system integrity after Patch V4
+Last Updated: 2026-09-17 14:38 UTC
+Current Phase: Reverted to Phase 6 (ABCD Architecture)
+Current Task: Abort Phase 7 Database Migration
 Status: COMPLETE
 
 ## Completed
-- Phase 1: Architecture Audit and Migration Analysis generated and approved.
-- Phase 2 & 3: Terminology changes executed across `supabase-setup.sql` and migration scripts created.
-- Phase 4: Admin UI and `js/api.js` refactored to use new terms (Classes, Challenge Definitions, etc.).
-- Phase 5: Challenges (Class & Class Instances) - Option C Enrollment Logic.
-- Terminology deep-clean: All lingering `subject` references systematically removed from frontend/API code and safely migrated to `classBlueprint`/`class_name`.
-- **System Verification & Patch V4 Bug Fixes**:
-  - Removed hardcoded `sb_publishable` API keys from `exam.html` and secured it by importing `SUPABASE_ANON_KEY` and `SUPABASE_URL` from `api.js`.
-  - Re-encoded UI files to fix terminal-induced mojibake emojis in `admin.html` (Desk UI).
-  - Executed C#-based `fix.exe` on `.html` files to strictly enforce UTF-8 without BOMs.
+- User explicitly requested to abort the migration to the new Supabase project (`xvpwmjpazmfkfffkfypx`) because their data was missing due to RLS/unmigrated tables.
+- Reverted `js/supabase.js` to point back to the original database (`xuiszvwfjccvucqpactf`) which contains the complete, working ABCD schema and all user data.
+- The new `20260917_topscore_modules_assessments.sql` schema and Edge Functions remain in the repository as scaffolds, but are NOT active in production.
 
 ## In Progress
-- Phase 6: Class Scheduling (Recurring meeting generation).
+- Waiting for user to verify dashboard functionality after hard refresh.
 
 ## Not Started
-- Phase 7-10: Logic implementations.
+- None.
 
 ## Known Issues
-- None.
+- Browser caching of `js/supabase.js` via `sw.js` caused the user to see a blank screen until a hard refresh is performed.
 
 ## Blockers
 - None.
 
 ## Next Exact Action
-1. Establish schema or application logic for recurring schedules (days of the week, times, Zoom links) in relation to Class Instances.
+1. User verifies the dashboard.
+

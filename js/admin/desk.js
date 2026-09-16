@@ -1,6 +1,6 @@
-import { adminFetchAll, adminFetchDeleted, adminRestore, clearAdminCache, testSupabaseConnection } from '../api.js?v=4.0.5';
-import { getSupabase } from '../supabase.js?v=4.0.5';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.5';
+﻿import { adminFetchAll, adminFetchDeleted, adminRestore, clearAdminCache, testSupabaseConnection } from '../api.js?v=4.1.0';
+import { getSupabase } from '../supabase.js?v=4.1.0';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.1.0';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -38,8 +38,8 @@ function escapeHtml(str) {
                   <td class="text-sm text-muted">${new Date(r.created_at).toLocaleString()}</td>
                   <td class="text-center"><span class="badge badge-info">${r.actor_role || 'ADMIN'}</span></td>
                   <td class="fw-600 text-sm">${r.action}</td>
-                  <td class="text-muted text-sm">${r.entity_type || '—'}</td>
-                  <td class="text-center text-muted text-sm">${r.ip_address || '—'}</td>
+                  <td class="text-muted text-sm">${r.entity_type || 'â€”'}</td>
+                  <td class="text-center text-muted text-sm">${r.ip_address || 'â€”'}</td>
                 </tr>
               `).join('')}
               ${!(data?.length) ? '<tr><td colspan="5" class="text-center text-muted p-4">No audit events yet.</td></tr>' : ''}
@@ -50,7 +50,7 @@ function escapeHtml(str) {
     }
 
 
-    // â”€â”€ SETTINGS & SYSTEM TOOLS (D — DESK) â”€â”€
+    // â”€â”€ SETTINGS & SYSTEM TOOLS (D â€” DESK) â”€â”€
     async function renderSettings(area) {
       const sb = await getSupabase();
       const { data } = await sb.from('site_settings').select('*');
@@ -60,7 +60,7 @@ function escapeHtml(str) {
       area.innerHTML = `
         <div class="section-header">
           <div>
-            <h2 class="section-title text-gradient">System Settings & Administration (D — DESK)</h2>
+            <h2 class="section-title text-gradient">System Settings & Administration (D â€” DESK)</h2>
             <p class="section-subtitle">Platform configuration, security credentials, system tools & diagnostic telemetry</p>
           </div>
         </div>
@@ -68,7 +68,7 @@ function escapeHtml(str) {
         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:1.5rem;align-items:start;">
           <!-- 1. Site Configuration Card -->
           <div class="glass-card p-6">
-            <h3 style="font-size:1.1rem;margin-bottom:1rem;color:var(--clr-text-1);">ðŸŒ Global Platform Configuration</h3>
+            <h3 style="font-size:1.1rem;margin-bottom:1rem;color:var(--clr-text-1);">Ã°Å¸Å’Â Global Platform Configuration</h3>
             <div class="form-group">
               <label class="form-label">Site Name</label>
               <input class="form-control" id="setting-site_name" value="${escapeHtml(settings.site_name || 'TOPS CORE')}" />
@@ -79,7 +79,7 @@ function escapeHtml(str) {
             </div>
             <div class="form-group">
               <label class="form-label">Login Background URL (optional)</label>
-              <input class="form-control" id="setting-login_background_url" value="${escapeHtml(settings.login_background_url || '')}" placeholder="https://…" />
+              <input class="form-control" id="setting-login_background_url" value="${escapeHtml(settings.login_background_url || '')}" placeholder="https://â€¦" />
             </div>
             <button class="btn btn-primary btn-sm" id="save-settings-btn">Save Configuration</button>
           </div>
@@ -102,7 +102,7 @@ function escapeHtml(str) {
 
           <!-- 3. System Tools & Diagnostics Card -->
           <div class="glass-card p-6" style="grid-column:1/-1;">
-            <h3 style="font-size:1.1rem;margin-bottom:1rem;color:var(--clr-text-1);">ðŸ› ï¸ System Tools & Diagnostics</h3>
+            <h3 style="font-size:1.1rem;margin-bottom:1rem;color:var(--clr-text-1);">Ã°Å¸â€ºÂ Ã¯Â¸Â System Tools & Diagnostics</h3>
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:1rem;">
               <div style="background:var(--clr-surface-2);padding:1rem;border-radius:8px;border:1px solid var(--clr-border);">
                 <div class="fw-600 text-sm mb-1">Database Connectivity & Latency</div>
@@ -113,13 +113,13 @@ function escapeHtml(str) {
               <div style="background:var(--clr-surface-2);padding:1rem;border-radius:8px;border:1px solid var(--clr-border);">
                 <div class="fw-600 text-sm mb-1">Local Browser Cache</div>
                 <div class="text-xs text-muted mb-3">Clear client-side cached queries, rosters, and question indexes.</div>
-                <button class="btn btn-secondary btn-xs" id="btn-diag-clear-cache">ðŸ—‘ï¸ Flush Cache</button>
+                <button class="btn btn-secondary btn-xs" id="btn-diag-clear-cache">Ã°Å¸â€”â€˜Ã¯Â¸Â Flush Cache</button>
               </div>
 
               <div style="background:var(--clr-surface-2);padding:1rem;border-radius:8px;border:1px solid var(--clr-border);">
                 <div class="fw-600 text-sm mb-1">Activity & Audit Logs</div>
                 <div class="text-xs text-muted mb-3">Inspect system changes, logins, exams published, and student updates.</div>
-                <button class="btn btn-outline btn-xs" id="btn-diag-view-audit">ðŸ“œ View Audit Log â†’</button>
+                <button class="btn btn-outline btn-xs" id="btn-diag-view-audit">ðŸ“œ View Audit Log Ã¢â€ â€™</button>
               </div>
             </div>
           </div>
@@ -191,7 +191,7 @@ function escapeHtml(str) {
           <!-- Students Duplicate Engine -->
           <div class="card d-flex flex-col gap-3">
             <div class="d-flex align-center gap-3">
-              <div style="font-size:2rem; background:rgba(59, 130, 246, 0.1); padding:0.5rem; border-radius:10px;">ðŸ‘¤</div>
+              <div style="font-size:2rem; background:rgba(59, 130, 246, 0.1); padding:0.5rem; border-radius:10px;">Ã°Å¸â€˜Â¤</div>
               <div>
                 <h3 class="fw-700">Student Profile Duplicates</h3>
                 <div class="text-xs text-muted">Scans for identical names within the same class</div>
@@ -201,7 +201,7 @@ function escapeHtml(str) {
               Automatically detect students who accidentally registered twice. You can merge their profiles safely, transferring all past exam progress to the primary account.
             </p>
             <button class="btn btn-primary mt-auto" id="btn-health-scan-students">
-              <span class="nav-icon">ðŸ”</span> Scan Students
+              <span class="nav-icon">Ã°Å¸â€Â</span> Scan Students
             </button>
           </div>
 
@@ -215,10 +215,10 @@ function escapeHtml(str) {
               </div>
             </div>
             <p style="font-size:0.85rem; color:var(--clr-text-2);">
-              Detect duplicate questions inside the same exam, or identically worded questions spread across multiple exams. Bulk-resolve them to keep the blueprint clean.
+              Detect duplicate questions inside the same exam, or identically worded questions spread across multiple exams. Bulk-resolve them to keep the board clean.
             </p>
             <button class="btn btn-warning mt-auto" id="btn-health-scan-questions" style="color:#000;">
-              <span class="nav-icon">ðŸ”</span> Scan Questions
+              <span class="nav-icon">Ã°Å¸â€Â</span> Scan Questions
             </button>
           </div>
 
@@ -326,3 +326,4 @@ function escapeHtml(str) {
 
 
 export { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin };
+

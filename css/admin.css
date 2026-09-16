@@ -1782,3 +1782,42 @@ tr.deleted-row td {
   color: var(--fm-text-primary);
 }
 
+
+/* ==========================================================================
+   CV EXPORT PRINT DIRECTIVES (ABCD Architecture)
+   ========================================================================== */
+@media print {
+    /* Hide all regular UI elements */
+    body * {
+        visibility: hidden;
+    }
+    
+    /* Make ONLY the cv-print-container and its children visible */
+    #cv-print-container, #cv-print-container * {
+        visibility: visible;
+    }
+    
+    /* Position the container at the top left of the printed page */
+    #cv-print-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-height: 280mm; /* Strict limit to prevent spillover */
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+    }
+    
+    /* A4 Portrait Specifications */
+    @page {
+        size: A4 portrait;
+        margin: 8mm 10mm; /* 8mm top/bottom, 10mm left/right */
+    }
+    
+    /* Optimize typography for dense fitting */
+    #cv-print-container {
+        font-size: 8.5pt;
+        line-height: 1.3;
+    }
+}

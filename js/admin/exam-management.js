@@ -78,7 +78,7 @@ export async function renderExams(area) {
       id: r.id,
       title: r.exam_title,
       programName,
-      classBlueprint: r.classes?.name || '—',
+      classBoard: r.classes?.name || '—',
       level: window.toLevelLetter ? window.toLevelLetter(r.levels?.level_number || 1) : r.levels?.level_number,
       order: r.exam_order || 1,
       prereq: prereqExam ? prereqExam.exam_title : '',
@@ -99,7 +99,7 @@ export async function renderExams(area) {
     container: 'exams-grid-container',
     data: gridData,
     pageSize: 50,
-    searchKeys: ['title', 'programName', 'classBlueprint', 'status'],
+    searchKeys: ['title', 'programName', 'classBoard', 'status'],
     bulkActions: true,
     onBulkAction: async (selectedIds) => {
       const action = prompt(`Bulk Action for ${selectedIds.length} exams.\nOptions: delete`);
@@ -124,7 +124,7 @@ export async function renderExams(area) {
           <div>
             <div class="text-sm text-muted mb-1">Target</div>
             <div class="fw-600">Program: ${escapeHtml(row.programName)}</div>
-            <div class="fw-600">Class Blueprint: ${escapeHtml(row.classBlueprint)}</div>
+            <div class="fw-600">Class Board: ${escapeHtml(row.classBoard)}</div>
           </div>
           <div>
             <div class="text-sm text-muted mb-1">Structure</div>
@@ -158,7 +158,7 @@ export async function renderExams(area) {
           <div class="text-muted text-xs mt-1 fw-600 d-flex gap-2 flex-wrap align-center">
             <span><span class="text-accent">PROGRAM:</span> ${escapeHtml(row.programName)}</span>
             <span>•</span>
-            <span><span class="text-accent">CLASS:</span> ${escapeHtml(row.classBlueprint)}</span>
+            <span><span class="text-accent">CLASS:</span> ${escapeHtml(row.classBoard)}</span>
             <span>•</span>
             <span><span class="badge badge-primary" style="font-size:0.6rem; padding: 2px 6px;">LVL ${row.level}</span></span>
             <span><span class="badge badge-neutral" style="font-size:0.6rem; padding: 2px 6px;">ORD ${row.order}</span></span>
@@ -173,11 +173,11 @@ export async function renderExams(area) {
         render: (val, row) => `
           <div class="d-flex flex-wrap gap-1">
             <span class="badge badge-info text-xs">${val}</span>
-            <span class="badge ${row.questionOrder === 'Random' ? 'badge-primary' : 'badge-neutral'} text-xs">${row.questionOrder === 'Random' ? 'ðŸ”€ Random' : 'âž¡ï¸ Seq'}</span>
+            <span class="badge ${row.questionOrder === 'Random' ? 'badge-primary' : 'badge-neutral'} text-xs">${row.questionOrder === 'Random' ? '🔀 Random' : 'âž¡ï¸ Seq'}</span>
             <span class="badge badge-neutral text-xs">${escapeHtml(row.examCategory)}</span>
           </div>
           <div class="text-muted text-xs mt-2 fw-600">
-            â±ï¸ ${row.timeLimit} min &nbsp; | &nbsp; ðŸŽ¯ Pass: ${row.minScore}%
+            â±ï¸ ${row.timeLimit} min &nbsp; | &nbsp; 🎯 Pass: ${row.minScore}%
           </div>
         `
       },

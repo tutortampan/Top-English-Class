@@ -2,8 +2,8 @@ import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete,
   mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
   detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions
-} from '../api.js?v=4.0.5';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.5';
+} from '../api.js?v=4.1.0';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.1.0';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -58,10 +58,10 @@ const formFields = {
   ],
   class_instances: [
     { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: true },
-    { id: 'class_id', label: 'Class Blueprint', type: 'select', source: 'classes', required: true },
+    { id: 'class_id', label: 'Class Board', type: 'select', source: 'classes', required: true },
     { id: 'start_date', label: 'Start Date', type: 'date', required: false },
     { id: 'estimated_finish', label: 'Estimated Finish Date', type: 'date', required: false },
-    { id: 'recurring_schedule', label: 'Recurring Schedule (JSON)', type: 'textarea', placeholder: 'e.g. ["Monday", "Wednesday"]', required: false },
+    { id: 'recurring_schedule', label: 'Recurring Schedule (JSON)', type: 'textarea', placeholder: 'e.g. [{"day": "Monday", "start_time": "15:00", "end_time": "16:30", "zoom_link": "https://zoom.us/j/123"}]', required: false },
     { id: 'status', label: 'Status', type: 'select', options: [{val:'active',text:'Active'},{val:'finished',text:'Finished'},{val:'inactive',text:'Inactive'}], required: true }
   ],
   levels: [
@@ -90,7 +90,7 @@ const formFields = {
     
     { id: 'name', label: 'Full Name', type: 'text', required: true },
     { id: 'gender', label: 'Gender', type: 'select', options: [
-      { value: '', label: '— Unassigned (Student will choose) —' },
+      { value: '', label: 'â€” Unassigned (Student will choose) â€”' },
       { value: 'male', label: 'Male (Mr.)' },
       { value: 'female', label: 'Female (Miss)' }
     ]},
@@ -98,7 +98,20 @@ const formFields = {
     { id: 'pin_hash', label: 'PIN (4 digits)', type: 'password', placeholder: '****' },
     { id: 'is_active', label: 'Active', type: 'checkbox' },
   ],
-  exams: [
+      assessments: [
+      { id: 'institution_id', label: 'Institution', type: 'select', source: 'institutions', required: true },
+      { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
+      { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: false, dependsOn: 'program_id' },
+      { id: 'module_id', label: 'AI Module', type: 'select', source: 'modules', required: true },
+      { id: 'auto_name_override', label: 'Manual Name Override', type: 'checkbox' },
+      { id: 'name', label: 'Assessment Name', type: 'text', required: true },
+      { id: 'available_from', label: 'Available From', type: 'datetime-local' },
+      { id: 'available_until', label: 'Available Until', type: 'datetime-local' },
+      { id: 'time_limit_seconds', label: 'Time Limit (Seconds)', type: 'number' },
+      { id: 'prerequisite_rules', label: 'Prerequisite Rules (JSON)', type: 'textarea' },
+      { id: 'payload', label: 'Configuration Payload (JSON)', type: 'textarea' }
+    ],
+    exams: [
     { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
     { id: 'program_id', label: 'Class (Optional / Assigned)', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
     { id: 'class_id', label: 'Subject', type: 'select', source: 'classes', required: false, dependsOn: 'institution_id' },
@@ -140,6 +153,7 @@ async function openCrudModal(section, record) {
       _ensureDomRefs();
       _currentSection = section;
       _editId = record?.id || null;
+      window.isProfileDirty = false;
       document.getElementById('crud-modal-title').textContent = record ? `Edit ${sectionTitles[section]}` : `Add ${sectionTitles[section]}`;
 
       crudForm.innerHTML = '';
@@ -282,24 +296,37 @@ async function openCrudModal(section, record) {
         updatePrereqRequirement();
       }
 
-      let _titleManuallyEdited = Boolean(_editId && record?.exam_title);
+            let _titleManuallyEdited = Boolean(_editId && (record?.exam_title || record?.name));
       const triggerAutoTitle = () => {
-        if (_titleManuallyEdited || !titleInput || _currentSection !== 'exams') return;
-        const pText = progSelect && progSelect.selectedIndex > 0 ? progSelect.options[progSelect.selectedIndex].textContent.trim() : '';
-        const cText = classSelect && classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].textContent.trim() : '';
-        const sText = subjectSelect && subjectSelect.selectedIndex > 0 ? subjectSelect.options[subjectSelect.selectedIndex].textContent.trim() : '';
-        const typeText = examTypeInput ? examTypeInput.value.trim() : '';
-        const selectedLvlOpt = levelSelect && levelSelect.selectedIndex > 0 ? levelSelect.options[levelSelect.selectedIndex] : null;
-        const lvlText = selectedLvlOpt ? (selectedLvlOpt.getAttribute('data-level-letter') || selectedLvlOpt.textContent.trim()) : '';
-        const ordText = orderSelect ? orderSelect.value.trim() : '';
+        if (_titleManuallyEdited || !titleInput) return;
+        if (_currentSection === 'exams') {
+          const pText = progSelect && progSelect.selectedIndex > 0 ? progSelect.options[progSelect.selectedIndex].textContent.trim() : '';
+          const cText = classSelect && classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].textContent.trim() : '';
+          const sText = subjectSelect && subjectSelect.selectedIndex > 0 ? subjectSelect.options[subjectSelect.selectedIndex].textContent.trim() : '';
+          const typeText = examTypeInput ? examTypeInput.value.trim() : '';
+          const selectedLvlOpt = levelSelect && levelSelect.selectedIndex > 0 ? levelSelect.options[levelSelect.selectedIndex] : null;
+          const lvlText = selectedLvlOpt ? (selectedLvlOpt.getAttribute('data-level-letter') || selectedLvlOpt.textContent.trim()) : '';
+          const ordText = orderSelect ? orderSelect.value.trim() : '';
 
-        const parts = [pText, cText, sText, typeText, lvlText, ordText].filter(Boolean);
-        if (parts.length > 0) {
-          titleInput.value = parts.join(' ');
+          const parts = [pText, cText, sText, typeText, lvlText, ordText].filter(Boolean);
+          if (parts.length > 0) {
+            titleInput.value = parts.join(' ');
+          }
+        } else if (_currentSection === 'assessments') {
+          const mSelect = document.getElementById('field-module_id');
+          const mText = mSelect && mSelect.selectedIndex > 0 ? mSelect.options[mSelect.selectedIndex].textContent.trim() : '';
+          const progText = progSelect && progSelect.selectedIndex > 0 ? progSelect.options[progSelect.selectedIndex].textContent.trim() : '';
+          const bSelect = document.getElementById('field-batch_id');
+          const batchText = bSelect && bSelect.selectedIndex > 0 ? bSelect.options[bSelect.selectedIndex].textContent.trim() : '';
+
+          const parts = [progText, batchText, mText].filter(Boolean);
+          if (parts.length > 0) {
+            titleInput.value = parts.join(' - ');
+          }
         }
       };
 
-      if (titleInput && _currentSection === 'exams') {
+      if (titleInput && (_currentSection === 'exams' || _currentSection === 'assessments')) {
         titleInput.addEventListener('input', () => {
           _titleManuallyEdited = true;
         });
@@ -485,6 +512,9 @@ async function openCrudModal(section, record) {
 document.addEventListener('DOMContentLoaded', () => {
   _ensureDomRefs();
 
+  crudForm.addEventListener('input', () => { window.isProfileDirty = true; });
+  crudForm.addEventListener('change', () => { window.isProfileDirty = true; });
+
   crudForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fields = formFields[_currentSection];
@@ -497,7 +527,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!el) continue;
         if (f.type === 'checkbox') payload[f.id] = el.checked;
         else if (f.type === 'number') payload[f.id] = el.value ? parseFloat(el.value) : null;
-        else if (f.id === 'options_json' || f.id === 'recurring_schedule') {
+        else if (f.id === 'recurring_schedule') {
+          if (!el.value || !el.value.trim()) {
+            payload[f.id] = null;
+          } else {
+            try {
+              payload[f.id] = JSON.parse(el.value.trim());
+            } catch (err) {
+              alert('Invalid JSON format in Recurring Schedule.');
+              return;
+            }
+          }
+        }
+        else if (f.id === 'options_json') {
           if (!el.value || !el.value.trim()) {
             payload[f.id] = null;
           } else {
@@ -617,6 +659,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           showToast('Record added.', 'success');
         }
+        window.isProfileDirty = false;
         crudModal.classList.add('hidden');
         loadSection(_currentSection);
       } catch(e) {
@@ -650,7 +693,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Modal close handlers
-    ['close-crud-modal','crud-cancel-btn'].forEach(id => document.getElementById(id).addEventListener('click', () => crudModal.classList.add('hidden')));
+    ['close-crud-modal','crud-cancel-btn'].forEach(id => document.getElementById(id).addEventListener('click', () => {
+      if (window.isProfileDirty) {
+        if (!confirm('You have unsaved changes. Are you sure you want to close?')) return;
+      }
+      window.isProfileDirty = false;
+      crudModal.classList.add('hidden');
+    }));
     ['delete-cancel-btn'].forEach(id => document.getElementById(id).addEventListener('click', () => document.getElementById('delete-modal').classList.add('hidden')));
 
     // --- DUPLICATE STUDENTS MODAL LOGIC ---
@@ -947,3 +996,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 export { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin };
+

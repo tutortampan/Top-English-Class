@@ -3,7 +3,7 @@
 import { getSupabase, SUPABASE_URL, callEdgeFunction } from './supabase.js';
 import { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCorrectAnswers, stripHyphens } from './grading.js';
 
-export { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCorrectAnswers, stripHyphens };
+export { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCorrectAnswers, stripHyphens, callEdgeFunction };
 
 // ============================================================
 // AUTH / LOGIN
@@ -374,6 +374,23 @@ export async function updateStudentBirthday(studentId, birthDate) {
     .from('students')
     .update({ 
       birth_date: birthDate,
+      updated_at: new Date().toISOString() 
+    })
+    .eq('id', studentId);
+  
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function updateStudentEducation(studentId, educationLevel) {
+  if (!educationLevel) throw new Error('Education level is required');
+  if (isPlaceholderUrl()) return { success: true };
+
+  const sb = await getSupabase();
+  const { error } = await sb
+    .from('students')
+    .update({ 
+      education: educationLevel,
       updated_at: new Date().toISOString() 
     })
     .eq('id', studentId);

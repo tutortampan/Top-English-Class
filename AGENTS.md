@@ -1,6 +1,6 @@
-﻿# TOP ENGLISH PROGRAM â€” AGENTS.md
+# TopsCore LMS â€” AGENTS.md
 
-> **Purpose:** This file is the execution contract for an AI coding agent (including Antigravity) that builds, modifies, tests, and maintains the TOP ENGLISH PROGRAM application.
+> **Purpose:** This file is the execution contract for an AI coding agent (including Antigravity) that builds, modifies, tests, and maintains the TopsCore LMS application.
 >
 > **Primary requirement:** The project must remain restartable. Every meaningful change must be documented so a new or returning agent can continue from the exact known state without relying on conversation history.
 >
@@ -205,18 +205,15 @@ Rules:
 
 The application SHOULD store structured fields separately and generate/display the name from those components. Do not use one concatenated string as the sole source of truth.
 
-## 2.7 Level progression
+## 2.7 Module Progression & Prerequisites
 
-Default passing threshold: **60%**.
-
-Rules:
-- Level 1 has no prior-level prerequisite.
-- A Level can have multiple Exams.
-- A Student unlocks the next Level only when **ALL Exams in the current Level required for that Student are completed AND every one of those Exams has a score >= 60%.**
-- Retakes are allowed only when configured by the Exam.
-- Effective score for progression is the **highest score** across valid attempts for that Exam.
-- Example: 55%, 68%, 81% â†’ effective score = 81%.
-- Historical attempts MUST remain preserved.
+Dynamic multi-level prerequisites supporting 0 to N parent modules.
+- Minimum score thresholds apply per module.
+- Aggregate average score thresholds may apply.
+- Unlimited retakes bounded by availability windows (start/end date-time) and per-attempt countdown timers.
+- The main report card stores HIGHEST score. 
+- All attempts are recorded in exam history.
+- Global average strictly counts unopened/unattempted available modules as 0.
 
 ## 2.8 Overall score
 
@@ -252,32 +249,26 @@ Centralized authoritative grading:
 
 No frontend page may independently implement a competing grading algorithm.
 
-## 2.11 Answer types
+## 2.11 The 8 Assessment Modules
 
-Exactly four supported types:
+The system uses 8 specific AI-evaluated modules:
+1. Tell Me What You See (Visual Pronouns)
+2. Let me tell you something (Narrative Tense)
+3. Conversation-based
+4. Multiple Choice
+5. Read Aloud / Pronunciation
+6. Turn-based Roleplay (Realtime/WebSockets)
+7. Speaking Performance (5 Pillars: Fluency, Pronunciation, Vocabulary, Grammar, Comprehension)
+8. Vocabulary Mastery
 
-1. `Speech to Text`
-2. `Drop-down`
-3. `Multiple Choice`
-4. `Written`
-
-Do not add another answer type without an approved specification change.
-
-## 2.12 Speech-to-text
-
-Required language/locale support:
-- English US
-- English UK
+## 2.12 AI Scoring Pipeline (Stateless)
 
 Rules:
-- Accent does not affect score.
-- `I'm` and `I am` are equivalent.
-- Audio is **not stored**.
-- Speech is converted directly to text, then confirmed/edited as appropriate.
-- Recognition failure is not automatically treated as an incorrect answer.
-- Provide retry/permission/error states.
-
-The agent MUST consider browser Speech Recognition availability and provide a graceful unsupported-browser state. Do not claim browser microphone compatibility without testing/documentation.
+- Architecture: Stateless & Low-Egress.
+- Supabase stores ONLY structured text/JSON (scores, metadata, transcripts).
+- Media (audio/photos) is processed transiently in the browser, sent directly to the AI API for evaluation via Edge Functions, and discarded.
+- Direct English Only for all user interfaces, prompts, and system messages.
+- Manual Override: Teachers have optional manual override privileges.
 
 ## 2.13 Written answer tolerance
 
@@ -884,20 +875,17 @@ Recommended core entities:
 ```text
 Institutions
 Programs
-subjects
-levels
-class_subjects
-students
+batches
+classes
+users (students, teachers, admins)
 
-exams
-exam_classes
-questions
+modules
+assessments
+assessment_prerequisites
 
-attempts
-attempt_answers
-
+student_submissions
+exam_history
 progress
-
 site_settings
 audit_logs
 ```
@@ -988,122 +976,82 @@ subject_id
 created_at
 ```
 
-### students
+### users (students, teachers, admins)
 
 ```text
-id                     -- internal PK only
-enrollment/display fields as approved
-program_id
-class_id
-name
-gender
-age
-pin_hash
-photo_path/status fields
-is_active
+id                     -- internal PK only (maps to auth.users)
+institution_id
+role                   -- 'student', 'teacher', 'admin'
+full_name
+pin_hash               -- if applicable for student login
 created_at
 updated_at
-deleted_at
 ```
 
 Do not add a business `student_id` field.
 
-### exams
+### modules
+
+```text
+id
+name
+module_type
+description
+config_schema
+```
+
+### assessments
 
 At minimum:
 
 ```text
 id
+module_id
+institution_id
 program_id
-subject_id
-level_id
-exam_type
-exam_title
-name/display_name if cached
-answer_type
-exam_status
-time_limit_minutes
-minimum_required_score
-retake_allowed
-max_attempts
+batch_id
+name
+auto_name_override
+available_from
+available_until
+time_limit_seconds
+payload
+prerequisite_rules
 created_at
 updated_at
-deleted_at
 ```
 
-### exam_classes
-
-```text
-exam_id
-class_id
-created_at
-```
-
-Constraint:
-- PROGRAM.program_id MUST match exam.program_id.
-
-### questions
-
-At minimum:
-
-```text
-id
-exam_id
-question_order
-question_text
-answer_type
-options_json / normalized options structure
-correct_answer
-expected_answer
-metadata
-created_at
-updated_at
-deleted_at
-```
-
-The exact representation may vary by answer type but must remain deterministic and import/export friendly.
-
-### attempts
+### student_submissions
 
 At minimum:
 
 ```text
 id
 student_id
-exam_id
-started_at
-expected_end_at
-submitted_at
+assessment_id
 status
-score
-percentage
-grade
-effective_score
-created_at
-updated_at
+started_at
+submitted_at
+overall_score
+ai_transcript
+ai_feedback
+teacher_override_score
+teacher_override_notes
 ```
 
-Do NOT add `exam_version_id`.
-
-### attempt_answers
-
-At minimum:
+### exam_history (Audit Log)
 
 ```text
 id
-attempt_id
-question_id nullable-for-historical-link-only if needed
-question_snapshot
-options_snapshot
-correct_answer_snapshot
-student_answer
-evaluation_result
-score
+submission_id
+student_id
+assessment_id
+action_type
+old_payload
+new_payload
+acted_by
 created_at
-updated_at
 ```
-
-Snapshots are immutable after submission except for controlled operational metadata that does not change historical meaning.
 
 ### progress
 

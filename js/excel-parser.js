@@ -402,3 +402,19 @@ export function processCentralBankQuestionImport(normalizedRows, { existingQuest
 }
 
 
+
+export function processAIAssessmentUpload(moduleType, jsonRows) {
+  // Simple pass-through or mapping for AI Modules based on panel-c-builder.js definitions
+  // We just return the rows as an array of items for the payload
+  const items = [];
+  for (const row of jsonRows) {
+    const item = {};
+    for (const [key, value] of Object.entries(row)) {
+      // Normalize key
+      const safeKey = key.trim().toUpperCase().replace(/\s+/g, '_');
+      item[safeKey] = value;
+    }
+    items.push(item);
+  }
+  return items;
+}

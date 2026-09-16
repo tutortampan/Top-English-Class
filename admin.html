@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TOP OFFICE — TOPS CORE</title>
   <meta name="description" content="Top Office management console for TOPS CORE — manage institutions, programs, students, and exams." />
-  <link rel="stylesheet" href="css/style.css?v=3.0" />
-  <link rel="stylesheet" href="css/admin.css?v=4.0" />
+  <link rel="stylesheet" href="css/style.css?v=4.1.0" />
+  <link rel="stylesheet" href="css/admin.css?v=4.1.0" />
+  <link rel="stylesheet" href="css/components/avatars.css?v=4.1.0" />
   <!-- SheetJS for Excel Import / Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <meta name="view-transition" content="same-origin" />
@@ -15,7 +16,7 @@
 
   <div id="toast-container"></div>
 
-  <!-- â•â•â• ADMIN LOGIN â•â•â• -->
+  <!-- ═══ ADMIN LOGIN ═══ -->
   <div id="admin-login-screen" class="auth-page">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
@@ -40,7 +41,7 @@
     </div>
   </div>
 
-  <!-- â•â•â• ADMIN CONSOLE â•â•â• -->
+  <!-- ═══ ADMIN CONSOLE ═══ -->
   <div id="admin-console" class="admin-layout hidden">
 
     <!-- Sidebar -->
@@ -50,20 +51,20 @@
         <div class="logo-sub">TOP OFFICE</div>
       </div>
 
-      <!-- ABCD Architecture Primary Sidebar (AFFAIRS, BLUEPRINTS, CHALLENGES, DESK) -->
+      <!-- ABCD Architecture Primary Sidebar (ADMIN, BOARD, CHALLENGES, DESK) -->
       <nav class="admin-nav" aria-label="Navigation">
-        <!-- DOMAIN A: AFFAIRS (Professional Workspace) -->
-        <div class="nav-domain-group" data-domain="affairs">
-          <div class="nav-domain-header"><span class="domain-icon">💼</span>A — AFFAIRS</div>
+        <!-- DOMAIN A: Admin (Professional Workspace) -->
+        <div class="nav-domain-group" data-domain="admin">
+          <div class="nav-domain-header"><span class="domain-icon">💼</span>A — Admin</div>
           <div class="admin-nav-item active" data-sub="profile"><span class="nav-icon">👤</span>My Profile</div>
           <div class="admin-nav-item" data-sub="schedule"><span class="nav-icon">🗓️</span>Personal Schedule</div>
           <div class="admin-nav-item" data-sub="work_records"><span class="nav-icon">📂</span>Work Records</div>
           <div class="admin-nav-item" data-sub="cv_generator"><span class="nav-icon">📄</span>CV Generator</div>
         </div>
 
-        <!-- DOMAIN B: BLUEPRINTS (Organizational Structure & Roster) -->
-        <div class="nav-domain-group" data-domain="blueprints">
-          <div class="nav-domain-header"><span class="domain-icon">📐</span>B — BLUEPRINTS</div>
+        <!-- DOMAIN B: Board (Organizational Structure & Roster) -->
+        <div class="nav-domain-group" data-domain="board">
+          <div class="nav-domain-header"><span class="domain-icon">📐</span>B — Board</div>
           <div class="admin-nav-item" data-sub="institutions"><span class="nav-icon">🏢</span>Institutions</div>
           <div class="admin-nav-item" data-sub="programs"><span class="nav-icon">🏫</span>Programs</div>
           <div class="admin-nav-item" data-sub="batches"><span class="nav-icon">👥</span>Batches</div>
@@ -112,7 +113,7 @@
         <div class="d-flex align-center gap-3">
           <button class="btn btn-ghost btn-icon" id="sidebar-toggle" aria-label="Toggle sidebar">☰</button>
           <div class="topbar-breadcrumb">
-            <span class="breadcrumb-domain" id="topbar-domain">AFFAIRS</span>
+            <span class="breadcrumb-domain" id="topbar-domain">ADMIN</span>
             <span class="breadcrumb-sep">/</span>
             <span class="breadcrumb-page" id="topbar-title">My Profile</span>
           </div>
@@ -134,12 +135,12 @@
         <!-- ABCD Status Overview Strip -->
         <div id="admin-kpi-banner" class="admin-kpi-strip">
           <div class="kpi-card">
-            <div class="kpi-label">💼 Affairs Active</div>
-            <div id="kpi-affairs" class="kpi-value">-</div>
+            <div class="kpi-label">💼 Admin Active</div>
+            <div id="kpi-admin" class="kpi-value">-</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">📂 Blueprint Students</div>
-            <div id="kpi-blueprints" class="kpi-value">-</div>
+            <div class="kpi-label">📐 Blueprint Students</div>
+            <div id="kpi-board" class="kpi-value">-</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">⚡ Challenges Live</div>
@@ -157,13 +158,13 @@
           <p>Loading...</p>
         </div>
 
-        <!-- Affairs DOM Panels -->
-        <div id="panel-affairs-schedule" class="admin-panel hidden">
+        <!-- Admin DOM Panels -->
+        <div id="panel-admin-schedule" class="admin-panel hidden">
           <h2>🗓️ Personal Schedule (Agenda View)</h2>
           <p class="text-muted">Recurring meetings synced from Challenge Class Instances</p>
         </div>
 
-        <div id="panel-affairs-cv_generator" class="admin-panel hidden">
+        <div id="panel-admin-cv_generator" class="admin-panel hidden">
           <h2 style="display: flex; align-items: center; justify-content: space-between;">
             <span>📄 Teaching CV Generator</span>
             <button class="btn btn-primary btn-sm" id="btn-export-cv">📥 Export CV to Excel (.xlsx)</button>
@@ -196,13 +197,13 @@
 
   <!-- Mobile bottom tab bar -->
   <nav class="mobile-bottom-tabs" id="mobile-bottom-tabs" aria-label="Primary navigation">
-    <button class="mobile-tab active" data-panel="affairs" aria-label="Affairs">
+    <button class="mobile-tab active" data-panel="admin" aria-label="Admin">
       <span class="mobile-tab-icon">💼</span>
-      <span class="mobile-tab-label">Affairs</span>
+      <span class="mobile-tab-label">Admin</span>
     </button>
-    <button class="mobile-tab" data-panel="blueprints" aria-label="Blueprints">
-      <span class="mobile-tab-icon">📂</span>
-      <span class="mobile-tab-label">Blueprints</span>
+    <button class="mobile-tab" data-panel="board" aria-label="Board">
+      <span class="mobile-tab-icon">📐</span>
+      <span class="mobile-tab-label">Board</span>
     </button>
     <button class="mobile-tab" data-panel="challenges" aria-label="Challenges">
       <span class="mobile-tab-icon">⚡</span>
@@ -242,7 +243,7 @@
     </div>
   </div>
 
-  <!-- â• â• â•  DUPLICATE STUDENTS REVIEW & RESOLVER MODAL â• â• â•  -->
+  <!-- ═══ DUPLICATE STUDENTS REVIEW & RESOLVER MODAL ═══ -->
   <div class="modal-backdrop hidden" id="duplicate-students-modal" role="dialog" aria-modal="true" aria-labelledby="dup-students-modal-title" style="z-index:var(--z-modal,1000);">
     <div class="modal-box" style="max-width:960px; max-height:88vh; display:flex; flex-direction:column; padding:24px;">
       <div class="modal-header" style="padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--clr-border);">
@@ -277,7 +278,7 @@
     </div>
   </div>
 
-  <!-- â• â• â•  DUPLICATE QUESTIONS REVIEW & RESOLVER MODAL â• â• â•  -->
+  <!-- ═══ DUPLICATE QUESTIONS REVIEW & RESOLVER MODAL ═══ -->
   <div class="modal-backdrop hidden" id="duplicate-questions-modal" role="dialog" aria-modal="true" aria-labelledby="dup-questions-modal-title" style="z-index:var(--z-modal,1000);">
     <div class="modal-box" style="max-width:960px; max-height:88vh; display:flex; flex-direction:column; padding:24px;">
       <div class="modal-header" style="padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--clr-border);">
@@ -388,9 +389,10 @@
     </div>
   </div>
 
-  <script type="module" src="js/admin/app.js?v=4.0.7"></script>
+  <script type="module" src="js/admin/app.js?v=4.1.0"></script>
 </body>
 </html>
+
 
 
 

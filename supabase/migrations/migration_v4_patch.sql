@@ -22,11 +22,14 @@ CREATE TABLE IF NOT EXISTS class_meeting_exceptions (
 CREATE INDEX IF NOT EXISTS idx_meeting_exceptions_class ON class_meeting_exceptions(class_instance_id, original_date);
 
 -- 3. Server Authority routine to auto-close expired attempts
-CREATE OR REPLACE FUNCTION auto_close_expired_attempts()
+CREATE OR REPLACE FUNCTION auto_close_expired_attempts(p_attempt_id UUID DEFAULT NULL)
 RETURNS void AS $$
 BEGIN
     UPDATE challenge_attempts
-    SET status = 'auto_submitted', submitted_at = COALESCE(expires_at, expected_end_at, NOW())
-    WHERE status = 'in_progress' AND COALESCE(expires_at, expected_end_at) < NOW();
+    SET status = 'auto_submitted',
+        submitted_at = COALESCE(expires_at, expected_end_at, NOW())
+    WHERE status = 'in_progress'
+      AND COALESCE(expires_at, expected_end_at) < NOW()
+      AND (p_attempt_id IS NULL OR id = p_attempt_id);
 END;
 $$ LANGUAGE plpgsql;

@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — TOPS CORE</title>
   <meta name="description" content="Your TOPS CORE learning dashboard — track progress, view subjects, and start exams." />
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/style.css?v=4.1.0" />
+  <link rel="stylesheet" href="css/dashboard.css?v=4.1.0" />
+  <link rel="stylesheet" href="css/components/avatars.css?v=4.1.0" />
   <style>
     /* ============================================================
        COMPACT MOBILE-FIRST STUDENT DASHBOARD STYLES
@@ -362,7 +363,7 @@
     <div class="d-flex align-center gap-3">
       <!-- Microphone Status Button -->
       <button class="btn btn-ghost btn-sm d-flex align-center gap-1" id="header-mic-btn" title="Check microphone capability for speaking tests" style="padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid var(--clr-border);">
-        <span id="header-mic-icon">🎙️</span>
+        <span id="header-mic-icon">🎙️</span>
         <span id="header-mic-text" class="text-xs" style="font-weight:600;">Mic Check</span>
       </button>
 
@@ -393,7 +394,7 @@
         <!-- Student Info & Greeting -->
         <div class="hero-greeting-box">
           <div class="d-flex align-center gap-2 mb-1">
-            <span class="badge badge-success session-pill">● Active</span>
+            <span class="badge badge-success session-pill">● Active</span>
             <span class="text-xs text-muted hidden" id="stat-exams-done">0</span>
             <span id="overview-exams-count" class="hidden">0</span>
             <span id="overview-subjects-count" class="hidden">0</span>
@@ -449,21 +450,21 @@
       <!-- Completed Exams Summary Bar -->
       <div class="completed-summary-bar">
         <div class="completed-summary-card glass-card">
-          <div class="completed-summary-icon">📝</div>
+          <div class="completed-summary-icon">📈</div>
           <div>
             <div class="completed-summary-val" id="bottom-stat-total-exams">0</div>
             <div class="completed-summary-lbl">Completed Exams</div>
           </div>
         </div>
         <div class="completed-summary-card glass-card">
-          <div class="completed-summary-icon">⭐</div>
+          <div class="completed-summary-icon">⭐</div>
           <div>
             <div class="completed-summary-val" id="bottom-stat-avg-score">0%</div>
             <div class="completed-summary-lbl">Average Score</div>
           </div>
         </div>
         <div class="completed-summary-card glass-card">
-          <div class="completed-summary-icon">🏆</div>
+          <div class="completed-summary-icon">ðŸ†</div>
           <div>
             <div class="completed-summary-val" id="bottom-stat-best-score">0%</div>
             <div class="completed-summary-lbl">Highest Score</div>
@@ -487,7 +488,7 @@
       <div class="modal-box" style="max-width:640px;">
         <div class="modal-header">
           <div>
-            <h3 id="profile-modal-title">👨‍🎓 Student Profile</h3>
+            <h3 id="profile-modal-title">👨â€🎓 Student Profile</h3>
             <p class="text-muted text-sm">Manage profile photo, personal PIN & view history</p>
           </div>
           <button class="btn btn-ghost btn-icon" id="close-profile-modal" aria-label="Close">✕</button>
@@ -611,13 +612,10 @@
             </div>
           </div>
 
-          <p class="text-xs text-muted mb-6">ℹ️ You can change this anytime later from your Profile settings.</p>
+          <p class="text-xs text-muted mb-6">ℹ️ You can change this anytime later from your Profile settings.</p>
 
           <button class="btn btn-primary btn-block" id="btn-confirm-gender" disabled style="padding:var(--space-3) var(--space-6);font-size:1rem;font-weight:700;">
-            Confirm &amp; Continue →
-          </button>
-          <button type="button" class="btn btn-ghost btn-block" id="btn-skip-gender" style="margin-top:var(--space-2);font-size:0.85rem;color:var(--clr-text-3);">
-            Skip for now &amp; Continue →
+            Confirm &amp; Continue ←’
           </button>
         </div>
       </div>
@@ -649,7 +647,7 @@
             <button type="button" class="btn btn-primary btn-sm" id="btn-snap-photo">📸 Capture Photo</button>
             <button type="button" class="btn btn-secondary btn-sm hidden" id="btn-retake-photo">🔄 Retake Photo</button>
             <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0;">
-              📁 Upload Image File
+              📈 Upload Image File
               <input type="file" id="onboard-photo-file" accept="image/*" class="hidden" />
             </label>
           </div>
@@ -658,7 +656,7 @@
           <div class="p-3 rounded text-left mb-4" id="mic-status-card" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);border-radius:var(--radius-md);">
             <div class="d-flex align-center justify-between">
               <div class="d-flex align-center gap-2">
-                <span id="mic-status-icon" style="font-size:1.3rem;">🎙️</span>
+                <span id="mic-status-icon" style="font-size:1.3rem;">🎙️</span>
                 <div>
                   <div class="text-xs fw-700" id="mic-status-title">Checking microphone…</div>
                   <div class="text-xs text-muted" id="mic-status-desc">Verifying audio device permissions for speaking tests</div>
@@ -669,10 +667,10 @@
           </div>
 
           <button class="btn btn-primary btn-block" id="btn-confirm-photo-setup" style="padding:var(--space-3) var(--space-6);font-size:1rem;font-weight:700;">
-            ✓ Save Photo &amp; Enter Dashboard
+            âœ“ Save Photo &amp; Enter Dashboard
           </button>
           <button type="button" class="btn btn-ghost btn-block" id="btn-skip-photo-setup" style="margin-top:var(--space-2);font-size:0.85rem;color:var(--clr-text-3);">
-            Skip for now &amp; Continue to Dashboard →
+            Skip for now &amp; Continue to Dashboard ←’
           </button>
         </div>
       </div>
@@ -691,18 +689,37 @@
         <label style="display: block; font-size: 0.85rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">Date of Birth</label>
         <input type="date" id="onboard-birth-date" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;">
       </div>
-      <button id="btn-confirm-birthday-setup" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 8px;">✓ Save &amp; Continue</button>
-      <button type="button" id="btn-skip-birthday-setup" class="btn btn-ghost" style="width: 100%; margin-top: 0.5rem; font-size: 0.85rem; color: #64748b;">
-        Skip for now &amp; Continue →
-      </button>
+      <button id="btn-confirm-birthday-setup" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 8px;">âœ“ Save &amp; Continue</button>
+    </div>
+  </div>
+
+  <!-- Education Setup Modal -->
+  <div id="education-setup-modal" class="modal-backdrop hidden" style="z-index: 100000; background: rgba(0,0,0,0.85); position: fixed; inset: 0;">
+    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+      <h2 style="margin-top: 0; color: #1e293b; font-size: 1.5rem; font-weight: 700;">Education Background</h2>
+      <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1.5rem;">
+        Please select your highest level of education. This is required for your student profile.
+      </p>
+      <div style="margin-bottom: 1.5rem; text-align: left;">
+        <label style="display: block; font-size: 0.85rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">Education Level</label>
+        <select id="onboard-education-level" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; background-color: white;">
+          <option value="" disabled selected>Select Education Level...</option>
+          <option value="Elementary School">Elementary School</option>
+          <option value="Middle School">Middle School</option>
+          <option value="High School">High School</option>
+          <option value="Undergraduate">Undergraduate (Bachelor's)</option>
+          <option value="Postgraduate">Postgraduate (Master's / PhD)</option>
+        </select>
+      </div>
+      <button id="btn-confirm-education-setup" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 8px;">âœ“ Save &amp; Continue</button>
     </div>
   </div>
 
   <script type="module">
-    import { fetchStudentSubjects, fetchStudentProgress, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, formatStudentName, fetchAssignments, fetchAssessments } from './js/api.js?v=4.0.7';
-    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.0.7';
-    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.0.7';
-    import { testMicrophoneCapability } from './js/speech.js?v=4.0.7';
+    import { fetchStudentSubjects, fetchStudentProgress, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, updateStudentEducation, formatStudentName, fetchAssignments, fetchAssessments } from './js/api.js?v=4.1.0';
+    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.1.0';
+    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.1.0';
+    import { testMicrophoneCapability } from './js/speech.js?v=4.1.0';
 
 
     function escapeHtml(str) {
@@ -729,12 +746,18 @@
     const bannerInitialEl = document.getElementById('banner-avatar-initial');
     if (bannerInitialEl) bannerInitialEl.textContent = firstInitial;
 
+    window.isProfileDirty = false;
     document.getElementById('logout-btn').addEventListener('click', () => {
+      if (window.isProfileDirty) {
+        if (!confirm('You have unsaved changes in your profile. Are you sure you want to logout?')) {
+          return;
+        }
+      }
       clearStudentSession();
       window.location.href = 'index.html';
     });
 
-    // ── Global Profile Photo Synchronization ──
+    // â”€â”€ Global Profile Photo Synchronization â”€â”€
     function applyPhotoEverywhere(url) {
       if (!url) return;
       const photoImg = document.getElementById('prof-photo-img');
@@ -757,7 +780,7 @@
       document.getElementById('profile-modal')?.classList.remove('hidden');
     });
 
-    // ── Microphone Capability Detection & Header Indicator ──
+    // â”€â”€ Microphone Capability Detection & Header Indicator â”€â”€
     async function updateHeaderMicStatus(res) {
       const icon = document.getElementById('header-mic-icon');
       const text = document.getElementById('header-mic-text');
@@ -776,7 +799,7 @@
           ovMic.style.color = '#10b981';
         }
       } else {
-        if (icon) icon.textContent = '⚠️';
+        if (icon) icon.textContent = '⚠️';
         if (text) text.textContent = 'Mic Check';
         if (btn) {
           btn.style.borderColor = 'rgba(245, 158, 11, 0.5)';
@@ -784,7 +807,7 @@
           btn.title = res?.message || 'Click to test microphone capability';
         }
         if (ovMic) {
-          ovMic.textContent = 'Check ⚠️';
+          ovMic.textContent = 'Check ⚠️';
           ovMic.style.color = '#f59e0b';
         }
       }
@@ -799,7 +822,7 @@
         if (res.ok) {
           showToast('✅ Microphone is working properly! Ready for speaking tests.', 'success');
         } else {
-          showToast(`⚠️ ${res.message}`, 'warning', 6000);
+          showToast(`⚠️ ${res.message}`, 'warning', 6000);
         }
       } catch (err) {
         hideLoading();
@@ -807,7 +830,7 @@
       }
     });
 
-    // ── Gender & Title Synchronization ──
+    // â”€â”€ Gender & Title Synchronization â”€â”€
     function applyStudentGenderUI(g) {
       const cleanName = (session.student_name || '').replace(/^(mr\.?|miss\.?|mrs\.?|ms\.?)\s+/i, '').trim();
       const formattedName = formatStudentName(cleanName, g);
@@ -830,7 +853,7 @@
           badge.textContent = '👩 Female (Miss)';
         } else {
           badge.className = 'badge badge-neutral';
-          badge.textContent = '⏳ Unassigned';
+          badge.textContent = 'â³ Unassigned';
         }
       }
 
@@ -896,7 +919,7 @@
           optFemale.style.background = 'rgba(255, 255, 255, 0.03)';
           optFemale.style.boxShadow = 'none';
           confirmBtn.disabled = false;
-          confirmBtn.textContent = 'Confirm as Male (Mr.) →';
+          confirmBtn.textContent = 'Confirm as Male (Mr.) ←’';
         };
 
         optFemale.onclick = () => {
@@ -908,7 +931,7 @@
           optMale.style.background = 'rgba(255, 255, 255, 0.03)';
           optMale.style.boxShadow = 'none';
           confirmBtn.disabled = false;
-          confirmBtn.textContent = 'Confirm as Female (Miss) →';
+          confirmBtn.textContent = 'Confirm as Female (Miss) ←’';
         };
 
         confirmBtn.onclick = async () => {
@@ -929,7 +952,7 @@
       });
     }
 
-    // ── First-Entry Photo & Microphone Onboarding (Phase 12) ──
+    // â”€â”€ First-Entry Photo & Microphone Onboarding (Phase 12) â”€â”€
     let webcamStream = null;
     let onboardPhotoData = null;
 
@@ -950,7 +973,7 @@
           if (overlay) overlay.classList.add('hidden');
           if (confirmBtn) {
             confirmBtn.disabled = false;
-            confirmBtn.textContent = '✓ Save Photo & Enter Dashboard';
+            confirmBtn.textContent = 'âœ“ Save Photo & Enter Dashboard';
           }
         } else {
           throw new Error('Webcam not supported.');
@@ -962,7 +985,7 @@
         }
         if (confirmBtn) {
           confirmBtn.disabled = false;
-          confirmBtn.textContent = 'Continue to Dashboard →';
+          confirmBtn.textContent = 'Continue to Dashboard ←’';
         }
       }
     }
@@ -996,7 +1019,7 @@
         } else {
           if (titleEl) titleEl.textContent = res.state === 'permission_denied' ? 'Microphone Permission Needed' : 'Microphone Check';
           if (descEl) descEl.textContent = res.message;
-          if (iconEl) iconEl.textContent = '⚠️';
+          if (iconEl) iconEl.textContent = '⚠️';
           if (cardEl) {
             cardEl.style.borderColor = 'rgba(245, 158, 11, 0.4)';
             cardEl.style.background = 'rgba(245, 158, 11, 0.08)';
@@ -1217,13 +1240,75 @@
       });
     }
 
-    // ── Load Subjects & Dashboard ──
+    async function checkAndPromptEducation() {
+      let hasEducation = false;
+      try {
+        const sb = await (await import('./js/supabase.js')).getSupabase();
+        const { data: st } = await sb.from('students').select('education').eq('id', session.student_id).single();
+        if (st && st.education) {
+          hasEducation = true;
+          if (!session.education) {
+             session.education = st.education;
+             const { setStudentSession } = await import('./js/session.js?v=4.1.0');
+             setStudentSession(session);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not check education status from DB:', err);
+      }
+
+      if (hasEducation) return;
+
+      hideLoading();
+      const modal = document.getElementById('education-setup-modal');
+      modal.classList.remove('hidden');
+
+      return new Promise((resolve) => {
+        let isResolved = false;
+        const doResolve = () => {
+          if (!isResolved) {
+            isResolved = true;
+            modal.classList.add('hidden');
+            resolve();
+          }
+        };
+
+        document.getElementById('btn-confirm-education-setup')?.addEventListener('click', async () => {
+          const edInput = document.getElementById('onboard-education-level');
+          const ed = edInput?.value;
+          if (!ed) {
+            showToast('Please select your education level.', 'warning');
+            return;
+          }
+
+          const btn = document.getElementById('btn-confirm-education-setup');
+          btn.disabled = true;
+          btn.textContent = 'Saving...';
+          
+          try {
+            await updateStudentEducation(session.student_id, ed);
+            session.education = ed;
+            const { setStudentSession } = await import('./js/session.js?v=4.1.0');
+            setStudentSession(session);
+            showToast('Education level registered successfully!', 'success');
+          } catch (err) {
+            console.warn('Error saving education level:', err);
+            showToast('Could not save education, continuing: ' + err.message, 'warning');
+          } finally {
+            doResolve();
+          }
+        });
+      });
+    }
+
+    // â”€â”€ Load Subjects & Dashboard â”€â”€
     async function loadDashboard() {
       try {
         hideLoading();
         await checkAndPromptGender();
         await checkAndPromptPhoto();
         await checkAndPromptBirthday();
+        await checkAndPromptEducation();
 
         showLoading('Loading your dashboard…');
 
@@ -1277,7 +1362,7 @@
       // Strict alphabetical sorting (A to Z)
       const subjects = [...rawSubjects].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-      const subjectIcons = ['📖', '✏️', '🗣️', '🎧', '📝', '🌐', '📚', '💬'];
+      const subjectIcons = ['📈–', 'âœï¸', 'ðŸ—£ï¸', 'ðŸŽ§', '📈', 'ðŸŒ', '📚', 'ðŸ’¬'];
       grid.innerHTML = '';
 
       subjects.forEach((subj, idx) => {
@@ -1309,7 +1394,7 @@
       });
     }
 
-    // ── openSubjectModal: Opens the Level Modal for a Subject ──
+    // â”€â”€ openSubjectModal: Opens the Level Modal for a Subject â”€â”€
     // Called when a student clicks a subject card on the dashboard.
     async function openSubjectModal(subj, progress) {
       const modal       = document.getElementById('level-modal');
@@ -1333,7 +1418,7 @@
 
         if (!exams || exams.length === 0) {
           container.innerHTML = `<div style="padding:2.5rem 1.5rem;text-align:center;color:var(--clr-text-3);">
-            <div style="font-size:2.5rem;margin-bottom:0.75rem;">📭</div>
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">📈­</div>
             <p style="font-size:0.9rem;">No published exams for this subject yet.</p></div>`;
           return;
         }
@@ -1386,16 +1471,16 @@
             let actionBtn   = '';
             if (inProg) {
               statusBadge = `<span style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);
-                              padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">⏳ In Progress</span>`;
+                              padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">â³ In Progress</span>`;
               actionBtn   = `<button onclick="location.href='exam.html?attempt_id=${inProg.id}'"
                               style="background:var(--clr-accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;
-                              font-size:0.78rem;font-weight:700;cursor:pointer;">Resume →</button>`;
+                              font-size:0.78rem;font-weight:700;cursor:pointer;">Resume ←’</button>`;
             } else if (best) {
               const badgeBg = passed ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.12)';
               const badgeClr= passed ? '#10b981' : '#f87171';
               statusBadge = `<span style="background:${badgeBg};color:${badgeClr};border:1px solid ${badgeClr}33;
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">
-                              ${passed ? '✓ Passed' : '✗ Failed'} ${bestPct.toFixed(0)}%</span>`;
+                              ${passed ? 'âœ“ Passed' : 'âœ— Failed'} ${bestPct.toFixed(0)}%</span>`;
               actionBtn   = `<button onclick="location.href='result.html?attempt_id=${best.id}'"
                               style="background:rgba(255,255,255,0.06);color:var(--clr-text-2);border:1px solid var(--clr-border);
                               padding:6px 14px;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;">View Result</button>`;
@@ -1404,7 +1489,7 @@
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">Not Started</span>`;
               actionBtn   = `<button onclick="location.href='exam.html?exam_id=${exam.id}'"
                               style="background:var(--clr-accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;
-                              font-size:0.78rem;font-weight:700;cursor:pointer;">Start Exam →</button>`;
+                              font-size:0.78rem;font-weight:700;cursor:pointer;">Start Exam ←’</button>`;
             }
 
             const gradeChip = grade ? `<span style="background:${gradeColor}22;color:${gradeColor};border:1px solid ${gradeColor}44;
@@ -1434,7 +1519,7 @@
 
       } catch(err) {
         container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--clr-text-3);">
-          <div style="font-size:1.5rem;margin-bottom:0.5rem;">⚠️</div>
+          <div style="font-size:1.5rem;margin-bottom:0.5rem;">⚠️</div>
           <p style="font-size:0.85rem;">Could not load exams: ${err.message}</p></div>`;
       }
     }
@@ -1450,7 +1535,7 @@
 
 
 
-    // ── V1: Render Assigned Assessments Section ──
+    // â”€â”€ V1: Render Assigned Assessments Section â”€â”€
     async function renderAssignedAssessments(assessments, allAttempts) {
       // Find or create the assigned-assessments section
       let section = document.getElementById('v1-assessments-section');
@@ -1610,7 +1695,7 @@
       });
     }
 
-    // ── Overall Stats Calculation (AGENTS.md §2.8 & §2.10) ──
+    // â”€â”€ Overall Stats Calculation (AGENTS.md Â§2.8 & Â§2.10) â”€â”€
     async function computeOverallStats(attempts) {
       // V1: prefer is_best_score flag; fallback to highest percentage per exam/assessment/instance
       const bestMap = {};
@@ -1660,7 +1745,7 @@
       renderCompletedExamsBottom(attempts);
     }
 
-    // ── Render Completed Exams Section (Bottom of Dashboard) ──
+    // â”€â”€ Render Completed Exams Section (Bottom of Dashboard) â”€â”€
     function renderCompletedExamsBottom(attempts) {
       const container = document.getElementById('completed-exams-container');
       const badgeEl = document.getElementById('bottom-completed-badge');
@@ -1676,7 +1761,7 @@
         if (container) {
           container.innerHTML = `
             <div class="empty-state p-8 text-center" style="padding: 40px 20px;">
-              <div class="empty-state__icon" style="font-size:2.5rem;margin-bottom:12px;">📝</div>
+              <div class="empty-state__icon" style="font-size:2.5rem;margin-bottom:12px;">📈</div>
               <h3 class="fw-700 text-base mb-1" style="color:var(--clr-text-1);">No completed exams yet</h3>
               <p class="text-sm text-muted" style="max-width:440px;margin:0 auto;">
                 Pick a subject above to start taking your assigned English assessments. Your scores, grades, and completion records will appear here.
@@ -1689,12 +1774,10 @@
 
       // Calculate summary statistics
       const bestAttemptsMap = {};
-      let totalPctSum = 0;
       let highestPct = 0;
 
       attempts.forEach(att => {
         const pct = parseFloat(att.percentage || 0);
-        totalPctSum += pct;
         if (pct > highestPct) highestPct = pct;
         if (!bestAttemptsMap[att.exam_id] || pct > bestAttemptsMap[att.exam_id]) {
           bestAttemptsMap[att.exam_id] = pct;
@@ -1702,7 +1785,9 @@
       });
 
       const uniqueExamsCount = Object.keys(bestAttemptsMap).length;
-      const avgScore = (totalPctSum / attempts.length).toFixed(1);
+      let totalPctSum = 0;
+      Object.values(bestAttemptsMap).forEach(pct => totalPctSum += pct);
+      const avgScore = uniqueExamsCount > 0 ? (totalPctSum / uniqueExamsCount).toFixed(1) : '0.0';
 
       if (badgeEl) badgeEl.textContent = `${uniqueExamsCount} Exam${uniqueExamsCount === 1 ? '' : 's'} Completed`;
       if (statTotalEl) statTotalEl.textContent = uniqueExamsCount;
@@ -1755,11 +1840,11 @@
         }) : '—';
         const isPassed = parseFloat(pct) >= 60;
         const statusBadgeDesktop = isPassed
-          ? `<span class="badge badge-success" style="font-size:0.75rem;padding:3px 8px;">✓ Passed</span>`
-          : `<span class="badge badge-warning" style="font-size:0.75rem;padding:3px 8px;">⚠️ Retake Needed</span>`;
+          ? `<span class="badge badge-success" style="font-size:0.75rem;padding:3px 8px;">âœ“ Passed</span>`
+          : `<span class="badge badge-warning" style="font-size:0.75rem;padding:3px 8px;">⚠️ Retake Needed</span>`;
         const statusBadgeMobile = isPassed
-          ? `<span style="color:#10b981;font-weight:700;">✓ Passed</span>`
-          : `<span style="color:#f59e0b;font-weight:700;">⚠️ Retake</span>`;
+          ? `<span style="color:#10b981;font-weight:700;">âœ“ Passed</span>`
+          : `<span style="color:#f59e0b;font-weight:700;">⚠️ Retake</span>`;
 
         const attemptId = escapeHtml(a.id);
         const navLink = `window.location.href='result.html?attempt_id=${attemptId}'`;
@@ -1827,15 +1912,15 @@
       }
     }
 
-    // ── Profile Modal & History ──
+    // â”€â”€ Profile Modal & History â”€â”€
     function setupProfileModal(attempts) {
       const modal = document.getElementById('profile-modal');
       const openBtn = document.getElementById('view-profile-btn');
       const closeBtn = document.getElementById('close-profile-modal');
 
       document.getElementById('prof-student-name').textContent = session.student_name;
-      document.getElementById('prof-student-prog').textContent = `Program: ${session.institution_name}`;
-      document.getElementById('prof-student-class').textContent = `Class: ${session.program_name}`;
+      document.getElementById('prof-student-prog').textContent = `Admin (Institution): ${session.institution_name}`;
+      document.getElementById('prof-student-class').textContent = `Blueprint (Program): ${session.program_name}`;
       const batchEl = document.getElementById('prof-student-batch');
       if (batchEl) {
         if (session.batch_name) {
@@ -1909,6 +1994,14 @@
 
       // Change PIN Form Handler
       const changePinForm = document.getElementById('change-pin-form');
+      
+      const pinInputs = changePinForm.querySelectorAll('input');
+      pinInputs.forEach(input => {
+        input.addEventListener('input', () => {
+          window.isProfileDirty = true;
+        });
+      });
+
       changePinForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const oldPin = document.getElementById('pin-old').value.trim();
@@ -1930,6 +2023,7 @@
           hideLoading();
           showToast('PIN updated successfully!', 'success');
           changePinForm.reset();
+          window.isProfileDirty = false;
         } catch(err) {
           hideLoading();
           showToast(err.message, 'error');
@@ -1967,21 +2061,39 @@
 
       openBtn.addEventListener('click', () => {
         applyStudentGenderUI(session.gender);
+        window.isProfileDirty = false;
+        if(changePinForm) changePinForm.reset();
         modal.classList.remove('hidden');
       });
-      closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+      closeBtn.addEventListener('click', () => {
+        if (window.isProfileDirty) {
+          if (!confirm('You have unsaved changes. Are you sure you want to close?')) return;
+        }
+        window.isProfileDirty = false;
+        if(changePinForm) changePinForm.reset();
+        modal.classList.add('hidden');
+      });
       modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.add('hidden');
+        if (e.target === modal) {
+          if (window.isProfileDirty) {
+            if (!confirm('You have unsaved changes. Are you sure you want to close?')) return;
+          }
+          window.isProfileDirty = false;
+          if(changePinForm) changePinForm.reset();
+          modal.classList.add('hidden');
+        }
       });
 
       // Header avatar also opens profile modal
       document.getElementById('header-avatar').addEventListener('click', () => {
         applyStudentGenderUI(session.gender);
+        window.isProfileDirty = false;
+        if(changePinForm) changePinForm.reset();
         modal.classList.remove('hidden');
       });
     }
 
-    // ── Level Modal close ──
+    // â”€â”€ Level Modal close â”€â”€
     document.getElementById('close-level-modal').addEventListener('click', () => {
       document.getElementById('level-modal').classList.add('hidden');
     });
@@ -1989,7 +2101,7 @@
       if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
     });
 
-    // ── Gamification: Show Level Up Popup ──
+    // â”€â”€ Gamification: Show Level Up Popup â”€â”€
     window.showLevelUpPopup = function(newLevel) {
       const overlay = document.getElementById('level-up-overlay');
       const badgeText = document.getElementById('lu-badge-text');
@@ -2017,5 +2129,6 @@
     loadDashboard();
   </script></body>
 </html>
+
 
 

@@ -10,6 +10,7 @@ export function setStudentSession(data) {
     student_id: data.student_id,
     student_name: data.student_name,
     gender: data.gender || null,
+    education: data.education || null,
     program_id: data.program_id,
     program_name: data.program_name,
     class_id: data.class_id,

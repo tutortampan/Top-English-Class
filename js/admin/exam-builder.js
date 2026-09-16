@@ -237,7 +237,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
                   <span id="rev-type" class="badge badge-info">EVALUATION</span>
                 </div>
                 <div class="d-flex gap-4 flex-wrap text-sm mb-3">
-                  <div><strong>Class Blueprint:</strong> <span id="rev-class">�</span></div>
+                  <div><strong>Class Board:</strong> <span id="rev-class">�</span></div>
                   <div><strong>Duration:</strong> <span id="rev-duration">60 min</span></div>
                   <div><strong>Order:</strong> <span id="rev-order">Random</span></div>
                   <div><strong>Assignment:</strong> <span id="rev-assignment" class="badge badge-neutral">Batch</span></div>

@@ -1,6 +1,8 @@
 import { adminFetchAll, adminInsert, adminUpdate } from '../api.js?v=4.0.5';
 import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.0.5';
 import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.5';
+import { callEdgeFunction, getSupabase } from '../supabase.js?v=4.0.5';
+import { downloadAITemplate, AI_MODULES } from './panel-c-builder.js';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -590,161 +592,34 @@ async function hashPin(pin) {
           return;
         }
 
-              showLoading(`Processing ${readyStudents.length} students (saving new & merging existing)…`);
+        showLoading(`Processing ${readyStudents.length} students (saving new & merging existing) via Server...`);
         try {
-          let insertedCount = 0;
-          let mergedCount = 0;
+          const payload = readyStudents.map(s => ({
+            name: s.name,
+            gender: s.gender,
+            birthDate: s.birthDate,
+            pin: s.pin,
+            institutionId: s.institutionId,
+            programId: s.programId,
+            batchId: s.batchId,
+            batchName: s.batchName,
+            isExisting: s.isExisting,
+            existingId: s.existingId
+          }));
 
-          // â”€â”€ Auto-create missing batches first (before saving students) â”€â”€
-          // Collect unique (programId, batchName) pairs that don't have a batchId yet
-          const batchesToCreate = new Map(); // key: programId::batchName -> { programId, batchName }
-          for (const s of readyStudents) {
-            if (!s.batchId && s.batchName && s.batchName !== '—' && s.programId) {
-              const key = `${s.programId}::${s.batchName.toLowerCase().trim()}`;
-              if (!batchesToCreate.has(key)) {
-                batchesToCreate.set(key, { programId: s.programId, batchName: s.batchName.trim() });
-              }
-            }
-          }
-
-          // Create missing batches and build a lookup map
-          const newBatchMap = new Map(); // key: programId::batchName -> id
-          for (const [key, { programId, batchName }] of batchesToCreate.entries()) {
-            try {
-              const newBatch = await adminInsert('batches', {
-                program_id: programId,
-                name: batchName,
-                is_active: true
-              });
-              newBatchMap.set(key, newBatch.id);
-              // Also push into sortedBatches so it's available for subsequent rows
-              sortedBatches.push({ id: newBatch.id, program_id: programId, name: batchName, is_active: true });
-              showToast(`Batch "${batchName}" auto-created.`, 'info');
-            } catch(batchErr) {
-              console.warn(`Could not auto-create batch "${batchName}":`, batchErr.message);
-            }
-          }
-
-          // Resolve batch IDs for students that needed auto-creation
-          for (const s of readyStudents) {
-            if (!s.batchId && s.batchName && s.batchName !== '—' && s.programId) {
-              const key = `${s.programId}::${s.batchName.toLowerCase().trim()}`;
-              if (newBatchMap.has(key)) s.batchId = newBatchMap.get(key);
-            }
-          }
-
-          // â”€â”€ Safe student write helper: retries without extended columns if DB schema is old â”€â”€
-          let _dbHasBatchId = true;  // Assume yes, will be set to false on first schema error
-          let _dbHasBirthDate = true;
-          let _dbHasProgramId = true;
-          let _dbHasLevelId = true;
-
-          async function safeStudentInsert(payload) {
-            // Remove null/undefined batch_id if DB doesn't have the column
-            const p = { ...payload };
-            if (!_dbHasBatchId) delete p.batch_id;
-            if (!_dbHasBirthDate) delete p.birth_date;
-            if (!_dbHasProgramId) delete p.institution_id;
-            
-            try {
-              return await adminInsert('students', p);
-            } catch (e) {
-              if (e.message && e.message.toLowerCase().includes('batch_id')) {
-                _dbHasBatchId = false;
-                showToast('âš ï¸ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
-                delete p.batch_id;
-                return await adminInsert('students', p);
-              }
-              if (e.message && e.message.toLowerCase().includes('birth_date')) {
-                _dbHasBirthDate = false;
-                delete p.birth_date;
-                return await adminInsert('students', p);
-              }
-              if (e.message && e.message.toLowerCase().includes('institution_id')) {
-                _dbHasProgramId = false;
-                delete p.institution_id;
-                return await adminInsert('students', p);
-              }
-              throw e;
-            }
-          }
-
-          async function safeStudentUpdate(id, payload) {
-            const p = { ...payload };
-            if (!_dbHasBatchId) delete p.batch_id;
-            if (!_dbHasBirthDate) delete p.birth_date;
-            if (!_dbHasProgramId) delete p.institution_id;
-            
-            try {
-              return await adminUpdate('students', id, p);
-            } catch (e) {
-              if (e.message && e.message.toLowerCase().includes('batch_id')) {
-                _dbHasBatchId = false;
-                showToast('âš ï¸ Column batch_id missing in DB — saving without batch. Run the SQL patch to fix this.', 'warning');
-                delete p.batch_id;
-                return await adminUpdate('students', id, p);
-              }
-              if (e.message && e.message.toLowerCase().includes('birth_date')) {
-                _dbHasBirthDate = false;
-                delete p.birth_date;
-                return await adminUpdate('students', id, p);
-              }
-              if (e.message && e.message.toLowerCase().includes('institution_id')) {
-                _dbHasProgramId = false;
-                delete p.institution_id;
-                return await adminUpdate('students', id, p);
-              }
-              throw e;
-            }
-          }
-
-          for (const s of readyStudents) {
-            if (s.isExisting && s.existingId) {
-              const payload = {
-                institution_id: s.institutionId,
-                program_id: s.programId,
-                batch_id: s.batchId || null,
-                birth_date: s.birthDate,
-                is_active: true,
-                deleted_at: null,
-                updated_at: new Date().toISOString()
-              };
-              if (s.gender) {
-                payload.gender = s.gender;
-                payload.name = formatStudentName(s.name, s.gender);
-              } else {
-                payload.name = s.name;
-              }
-              if (s.pin && s.pin !== '1234') {
-                payload.pin_hash = await hashPin(s.pin);
-              }
-              await safeStudentUpdate(s.existingId, payload);
-              mergedCount++;
-            } else {
-              const hashed = await hashPin(s.pin || '1234');
-              const payload = {
-                name: formatStudentName(s.name, s.gender),
-                institution_id: s.institutionId,
-                program_id: s.programId,
-                batch_id: s.batchId || null,
-                gender: s.gender || null,
-                birth_date: s.birthDate,
-                pin_hash: hashed,
-                is_active: true
-              };
-              await safeStudentInsert(payload);
-              insertedCount++;
-            }
-          }
-
-          hideLoading();
-          const batchWarning = !_dbHasBatchId ? ' (batch_id column missing — run SQL patch to enable full batch support)' : '';
-          showToast(`Done! ${insertedCount} new students added, ${mergedCount} updated/merged!${batchWarning}`, 'success');
+          const response = await callEdgeFunction('import-students', { students: payload });
           
-          // Stay on page and reset preview box
-          document.getElementById('import-students-preview-wrap').classList.add('hidden');
-          document.getElementById('import-students-file').value = '';
-          parsedStudentsState = [];
+          hideLoading();
+          
+          if (response.error) {
+             showToast('Import error: ' + (response.error.message || response.error), 'error');
+          } else {
+             const resData = response.data || {};
+             showToast(`Done! ${resData.insertedCount || 0} new students added, ${resData.mergedCount || 0} updated/merged!`, 'success');
+             document.getElementById('import-students-preview-wrap').classList.add('hidden');
+             document.getElementById('import-students-file').value = '';
+             parsedStudentsState = [];
+          }
         } catch(err) {
           hideLoading();
           showToast('Import error: ' + err.message, 'error');
@@ -804,9 +679,17 @@ async function hashPin(pin) {
                 <div class="text-xs fw-700 text-muted uppercase mb-3">Other Templates:</div>
                 <div class="d-flex flex-column gap-2">
                   <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-written">ðŸ“„ Written (Type)</button>
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-speech">ðŸŽ™ï¸ Speech to Text</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-speech">ðŸŽ™ï¸  Speech to Text</button>
                   <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-mc">ðŸ”˜ Multiple Choice</button>
                   <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-dropdown">â–¼ Drop-down</button>
+                  <div class="text-xs fw-700 text-primary uppercase mt-3 mb-1">TopsCore AI Assessments:</div>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="VISUAL_PRONOUNS">âš¡ Visual Pronouns</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="NARRATIVE_TENSE">âš¡ Narrative Tense</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="CONVERSATIONAL">âš¡ Conversational</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="READ_ALOUD">âš¡ Read Aloud</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="TURN_BASED_ROLEPLAY">âš¡ Turn-Based Roleplay</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="SPEAKING_MONOLOGUE">âš¡ Speaking Performance</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="VOCAB_MASTERY">âš¡ Vocab Mastery</button>
                 </div>
               </div>
             </div>
@@ -961,7 +844,14 @@ async function hashPin(pin) {
       document.getElementById('dl-tmpl-written')?.addEventListener('click', () => downloadTemplateForType('written'));
       document.getElementById('dl-tmpl-speech')?.addEventListener('click', () => downloadTemplateForType('speech_to_text'));
       document.getElementById('dl-tmpl-mc')?.addEventListener('click', () => downloadTemplateForType('multiple_choice'));
-      document.getElementById('dl-tmpl-dropdown')?.addEventListener('click', () => downloadTemplateForType('dropdown'));
+            document.getElementById('dl-tmpl-dropdown')?.addEventListener('click', () => downloadTemplateForType('dropdown'));
+      
+      document.querySelectorAll('.dl-ai-tmpl').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const modType = e.target.getAttribute('data-module');
+          if (modType) downloadAITemplate(modType);
+        });
+      });
 
       document.getElementById('import-questions-file').addEventListener('change', (e) => {
         const file = e.target.files?.[0];
@@ -981,6 +871,36 @@ async function hashPin(pin) {
             if (!jsonRows.length) {
               hideLoading();
               showToast('Excel file is empty.', 'warning');
+              return;
+            }
+
+            // Check if this is an AI Assessment based on headers
+            const headers = Object.keys(jsonRows[0] || {}).map(h => h.trim().toUpperCase().replace(/\s+/g, '_'));
+            let detectedAIModule = null;
+            for (const [modKey, modDef] of Object.entries(AI_MODULES)) {
+              if (modDef.columns.every(col => headers.includes(col))) {
+                detectedAIModule = modKey;
+                break;
+              }
+            }
+
+            if (detectedAIModule) {
+              hideLoading();
+              // Store it in a global or state variable for AI assessments
+              window._parsedAIAssessment = { moduleType: detectedAIModule, rows: jsonRows };
+              document.getElementById('preview-summary-title').innerHTML = `Preview AI Module: <b>` + AI_MODULES[detectedAIModule].name + `</b>`;
+              document.getElementById('preview-count-label').textContent = jsonRows.length + ` items ready for upload.`;
+              
+              // Render basic preview
+              const tbody = document.getElementById('import-preview-tbody');
+              tbody.innerHTML = '';
+              jsonRows.slice(0, 10).forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="100%" class="text-sm">` + escapeHtml(JSON.stringify(row).substring(0, 150)) + `...</td>`;
+                tbody.appendChild(tr);
+              });
+              document.getElementById('import-preview-container').classList.remove('hidden');
+              showToast(`Detected AI Module: ` + AI_MODULES[detectedAIModule].name, 'success');
               return;
             }
 
@@ -1129,75 +1049,49 @@ async function hashPin(pin) {
         if (!examId) { showToast('Please select a target exam before saving.', 'warning'); return; }
         if (!parsedQuestionsState.length) { showToast('No questions to save.', 'warning'); return; }
 
-        showLoading('Menyimpan & merge questions ke database…');
+        showLoading('Saving & merging questions to database via Server...');
         try {
-          const sb = await getSupabase();
-          let defaultSectionId = null;
-          try {
-            const { data: secs } = await sb.from('exam_sections').select('id').eq('exam_id', examId).order('section_order').limit(1);
-            if (secs && secs.length > 0) defaultSectionId = secs[0].id;
-          } catch (_) {}
-
-          const existingQuestions = await adminFetchAll('questions', '*', { exam_id: examId });
-          const orderMap = new Map();
-          const textMap = new Map();
-          existingQuestions.forEach(q => {
-            if (q.question_order != null) orderMap.set(Number(q.question_order), q);
-            if (q.question_text) textMap.set(q.question_text.toLowerCase().trim(), q);
-          });
-
-          let insertedCount = 0;
-          let mergedCount = 0;
-
           // Resolve duplicate 'order' numbers within the uploaded batch (common copy-paste error)
           const batchMap = new Map();
           const batchUsedOrders = new Set();
           
           parsedQuestionsState.forEach(q => {
             let safeOrder = q.order != null ? Number(q.order) : 1;
-            // If this order number is already used by another question in this upload, auto-increment it
             while (batchUsedOrders.has(safeOrder)) {
               safeOrder++;
             }
             batchUsedOrders.add(safeOrder);
-            q.order = safeOrder; // Update the order to the safe, unique order
+            q.order = safeOrder;
             
-            // Now safely use order as the batch key without risk of overwriting
             const key = `order::${q.order}`;
             batchMap.set(key, q);
           });
 
-          for (const q of batchMap.values()) {
-            const payload = {
-              exam_id: examId,
-              question_order: q.order,
-              question_text: q.questionText,
-              correct_answer: q.correctAnswer,
-              answer_type: q.answerType,
-              options_json: q.optionsJson,
-              metadata: { classBlueprint: q.classBlueprint, subject: q.classBlueprint, title: q.title, week: q.week, day: q.day, type: q.type },
-              updated_at: new Date().toISOString()
-            };
-            if (defaultSectionId) payload.section_id = defaultSectionId;
+          const questionsPayload = Array.from(batchMap.values()).map(q => ({
+            examId: examId,
+            order: q.order,
+            questionText: q.questionText,
+            correctAnswer: q.correctAnswer,
+            answerType: q.answerType,
+            optionsJson: q.optionsJson,
+            metadata: { classBlueprint: q.classBlueprint, subject: q.classBlueprint, title: q.title, week: q.week, day: q.day, type: q.type }
+          }));
 
-            const existing = (q.order != null ? orderMap.get(Number(q.order)) : null) || textMap.get(q.questionText.toLowerCase().trim());
-            if (existing) {
-              await adminUpdate('questions', existing.id, payload);
-              mergedCount++;
-            } else {
-              await adminInsert('questions', payload);
-              insertedCount++;
-            }
-          }
-
+          const response = await callEdgeFunction('import-questions', { questions: questionsPayload, examId: examId });
+          
           hideLoading();
-          showToast(`Successfully saved ${insertedCount + mergedCount} questions (${insertedCount} new, ${mergedCount} merged/updated)!`, 'success');
           
-          // Reset view but stay on the page as requested
-          document.getElementById('import-preview-container').classList.add('hidden');
-          document.getElementById('import-questions-file').value = '';
-          parsedQuestionsState = [];
-          
+          if (response.error) {
+             showToast('Save error: ' + (response.error.message || response.error), 'error');
+          } else {
+             const resData = response.data || {};
+             showToast(`Successfully saved ${resData.insertedCount + resData.mergedCount} questions (${resData.insertedCount} new, ${resData.mergedCount} merged/updated)!`, 'success');
+             
+             // Reset view but stay on the page as requested
+             document.getElementById('import-preview-container').classList.add('hidden');
+             document.getElementById('import-questions-file').value = '';
+             parsedQuestionsState = [];
+          }
         } catch(err) {
           hideLoading();
           showToast(`Save error: ${err.message}`, 'error');

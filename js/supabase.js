@@ -1,8 +1,8 @@
 // TOPS CORE — Supabase Configuration & Client Init
 // Replace SUPABASE_URL and SUPABASE_ANON_KEY with your project credentials.
 
-export const SUPABASE_URL = window.__ENV__?.SUPABASE_URL || 'https://xuiszvwfjccvucqpactf.supabase.co';
-export const SUPABASE_ANON_KEY = window.__ENV__?.SUPABASE_ANON_KEY || 'sb_publishable_dvMkwNJpPlryF0KNiaJRfQ_-fR1WW_4';
+export const SUPABASE_URL = window.__ENV__?.SUPABASE_URL || 'https://xvpwmjpazmfkfffkfypx.supabase.co';
+export const SUPABASE_ANON_KEY = window.__ENV__?.SUPABASE_ANON_KEY || 'sb_publishable_WPlqlBdpQLDkEpcrBErayA_RNHkDAl4';
 
 // Import Supabase JS from CDN (ES Module compatible)
 let _supabase = null;

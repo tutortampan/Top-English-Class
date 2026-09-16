@@ -1,25 +1,33 @@
-﻿# PRODUCT SPECIFICATION â€” TOP ENGLISH PROGRAM
+# PRODUCT SPECIFICATION — TOPSCORE LMS
 
 ## 1. Overview
-TOP ENGLISH PROGRAM is an online English assessment and testing platform. It manages Institutions, Programs, subjects, levels, exams, questions, student attempts, progression, and admin operations.
+TopsCore is an institutional, data-efficient, low-egress English Learning Management System (LMS) powered by an AI Assessment Engine. It manages Institutions, Programs, Subjects, Levels, Modules, Assessments, Student Submissions, Progression, and Admin Operations. All user interfaces, prompts, and system messages are in Direct English Only.
 
 ## 2. Core Hierarchy
-- INSTITUTION -> PROGRAM -> Student
-- INSTITUTION -> Subject -> Level -> Exam -> Question
-- Student + Exam -> Attempt -> Attempt Answer
+- INSTITUTION -> PROGRAM -> Batch -> Class -> Users (Students/Teachers)
+- INSTITUTION -> Subject -> Level -> Module -> Assessment
+- Student + Assessment -> Submission (Evaluated via AI Pipeline)
 - Student + Subject + Level -> Progress
 
 ## 3. Key Non-Negotiable Requirements
-- **Admin Navigation**: Exactly four primary tabs (`DATABASE`, `PROGRAM`, `STUDENT`, `EXAM`).
-- **Student Business ID**: No business-facing Student ID anywhere. UUID internal PK only.
+- **Admin Navigation**: Exactly four primary tabs (`DATABASE`, `PROGRAM`, `STUDENT`, `EXAM` / `CHALLENGES`).
+- **Student Business ID**: No business-facing Student ID anywhere. UUID internal PK only (maps to auth.users).
 - **Student Login**: INSTITUTION -> PROGRAM -> Student Name -> Personal PIN. Hashed pin validation.
-- **Exam Reuse across Programs**: Many-to-many relationship `exam_classes`. Display name formula: `INSTITUTION + PROGRAM + SUBJECT + LEVEL + EXAM TYPE + EXAM TITLE`.
-- **Level Progression Threshold**: 60% default passing score. Unlock next level only when ALL exams in current level are completed with score >= 60%. Retakes use highest score.
-- **Overall Score**: Average of all available takeable completed exams.
+- **Smart Auto-Naming**: Assessments use the formula: `[Institution] - [Program] - [Module Name] - [Type]`. Manual override is allowed.
+- **Scoring & Retakes**: Unlimited retakes bounded by availability windows. The main report card stores the **HIGHEST** score. Global average strictly counts unopened/unattempted available modules as 0. Teachers have manual override privileges.
+- **Prerequisites**: Dynamic multi-level prerequisites supporting 0 to N parent assessments, minimum score thresholds, and aggregate average score thresholds.
+- **Stateless AI Media Pipeline**: Supabase stores ONLY structured text/JSON. Media (audio/photos) is processed transiently in the browser, sent directly to the AI API for evaluation via Edge Functions, and immediately discarded.
 - **Grading Scale**: F (0-10%), E (11-30%), D (31-50%), C (51-70%), B (71-90%), A (91-99%), S (100%).
-- **Answer Types**: Speech to Text, Drop-down, Multiple Choice, Written.
-- **Written Answer Tolerance Engine**: Damerau-Levenshtein edit distance (0 errors = 1.0, 1-2 errors = 0.5, 3+ errors = 0.0).
-- **Server Authoritative Timer**: Server sets `started_at` & `expected_end_at`. UI visual timer countdown only. Server enforces deadline.
-- **Historical Snapshot**: `attempt_answers` stores question and option snapshots upon attempt start/submission to maintain history without Exam Version entities.
+- **The 8 Assessment Modules**: 
+  1. Tell Me What You See (Visual Pronouns)
+  2. Let me tell you something (Narrative Tense)
+  3. Conversation-based
+  4. Multiple Choice
+  5. Read Aloud / Pronunciation
+  6. Turn-based Roleplay (Realtime/WebSockets)
+  7. Speaking Performance (5 Pillars: Fluency, Pronunciation, Vocabulary, Grammar, Comprehension)
+  8. Vocabulary Mastery
+- **Server Authoritative Timer**: Server sets `available_from` & `available_until` and `time_limit`. UI visual timer countdown only.
+- **Historical Snapshot**: `exam_history` logs every attempt payload and AI evaluation in JSON.
 - **Soft Delete**: `deleted_at` on historical business entities.
 - **Audit Log**: Log admin mutations and security events.
