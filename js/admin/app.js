@@ -1129,7 +1129,7 @@ window._editRecord = async (section, id, jsonStr) => {
 let _deleteSection, _deleteId;
 window._deleteRecord = (section, id, name) => {
   _deleteSection = section; _deleteId = id;
-  document.getElementById('delete-modal-message').textContent = \Soft-delete "\"? Historical data is preserved.\;
+  document.getElementById('delete-modal-message').textContent = `Soft-delete "${name}"? Historical data is preserved.`;
   document.getElementById('delete-modal').classList.remove('hidden');
 };
 

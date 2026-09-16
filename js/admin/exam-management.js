@@ -311,7 +311,7 @@ window.openAssessmentBuilder = async (examId) => {
 
 export async function renderQuestions(area) {
   const [questions, exams] = await Promise.all([
-    adminFetchAll('questions', '*, exam_sections(title, exams(id, exam_title, exam_type, institutions(name), subjects(name), levels(name, level_number)))'),
+    adminFetchAll('questions', '*, exams(id, exam_title, exam_type, subjects(name), levels(name, level_number))'),
     adminFetchAll('exams', 'id, exam_title, exam_type, institutions(name), subjects(name), levels(name, level_number)')
   ]);
 
@@ -329,7 +329,7 @@ export async function renderQuestions(area) {
   questions.forEach(q => { window._qRecords[q.id] = q; });
 
   const gridData = questions.map(q => {
-    const examDisplay = (q.exam_sections && q.exam_sections.exams) ? window.formatExamDisplayName(q.exam_sections.exams) + ` (Sec: ${q.exam_sections.title})` : '—';
+    const examDisplay = q.exams ? window.formatExamDisplayName(q.exams) : ((q.exam_sections && q.exam_sections.exams) ? window.formatExamDisplayName(q.exam_sections.exams) + ` (Sec: ${q.exam_sections.title})` : '—');
     return {
       id: q.id,
       order: q.question_order,

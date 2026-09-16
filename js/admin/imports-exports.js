@@ -1,4 +1,4 @@
-﻿import { adminFetchAll, adminInsert, adminUpdate } from '../api.js?v=3.1.0';
+import { adminFetchAll, adminInsert, adminUpdate } from '../api.js?v=3.1.0';
 import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=3.1.0';
 import { showToast, showLoading, hideLoading } from '../app.js?v=3.1.0';
 
@@ -1132,11 +1132,13 @@ async function hashPin(pin) {
         showLoading('Menyimpan & merge questions ke database…');
         try {
           const sb = await getSupabase();
-          const { data: secs } = await sb.from('exam_sections').select('id').eq('exam_id', examId).order('section_order').limit(1);
-          if (!secs || !secs.length) { hideLoading(); showToast('No sections found in this exam.', 'error'); return; }
-          const defaultSectionId = secs[0].id;
+          let defaultSectionId = null;
+          try {
+            const { data: secs } = await sb.from('exam_sections').select('id').eq('exam_id', examId).order('section_order').limit(1);
+            if (secs && secs.length > 0) defaultSectionId = secs[0].id;
+          } catch (_) {}
 
-          const existingQuestions = await adminFetchAll('questions', '*', { section_id: defaultSectionId });
+          const existingQuestions = await adminFetchAll('questions', '*', { exam_id: examId });
           const orderMap = new Map();
           const textMap = new Map();
           existingQuestions.forEach(q => {
@@ -1167,7 +1169,7 @@ async function hashPin(pin) {
 
           for (const q of batchMap.values()) {
             const payload = {
-              section_id: defaultSectionId,
+              exam_id: examId,
               question_order: q.order,
               question_text: q.questionText,
               correct_answer: q.correctAnswer,
@@ -1176,6 +1178,7 @@ async function hashPin(pin) {
               metadata: { subject: q.subject, title: q.title, week: q.week, day: q.day, type: q.type },
               updated_at: new Date().toISOString()
             };
+            if (defaultSectionId) payload.section_id = defaultSectionId;
 
             const existing = (q.order != null ? orderMap.get(Number(q.order)) : null) || textMap.get(q.questionText.toLowerCase().trim());
             if (existing) {
@@ -1235,13 +1238,22 @@ async function hashPin(pin) {
 
         try {
           const sb = await getSupabase();
-          const { data: sections } = await sb.from('exam_sections').select('id').eq('exam_id', examId);
-          const sectionIds = (sections || []).map(s => s.id);
-          const [qRes, examClasses] = await Promise.all([
-            sb.from('questions').select('*').in('section_id', sectionIds),
+          let questions = [];
+          const [directQRes, examClasses] = await Promise.all([
+            sb.from('questions').select('*').eq('exam_id', examId).is('deleted_at', null),
             sb.from('exam_programs').select('programs(name)').eq('exam_id', examId)
           ]);
-          const questions = qRes.data || [];
+          questions = directQRes?.data || [];
+          if (!questions.length) {
+            try {
+              const { data: sections } = await sb.from('exam_sections').select('id').eq('exam_id', examId);
+              const sectionIds = (sections || []).map(s => s.id);
+              if (sectionIds.length > 0) {
+                const { data: secQ } = await sb.from('questions').select('*').in('section_id', sectionIds).is('deleted_at', null);
+                if (secQ && secQ.length > 0) questions = secQ;
+              }
+            } catch (_) {}
+          }
 
           const sortedQuestions = questions.sort((a,b) => (a.question_order || 0) - (b.question_order || 0));
           const programName = examClasses?.data?.[0]?.programs?.name || 'Camp';
@@ -1359,7 +1371,7 @@ async function hashPin(pin) {
       questions: [
         { id: 'question_text', label: 'Question Text', type: 'textarea', required: true },
         { id: 'question_order', label: 'Order', type: 'number', required: true },
-        { id: 'section_id', label: 'Section', type: 'select', source: 'exam_sections', required: true },
+        { id: 'exam_id', label: 'Examination', type: 'select', source: 'exams', required: true },
         { id: 'answer_type', label: 'Answer Type', type: 'select', options: [
           {value:'multiple_choice',label:'Multiple Choice'},
           {value:'dropdown',label:'Dropdown'},
