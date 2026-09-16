@@ -51,10 +51,10 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
     const tabDefaultSections = {
       affairs: 'profile',
       blueprints: 'institutions',
-      challenges: 'subjects',
+      challenges: 'classes',
       desk: 'audit',
-      database: 'subjects', class: 'programs', student: 'students', exam: 'exams',
-      academy: 'institutions', blueprint: 'subjects' // Legacy mappings
+      database: 'classes', class: 'programs', student: 'students', exam: 'exams',
+      academy: 'institutions', blueprint: 'classes' // Legacy mappings
     };
 
     // Section alias map to guarantee 100% backward compatibility
@@ -64,14 +64,14 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
       'academy-batches': 'batches',
       'academy-students': 'students',
       'academy-import': 'import-students',
-      'blueprint-subjects': 'subjects',
+      'blueprint-subjects': 'classes',
       'blueprint-topics': 'topics',
       'blueprint-bank': 'questions',
       'blueprint-wordtypes': 'question_types',
       'blueprint-import': 'import-questions',
       'blueprint-export': 'export-questions',
       'challenges-hub': 'exams',
-      'challenges-assignments': 'assignments',
+      'challenges-assignments': 'challenge_instances',
       'challenges-results': 'results',
       'challenges-recalibrator': 'recalibrator',
       'desk-audit': 'audit',
@@ -302,7 +302,7 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
       const parts = [];
       if (exam.institutions?.name) parts.push(`[${exam.institutions.name}]`);
       if (classContext) parts.push(`[${classContext}]`);
-      if (exam.subjects?.name) parts.push(exam.subjects.name);
+      if (exam.classes?.name) parts.push(exam.classes.name);
       if (exam.levels?.name) {
         const lvl = String(exam.levels.name);
         parts.push(lvl.toLowerCase().includes('level') ? lvl : `Level ${lvl}`);
@@ -391,7 +391,7 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
       try {
         switch(section) {
           case 'institutions':        await renderPrograms(area); break;
-          case 'subjects':            await renderSubjects(area); break;
+          case 'classes':            await renderSubjects(area); break;
           case 'class_instances':     await renderClassInstances(area); break;
           case 'levels':              await renderLevels(area); break;
           case 'topics':              await renderTopics(area); break;
@@ -401,7 +401,7 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
           case 'students':            await _renderStudentsModule(area); break;
           case 'exams':               await renderExams(area); break;
           case 'questions':           await renderCentralQuestionBank(area); break;
-          case 'assignments':         await renderAssignments(area); break;
+          case 'challenge_instances':         await renderAssignments(area); break;
           case 'results':             await renderResults(area); break;
           case 'progress-view':       await renderProgressView(area); break;
           case 'audit':               await renderAuditLog(area); break;
@@ -500,7 +500,7 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
 
     // â”€â”€ CLASSES (Formerly Subjects) â”€â”€
     async function renderSubjects(area) {
-      const [rawData, institutions] = await Promise.all([adminFetchAll('subjects', '*, institutions(name)'), adminFetchAll('institutions')]);
+      const [rawData, institutions] = await Promise.all([adminFetchAll('classes', '*, institutions(name)'), adminFetchAll('institutions')]);
       // Sort by Institution Name (A-Z), then Class Name (A-Z)
       const data = [...rawData].sort((a, b) => {
         const pA = a.institutions?.name || '';
@@ -563,14 +563,14 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
         btn.addEventListener('click', () => {
           const sid = btn.getAttribute('data-edit-subj');
           const rec = window._subjRecords[sid];
-          if (rec) openCrudModal('subjects', rec);
+          if (rec) openCrudModal('classes', rec);
         });
       });
       tbody.querySelectorAll('[data-del-subj]').forEach(btn => {
         btn.addEventListener('click', () => {
           const sid = btn.getAttribute('data-del-subj');
           const rec = window._subjRecords[sid];
-          if (rec) window._deleteRecord('subjects', sid, rec.name || 'Class Blueprint');
+          if (rec) window._deleteRecord('classes', sid, rec.name || 'Class Blueprint');
         });
       });
     }
@@ -578,7 +578,7 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
     // â”€â”€ LEVELS â”€â”€
     async function renderLevels(area) {
       const [rawData, allClasses] = await Promise.all([
-        adminFetchAll('levels', '*, subjects(name, institution_id, institutions(name))'),
+        adminFetchAll('levels', '*, classes(name, institution_id, institutions(name))'),
         adminFetchAll('programs', 'id, name, institution_id')
       ]);
       const classMap = {};
@@ -586,12 +586,12 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
 
       // Sort by Institution Name (A-Z), Program Name, Subject Name (A-Z), then level_number ascending
       const data = [...rawData].sort((a, b) => {
-        const pA = a.subjects?.institutions?.name || '';
-        const pB = b.subjects?.institutions?.name || '';
+        const pA = a.classes?.institutions?.name || '';
+        const pB = b.classes?.institutions?.name || '';
         const cA = (a.program_id && classMap[a.program_id]?.name) || '';
         const cB = (b.program_id && classMap[b.program_id]?.name) || '';
-        const sA = a.subjects?.name || '';
-        const sB = b.subjects?.name || '';
+        const sA = a.classes?.name || '';
+        const sB = b.classes?.name || '';
         return pA.localeCompare(pB) || cA.localeCompare(cB) || sA.localeCompare(sB) || (a.level_number - b.level_number) || (a.name || '').localeCompare(b.name || '');
       });
 
@@ -624,20 +624,20 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
       
       window._levelRecords = {};
       data.forEach(r => {
-        if (!r.institution_id && r.subjects?.institution_id) {
-          r.institution_id = r.subjects.institution_id;
+        if (!r.institution_id && r.classes?.institution_id) {
+          r.institution_id = r.classes.institution_id;
         }
         window._levelRecords[r.id] = r;
       });
 
       data.forEach(r => {
-        const progName = r.subjects?.institutions?.name || 'â€”';
+        const progName = r.classes?.institutions?.name || 'â€”';
         const programName = (r.program_id && classMap[r.program_id]?.name) ? classMap[r.program_id].name : 'All Programs';
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><span class="badge badge-neutral">${escapeHtml(progName)}</span></td>
           <td><span class="badge badge-neutral">${escapeHtml(programName)}</span></td>
-          <td class="text-muted fw-600">${escapeHtml(r.subjects?.name || 'â€”')}</td>
+          <td class="text-muted fw-600">${escapeHtml(r.classes?.name || 'â€”')}</td>
           <td class="text-center"><span class="badge badge-primary">Level ${toLevelLetter(r.level_number)}</span></td>
           <td class="fw-600">${escapeHtml(r.name)}</td>
           <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-neutral'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
@@ -716,7 +716,7 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
         // 2. Fetch student\'s attempts with exams and attempt_answers
         const { data: rawAttempts, error: attErr } = await sb
           .from('attempts')
-          .select('*, exams(id, exam_title, exam_type, answer_type, time_limit_minutes, subjects(id, name), levels(id, name, level_number)), attempt_answers(*)')
+          .select('*, exams(id, exam_title, exam_type, answer_type, time_limit_minutes, classes(id, name), levels(id, name, level_number)), attempt_answers(*)')
           .eq('student_id', studentId)
           .in('status', ['submitted', 'auto_submitted'])
           .order('submitted_at', { ascending: false });
@@ -960,7 +960,7 @@ import { renderProfile, renderSchedule, renderWorkRecords, renderCvGenerator } f
                         const pct = parseFloat(att.percentage || att.score || 0).toFixed(1);
                         const grade = att.grade || getGrade(Math.round(pct));
                         const examTitle = att.exams?.exam_title || 'Exam';
-                        const subjectName = att.exams?.subjects?.name || 'â€”';
+                        const subjectName = att.exams?.classes?.name || 'â€”';
                         const submitDate = att.submitted_at ? new Date(att.submitted_at).toLocaleString() : 'â€”';
                         const rowId = `att-row-${att.id}`;
                         const detailId = `att-detail-${att.id}`;

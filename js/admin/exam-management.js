@@ -7,7 +7,7 @@ let examsGrid;
 
 export async function renderExams(area) {
   const [rawData, allQuestions, allClasses] = await Promise.all([
-    adminFetchAll('exams', '*, subjects(name), levels(name, level_number), institutions(name)'),
+    adminFetchAll('exams', '*, classes(name), levels(name, level_number), institutions(name)'),
     adminFetchAll('questions', 'id, exam_id'),
     adminFetchAll('programs', 'id, name')
   ]);
@@ -34,7 +34,7 @@ export async function renderExams(area) {
         </div>
         <div class="d-flex gap-2 flex-wrap">
           <button class="btn btn-primary btn-sm" id="hub-add-exam">+ Create Exam</button>
-          <button class="btn btn-secondary btn-sm" id="hub-btn-assignments" onclick="window.loadSection('assignments')">ðŸ‘¥ Cohorts & Assignments</button>
+          <button class="btn btn-secondary btn-sm" id="hub-btn-assignments" onclick="window.loadSection('challenge_instances')">ðŸ‘¥ Cohorts & Assignments</button>
           <button class="btn btn-secondary btn-sm" id="hub-btn-results" onclick="window.loadSection('results')">ðŸ“Š Inspect Results</button>
           <button class="btn btn-warning btn-sm" id="hub-btn-recalibrate" onclick="window.loadSection('recalibrator')" style="font-weight:700;">âš–ï¸ Recalibrate</button>
           <button class="btn btn-secondary btn-sm" onclick="window.loadSection('import-questions')">ðŸ“¥ Import Questions</button>
@@ -78,7 +78,7 @@ export async function renderExams(area) {
       id: r.id,
       title: r.exam_title,
       programName,
-      subject: r.subjects?.name || '—',
+      classBlueprint: r.classes?.name || '—',
       level: window.toLevelLetter ? window.toLevelLetter(r.levels?.level_number || 1) : r.levels?.level_number,
       order: r.exam_order || 1,
       prereq: prereqExam ? prereqExam.exam_title : '',
@@ -99,7 +99,7 @@ export async function renderExams(area) {
     container: 'exams-grid-container',
     data: gridData,
     pageSize: 50,
-    searchKeys: ['title', 'programName', 'subject', 'status'],
+    searchKeys: ['title', 'programName', 'classBlueprint', 'status'],
     bulkActions: true,
     onBulkAction: async (selectedIds) => {
       const action = prompt(`Bulk Action for ${selectedIds.length} exams.\nOptions: delete`);
@@ -124,7 +124,7 @@ export async function renderExams(area) {
           <div>
             <div class="text-sm text-muted mb-1">Target</div>
             <div class="fw-600">Program: ${escapeHtml(row.programName)}</div>
-            <div class="fw-600">Class Blueprint: ${escapeHtml(row.subject)}</div>
+            <div class="fw-600">Class Blueprint: ${escapeHtml(row.classBlueprint)}</div>
           </div>
           <div>
             <div class="text-sm text-muted mb-1">Structure</div>
@@ -158,7 +158,7 @@ export async function renderExams(area) {
           <div class="text-muted text-xs mt-1 fw-600 d-flex gap-2 flex-wrap align-center">
             <span><span class="text-accent">PROGRAM:</span> ${escapeHtml(row.programName)}</span>
             <span>•</span>
-            <span><span class="text-accent">CLASS:</span> ${escapeHtml(row.subject)}</span>
+            <span><span class="text-accent">CLASS:</span> ${escapeHtml(row.classBlueprint)}</span>
             <span>•</span>
             <span><span class="badge badge-primary" style="font-size:0.6rem; padding: 2px 6px;">LVL ${row.level}</span></span>
             <span><span class="badge badge-neutral" style="font-size:0.6rem; padding: 2px 6px;">ORD ${row.order}</span></span>
@@ -260,7 +260,7 @@ window._duplicateExam = async (examId) => {
     delete newExam.created_at;
     delete newExam.updated_at;
     delete newExam.deleted_at;
-    delete newExam.subjects;
+    delete newExam.classes;
     delete newExam.levels;
     delete newExam.institutions;
     newExam.exam_title = `${newExam.exam_title} (Copy)`;
@@ -311,8 +311,8 @@ window.openAssessmentBuilder = async (examId) => {
 
 export async function renderQuestions(area) {
   const [questions, exams] = await Promise.all([
-    adminFetchAll('questions', '*, exams(id, exam_title, exam_type, subjects(name), levels(name, level_number))'),
-    adminFetchAll('exams', 'id, exam_title, exam_type, institutions(name), subjects(name), levels(name, level_number)')
+    adminFetchAll('questions', '*, exams(id, exam_title, exam_type, classes(name), levels(name, level_number))'),
+    adminFetchAll('exams', 'id, exam_title, exam_type, institutions(name), classes(name), levels(name, level_number)')
   ]);
 
   area.innerHTML = `

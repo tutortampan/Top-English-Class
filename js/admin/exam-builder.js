@@ -1,4 +1,4 @@
-// TOPS CORE — Centralized Assessment Wizard V1
+// TOPS CORE ï¿½ Centralized Assessment Wizard V1
 // Implements multi-step Evaluation & Exam creation, topic derivation from Evaluations,
 // live question counts, inline assignments, and frozen snapshots on publish.
 import {
@@ -233,17 +233,17 @@ export async function openAssessmentBuilder(assessmentId = null) {
               
               <div class="p-4 rounded mb-4" style="background:rgba(0,0,0,0.25);border:1px solid var(--clr-border);">
                 <div class="d-flex justify-between align-center mb-3">
-                  <h4 class="m-0" id="rev-title" style="font-size:1.15rem;font-weight:700;">—</h4>
+                  <h4 class="m-0" id="rev-title" style="font-size:1.15rem;font-weight:700;">ï¿½</h4>
                   <span id="rev-type" class="badge badge-info">EVALUATION</span>
                 </div>
                 <div class="d-flex gap-4 flex-wrap text-sm mb-3">
-                  <div><strong>Class Blueprint:</strong> <span id="rev-class">—</span></div>
+                  <div><strong>Class Blueprint:</strong> <span id="rev-class">ï¿½</span></div>
                   <div><strong>Duration:</strong> <span id="rev-duration">60 min</span></div>
                   <div><strong>Order:</strong> <span id="rev-order">Random</span></div>
                   <div><strong>Assignment:</strong> <span id="rev-assignment" class="badge badge-neutral">Batch</span></div>
                 </div>
                 <div class="mb-3">
-                  <strong>Included Topics:</strong> <span id="rev-topics" class="text-muted">—</span>
+                  <strong>Included Topics:</strong> <span id="rev-topics" class="text-muted">ï¿½</span>
                 </div>
                 <div class="d-flex align-center gap-2 p-3 rounded" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);">
                   <div style="font-size:1.5rem;">ðŸ”’</div>
@@ -673,7 +673,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
       try {
         let asmId = createdAssessmentId;
         if (!asmId) {
-          const newAsm = await createAssessmentWithTopics({
+          const newAsm = await createChallengeDefinitionWithTopics({
             class_id: subjectId,
             challenge_type: typeVal,
             title,

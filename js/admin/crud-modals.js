@@ -58,7 +58,7 @@ const formFields = {
   ],
   class_instances: [
     { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: true },
-    { id: 'subject_id', label: 'Class Blueprint', type: 'select', source: 'subjects', required: true },
+    { id: 'class_id', label: 'Class Blueprint', type: 'select', source: 'classes', required: true },
     { id: 'start_date', label: 'Start Date', type: 'date', required: false },
     { id: 'estimated_finish', label: 'Estimated Finish Date', type: 'date', required: false },
     { id: 'recurring_schedule', label: 'Recurring Schedule (JSON)', type: 'textarea', placeholder: 'e.g. ["Monday", "Wednesday"]', required: false },
@@ -67,7 +67,7 @@ const formFields = {
   levels: [
     { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true, uiOnly: true },
     { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
-    { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: true, dependsOn: 'institution_id' },
+    { id: 'class_id', label: 'Subject', type: 'select', source: 'classes', required: true, dependsOn: 'institution_id' },
     { id: 'level_number', label: 'Level Number', type: 'number', required: true, placeholder: 'e.g. 1' },
     { id: 'name', label: 'Level Name', type: 'text', required: true, placeholder: 'e.g. Level 1 - Beginner' },
     { id: 'is_active', label: 'Active', type: 'checkbox' },
@@ -101,7 +101,7 @@ const formFields = {
   exams: [
     { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
     { id: 'program_id', label: 'Class (Optional / Assigned)', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
-    { id: 'subject_id', label: 'Subject', type: 'select', source: 'subjects', required: false, dependsOn: 'institution_id' },
+    { id: 'class_id', label: 'Subject', type: 'select', source: 'classes', required: false, dependsOn: 'institution_id' },
     { id: 'exam_type', label: 'Exam Type', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Final'], required: true, defaultValue: 'Daily' },
     
     { id: 'exam_order', label: 'Order (1, 2, 3...)', type: 'select', options: ['1','2','3','4','5','6','7','8','9','10'], required: true, defaultValue: '1' },
@@ -258,7 +258,7 @@ async function openCrudModal(section, record) {
       const progSelect = crudForm.querySelector('#field-institution_id');
       const classSelect = crudForm.querySelector('#field-program_id');
       const batchSelect = crudForm.querySelector('#field-batch_id');
-      const subjectSelect = crudForm.querySelector('#field-subject_id');
+      const subjectSelect = crudForm.querySelector('#field-class_id');
 
       const updatePrereqRequirement = () => {
         if (!prereqSelect) return;
@@ -316,7 +316,7 @@ async function openCrudModal(section, record) {
 
           const selSubjId = subjectSelect ? subjectSelect.value : null;
           if (selSubjId) {
-            const subjectSpecific = activeLevels.filter(l => l.subject_id === selSubjId);
+            const subjectSpecific = activeLevels.filter(l => l.class_id === selSubjId);
             if (subjectSpecific.length > 0) {
               activeLevels = subjectSpecific;
             }
@@ -393,7 +393,7 @@ async function openCrudModal(section, record) {
           triggerAutoTitle();
         };
 
-        const initialProgId = record?.institution_id || (record?.programs?.institution_id) || (record?.subjects?.institution_id) || progSelect.value;
+        const initialProgId = record?.institution_id || (record?.programs?.institution_id) || (record?.classes?.institution_id) || progSelect.value;
         if (initialProgId) {
           progSelect.value = initialProgId;
           await populateClassesForProgram(initialProgId);
@@ -430,20 +430,20 @@ async function openCrudModal(section, record) {
             return;
           }
           subjectSelect.disabled = false;
-          const allSubjects = await adminFetchAll('subjects');
+          const allSubjects = await adminFetchAll('classes');
           const filteredSubjects = allSubjects.filter(s => s.institution_id === selectedProgId && !s.deleted_at);
           filteredSubjects.sort((a, b) => (a.name || '').localeCompare(b.name || '')).forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id;
             opt.textContent = s.name;
-            if (record && record.subject_id === s.id) opt.selected = true;
+            if (record && record.class_id === s.id) opt.selected = true;
             subjectSelect.appendChild(opt);
           });
           await populateLevelsForSection();
           triggerAutoTitle();
         };
 
-        const initialProgIdForSubject = record?.institution_id || (record?.subjects?.institution_id) || progSelect?.value;
+        const initialProgIdForSubject = record?.institution_id || (record?.classes?.institution_id) || progSelect?.value;
         if (initialProgIdForSubject) {
           await populateSubjectsForProgram(initialProgIdForSubject);
         } else {

@@ -405,8 +405,8 @@ function toLevelLetter(num) {
           adminFetchAll('institutions'),
           adminFetchAll('programs'),
           adminFetchAll('batches'),
-          adminFetchAll('assignments', 'student_id, batch_id, assessment_id'),
-          adminFetchAll('assessments', 'id, title, level_id, levels(name, level_number)'),
+          adminFetchAll('challenge_instances', 'student_id, batch_id, challenge_definition_id'),
+          adminFetchAll('challenge_definitions', 'id, title, level_id, levels(name, level_number)'),
           adminFetchAll('challenge_attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), challenge_instances(challenge_definitions(title, challenge_type)), challenge_attempt_answers(id, evaluation_result, score)')
         ]);
 
@@ -421,13 +421,13 @@ function toLevelLetter(num) {
           );
           
           // To avoid duplicates if both student and batch assigned
-          const assignedAssesIds = new Set(sAssignments.map(a => a.assessment_id));
+          const assignedAssesIds = new Set(sAssignments.map(a => a.challenge_definition_id));
 
           assignedAssesIds.forEach(assessmentId => {
             const assessment = assessmentsMap.get(assessmentId);
             if (!assessment) return;
 
-            const studentAttempts = (allAttempts || []).filter(att => att.student_id === student.id && att.assessment_id === assessmentId);
+            const studentAttempts = (allAttempts || []).filter(att => att.student_id === student.id && att.challenge_definition_id === assessmentId);
             const isCompleted = studentAttempts.some(att => att.status === 'SUBMITTED' || att.status === 'AUTO_SUBMITTED');
             const isInProgress = studentAttempts.some(att => att.status === 'IN_PROGRESS');
 
@@ -925,9 +925,9 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
     // ── Class Instances UI ──
     export async function renderClassInstances(area) {
       const [rawData, batches, classes] = await Promise.all([
-        adminFetchAll('class_instances', '*, batches(name, programs(name, institutions(name))), subjects(name)'),
+        adminFetchAll('class_instances', '*, batches(name, programs(name, institutions(name))), classes(name)'),
         adminFetchAll('batches', 'id, name'),
-        adminFetchAll('subjects', 'id, name, institution_id')
+        adminFetchAll('classes', 'id, name, institution_id')
       ]);
 
       const data = [...rawData].sort((a, b) => {

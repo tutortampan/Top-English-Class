@@ -405,7 +405,7 @@ export async function uploadStudentPhoto(studentId, photoBase64OrUrl) {
 // ============================================================
 
 /** Fetch subjects accessible by the student (directly by institution_id or class) */
-export async function fetchStudentSubjects(programId, institutionId) {
+export async function fetchStudentClasses(programId, institutionId) {
   const sb = await getSupabase();
   // 1. Check for global subjects first or fallback
   try {
@@ -535,7 +535,7 @@ export async function fetchExamsForStudentLevel(programId, levelId, institutionI
 }
 
 /** Fetch published exams available for a specific subject (when no levels are defined or level is optional) */
-export async function fetchExamsForStudentSubject(programId, subjectId, institutionId) {
+export async function fetchExamsForStudentClass(programId, subjectId, institutionId) {
   const sb = await getSupabase();
   let query = sb.from('exams')
     .select('*')
@@ -1020,7 +1020,7 @@ const MOCK_ADMIN_STORE = {
     { id: '44444444-4444-4444-4444-444444444444', class_id: '33333333-3333-3333-3333-333333333333', name: 'Level 1 - Beginner', level_number: 1, is_active: true, created_at: '2026-01-16T08:00:00Z' },
     { id: '44444444-4444-4444-4444-555555555555', class_id: '33333333-3333-3333-3333-333333333333', name: 'Level 2 - Intermediate', level_number: 2, is_active: true, created_at: '2026-01-18T08:00:00Z' }
   ],
-  program_subjects: [
+  program_classes: [
     { program_id: '22222222-2222-2222-2222-222222222222', class_id: '33333333-3333-3333-3333-333333333333', created_at: '2026-02-01T08:00:00Z' },
     { program_id: '22222222-2222-2222-2222-333333333333', class_id: '33333333-3333-3333-3333-333333333333', created_at: '2026-02-01T08:00:00Z' }
   ],
@@ -1085,7 +1085,7 @@ function hydrateMockRelations(table, item) {
   const clone = { ...item };
   const store = MOCK_ADMIN_STORE;
   if (table === 'topics') {
-    clone.subjects = (store.classes || []).find(s => s.id === clone.class_id) || null;
+    clone.classes = (store.classes || []).find(s => s.id === clone.class_id) || null;
   } else if (table === 'challenge_instances') {
     clone.assessments = (store.challenge_definitions || []).find(a => a.id === clone.challenge_definition_id) || (store.exams || []).find(e => e.id === clone.challenge_definition_id) || null;
     clone.batches = (store.batches || []).find(b => b.id === clone.batch_id) || null;
@@ -1096,7 +1096,7 @@ function hydrateMockRelations(table, item) {
     clone.institutions = store.institutions.find(p => p.id === clone.institution_id) || null;
   } else if (table === 'levels') {
     const subj = store.classes.find(s => s.id === clone.class_id);
-    clone.subjects = subj ? { ...subj, institution_id: subj.institution_id } : null;
+    clone.classes = subj ? { ...subj, institution_id: subj.institution_id } : null;
   } else if (table === 'programs') {
     clone.institutions = store.institutions.find(p => p.id === clone.institution_id) || null;
   } else if (table === 'batches') {
@@ -1108,13 +1108,13 @@ function hydrateMockRelations(table, item) {
     clone.batches = store.batches.find(b => b.id === clone.batch_id) || null;
   } else if (table === 'exams') {
     clone.institutions = store.institutions.find(p => p.id === clone.institution_id) || null;
-    clone.subjects = store.classes.find(s => s.id === clone.class_id) || null;
+    clone.classes = store.classes.find(s => s.id === clone.class_id) || null;
       } else if (table === 'questions') {
     clone.exams = store.exams.find(e => e.id === clone.exam_id) || null;
-  } else if (table === 'program_subjects') {
+  } else if (table === 'program_classes') {
     const cls = store.programs.find(c => c.id === clone.program_id);
     clone.programs = cls ? { ...cls, institutions: store.institutions.find(p => p.id === cls.institution_id) } : null;
-    clone.subjects = store.classes.find(s => s.id === clone.class_id) || null;
+    clone.classes = store.classes.find(s => s.id === clone.class_id) || null;
   } else if (table === 'exam_programs') {
     const cls = store.programs.find(c => c.id === clone.program_id);
     clone.programs = cls ? { ...cls, institutions: store.institutions.find(p => p.id === cls.institution_id) } : null;
@@ -1126,7 +1126,7 @@ function hydrateMockRelations(table, item) {
   } else if (table === 'progress') {
     const st = store.students.find(s => s.id === clone.student_id);
     clone.students = st ? { ...st, programs: store.programs.find(c => c.id === st.program_id) } : null;
-    clone.subjects = store.classes.find(s => s.id === clone.class_id) || null;
+    clone.classes = store.classes.find(s => s.id === clone.class_id) || null;
       }
   return clone;
 }
@@ -1165,7 +1165,7 @@ export async function adminFetchAll(table, select = '*', filters = {}, forceRefr
     const sb = await getSupabase();
     let query = sb.from(normTable).select(select);
     // Only filter by deleted_at if the table supports soft delete
-    if (!['program_subjects', 'exam_programs', 'attempts', 'attempt_answers', 'progress', 'audit_logs', 'site_settings'].includes(normTable)) {
+    if (!['program_classes', 'exam_programs', 'attempts', 'attempt_answers', 'progress', 'audit_logs', 'site_settings'].includes(normTable)) {
       query = query.is('deleted_at', null);
     }
     for (const [key, val] of Object.entries(filters)) {
@@ -1175,7 +1175,7 @@ export async function adminFetchAll(table, select = '*', filters = {}, forceRefr
     if (error && select !== '*') {
       console.warn(`Query with relation "${select}" on ${normTable} failed, retrying with '*':`, error.message);
       let fallbackQuery = sb.from(normTable).select('*');
-      if (!['program_subjects', 'exam_programs', 'attempts', 'attempt_answers', 'progress', 'audit_logs', 'site_settings'].includes(normTable)) {
+      if (!['program_classes', 'exam_programs', 'attempts', 'attempt_answers', 'progress', 'audit_logs', 'site_settings'].includes(normTable)) {
         fallbackQuery = fallbackQuery.is('deleted_at', null);
       }
       for (const [key, val] of Object.entries(filters)) {
@@ -2298,7 +2298,7 @@ export async function applyRecalibrateExam(examId, adminIdentifier = 'admin') {
 // ============================================================
 
 /** Global Subjects */
-export async function fetchGlobalSubjects() {
+export async function fetchGlobalClasses() {
   const sb = await getSupabase();
   const { data, error } = await sb.from('classes')
     .select('*')
@@ -2556,7 +2556,7 @@ export async function deleteCentralQuestion(id) {
 }
 
 /** Assessments (Evaluations & Exams) */
-export async function fetchAssessments(filters = {}) {
+export async function fetchChallengeDefinitions(filters = {}) {
   const sb = await getSupabase();
   let query = sb.from('challenge_definitions').select('*, classes(name)').is('deleted_at', null);
 
@@ -2584,7 +2584,7 @@ export async function fetchAssessments(filters = {}) {
   }));
 }
 
-export async function createAssessmentWithTopics(payload, topicIds = []) {
+export async function createChallengeDefinitionWithTopics(payload, topicIds = []) {
   const sb = await getSupabase();
   try {
     const { data: assessment, error } = await sb.from('challenge_definitions')
@@ -2617,7 +2617,7 @@ export async function createAssessmentWithTopics(payload, topicIds = []) {
       return assessment;
     }
   } catch (err) {
-    console.warn('createAssessmentWithTopics fallback to exams:', err.message);
+    console.warn('createChallengeDefinitionWithTopics fallback to exams:', err.message);
   }
 
   // Fallback to legacy exams table

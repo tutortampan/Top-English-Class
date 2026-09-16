@@ -1,6 +1,6 @@
-// TOPS CORE ó Centralized Assessment System V1 Admin UI
+// TOPS CORE ÔøΩ Centralized Assessment System V1 Admin UI
 import {
-  fetchGlobalSubjects,
+  fetchGlobalClasses,
   fetchWordTypes,
   createWordType,
   toggleWordType,
@@ -44,7 +44,7 @@ export async function renderTopics(area) {
   try {
     const [topics, subjects] = await Promise.all([
       fetchTopics(),
-      fetchGlobalSubjects()
+      fetchGlobalClasses()
     ]);
     hideLoading();
 
@@ -100,7 +100,7 @@ export async function renderTopics(area) {
     const filterEl = document.getElementById('topic-subject-filter');
     const updateFilteredTopics = () => {
       const val = filterEl.value;
-      const filtered = val ? topics.filter(t => t.subject_id === val) : topics;
+      const filtered = val ? topics.filter(t => t.class_id === val) : topics;
       document.getElementById('topics-tbody').innerHTML = renderTopicRows(filtered);
       document.getElementById('topics-count').textContent = filtered.length;
     };
@@ -174,8 +174,8 @@ function renderTopicRows(topicsList) {
   return topicsList.map(t => `
     <tr>
       <td><strong style="color:var(--clr-text-1);">${escapeHtml(t.name)}</strong></td>
-      <td><code>${escapeHtml(t.code || 'ó')}</code></td>
-      <td><span class="badge badge-info">${escapeHtml(t.subjects?.name || 'General')}</span></td>
+      <td><code>${escapeHtml(t.code || 'ÔøΩ')}</code></td>
+      <td><span class="badge badge-info">${escapeHtml(t.classes?.name || 'General')}</span></td>
       <td>
         <span class="badge ${t.status === 'active' ? 'badge-success' : 'badge-secondary'}">
           ${escapeHtml(t.status || 'active')}
@@ -208,7 +208,7 @@ function openTopicModal(topic, subjects, onSaved) {
           <label class="form-label">Subject *</label>
           <select class="form-control" id="modal-topic-subject">
             ${subjects.map(s => `
-              <option value="${s.id}" ${topic?.subject_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>
+              <option value="${s.id}" ${topic?.class_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>
             `).join('')}
           </select>
         </div>
@@ -255,10 +255,10 @@ function openTopicModal(topic, subjects, onSaved) {
     try {
       showLoading();
       if (isEdit) {
-        await updateTopic(topic.id, { subject_id: subjectId, name, code, status });
+        await updateTopic(topic.id, { class_id: subjectId, name, code, status });
         showToast('Topic updated.', 'success');
       } else {
-        await createTopic({ subject_id: subjectId, name, code, status });
+        await createTopic({ class_id: subjectId, name, code, status });
         showToast('Topic created.', 'success');
       }
       close();
@@ -409,7 +409,7 @@ export async function renderCentralQuestionBank(area) {
     const [questions, topics, subjects, wordTypes] = await Promise.all([
       fetchCentralQuestions(),
       fetchTopics(),
-      fetchGlobalSubjects(),
+      fetchGlobalClasses(),
       fetchWordTypes()
     ]);
     hideLoading();
@@ -573,7 +573,7 @@ function renderQuestionRows(list) {
           </span>
         </td>
         <td>
-          ${q.question_type ? `<span class="badge badge-secondary" style="font-size:0.75rem;">${escapeHtml(q.question_type)}</span>` : '<span class="text-muted">ó</span>'}
+          ${q.question_type ? `<span class="badge badge-secondary" style="font-size:0.75rem;">${escapeHtml(q.question_type)}</span>` : '<span class="text-muted">ÔøΩ</span>'}
         </td>
         <td>
           <strong style="color:var(--clr-text-1);font-size:0.95rem;">${escapeHtml(q.question_text)}</strong>
@@ -617,7 +617,7 @@ function openQuestionModal(question, { topics, subjects, wordTypes }, onSaved) {
           <label class="form-label">Subject *</label>
           <select class="form-control" id="modal-q-subject">
             ${subjects.map(s => `
-              <option value="${s.id}" ${question?.subject_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>
+              <option value="${s.id}" ${question?.class_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>
             `).join('')}
           </select>
         </div>
@@ -685,7 +685,7 @@ function openQuestionModal(question, { topics, subjects, wordTypes }, onSaved) {
       showLoading();
       if (isEdit) {
         await updateCentralQuestion(question.id, {
-          subject_id: subjectId,
+          class_id: subjectId,
           topic_id: topicId,
           question_type: wordType || null,
           question_text: questionText,
@@ -695,7 +695,7 @@ function openQuestionModal(question, { topics, subjects, wordTypes }, onSaved) {
         showToast('Question updated.', 'success');
       } else {
         await createCentralQuestion({
-          subject_id: subjectId,
+          class_id: subjectId,
           topic_id: topicId,
           question_type: wordType || null,
           question_text: questionText,
@@ -919,7 +919,7 @@ function renderAssignmentRows(list) {
     return `<tr><td colspan="6" class="text-center p-4 text-muted">No active assignments. Click "+ New Assignment" to assign an assessment.</td></tr>`;
   }
   return list.map(a => {
-    const targetName = a.assignment_type === 'BATCH'
+    const targetName = a.challenge_instance_type === 'BATCH'
       ? `üë• Batch: ${escapeHtml(a.batches?.name || 'Unknown')}`
       : `üë®‚Äçüéì Student: ${escapeHtml(a.students?.name || 'Unknown')}`;
 
@@ -930,7 +930,7 @@ function renderAssignmentRows(list) {
     return `
       <tr>
         <td><strong>${escapeHtml(a.assessments?.title || 'Assessment')}</strong></td>
-        <td><span class="badge badge-info">${escapeHtml(a.assessments?.assessment_type || 'EVALUATION')}</span></td>
+        <td><span class="badge badge-info">${escapeHtml(a.assessments?.challenge_definition_type || 'EVALUATION')}</span></td>
         <td>${targetName}</td>
         <td><small>${windowText}</small></td>
         <td><span class="badge badge-success">Active</span></td>
@@ -955,7 +955,7 @@ function openAssignmentModal({ assessments, batches, students }, onSaved) {
         <div class="form-group mb-3">
           <label class="form-label">Select Assessment *</label>
           <select class="form-control" id="asgn-assessment-id">
-            ${assessments.map(a => `<option value="${a.id}">${escapeHtml(a.title)} (${escapeHtml(a.assessment_type)})</option>`).join('')}
+            ${assessments.map(a => `<option value="${a.id}">${escapeHtml(a.title)} (${escapeHtml(a.challenge_definition_type)})</option>`).join('')}
           </select>
         </div>
         <div class="form-group mb-3">
@@ -1024,8 +1024,8 @@ function openAssignmentModal({ assessments, batches, students }, onSaved) {
     showLoading();
     try {
       await assignAssessment({
-        assessment_id: assessmentId,
-        assignment_type: mode,
+        challenge_definition_id: assessmentId,
+        challenge_instance_type: mode,
         batch_id: mode === 'BATCH' ? batchId : null,
         student_id: mode === 'STUDENT' ? studentId : null,
         availability_start: startVal ? new Date(startVal).toISOString() : null,
@@ -1049,7 +1049,7 @@ export async function renderCentralQuestionImport(area) {
   showLoading('Loading import environment...');
   try {
     const [subjects, existingQuestions, validWordTypes, existingTopics] = await Promise.all([
-      fetchGlobalSubjects(),
+      fetchGlobalClasses(),
       fetchCentralQuestions(),
       fetchWordTypes(),
       fetchTopics()
@@ -1293,7 +1293,7 @@ export async function renderCentralQuestionImport(area) {
           qDisplay += `<div class="text-muted text-xs mt-1" style="font-style:italic;">Existing: "${escapeHtml(r.existingQuestionText)}"</div>`;
         }
 
-        let wtDisplay = escapeHtml(r.wordType || 'ó');
+        let wtDisplay = escapeHtml(r.wordType || 'ÔøΩ');
         if (r.wordTypeWarning) {
           wtDisplay += `<div class="text-danger text-xs mt-1" title="${escapeHtml(r.wordTypeWarning)}">‚ö†Ô∏è ${escapeHtml(r.wordTypeWarning)}</div>`;
         }
@@ -1340,7 +1340,7 @@ Existing historical attempt records will NOT be modified.`;
 
         // 1. Resolve & Auto-create Topics
         const topicMap = new Map();
-        existingTopics.filter(t => t.subject_id === targetSubjectId).forEach(t => {
+        existingTopics.filter(t => t.class_id === targetSubjectId).forEach(t => {
           topicMap.set(t.name.toLowerCase().trim(), t.id);
         });
 
@@ -1350,7 +1350,7 @@ Existing historical attempt records will NOT be modified.`;
           if (!topicMap.has(key)) {
             const { data: newT, error: tErr } = await sb.from('topics')
               .insert({
-                subject_id: targetSubjectId,
+                class_id: targetSubjectId,
                 name: tName,
                 status: 'active'
               })
@@ -1404,7 +1404,7 @@ Existing historical attempt records will NOT be modified.`;
           } else {
             // New Question Insert
             questionsToInsert.push({
-              subject_id: targetSubjectId,
+              class_id: targetSubjectId,
               topic_id: topicId,
               question_type: r.wordType || null,
               question_text: r.question_text.trim(),
@@ -1433,7 +1433,7 @@ Existing historical attempt records will NOT be modified.`;
               let fallbackExamId = null;
               const { data: exData } = await sb.from('exams')
                 .select('id')
-                .eq('subject_id', targetSubjectId)
+                .eq('class_id', targetSubjectId)
                 .is('deleted_at', null)
                 .limit(1);
 
