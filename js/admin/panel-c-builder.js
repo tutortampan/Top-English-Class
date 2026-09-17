@@ -98,7 +98,7 @@ export function buildPrerequisiteJSON(prereqList) {
 
 
 export async function renderAIAssessments(area) {
-  area.innerHTML = 
+  area.innerHTML = `
     <div class="section-header d-flex justify-between align-center flex-wrap gap-3 mb-4">
       <div>
         <h2 class="section-title text-gradient">AI Assessments (Panel C)</h2>
@@ -125,7 +125,7 @@ export async function renderAIAssessments(area) {
         </tbody>
       </table>
     </div>
-  ;
+  `;
 
   try {
     const data = await adminFetchAll('assessments', '*, modules(name)');
@@ -141,21 +141,21 @@ export async function renderAIAssessments(area) {
 
     tbody.innerHTML = data.map(r => {
       const itemsCount = (r.payload && Array.isArray(r.payload.items)) ? r.payload.items.length : 0;
-      return 
+      return `
         <tr>
-          <td class="fw-600"> + (r.name || 'Untitled') + </td>
-          <td class="text-muted text-sm"> + (r.modules?.name || 'Unknown') + </td>
-          <td class="text-muted text-sm"> + (r.program_id ? 'Program' : (r.batch_id ? 'Batch' : 'Global')) + </td>
-          <td class="text-center"><span class="badge badge-info"> + itemsCount +  Items</span></td>
+          <td class="fw-600">${r.name || 'Untitled'}</td>
+          <td class="text-muted text-sm">${r.modules?.name || 'Unknown'}</td>
+          <td class="text-muted text-sm">${r.program_id ? 'Program' : (r.batch_id ? 'Batch' : 'Global')}</td>
+          <td class="text-center"><span class="badge badge-info">${itemsCount} Items</span></td>
           <td>
             <div class="d-flex gap-2">
-              <button class="btn btn-secondary btn-sm" onclick="window.openCrudModal('assessments', window._assessmentsRecords[' + r.id + '])">Edit</button>
-              <button class="btn btn-outline-primary btn-sm" id="clone- + r.id + ">Clone</button>
-              <button class="btn btn-danger btn-sm" onclick="window._deleteRecord('assessments', ' + r.id + ', ' + r.name + ')">Del</button>
+              <button class="btn btn-secondary btn-sm" onclick="window.openCrudModal('assessments', window._assessmentsRecords['${r.id}'])">Edit</button>
+              <button class="btn btn-outline-primary btn-sm" id="clone-${r.id}">Clone</button>
+              <button class="btn btn-danger btn-sm" onclick="window._deleteRecord('assessments', '${r.id}', '${r.name}')">Del</button>
             </div>
           </td>
         </tr>
-      ;
+      `;
     }).join('');
 
     // Attach clone listeners
@@ -176,7 +176,7 @@ export async function renderAIAssessments(area) {
 }
 
 export async function renderImportAIAssessments(area) {
-  area.innerHTML = 
+  area.innerHTML = `
     <div class="section-header d-flex justify-between align-center flex-wrap gap-3 mb-4">
       <div>
         <h2 class="section-title text-gradient">Import AI Assessment Payload</h2>
@@ -202,12 +202,12 @@ export async function renderImportAIAssessments(area) {
       
       <button class="btn btn-primary" id="ai-import-btn" disabled>Upload & Apply to Payload</button>
     </div>
-  ;
+  `;
 
   const assessments = await adminFetchAll('assessments', '*, modules(name)');
   const select = document.getElementById('ai-import-target');
   select.innerHTML = '<option value="">- Select Assessment -</option>' + assessments.map(a => 
-    <option value=" + a.id + "> + a.name +  ( + a.modules?.name + )</option>
+    `<option value="${a.id}">${a.name} (${a.modules?.name || 'Unknown'})</option>`
   ).join('');
 
   let parsedRows = null;
