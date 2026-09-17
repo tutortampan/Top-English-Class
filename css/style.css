@@ -768,7 +768,7 @@ tbody tr:last-child td { border-bottom: none; }
 .justify-between { justify-content: space-between; }
 .justify-end  { justify-content: flex-end; }
 .flex-wrap    { flex-wrap: wrap; }
-.flex-column  { flex-direction: column; }
+.flex-column, .flex-col { flex-direction: column; }
 .gap-2  { gap: var(--space-2); }
 .gap-3  { gap: var(--space-3); }
 .gap-4  { gap: var(--space-4); }

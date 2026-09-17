@@ -7,23 +7,25 @@
 import { adminFetchAll, adminInsert, adminUpdate, formatStudentName } from '../api.js?v=4.1.0';
 import { showToast } from '../app.js?v=4.1.0';
 import { handleExcelRosterImport } from './board_import.js?v=4.1.0';
+import { processAndCompressAvatar, getBustedAvatarUrl } from '../utils/avatar-engine.js?v=4.1.0';
 
 // ---- HELPERS ----
 function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ---- FULL EDIT MODAL (single-door for the entire Board domain) ----
+// ---- FULL EDIT MODAL (#modal-student-full-edit) ----
 function buildFullEditModal() {
-  if (document.getElementById('board-full-edit-modal')) return;
+  if (document.getElementById('modal-student-full-edit')) return;
   const modal = document.createElement('div');
-  modal.id = 'board-full-edit-modal';
+  modal.id = 'modal-student-full-edit';
   modal.className = 'modal-overlay hidden';
+  modal.style.zIndex = '9999';
   modal.innerHTML = `
-    <div class="modal-box" style="max-width:680px;width:95%;max-height:90vh;overflow-y:auto;">
+    <div class="modal-box" style="max-width:680px;width:95%;max-height:90vh;overflow-y:auto;background:var(--clr-surface-2, #0f172a);border:1px solid var(--clr-border);border-radius:12px;box-shadow:0 20px 40px rgba(0,0,0,0.6);">
       <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;border-bottom:1px solid var(--clr-border);">
-        <h3 id="bfe-title" style="margin:0;font-size:1.15rem;font-weight:800;">Edit Student</h3>
-        <button class="btn-icon" id="bfe-close" title="Close">&#10005;</button>
+        <h3 id="bfe-title" style="margin:0;font-size:1.15rem;font-weight:800;color:var(--clr-text-1);">Edit Student</h3>
+        <button class="btn-icon" id="bfe-close" title="Close" style="background:transparent;border:none;color:var(--clr-text-2);font-size:1.2rem;cursor:pointer;">&#10005;</button>
       </div>
       <div id="bfe-body" style="padding:1.5rem;"></div>
       <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:.75rem;padding:1rem 1.5rem;border-top:1px solid var(--clr-border);">
@@ -33,82 +35,202 @@ function buildFullEditModal() {
     </div>
   `;
   document.body.appendChild(modal);
-  const closeModal = () => modal.classList.add('hidden');
-  document.getElementById('bfe-close').onclick = closeModal;
-  document.getElementById('bfe-cancel').onclick = closeModal;
-  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 }
 
-export function openStudentFullEdit(student, onSaved) {
+function handleGuardClose(modal, onDiscard) {
+  if (window.isProfileDirty) {
+    const saveIt = confirm("⚠️ You have unsaved profile changes.\n\nClick OK to SAVE and leave, or CANCEL to discard changes and leave.");
+    if (saveIt) {
+      document.getElementById('bfe-save')?.click();
+      return;
+    } else {
+      window.isProfileDirty = false;
+      if (typeof onDiscard === 'function') onDiscard();
+      modal.classList.add('hidden');
+      return;
+    }
+  }
+  modal.classList.add('hidden');
+}
+
+export async function openStudentFullEdit(student, onSaved) {
   buildFullEditModal();
-  const modal   = document.getElementById('board-full-edit-modal');
+  const modal   = document.getElementById('modal-student-full-edit');
   const title   = document.getElementById('bfe-title');
   const body    = document.getElementById('bfe-body');
   let   saveBtn = document.getElementById('bfe-save');
 
-  title.textContent = student ? ('Edit - ' + (student.name || 'Student')) : 'Add New Student';
+  // Reset dirty flag and check for local draft buffer
+  window.isProfileDirty = false;
+  const draftKey = 'topscore_student_draft_' + (student?.id || 'new');
+  let draftData = null;
+  try {
+    const rawDraft = localStorage.getItem(draftKey);
+    if (rawDraft) draftData = JSON.parse(rawDraft);
+  } catch (e) { /* ignore */ }
+
+  title.textContent = student ? ('Edit — ' + (student.name || 'Student')) : 'Add New Student';
+
+  // Fetch batches for dropdown
+  let batches = [];
+  try {
+    batches = await adminFetchAll('batches');
+  } catch (err) {
+    console.warn('Could not load batches for edit modal:', err);
+  }
+
+  const initialName = draftData?.name ?? (student?.name || '');
+  const initialGender = draftData?.gender ?? (student?.gender || '');
+  const initialBirth = draftData?.birth_date ?? (student?.birth_date || '');
+  const initialPin = draftData?.pin ?? (student?.pin || '1234');
+  const initialBatchId = draftData?.batch_id ?? (student?.batch_id || '');
+  const initialActive = draftData?.is_active ?? (student?.is_active !== false);
+  let currentPhotoUrl = draftData?.photo_url ?? (student?.photo_url || '');
 
   body.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-      <div class="form-group" style="grid-column:1/-1;">
-        <label class="form-label">Full Name *</label>
-        <input class="form-control" id="bfe-name" value="${escHtml(student?.name || '')}" placeholder="Student full name">
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+      <!-- 3:4 Avatar Center-Crop Upload (Left) -->
+      <div style="flex:1;min-width:140px;max-width:180px;text-align:center;">
+        <label class="form-label" style="display:block;margin-bottom:0.5rem;font-size:0.8rem;text-transform:uppercase;color:var(--clr-text-3);">3:4 Avatar</label>
+        <div style="width:120px;height:160px;margin:0 auto;border-radius:8px;overflow:hidden;border:2px solid var(--clr-border);background:rgba(0,0,0,0.25);position:relative;">
+          <img id="bfe-avatar-preview" src="${getBustedAvatarUrl(currentPhotoUrl)}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;" />
+          <div id="bfe-avatar-loading" class="hidden" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;">
+            <div class="spinner" style="width:20px;height:20px;"></div>
+          </div>
+        </div>
+        <div style="margin-top:0.75rem;">
+          <label for="bfe-avatar-file" class="btn btn-secondary btn-xs" style="cursor:pointer;font-size:0.75rem;">
+            📸 Upload (3:4)
+          </label>
+          <input type="file" id="bfe-avatar-file" accept="image/*" style="display:none;" />
+          <div class="text-xs text-muted mt-1" style="font-size:0.7rem;">240x320 WebP &bull; 35% Top Bias</div>
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Gender</label>
-        <select class="form-control" id="bfe-gender">
-          <option value="">-- Select --</option>
-          <option value="male" ${student?.gender === 'male' ? 'selected' : ''}>Male</option>
-          <option value="female" ${student?.gender === 'female' ? 'selected' : ''}>Female</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Birth Date</label>
-        <input type="date" class="form-control" id="bfe-birth" value="${escHtml(student?.birth_date || '')}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">PIN</label>
-        <input type="text" class="form-control" id="bfe-pin" value="${escHtml(student?.pin || '')}" placeholder="Student login PIN" autocomplete="new-password">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Status</label>
-        <select class="form-control" id="bfe-active">
-          <option value="true"  ${student?.is_active !== false ? 'selected' : ''}>Active</option>
-          <option value="false" ${student?.is_active === false  ? 'selected' : ''}>Inactive</option>
-        </select>
-      </div>
-      <div class="form-group" style="grid-column:1/-1;">
-        <label class="form-label">Photo URL</label>
-        <input type="url" class="form-control" id="bfe-photo" value="${escHtml(student?.photo_url || '')}" placeholder="https://...">
+
+      <!-- Main Fields (Right) -->
+      <div style="flex:2.5;min-width:260px;display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Full Name *</label>
+          <input class="form-control" id="bfe-name" value="${escHtml(initialName)}" placeholder="e.g. Johnathan Doe">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Honorific &amp; Gender</label>
+          <select class="form-control" id="bfe-gender">
+            <option value="">-- Unassigned --</option>
+            <option value="male" ${initialGender === 'male' ? 'selected' : ''}>Mr. (Male)</option>
+            <option value="female" ${initialGender === 'female' ? 'selected' : ''}>Miss (Female)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Date of Birth</label>
+          <input type="date" class="form-control" id="bfe-birth" value="${escHtml(initialBirth)}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Assigned Batch</label>
+          <select class="form-control" id="bfe-batch">
+            <option value="">-- No Batch Assigned --</option>
+            ${batches.map(b => `<option value="${b.id}" ${b.id === initialBatchId ? 'selected' : ''}>${escHtml(b.name)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Personal PIN (Reset)</label>
+          <input type="text" class="form-control" id="bfe-pin" value="${escHtml(initialPin)}" placeholder="1234" autocomplete="new-password">
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Account Status</label>
+          <select class="form-control" id="bfe-active">
+            <option value="true"  ${initialActive ? 'selected' : ''}>Active</option>
+            <option value="false" ${!initialActive  ? 'selected' : ''}>Inactive / Suspended</option>
+          </select>
+        </div>
       </div>
     </div>
   `;
 
+  // Write-Ahead Buffer & Dirty Tracking
+  const updateDraft = () => {
+    window.isProfileDirty = true;
+    const currentDraft = {
+      name: document.getElementById('bfe-name').value,
+      gender: document.getElementById('bfe-gender').value,
+      birth_date: document.getElementById('bfe-birth').value,
+      batch_id: document.getElementById('bfe-batch').value,
+      pin: document.getElementById('bfe-pin').value,
+      is_active: document.getElementById('bfe-active').value === 'true',
+      photo_url: currentPhotoUrl
+    };
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(currentDraft));
+    } catch (e) { /* ignore */ }
+  };
+
+  ['bfe-name', 'bfe-gender', 'bfe-birth', 'bfe-batch', 'bfe-pin', 'bfe-active'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updateDraft);
+    document.getElementById(id)?.addEventListener('change', updateDraft);
+  });
+
+  // Avatar Upload Listener (3:4 Center-Crop Engine)
+  const avatarFileInput = document.getElementById('bfe-avatar-file');
+  avatarFileInput?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const loading = document.getElementById('bfe-avatar-loading');
+    loading?.classList.remove('hidden');
+
+    try {
+      const dataUrl = await processAndCompressAvatar(file, 'student');
+      currentPhotoUrl = dataUrl;
+      document.getElementById('bfe-avatar-preview').src = dataUrl;
+      updateDraft();
+      showToast('Student avatar cropped to 3:4 WebP format.', 'success');
+    } catch (err) {
+      showToast('Avatar processing error: ' + err.message, 'error');
+    } finally {
+      loading?.classList.add('hidden');
+      avatarFileInput.value = '';
+    }
+  });
+
+  // Close & Cancel buttons with Unsaved Changes Guard
+  document.getElementById('bfe-close').onclick = () => handleGuardClose(modal, () => localStorage.removeItem(draftKey));
+  document.getElementById('bfe-cancel').onclick = () => handleGuardClose(modal, () => localStorage.removeItem(draftKey));
+
+  // Save Changes
   const newSaveBtn = saveBtn.cloneNode(true);
   saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
 
   newSaveBtn.onclick = async () => {
     const name = document.getElementById('bfe-name').value.trim();
-    if (!name) { showToast('Name is required.', 'error'); return; }
+    if (!name) { showToast('Student name is required.', 'error'); return; }
+
     const payload = {
       name,
       gender:     document.getElementById('bfe-gender').value || null,
       birth_date: document.getElementById('bfe-birth').value  || null,
+      batch_id:   document.getElementById('bfe-batch').value    || null,
       is_active:  document.getElementById('bfe-active').value === 'true',
-      photo_url:  document.getElementById('bfe-photo').value.trim() || null,
+      photo_url:  currentPhotoUrl || null,
     };
     const pinVal = document.getElementById('bfe-pin').value.trim();
     if (pinVal) payload.pin = pinVal;
+
     newSaveBtn.disabled = true;
     newSaveBtn.textContent = 'Saving...';
     try {
       if (student?.id) {
         await adminUpdate('students', student.id, payload);
-        showToast('Student updated.', 'success');
+        showToast('Student updated successfully.', 'success');
       } else {
         await adminInsert('students', payload);
-        showToast('Student added.', 'success');
+        showToast('Student created successfully.', 'success');
       }
+      window.isProfileDirty = false;
+      localStorage.removeItem(draftKey);
       modal.classList.add('hidden');
       if (typeof onSaved === 'function') onSaved();
     } catch (err) {
@@ -121,6 +243,9 @@ export function openStudentFullEdit(student, onSaved) {
 
   modal.classList.remove('hidden');
 }
+
+// Expose globally
+window.openStudentFullEdit = openStudentFullEdit;
 
 // ---- 4-COLUMN BULK IMPORTER ----
 export function renderBulkImporterPanel(container, programId, batchId, onDone) {

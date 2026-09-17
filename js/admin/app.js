@@ -1,4 +1,6 @@
-import { renderAIAssessments, renderImportAIAssessments } from './panel-c-builder.js';
+import { DataGrid } from './datagrid.js?v=4.3.0';
+window.DataGrid = DataGrid;
+import { renderAIAssessments, renderImportAIAssessments } from './panel-c-builder.js?v=4.3.0';
 import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete,
   adminFetchDeleted, adminRestore,
@@ -6,56 +8,61 @@ import {
   detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions,
   fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
   testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
-} from '../api.js?v=4.1.0';
-import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.1.0';
-import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=4.1.0';
-import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.1.0';
-import { getSupabase } from '../supabase.js?v=4.1.0';
-import { openAssessmentBuilder } from './exam-builder.js?v=4.1.0';
-import { renderStudents as _renderStudentsModule } from './student-management.js?v=4.1.0';
-import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=4.1.0';
-import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport, renderResults, renderProgressView, renderRecalibrator, renderClassInstances } from './class.js?v=4.1.0';
-import { renderExams } from './exam-management.js?v=4.1.0';
-import { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin } from './desk.js?v=4.1.0';
-import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=4.1.0';
-import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin } from './crud-modals.js?v=4.1.0';
-import { renderDashboard } from './admin-deck.js?v=4.1.0';
-import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
+} from '../api.js?v=4.3.0';
+import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.3.0';
+import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=4.3.0';
+import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.3.0';
+import { getSupabase } from '../supabase.js?v=4.3.0';
+import { openAssessmentBuilder } from './exam-builder.js?v=4.3.0';
+import { renderStudents as _renderStudentsModule } from './student-management.js?v=4.3.0';
+import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=4.3.0';
+import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport, renderResults, renderProgressView, renderRecalibrator, renderClassInstances } from './class.js?v=4.3.0';
+import { renderExams } from './exam-management.js?v=4.3.0';
+import { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin } from './desk.js?v=4.3.0';
+import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=4.3.0';
+import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin } from './crud-modals.js?v=4.3.0';
+import { renderDashboard, renderAdminProfile, renderAdminSchedule, renderWorkRecords, renderCVGenerator } from './admin-deck.js?v=4.3.0';
+import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
+
     // -- Primary Tab Switching Variables --
     const mobileTabs = document.querySelectorAll('.mobile-tab');
 
-    // â€”â€”â€” ABCD Primary Architecture Section Titles â€”â€”â€”
+    // ——— ABCD Primary Architecture Section Titles ———
     const sectionTitles = {
-      dashboard: 'Executive Dashboard', assessments: 'AI Assessments', import_ai_assessments: 'Import AI Assessments',  board_overview: 'Board Overview',
+      dashboard: 'Executive Dashboard', profile: 'My Profile', schedule: 'Personal Schedule', work_records: 'Work Records', cv_generator: 'CV Generator',
+      assessments: 'AI Assessments', import_ai_assessments: 'Import AI Assessments', board_overview: 'Board Overview',
       institutions: 'Institutions', programs: 'Programs', batches: 'Batches', students: 'Students Roster', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
       subjects: 'Classes (Subjects)', classes: 'Classes', class_instances: 'Class Instances', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', question_types: 'Validation Dictionary', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
-      exams: 'All Challenges', challenge_definitions: 'Challenge Definitions', challenge_instances: 'Challenge Instances', assignments: 'Assignments & Rosters', results: 'Challenge Results', recalibrator: 'Recalibration Engine',
-      audit: 'Activity & Audit Logs', settings: 'System Settings', recycle: 'Recycle Bin', health: 'Data Health & Diagnostics'
+      exams: 'All Assessments', challenge_definitions: 'Assessment Definitions', challenge_instances: 'Assessment Instances', assignments: 'Assignments & Rosters', results: 'Assessment Results', recalibrator: 'Recalibration Engine',
+      audit: 'Activity & Audit Logs', settings: 'Site Settings & Cost Guard', recycle: 'Recycle Bin', health: 'Data Health & Connectivity'
     };
 
     // ABCD 4-Domain Mapping
     const sectionDomainMap = {
-      dashboard: 'ADMIN', board_overview: 'BOARD',
-      institutions: 'BOARD', programs: 'BOARD', batches: 'BOARD', students: 'BOARD', 'import-students': 'BOARD', 'progress-view': 'BOARD',
-      subjects: 'CHALLENGES', classes: 'CHALLENGES', class_instances: 'CHALLENGES', levels: 'CHALLENGES', topics: 'CHALLENGES', questions: 'CHALLENGES', question_types: 'CHALLENGES', 'import-questions': 'CHALLENGES', 'export-questions': 'CHALLENGES',
-      exams: 'CHALLENGES', challenge_definitions: 'CHALLENGES', challenge_instances: 'CHALLENGES', assignments: 'CHALLENGES', results: 'CHALLENGES', recalibrator: 'CHALLENGES',
-      audit: 'DESK', settings: 'DESK', recycle: 'DESK', health: 'DESK'
+      dashboard: 'ADMIN', profile: 'ADMIN', schedule: 'ADMIN', work_records: 'ADMIN', cv_generator: 'ADMIN',
+      board_overview: 'BOARD', institutions: 'BOARD', programs: 'BOARD', batches: 'BOARD', students: 'BOARD', 'import-students': 'BOARD', 'progress-view': 'BOARD',
+      subjects: 'CLASS', classes: 'CLASS', class_instances: 'CLASS', levels: 'CLASS', topics: 'CLASS', questions: 'CLASS', question_types: 'CLASS', 'import-questions': 'CLASS', 'export-questions': 'CLASS',
+      exams: 'CLASS', challenge_definitions: 'CLASS', challenge_instances: 'CLASS', assignments: 'CLASS', results: 'CLASS', recalibrator: 'CLASS', assessments: 'CLASS', import_ai_assessments: 'CLASS',
+      audit: 'DATA', settings: 'DATA', recycle: 'DATA', health: 'DATA'
     };
 
     // Mobile Bottom Tab Panels -> Primary Domain
     const domainToPanelMap = {
-      ADMIN: 'admin', BOARD: 'board', CHALLENGES: 'challenges', DESK: 'desk',
-      DATABASE: 'board', CLASS: 'board', STUDENT: 'board', EXAM: 'challenges',
-      ACADEMY: 'board', BOARD: 'challenges' // Legacy mappings
+      ADMIN: 'admin', BOARD: 'board', CLASS: 'class', DATA: 'desk', DESK: 'desk',
+      CHALLENGES: 'class', // Legacy alias
+      DATABASE: 'board', STUDENT: 'board', EXAM: 'class',
+      ACADEMY: 'board'
     };
 
     const tabDefaultSections = {
       admin: 'dashboard',
       board: 'board_overview',
-      challenges: 'classes',
-      desk: 'audit',
-      database: 'classes', class: 'programs', student: 'students', exam: 'exams',
-      academy: 'institutions', board: 'classes' // Legacy mappings
+      class: 'classes',
+      challenges: 'classes', // Legacy alias
+      desk: 'recycle',
+      data: 'recycle',
+      database: 'classes', student: 'students', exam: 'exams',
+      academy: 'institutions'
     };
 
     // Section alias map to guarantee 100% backward compatibility
@@ -71,6 +78,10 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
       'board-wordtypes': 'question_types',
       'board-import': 'import-questions',
       'board-export': 'export-questions',
+      'class-hub': 'exams',
+      'class-assignments': 'challenge_instances',
+      'class-results': 'results',
+      'class-recalibrator': 'recalibrator',
       'challenges-hub': 'exams',
       'challenges-assignments': 'challenge_instances',
       'challenges-results': 'results',
@@ -91,7 +102,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
         ]);
         const kpiAcad = document.getElementById('kpi-board');
         if (kpiAcad) kpiAcad.textContent = stds.filter(s => !s.deleted_at).length;
-        const kpiChal = document.getElementById('kpi-challenges');
+        const kpiChal = document.getElementById('kpi-class') || document.getElementById('kpi-challenges');
         if (kpiChal) kpiChal.textContent = asms.filter(a => !a.deleted_at && a.exam_status === 'published').length;
         const kpiDesk = document.getElementById('kpi-desk');
         if (kpiDesk) kpiDesk.textContent = atts.length;
@@ -124,7 +135,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
       const pass = document.getElementById('admin-password').value;
       if (!user || !pass) { showToast('Please enter credentials.', 'warning'); return; }
 
-      showLoading('AuthenticatingÃ¢â‚¬Â¦');
+      showLoading('Authenticating...');
       try {
         // 1. Primary Check: Master credentials (admin / admin123) or custom saved password
         const savedCustomPass = localStorage.getItem('tec_admin_custom_password');
@@ -198,7 +209,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
         activatePrimaryTab('board');
         openStudentProfile(studentId, [], true);
       } else {
-        activatePrimaryTab('challenges');
+        activatePrimaryTab('class');
         loadSection('exams', true);
       }
       initConnectionBanner(); // Check live DB connection and show status banner
@@ -225,10 +236,11 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
         const domainNameMap = {
           admin: 'ADMIN',
           board: 'BOARD',
-          challenges: 'CHALLENGES',
-          desk: 'DESK',
-          academy: 'BOARD', // Legacy fallback
-          board: 'CHALLENGES' // Legacy fallback
+          class: 'CLASS',
+          challenges: 'CLASS', // Legacy fallback
+          desk: 'DATA',
+          data: 'DATA',
+          academy: 'BOARD' // Legacy fallback
         };
         domainEl.textContent = domainNameMap[panel.toLowerCase()] || panel.toUpperCase();
       }
@@ -315,32 +327,32 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
       }
       if (exam.exam_type) parts.push(exam.exam_type);
       if (exam.exam_title) parts.push(exam.exam_title);
-      return parts.length > 0 ? parts.join(' Ã‚Â· ') : (exam.exam_title || 'Exam');
+      return parts.length > 0 ? parts.join(' &middot; ') : (exam.exam_title || 'Exam');
     }
 
-    // â”€â”€ DB Connection Status Banner â”€â”€
+    // ── DB Connection Status Banner ──
     async function initConnectionBanner() {
       const banner = document.getElementById('db-connection-banner');
       const statusDot = document.getElementById('db-status-dot');
       const statusText = document.getElementById('db-status-text');
       if (!banner) return;
 
-      // Show checking state ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â use CSS classes, not inline styles
-      statusText.textContent = 'Checking database connectionâ€¦';
+      // Show checking state — use CSS classes, not inline styles
+      statusText.textContent = 'Checking database connection...';
 
       const result = await testSupabaseConnection();
       if (result.connected) {
         statusDot.classList.add('connected');
         banner.classList.add('connected');
-        statusText.innerHTML = `<strong>Connected to Supabase</strong> ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â data is saved permanently to the cloud`;
+        statusText.innerHTML = `<strong>Connected to Supabase</strong> &mdash; data is saved permanently to the cloud`;
         setTimeout(() => { banner.style.display = 'none'; }, 4000); // Auto-hide when connected
       } else {
         statusDot.classList.add('error');
         banner.classList.add('error');
         if (result.mode === 'demo') {
-          statusText.innerHTML = `<strong>Demo / Offline Mode</strong> ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â data is in-memory only and will be lost on page reload`;
+          statusText.innerHTML = `<strong>Demo / Offline Mode</strong> &mdash; data is in-memory only and will be lost on page reload`;
         } else {
-          statusText.innerHTML = `<strong>Database Error</strong> ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ${result.error}. <a href="docs/DATABASE.md" target="_blank" style="color:#f87171;">Check setup guide</a>`;
+          statusText.innerHTML = `<strong>Database Error</strong> &mdash; ${result.error}. <a href="docs/DATABASE.md" target="_blank" style="color:#f87171;">Check setup guide</a>`;
         }
       }
     }
@@ -392,7 +404,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
           openCrudModal(section, null);
         }
       };
-      document.getElementById('add-record-btn').style.display = ['audit', 'results', 'progress-view', 'import-students', 'import-questions', 'export-questions', 'recalibrator'].includes(section) ? 'none' : '';
+      document.getElementById('add-record-btn').style.display = ['audit', 'health', 'recycle', 'settings', 'results', 'progress-view', 'import-students', 'import-questions', 'export-questions', 'recalibrator', 'cv_generator', 'schedule', 'work_records'].includes(section) ? 'none' : '';
 
       try {
         switch(section) {
@@ -418,12 +430,15 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
           case 'import-questions':    await renderCentralQuestionImport(area); break;
           case 'export-questions':    renderExportQuestions(area); break;
           case 'recalibrator':        await renderRecalibrator(area); break;
-                    case 'assessments':         await renderAIAssessments(area); break;
+          case 'assessments':         await renderAIAssessments(area); break;
           case 'import_ai_assessments': await renderImportAIAssessments(area); break;
           case 'dashboard':           await renderDashboard(area); break;
+          case 'profile':             await renderAdminProfile(area); break;
+          case 'schedule':            await renderAdminSchedule(area); break;
+          case 'work_records':        await renderWorkRecords(area); break;
+          case 'cv_generator':        await renderCVGenerator(area); break;
           case 'board_overview':      await renderBoardOverview(area); break;
-                              
-          default: area.innerHTML = `<div class="empty-state"><div class="empty-state__icon">ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Â§</div><h3>${sectionTitles[section] || section}</h3><p>This section is under development.</p></div>`;
+          default: area.innerHTML = `<div class="empty-state"><div class="empty-state__icon">&#128679;</div><h3>${sectionTitles[section] || section}</h3><p>This section is under development.</p></div>`;
         }
       } catch(e) {
         console.error('[loadSection] error:', section, e);
@@ -431,7 +446,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
       }
     }
 
-    // â”€â”€ INSTITUTIONS â”€â”€
+    // ── INSTITUTIONS ──
 
     async function renderPrograms(area) {
       const rawData = await adminFetchAll('institutions');
@@ -460,7 +475,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
         </div>
       `;
       const tbody = document.getElementById('tbl-institutions');
-      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state__icon">Ã°Å¸ÂÂ¢</div><p>No institutions yet.</p></div></td></tr>'; return; }
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state__icon">&#127963;</div><p>No institutions yet.</p></div></td></tr>'; return; }
       window._progRecords = {};
       data.forEach(r => {
         window._progRecords[r.id] = r;
@@ -471,8 +486,12 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
           <td class="text-center text-muted text-sm">${new Date(r.created_at).toLocaleDateString()}</td>
           <td class="text-right">
             <div class="d-flex gap-2 justify-end">
-              <button class="btn btn-outline btn-sm" data-nav-progs="${r.id}" title="View Programs in ${escapeHtml(r.name)}">Programs ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</button>
+              <button class="btn btn-outline btn-sm" data-nav-progs="${r.id}" title="View Programs in ${escapeHtml(r.name)}">Programs &rarr;</button>
               <button class="btn btn-secondary btn-sm" data-edit-prog="${r.id}">Edit</button>
+              <button class="btn btn-danger btn-sm" data-del-prog="${r.id}">Delete</button>
+            </div>
+          </td>
+        `;        <button class="btn btn-secondary btn-sm" data-edit-prog="${r.id}">Edit</button>
               <button class="btn btn-danger btn-sm" data-del-prog="${r.id}">Delete</button>
             </div>
           </td>
@@ -543,12 +562,12 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
         window._subjRecords[r.id] = r;
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="text-muted fw-600">${escapeHtml(r.institutions?.name || 'â€”')}</td>
+          <td class="text-muted fw-600">${escapeHtml(r.institutions?.name || '&mdash;')}</td>
           <td class="fw-600" style="color:var(--clr-text-1);">${escapeHtml(r.name)}</td>
           <td class="text-center"><span class="badge ${r.is_active ? 'badge-success' : 'badge-neutral'}">${r.is_active ? 'Active' : 'Inactive'}</span></td>
           <td class="text-right">
             <div class="d-flex gap-2 justify-end">
-              <button class="btn btn-outline btn-sm" data-nav-topics="${r.id}" title="View Topics in ${escapeHtml(r.name)}">Topics ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</button>
+              <button class="btn btn-outline btn-sm" data-nav-topics="${r.id}" title="View Topics in ${escapeHtml(r.name)}">Topics &rarr;</button>
               <button class="btn btn-secondary btn-sm" data-edit-subj="${r.id}">Edit</button>
               <button class="btn btn-danger btn-sm" data-del-subj="${r.id}">Delete</button>
             </div>
@@ -704,7 +723,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
       }
 
       const area = document.getElementById('admin-content-area');
-      area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loading student profile &amp; question answer historyÃ¢â‚¬Â¦</p></div>';
+      area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loading student profile &amp; question answer history...</p></div>';
 
       try {
         const sb = await getSupabase();
@@ -789,8 +808,8 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
         const initial = (student.name || 'S').trim().charAt(0).toUpperCase();
         const ageDisplay = calculateAgeFromBirthDate(student.birth_date);
         const batchName = student.batches?.name || 'Unassigned Batch';
-        const programName = student.programs?.name || 'â€”';
-        const institutionName = student.institutions?.name || student.programs?.institutions?.name || 'â€”';
+        const programName = student.programs?.name || '&mdash;';
+        const institutionName = student.institutions?.name || student.programs?.institutions?.name || '&mdash;';
 
         area.innerHTML = `
           <div class="student-profile-view animate-fade-in" style="display:flex; flex-direction:column; gap:20px;">
@@ -798,10 +817,10 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
             <div class="d-flex align-center justify-between flex-wrap gap-3 p-4 rounded" style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border);">
               <div class="d-flex align-center gap-3">
                 <button class="btn btn-secondary btn-sm" id="btn-back-to-students" style="display:inline-flex; align-items:center; gap:6px;">
-                  <span>Ã¢â€ Â</span> Back to Students
+                  <span>&larr;</span> Back to Students
                 </button>
                 <div class="d-flex align-center gap-2">
-                  <span class="badge badge-info" style="font-size:0.8rem;">Ã°Å¸â€˜Â¥ Batch: ${escapeHtml(batchName)}</span>
+                  <span class="badge badge-info" style="font-size:0.8rem;">&#128101; Batch: ${escapeHtml(batchName)}</span>
                 </div>
               </div>
 
@@ -809,11 +828,11 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
               ${batchStudentIds.length > 0 ? `
                 <div class="d-flex align-center gap-2">
                   <button class="btn btn-secondary btn-sm" id="btn-prev-student" ${!hasPrev ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''} title="Previous Student (ArrowLeft)">
-                    Ã¢â€”â‚¬ Previous
+                    &larr; Previous
                   </button>
                   <span class="text-xs fw-700 text-muted" style="padding:0 6px;">${positionText}</span>
                   <button class="btn btn-secondary btn-sm" id="btn-next-student" ${!hasNext ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''} title="Next Student (ArrowRight)">
-                    Next â–¶ï¸
+                    Next &rarr;
                   </button>
                 </div>
               ` : ''}
@@ -854,10 +873,10 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
                 <div class="glass-card" style="border-radius:20px; padding:16px 20px; box-sizing:border-box;">
                   <div class="d-flex align-center justify-between gap-2 mb-1">
                     <span class="badge ${student.is_active ? 'badge-success' : 'badge-danger'}">${student.is_active ? 'Active Student' : 'Inactive'}</span>
-                    <span class="text-xs text-muted">ID: <code style="font-size:0.75rem;">${escapeHtml(student.id.substring(0, 8))}Ã¢â‚¬Â¦</code></span>
+                    <span class="text-xs text-muted">ID: <code style="font-size:0.75rem;">${escapeHtml(student.id.substring(0, 8))}...</code></span>
                   </div>
                   <h2 style="font-size:1.35rem; font-weight:800; margin:0 0 2px; color:var(--clr-text-1);">${escapeHtml(displayName)}</h2>
-                  <p class="text-xs text-muted" style="margin:0;">Ã°Å¸â€˜Â¥ Batch: <strong>${escapeHtml(batchName)}</strong></p>
+                  <p class="text-xs text-muted" style="margin:0;">&#128101; Batch: <strong>${escapeHtml(batchName)}</strong></p>
                 </div>
               </div>
 
@@ -866,30 +885,30 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
                 <div>
                   <div class="d-flex align-center justify-between mb-3 flex-wrap gap-2">
                     <div>
-                      <h3 style="font-size:1.15rem; font-weight:800; margin:0; color:var(--clr-text-1);">Ã°Å¸Å½â€œ Student Enrollment &amp; Demographics</h3>
+                      <h3 style="font-size:1.15rem; font-weight:800; margin:0; color:var(--clr-text-1);">&#127891; Student Enrollment &amp; Demographics</h3>
                       <p class="text-xs text-muted" style="margin:2px 0 0;">Official class registration and student profile data</p>
                     </div>
                     <button class="btn btn-secondary btn-sm" id="btn-edit-current-student" style="display:inline-flex; align-items:center; gap:6px;">
-                      Ã¢Å“ÂÃ¯Â¸Â Edit Student
+                      &#9999;&#65039; Edit Student
                     </button>
                   </div>
 
                   <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-top:16px;">
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
-                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">Ã°Å¸ÂÂ¢ Program</div>
+                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">&#127963; Program</div>
                       <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${escapeHtml(institutionName)}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
-                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">Ã°Å¸ÂÂ« Class</div>
+                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">&#127979; Class</div>
                       <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${escapeHtml(programName)}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
-                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">Ã°Å¸â€˜Â¤ Gender</div>
-                      <div class="fw-700 text-sm mt-1" style="text-transform:capitalize; color:var(--clr-text-1);">${escapeHtml(student.gender || 'â€”')}</div>
+                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">&#128100; Gender</div>
+                      <div class="fw-700 text-sm mt-1" style="text-transform:capitalize; color:var(--clr-text-1);">${escapeHtml(student.gender || '&mdash;')}</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border:1px solid var(--clr-border); border-radius:14px; padding:12px 14px;">
-                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">Ã°Å¸Å½â€š Age / Birth Date</div>
-                      <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${ageDisplay} <span class="text-xs text-muted fw-400">(${escapeHtml(student.birth_date || 'â€”')})</span></div>
+                      <div class="text-xs text-muted" style="font-weight:600; text-transform:uppercase;">&#127874; Age / Birth Date</div>
+                      <div class="fw-700 text-sm mt-1" style="color:var(--clr-text-1);">${ageDisplay} <span class="text-xs text-muted fw-400">(${escapeHtml(student.birth_date || '&mdash;')})</span></div>
                     </div>
                   </div>
                 </div>
@@ -909,12 +928,12 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
                 <div class="text-xs text-muted mt-1">${allAttempts.length} total attempt${allAttempts.length === 1 ? '' : 's'}</div>
               </div>
               <div class="glass-card p-4 text-center" style="border-top:3px solid #10b981;">
-                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em; color:#10b981;">âœ… CORRECT ANSWERS</div>
+                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em; color:#10b981;">&#9989; CORRECT ANSWERS</div>
                 <div class="fw-800" style="font-size:2rem; color:#10b981;">${totalCorrect}</div>
                 <div class="text-xs text-muted mt-1">From best attempts</div>
               </div>
               <div class="glass-card p-4 text-center" style="border-top:3px solid #ef4444;">
-                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em; color:#ef4444;">Ã¢ÂÅ’ INCORRECT ANSWERS</div>
+                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em; color:#ef4444;">&#10060; INCORRECT ANSWERS</div>
                 <div class="fw-800" style="font-size:2rem; color:#ef4444;">${totalIncorrect}</div>
                 <div class="text-xs text-muted mt-1">${totalMinor > 0 ? `+ ${totalMinor} minor error${totalMinor === 1 ? '' : 's'}` : '0 minor errors'}</div>
               </div>
@@ -924,7 +943,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
             <div class="glass-card p-5">
               <div class="d-flex align-center justify-between mb-3 flex-wrap gap-2">
                 <div>
-                  <h3 style="font-size:1.15rem; font-weight:700; margin:0;">Ã°Å¸â€œâ€¹ Exam Performance &amp; Question History</h3>
+                  <h3 style="font-size:1.15rem; font-weight:700; margin:0;">&#128203; Exam Performance &amp; Question History</h3>
                   <p class="text-xs text-muted">Click any exam row below to inspect question-level answers and correct vs. incorrect breakdown</p>
                 </div>
                 <span class="badge badge-neutral">${allAttempts.length} Attempt${allAttempts.length === 1 ? '' : 's'} Logged</span>
@@ -932,7 +951,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
 
               ${allAttempts.length === 0 ? `
                 <div class="empty-state p-6 text-center">
-                  <div style="font-size:2.5rem; margin-bottom:8px;">Ã°Å¸â€œÂ</div>
+                  <div style="font-size:2.5rem; margin-bottom:8px;">&#128221;</div>
                   <h4 style="font-weight:700;">No Exams Taken Yet</h4>
                   <p class="text-xs text-muted">This student hasn't completed or submitted any exams yet.</p>
                 </div>
@@ -945,9 +964,9 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
                         <th>Subject</th>
                         <th class="text-center">Score</th>
                         <th class="text-center">Grade</th>
-                        <th class="text-center">âœ… Correct</th>
-                        <th class="text-center">Ã¢Å¡Â Ã¯Â¸Â Half</th>
-                        <th class="text-center">Ã¢ÂÅ’ Incorrect</th>
+                        <th class="text-center">&#9989; Correct</th>
+                        <th class="text-center">&#9888;&#65039; Half</th>
+                        <th class="text-center">&#10060; Incorrect</th>
                         <th class="text-center">Submitted At</th>
                         <th class="text-center" style="width:110px;">Details</th>
                       </tr>
@@ -967,8 +986,8 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
                         const pct = parseFloat(att.percentage || att.score || 0).toFixed(1);
                         const grade = att.grade || getGrade(Math.round(pct));
                         const examTitle = att.exams?.exam_title || 'Exam';
-                        const subjectName = att.exams?.classes?.name || 'â€”';
-                        const submitDate = att.submitted_at ? new Date(att.submitted_at).toLocaleString() : 'â€”';
+                        const subjectName = att.exams?.classes?.name || '&mdash;';
+                        const submitDate = att.submitted_at ? new Date(att.submitted_at).toLocaleString() : '&mdash;';
                         const rowId = `att-row-${att.id}`;
                         const detailId = `att-detail-${att.id}`;
 
@@ -976,9 +995,9 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
                           <tr id="${rowId}" class="clickable-attempt-row" data-att-id="${att.id}" style="cursor:pointer; transition:background 0.15s;">
                             <td class="fw-600">
                               <div class="d-flex align-center gap-2">
-                                <span class="toggle-arrow" id="arrow-${att.id}" style="font-size:0.75rem; color:var(--clr-text-muted); transition:transform 0.2s;">â–¶ï¸</span>
+                                <span class="toggle-arrow" id="arrow-${att.id}" style="font-size:0.75rem; color:var(--clr-text-muted); transition:transform 0.2s;">&#9654;</span>
                                 <span>${escapeHtml(examTitle)}</span>
-                                ${isBest ? `<span class="badge badge-success" style="font-size:0.65rem;" title="Highest score attempt for this exam">Ã¢Â­Â Best</span>` : ''}
+                                ${isBest ? `<span class="badge badge-success" style="font-size:0.65rem;" title="Highest score attempt for this exam">&#11088; Best</span>` : ''}
                               </div>
                             </td>
                             <td class="text-sm text-muted">${escapeHtml(subjectName)}</td>
@@ -1010,16 +1029,16 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.1.0';
                                     ${[...answers].sort((a, b) => (a.question_order || 0) - (b.question_order || 0)).map((ans, qIdx) => {
                                       const evalRes = (ans.evaluation_result || 'Unknown').toLowerCase();
                                       const sc = parseFloat(ans.score || 0);
-                                      let statusBadge = '<span class="badge badge-danger">Ã¢ÂÅ’ Incorrect (0 pt)</span>';
+                                      let statusBadge = '<span class="badge badge-danger">&#10060; Incorrect (0 pt)</span>';
                                       if (evalRes === 'correct' || sc >= 1) {
-                                        statusBadge = '<span class="badge badge-success">âœ… Correct (+1 pt)</span>';
+                                        statusBadge = '<span class="badge badge-success">&#9989; Correct (+1 pt)</span>';
                                       } else if (evalRes.includes('minor') || (sc > 0 && sc < 1)) {
-                                        statusBadge = '<span class="badge badge-warning">Ã¢Å¡Â Ã¯Â¸Â Minor Error (+0.5 pt)</span>';
+                                        statusBadge = '<span class="badge badge-warning">&#9888;&#65039; Minor Error (+0.5 pt)</span>';
                                       }
                                       
                                       const qText = ans.question_snapshot || `Question #${qIdx + 1}`;
                                       const studentAns = ans.student_answer || '(No Answer)';
-                                      const correctAns = ans.correct_answer_snapshot || 'â€”';
+                                      const correctAns = ans.correct_answer_snapshot || '&mdash;';
 
                                       return `
                                         <div style="padding:10px 14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:8px;">

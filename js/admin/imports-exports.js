@@ -915,7 +915,7 @@ async function hashPin(pin) {
               const correctAnswer = getRowVal(row, ['answer', 'jawaban', 'kunci', 'kuncijawaban', 'english', 'correctanswer', 'solution']);
               const rawNo = getRowVal(row, ['no', 'nomor', 'number', 'order', 'urutan']);
               const qNo = parseInt(rawNo || (i + 1), 10);
-              const classBlueprint = getRowVal(row, ['subject', 'matapelajaran', 'mapel']);
+              const classItem = getRowVal(row, ['subject', 'matapelajaran', 'mapel', 'class']);
               const title = getRowVal(row, ['title', 'examtitle', 'judul']);
               const week = getRowVal(row, ['week', 'minggu']);
               const day = getRowVal(row, ['day', 'hari']);
@@ -966,7 +966,7 @@ async function hashPin(pin) {
                 correctAnswer: String(correctAnswer).trim(),
                 answerType: defaultAnswerType,
                 optionsJson: optionsJson,
-                program, programName, classBlueprint, level, title, week, day, type
+                program, programName, classItem, level, title, week, day, type
               });
             });
 
@@ -1074,7 +1074,7 @@ async function hashPin(pin) {
             correctAnswer: q.correctAnswer,
             answerType: q.answerType,
             optionsJson: q.optionsJson,
-            metadata: { classBlueprint: q.classBlueprint, subject: q.classBlueprint, title: q.title, week: q.week, day: q.day, type: q.type }
+            metadata: { classItem: q.classItem, subject: q.classItem, title: q.title, week: q.week, day: q.day, type: q.type }
           }));
 
           const response = await callEdgeFunction('import-questions', { questions: questionsPayload, examId: examId });
@@ -1155,7 +1155,7 @@ async function hashPin(pin) {
           const excelData = sortedQuestions.map((q, idx) => ({
             'PROGRAM': selectedExam?.institutions?.name || 'CEC',
             'CLASS': programName,
-            'SUBJECT': q.metadata?.classBlueprint || q.metadata?.subject || selectedExam?.classes?.name || 'Vocab',
+            'SUBJECT': q.metadata?.classItem || q.metadata?.subject || selectedExam?.classes?.name || 'Vocab',
             'LEVEL': selectedExam?.levels?.name || '3rd Step',
             'TITLE': q.metadata?.title || selectedExam?.exam_title || 'Practice 1',
             'WEEK': q.metadata?.week || '1',

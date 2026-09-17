@@ -1,5 +1,172 @@
 # CHANGELOG
 
+## [2026-09-17 14:10 UTC] — Implement Pilar [D] Data: System Administration, Security & Cost Guard
+
+**Agent/Session:** Antigravity
+**Phase:** Pilar D (Data / Desk) Finalization
+**Status:** PASS
+
+### Why
+- The user requested implementation of Pilar [D] Data to finalize the TopsCore LMS ABCD architecture ([A] Admin, [B] Board, [C] Class, [D] Data).
+- Central control room required for system health, immutable audit logging, soft-delete data recovery, and LLM API cost guard.
+
+### Changed
+- `css/admin.css`:
+  - Added Section 14 (Pilar D Anti-Gravity Spatial Design System): `.antigravity-panel`, `.antigravity-card` with spatial shadows (`0 20px 40px rgba(0,0,0,0.4)`) and glassmorphism (`backdrop-filter: blur(16px)`), cosmic dark palette (`#090d16`), `.pulse-emerald`, `.pulse-amber`, `.pulse-red`, `.purge-modal-overlay`, `.purge-modal-box`, and `.purge-confirm-input`.
+- `js/admin/desk.js`:
+  - Fully implemented all 4 modules:
+    - **Module 1 (Recycle Bin)**: Unified recovery table aggregating soft-deleted students, classes, exams, and questions; `[Restore ♻️]` resets `deleted_at` to null; `[Purge 💀]` gates permanent delete behind typing exact `"CONFIRM"` into high-contrast red modal.
+    - **Module 2 (Activity & Audit Logs)**: Immutable audit trail with reverse-chronological ordering, category filters (`AUTH`, `CRUD`, `CONFIG`, `SECURITY`), and real-time substring search.
+    - **Module 3 (Data Health & Connectivity)**: Live Supabase heartbeat badge with pulse animation, telemetry cards (latency ping, transient audio storage usage, active entity counts), and 3 diagnostic engines (Student Profile Duplicates, Question Bank Duplicates, Orphaned Records Scanner).
+    - **Module 4 (Site Settings & API Cost Guard Engine)**: Masked API Key Vault with password toggles for OpenAI, Anthropic, Gemini; Cost Guard safety controls (`Global Cooldown Limit` & `Max Audio Duration`).
+- `admin.html`:
+  - Updated sidebar header to `🛡️ D — DATA` with ordered sub-items: `Recycle Bin`, `Activity & Audit Logs`, `Data Health & Connectivity`, `Site Settings & Cost Guard`.
+  - Updated KPI strip card to `🛡️ Data Attempts`.
+- `js/admin/app.js`:
+  - Mapped `DATA` and `DESK` domains seamlessly, set default section to `recycle`, and hid `+ Add New` button on management panels.
+- `js/ai-evaluation-engine.js`:
+  - Implemented `getCostGuardLimits()`, `checkCooldown(studentId)`, and `recordSubmission(studentId)` preventing LLM API invocation while cooldown is active and capping duration.
+- `js/speech.js`:
+  - Added auto-stop timeout in `createSpeechSession` capping audio recordings at `maxAudioDuration` seconds.
+
+### Verification
+- `scratch/check_pilar_d.ps1`: 100% checks passed.
+- Web server active on port 8080 serving HTTP 200.
+- Soft-delete principle strictly preserved across entire LMS; zero tables dropped.
+- Auto-commit disabled per user directive.
+
+### Next Action
+- Present completed implementation to user.
+
+## [2026-09-17 13:45 UTC] — Implement TopsCore AI Evaluation Engine (TAEE) & Finalize Panel C Refactor
+
+**Agent/Session:** Antigravity
+**Phase:** Core Architecture / AI Evaluation Engine
+**Status:** PASS
+
+### Why
+- The user requested complete implementation of the "TopsCore AI Evaluation Engine" (TAEE) across all 8 assessment modules.
+- Required stateless & low-egress AI pipeline with in-browser speech transcription (zero audio blobs persisted).
+- Required master system prompt, forced JSON outputs, pre-flight token defense checks (anti-silence < 10 chars & gibberish trap).
+- Required database hook into `assessment_results` table storing `final_score` (INTEGER) and `raw_evaluation_json` (JSONB).
+- Required total purge of legacy "Challenge" terminology across Panel C (Class -> Topic -> Assessment).
+
+### Changed
+- `supabase/functions/evaluate-assessment/index.ts`:
+  - Implemented Master System Prompt and strict JSON output mode.
+  - Implemented pre-flight defense checks: anti-silence (< 10 chars -> 0) and gibberish/filler trap.
+  - Implemented Zod runtime schemas and TypeScript interfaces for all 8 modules.
+  - Implemented Module 4 (Multiple Choice) with ZERO-AI algorithmic validation.
+  - Implemented Module 7 (Speaking Performance) with exact 5-pillar integer average calculation.
+  - Added dual provider support (OpenAI / Anthropic) with deterministic heuristic fallbacks ensuring 100% uptime with zero crashes.
+  - Added database hook writing to `assessment_results` (and `student_submissions`).
+- `supabase/migrations/20260917_assessment_results_table.sql`:
+  - Created `assessment_results` table with RLS policies and indexes.
+- `js/ai-evaluation-engine.js`:
+  - Created client evaluation engine with `evaluateSubmission`, `saveAssessmentResult`, `fetchAssessmentResults`, and `initRoleplayChannel` (Supabase Realtime).
+- `js/api.js`:
+  - Added `invokeAIEvaluation` and `fetchAssessmentResultsFromDB`.
+- `admin.html`, `js/admin/app.js`, `js/admin/class.js`, `js/admin/exam-management.js`, `js/admin/crud-modals.js`, `js/admin/panel-c-builder.js`, `css/admin.css`:
+  - Purged legacy "Challenge" strings from UI, DOM IDs, and routing.
+  - Enforced 3-level strict hierarchy: Classes (Level 1) -> Topics (Level 2) -> AI Assessments (Level 3).
+  - Smart Auto-Naming formula: `[Class] - [Topic] - [Module] - [Type]`.
+  - Assessment Results table highlights Highest Score badges and displays Locked 🔒 / Unlocked ✅ prerequisite states.
+
+### Files
+- `supabase/functions/evaluate-assessment/index.ts`
+- `supabase/migrations/20260917_assessment_results_table.sql`
+- `js/ai-evaluation-engine.js`
+- `js/api.js`
+- `admin.html`
+- `js/admin/app.js`
+- `js/admin/class.js`
+- `js/admin/exam-management.js`
+- `js/admin/crud-modals.js`
+- `js/admin/panel-c-builder.js`
+- `css/admin.css`
+- `docs/CURRENT_STATE.md`
+- `docs/CHANGELOG.md`
+
+### Verification
+- `scratch/verify_taee.ps1`: PASS (0 errors).
+- `scratch/check_js.ps1`: PASS (All JS imports resolve).
+- Database preservation: Zero database column or table renames.
+- Auto-commit disabled per user command.
+
+### Next Action
+- Await user review and instruction on manual commit.
+
+
+
+**Agent/Session:** Antigravity
+**Phase:** Maintenance / Diagnostics
+**Status:** PASS
+
+### Why
+- The user reported: "I remeber taht there are 3 panels here" in Data Health & Diagnostics (`#health`).
+- The cards had squished action buttons squeezed into thin vertical strips on the right edge due to missing flex column styling.
+- Clicking `#batches` threw `Failed to load: window.DataGrid is not a constructor`.
+- Screenshots revealed mojibake in Supabase connection banner, Recalibration Engine, and Data Health cards.
+- Automated git commit was explicitly halted by user order.
+
+### Changed
+- `js/admin/desk.js`:
+  - Restored Panel 3: "Orphaned Records & Integrity Scanner" auditing relational references across students, exams, attempts, questions, answers, and progress.
+  - Connected scanner to slide-out Record Details drawer (`window.openRecordDrawer`) displaying full diagnostic breakdown and entity counts.
+  - Applied flex column layout (`display: flex; flex-direction: column; justify-content: space-between; height: 100%;`) ensuring buttons are full-width and never squished.
+  - Replaced corrupted character bytes with clean HTML entities (`&#128100;`, `&#9889;`, `&#128737;&#65039;`, `&#128269;`).
+- `css/admin.css`:
+  - Added `.flex-col, .flex-column { flex-direction: column !important; }` utility.
+- `js/admin/app.js`, `js/admin/program-management.js`, `js/admin/exam-management.js`:
+  - Imported and exposed `DataGrid` on `window.DataGrid` to prevent constructor errors.
+- `js/admin/class.js`:
+  - Fixed filter bar structure and replaced mojibake in Student Progress and Recalibrator (`&mdash;`, `&#9889;`, `&#128269;`, `&#10005;`).
+- `docs/CURRENT_STATE.md`:
+  - Updated current state with all fixes and recorded explicit directive that auto-commits remain disabled.
+
+### Files
+- `js/admin/desk.js`
+- `css/admin.css`
+- `js/admin/app.js`
+- `js/admin/program-management.js`
+- `js/admin/exam-management.js`
+- `js/admin/class.js`
+- `docs/CURRENT_STATE.md`
+- `docs/CHANGELOG.md`
+
+### Next Action
+- Await user review and instruction on manual commit.
+
+## [2026-09-17 10:48 UTC] — Fix Admin Panel Unresponsive Login (ES Module Import Errors)
+
+**Agent/Session:** Antigravity
+**Phase:** Maintenance / Bugfix
+**Status:** PASS
+
+### Why
+- The user reported inability to access or log into the admin panel (`admin.html`).
+- Root cause investigation revealed fatal ES module syntax errors thrown during module evaluation, which aborted script execution before event listeners (including `#admin-login-btn`) could be attached.
+
+### Changed
+- `js/admin/panel-c-builder.js`: Replaced invalid imports of `supabase` and `showToast` from `../api.js` with proper imports from `../supabase.js` and `../app.js`. Updated database mutations to use `await getSupabase()`.
+- `js/admin/cv-export.js`: Implemented and exported `generateExecutiveCV` required by `admin-deck.js`.
+- `js/admin/app.js`: Updated import query strings (`?v=4.1.1`) for `panel-c-builder.js` and `admin-deck.js`.
+- `admin.html`: Updated module script tag to `js/admin/app.js?v=4.1.1`.
+- `sw.js`: Bumped cache name to `abcd-clean-v4.1.1`.
+- Verified entire JS module graph using AST import analysis across all 32 files (0 errors).
+
+### Files
+- `js/admin/panel-c-builder.js`
+- `js/admin/cv-export.js`
+- `js/admin/app.js`
+- `admin.html`
+- `sw.js`
+- `docs/CURRENT_STATE.md`
+- `docs/CHANGELOG.md`
+
+### Next Action
+- User logs into `admin.html` using credentials (`admin` / `admin123`).
+
 ## [2026-09-17 01:45 UTC] — TopsCore AI Engine Scaffold Completion
 
 **Agent/Session:** Antigravity

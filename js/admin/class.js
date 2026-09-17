@@ -1,4 +1,4 @@
-// TOPS CORE ï¿½ Centralized Assessment System V1 Admin UI
+// TOPS CORE Ã¯Â¿Â½ Centralized Assessment System V1 Admin UI
 import {
   fetchGlobalClasses,
   fetchWordTypes,
@@ -69,7 +69,7 @@ export async function renderTopics(area) {
 
       ${window._filterSubjectId ? `
         <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
-          <span>ðŸ“ Filtered by Subject: <strong>${escapeHtml(window._filterSubjectName || 'Selected Subject')}</strong></span>
+          <span>Ã°Å¸â€œÂ Filtered by Subject: <strong>${escapeHtml(window._filterSubjectName || 'Selected Subject')}</strong></span>
           <button class="btn btn-ghost btn-xs" id="clear-subj-filter-btn" style="text-decoration:underline;color:#93c5fd;">Show All Subjects</button>
         </div>
       ` : ''}
@@ -182,7 +182,7 @@ function renderTopicRows(topicsList) {
   return topicsList.map(t => `
     <tr>
       <td><strong style="color:var(--clr-text-1);">${escapeHtml(t.name)}</strong></td>
-      <td><code>${escapeHtml(t.code || 'ï¿½')}</code></td>
+      <td><code>${escapeHtml(t.code || 'Ã¯Â¿Â½')}</code></td>
       <td><span class="badge badge-info">${escapeHtml(t.classes?.name || 'General')}</span></td>
       <td>
         <span class="badge ${t.status === 'active' ? 'badge-success' : 'badge-secondary'}">
@@ -192,9 +192,9 @@ function renderTopicRows(topicsList) {
       <td style="font-size:0.8rem;color:var(--clr-text-muted);">${new Date(t.created_at).toLocaleDateString()}</td>
       <td style="text-align:right;">
         <div class="d-flex gap-1 justify-end">
-          <button class="btn btn-outline btn-xs btn-nav-questions" data-id="${t.id}" data-name="${escapeHtml(t.name)}" title="View Questions in this Topic">Questions â†’</button>
-          <button class="btn btn-ghost btn-sm btn-edit-topic" data-id="${t.id}" title="Edit Topic">âœï¸</button>
-          <button class="btn btn-ghost btn-sm text-danger btn-del-topic" data-id="${t.id}" title="Delete Topic">ðŸ—‘ï¸</button>
+          <button class="btn btn-outline btn-xs btn-nav-questions" data-id="${t.id}" data-name="${escapeHtml(t.name)}" title="View Questions in this Topic">Questions Ã¢â€ â€™</button>
+          <button class="btn btn-ghost btn-sm btn-edit-topic" data-id="${t.id}" title="Edit Topic">Ã¢Å“ÂÃ¯Â¸Â</button>
+          <button class="btn btn-ghost btn-sm text-danger btn-del-topic" data-id="${t.id}" title="Delete Topic">Ã°Å¸â€”â€˜Ã¯Â¸Â</button>
         </div>
       </td>
     </tr>
@@ -302,7 +302,7 @@ export async function renderWordTypes(area) {
       </div>
 
       <div class="card p-4 mb-4" style="background:rgba(255,255,255,0.02);border:1px solid var(--clr-border);">
-        <h4 style="font-size:0.95rem;margin-bottom:0.75rem;">âž• Add Custom Word Type</h4>
+        <h4 style="font-size:0.95rem;margin-bottom:0.75rem;">Ã¢Å¾â€¢ Add Custom Word Type</h4>
         <div class="d-flex gap-2 flex-wrap" style="max-width:500px;">
           <input type="text" class="form-control" id="new-word-type-input" placeholder="e.g. Phrasal Verb, Slang, Collocation" />
           <button class="btn btn-primary btn-sm" id="btn-add-word-type">+ Add</button>
@@ -315,7 +315,7 @@ export async function renderWordTypes(area) {
               const exists = wordTypes.some(wt => wt.name.toLowerCase() === st.toLowerCase());
               return `
                 <button class="btn btn-sm ${exists ? 'btn-ghost' : 'btn-outline-primary'} btn-suggest-wt" data-name="${st}" ${exists ? 'disabled title="Already added"' : ''}>
-                  ${st} ${exists ? 'âœ“' : '+'}
+                  ${st} ${exists ? 'Ã¢Å“â€œ' : '+'}
                 </button>
               `;
             }).join('')}
@@ -430,13 +430,13 @@ export async function renderCentralQuestionBank(area) {
         </div>
         <div class="d-flex gap-2 flex-wrap">
           <button class="btn btn-primary btn-sm" id="btn-add-question">+ Add New Question</button>
-          <button class="btn btn-secondary btn-sm" onclick="window.loadSection('import-questions')">ðŸ“¥ Import Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="window.loadSection('import-questions')">Ã°Å¸â€œÂ¥ Import Excel</button>
         </div>
       </div>
 
       ${window._filterTopicId ? `
         <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
-          <span>ðŸ“ Filtered by Topic: <strong>${escapeHtml(window._filterTopicName || 'Selected Topic')}</strong></span>
+          <span>Ã°Å¸â€œÂ Filtered by Topic: <strong>${escapeHtml(window._filterTopicName || 'Selected Topic')}</strong></span>
           <button class="btn btn-ghost btn-xs" id="clear-topic-filter-btn" style="text-decoration:underline;color:#93c5fd;">Show All Topics</button>
         </div>
       ` : ''}
@@ -445,7 +445,7 @@ export async function renderCentralQuestionBank(area) {
       <div class="card p-3 mb-4" style="background:rgba(255,255,255,0.02);border:1px solid var(--clr-border);">
         <div class="d-flex gap-3 flex-wrap align-center">
           <div style="flex:1;min-width:200px;">
-            <input type="text" class="form-control" id="q-search-input" placeholder="ðŸ” Search question or answer..." />
+            <input type="text" class="form-control" id="q-search-input" placeholder="Ã°Å¸â€Â Search question or answer..." />
           </div>
           <div style="min-width:160px;">
             <select class="form-control" id="q-topic-filter">
@@ -581,7 +581,7 @@ function renderQuestionRows(list) {
           </span>
         </td>
         <td>
-          ${q.question_type ? `<span class="badge badge-secondary" style="font-size:0.75rem;">${escapeHtml(q.question_type)}</span>` : '<span class="text-muted">ï¿½</span>'}
+          ${q.question_type ? `<span class="badge badge-secondary" style="font-size:0.75rem;">${escapeHtml(q.question_type)}</span>` : '<span class="text-muted">Ã¯Â¿Â½</span>'}
         </td>
         <td>
           <strong style="color:var(--clr-text-1);font-size:0.95rem;">${escapeHtml(q.question_text)}</strong>
@@ -597,8 +597,8 @@ function renderQuestionRows(list) {
           </span>
         </td>
         <td style="text-align:right;">
-          <button class="btn btn-ghost btn-sm btn-edit-q" data-id="${q.id}" title="Edit Question">âœï¸</button>
-          <button class="btn btn-ghost btn-sm text-danger btn-del-q" data-id="${q.id}" title="Delete Question">ðŸ—‘ï¸</button>
+          <button class="btn btn-ghost btn-sm btn-edit-q" data-id="${q.id}" title="Edit Question">Ã¢Å“ÂÃ¯Â¸Â</button>
+          <button class="btn btn-ghost btn-sm text-danger btn-del-q" data-id="${q.id}" title="Delete Question">Ã°Å¸â€”â€˜Ã¯Â¸Â</button>
         </td>
       </tr>
     `;
@@ -726,7 +726,7 @@ function openQuestionModal(question, { topics, subjects, wordTypes }, onSaved) {
 // 4. ASSIGNMENTS MANAGEMENT
 // ============================================================
 // ============================================================
-// 4. ASSIGNMENTS MANAGEMENT (Challenge Instances)
+// 4. ASSIGNMENTS MANAGEMENT (Assessment Instances)
 // ============================================================
 export async function renderAssignments(area) {
   showLoading();
@@ -743,7 +743,7 @@ export async function renderAssignments(area) {
     area.innerHTML = `
       <div class="section-header d-flex justify-between align-center flex-wrap gap-3 mb-4">
         <div>
-          <h2 class="section-title text-gradient">Assessment Assignments (Challenge Instances)</h2>
+          <h2 class="section-title text-gradient">Assessment Assignments</h2>
           <p class="section-subtitle">Control assessment access by Batch (Class Instance)</p>
         </div>
         <div>
@@ -807,11 +807,11 @@ function renderAssignmentRows(list) {
   }
   return list.map(a => {
     const targetName = a.class_instances?.batches?.name 
-      ? `ðŸ‘¥ Batch: ${escapeHtml(a.class_instances.batches.name)} (${escapeHtml(a.class_instances.classes?.name || 'Class')})`
-      : `ðŸ‘¥ Unknown Target`;
+      ? `Ã°Å¸â€˜Â¥ Batch: ${escapeHtml(a.class_instances.batches.name)} (${escapeHtml(a.class_instances.classes?.name || 'Class')})`
+      : `Ã°Å¸â€˜Â¥ Unknown Target`;
 
     const windowText = (a.availability_start || a.availability_end)
-      ? `${a.availability_start ? new Date(a.availability_start).toLocaleDateString() : 'Now'} â†’ ${a.availability_end ? new Date(a.availability_end).toLocaleDateString() : 'Forever'}`
+      ? `${a.availability_start ? new Date(a.availability_start).toLocaleDateString() : 'Now'} Ã¢â€ â€™ ${a.availability_end ? new Date(a.availability_end).toLocaleDateString() : 'Forever'}`
       : '<span class="text-success">Always Open</span>';
 
     return `
@@ -822,7 +822,7 @@ function renderAssignmentRows(list) {
         <td><small>${windowText}</small></td>
         <td><span class="badge badge-success">${escapeHtml(a.status || 'DRAFT')}</span></td>
         <td style="text-align:right;">
-          <button class="btn btn-ghost btn-sm text-danger btn-revoke-assignment" data-id="${a.id}" title="Revoke Assignment">ðŸ—‘ï¸ Revoke</button>
+          <button class="btn btn-ghost btn-sm text-danger btn-revoke-assignment" data-id="${a.id}" title="Revoke Assignment">Ã°Å¸â€”â€˜Ã¯Â¸Â Revoke</button>
         </td>
       </tr>
     `;
@@ -840,7 +840,7 @@ function openAssignmentModal({ definitions, batches, classInsts, classes }, onSa
       </div>
       <div class="modal-body p-4">
         <div class="form-group mb-3">
-          <label class="form-label">Select Assessment (Challenge Definition) *</label>
+          <label class="form-label">Select Assessment *</label>
           <select class="form-control" id="asgn-assessment-id">
             ${definitions.map(a => `<option value="${a.id}" data-class="${a.class_id}">${escapeHtml(a.title)} (${escapeHtml(a.challenge_type)})</option>`).join('')}
           </select>
@@ -936,7 +936,7 @@ export async function renderCentralQuestionImport(area) {
           <p class="section-subtitle">Safely parse, validate word types, detect duplicates, and preview before committing.</p>
         </div>
         <div>
-          <button class="btn btn-secondary btn-sm" id="btn-download-central-tmpl">ðŸ“¥ Download Excel Template</button>
+          <button class="btn btn-secondary btn-sm" id="btn-download-central-tmpl">Ã°Å¸â€œÂ¥ Download Excel Template</button>
         </div>
       </div>
 
@@ -952,7 +952,7 @@ export async function renderCentralQuestionImport(area) {
         </div>
 
         <div class="drop-zone p-5 text-center rounded" id="question-drop-zone" style="border:2px dashed var(--clr-border);cursor:pointer;background:rgba(255,255,255,0.01);transition:all 0.2s;">
-          <div style="font-size:2.8rem;margin-bottom:0.75rem;">ðŸ“</div>
+          <div style="font-size:2.8rem;margin-bottom:0.75rem;">Ã°Å¸â€œÂ</div>
           <h3 style="font-size:1.1rem;margin-bottom:0.5rem;">Click to select Excel file or drag &amp; drop</h3>
           <p class="text-muted text-xs mb-3">Accepts .xlsx, .xls, .csv with columns: <strong>Topic | Word Type | Question | Answer</strong></p>
           <input type="file" id="central-excel-file-input" accept=".xlsx,.xls,.csv" style="display:none;" />
@@ -969,7 +969,7 @@ export async function renderCentralQuestionImport(area) {
           </div>
           <div class="d-flex gap-2">
             <button class="btn btn-secondary btn-sm" id="btn-cancel-preview">Cancel / Choose Another File</button>
-            <button class="btn btn-success btn-sm" id="btn-confirm-commit-import">ðŸš€ Confirm &amp; Commit Import</button>
+            <button class="btn btn-success btn-sm" id="btn-confirm-commit-import">Ã°Å¸Å¡â‚¬ Confirm &amp; Commit Import</button>
           </div>
         </div>
 
@@ -1117,14 +1117,14 @@ export async function renderCentralQuestionImport(area) {
       if (summary.possibleDuplicates > 0) {
         alertHtml += `
           <div class="alert alert-warning p-3 mb-3 text-xs" style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:8px;">
-            âš ï¸ <strong>${summary.possibleDuplicates} Possible Duplicate(s) Found:</strong> High similarity detected. Review the comparisons below and choose whether to <em>Use Existing</em> or <em>Create New</em>.
+            Ã¢Å¡Â Ã¯Â¸Â <strong>${summary.possibleDuplicates} Possible Duplicate(s) Found:</strong> High similarity detected. Review the comparisons below and choose whether to <em>Use Existing</em> or <em>Create New</em>.
           </div>
         `;
       }
       if (summary.invalidWordTypes > 0) {
         alertHtml += `
           <div class="alert alert-info p-3 mb-3 text-xs" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;">
-            ðŸ’¡ <strong>${summary.invalidWordTypes} Word Type Suggestion(s):</strong> Non-standard word types detected. Suggested standard types have been applied, or you can register them as custom types.
+            Ã°Å¸â€™Â¡ <strong>${summary.invalidWordTypes} Word Type Suggestion(s):</strong> Non-standard word types detected. Suggested standard types have been applied, or you can register them as custom types.
           </div>
         `;
       }
@@ -1139,7 +1139,7 @@ export async function renderCentralQuestionImport(area) {
         if (r.duplicateStatus === 'EXACT_DUPLICATE') {
           statusBadge = `<span class="badge badge-info">Exact Match</span>`;
           if (r.answerKeyChanged) {
-            statusBadge += `<br/><span class="badge badge-warning mt-1" title="Existing: ${escapeHtml(r.existingAnswers.join(' / '))} -> New: ${escapeHtml(r.accepted_answers.join(' / '))}">âš¡ Answer Update</span>`;
+            statusBadge += `<br/><span class="badge badge-warning mt-1" title="Existing: ${escapeHtml(r.existingAnswers.join(' / '))} -> New: ${escapeHtml(r.accepted_answers.join(' / '))}">Ã¢Å¡Â¡ Answer Update</span>`;
           }
           actionCol = `
             <select class="form-control form-control-sm row-action-choice" data-idx="${idx}">
@@ -1166,9 +1166,9 @@ export async function renderCentralQuestionImport(area) {
           qDisplay += `<div class="text-muted text-xs mt-1" style="font-style:italic;">Existing: "${escapeHtml(r.existingQuestionText)}"</div>`;
         }
 
-        let wtDisplay = escapeHtml(r.wordType || 'ï¿½');
+        let wtDisplay = escapeHtml(r.wordType || 'Ã¯Â¿Â½');
         if (r.wordTypeWarning) {
-          wtDisplay += `<div class="text-danger text-xs mt-1" title="${escapeHtml(r.wordTypeWarning)}">âš ï¸ ${escapeHtml(r.wordTypeWarning)}</div>`;
+          wtDisplay += `<div class="text-danger text-xs mt-1" title="${escapeHtml(r.wordTypeWarning)}">Ã¢Å¡Â Ã¯Â¸Â ${escapeHtml(r.wordTypeWarning)}</div>`;
         }
 
         return `
@@ -1201,8 +1201,8 @@ export async function renderCentralQuestionImport(area) {
       const rows = currentParsedResult.rows;
 
       const confirmMsg = `Are you sure you want to commit this import?
-â€¢ ${currentParsedResult.summary.newQuestions} new questions will be added
-â€¢ ${currentParsedResult.summary.answerChanges} answer keys will be updated
+Ã¢â‚¬Â¢ ${currentParsedResult.summary.newQuestions} new questions will be added
+Ã¢â‚¬Â¢ ${currentParsedResult.summary.answerChanges} answer keys will be updated
 Existing historical attempt records will NOT be modified.`;
 
       if (!confirm(confirmMsg)) return;
@@ -1374,11 +1374,25 @@ function toLevelLetter(num) {
 
     export async function renderResults(area) {
       const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
-        adminFetchAll('challenge_attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), challenge_instances(challenge_definitions(title, challenge_type)), challenge_attempt_answers(id, evaluation_result, score)'),
+        adminFetchAll('challenge_attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), challenge_instances(challenge_definitions(id, title, challenge_type, prerequisite_assessment_id, prerequisite_min_score)), challenge_attempt_answers(id, evaluation_result, score)'),
         adminFetchAll('institutions'),
         adminFetchAll('programs'),
         adminFetchAll('batches')
       ]);
+
+      // Precalculate student best scores per assessment for prerequisite checking and highest score logic
+      const studentBestScoreMap = new Map();
+      rawData.forEach(r => {
+        if (!['submitted', 'auto_submitted'].includes(r.status)) return;
+        const defId = r.challenge_instances?.challenge_definitions?.id;
+        if (!r.student_id || !defId) return;
+        const key = `${r.student_id}_${defId}`;
+        const pct = parseFloat(r.percentage || 0);
+        const cur = studentBestScoreMap.get(key) ?? -1;
+        if (pct > cur) {
+          studentBestScoreMap.set(key, pct);
+        }
+      });
 
       const submittedOnly = rawData.filter(r => ['submitted', 'auto_submitted'].includes(r.status));
       // Default: sort alphabetically by Student Name (A-Z)
@@ -1396,20 +1410,20 @@ function toLevelLetter(num) {
       area.innerHTML = `
         <div class="section-header d-flex justify-between align-center flex-wrap gap-2">
           <div>
-            <h2 class="section-title">Results <span class="count-chip" id="res-count-chip">${allData.length} Total</span></h2>
-            <p class="section-subtitle">Student exam attempt submissions grouped and filterable by Program, Class, and Batch</p>
+            <h2 class="section-title">Assessment Results <span class="count-chip" id="res-count-chip">${allData.length} Total</span></h2>
+            <p class="section-subtitle">Student assessment attempt submissions displaying highest score records and prerequisite status</p>
           </div>
           <div>
             <button class="btn btn-secondary btn-sm" id="export-gradebook-btn" style="display:inline-flex;align-items:center;gap:6px;font-weight:600;">
-              ðŸ“Š Export Gradebook (.xlsx)
+              &#128202; Export Gradebook (.xlsx)
             </button>
           </div>
         </div>
 
         ${window._filterExamResults ? `
           <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
-            <span>âš¡ Filtered Results for Selected Challenge (${allData.length} attempts)</span>
-            <button class="btn btn-ghost btn-xs" id="clear-exam-results-btn" style="text-decoration:underline;color:#93c5fd;">Show All Challenge Results</button>
+            <span>&#9889; Filtered Results for Selected Assessment (${allData.length} attempts)</span>
+            <button class="btn btn-ghost btn-xs" id="clear-exam-results-btn" style="text-decoration:underline;color:#93c5fd;">Show All Assessment Results</button>
           </div>
         ` : ''}
 
@@ -1418,7 +1432,7 @@ function toLevelLetter(num) {
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Program</label>
             <select id="res-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">â€” All Institutions â€”</option>
+              <option value="">&mdash; All Institutions &mdash;</option>
               ${(allPrograms || []).filter(p => !p.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
             </select>
           </div>
@@ -1426,7 +1440,7 @@ function toLevelLetter(num) {
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Class</label>
             <select id="res-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">â€” All Programs â€”</option>
+              <option value="">&mdash; All Programs &mdash;</option>
               ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
             </select>
           </div>
@@ -1434,18 +1448,18 @@ function toLevelLetter(num) {
           <div style="min-width:180px;">
             <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
             <select id="res-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-              <option value="">â€” All Batches â€”</option>
+              <option value="">&mdash; All Batches &mdash;</option>
               ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
             </select>
           </div>
 
           <div style="flex:1;min-width:220px;">
-            <label class="text-xs text-muted d-block mb-1">Search Student / Exam</label>
-            <input type="text" id="res-filter-search" class="form-control" placeholder="Type student name or exam titleâ€¦" style="padding:6px 10px;font-size:0.85rem;">
+            <label class="text-xs text-muted d-block mb-1">Search Student / Assessment</label>
+            <input type="text" id="res-filter-search" class="form-control" placeholder="Type student name or assessment title&hellip;" style="padding:6px 10px;font-size:0.85rem;">
           </div>
 
           <div class="d-flex align-end" style="padding-top:18px;">
-            <button class="btn btn-ghost btn-sm" id="res-btn-reset" title="Reset all filters">âœ• Reset</button>
+            <button class="btn btn-ghost btn-sm" id="res-btn-reset" title="Reset all filters">&#10006; Reset</button>
           </div>
         </div>
 
@@ -1503,7 +1517,7 @@ function toLevelLetter(num) {
           return true;
         });
 
-        // Deduplicate by Student + Exam, keeping highest score only
+        // Deduplicate by Student + Assessment, keeping highest score only
         const mergedResults = new Map();
         filtered.forEach(r => {
           const key = `${r.student_id}_${r.challenge_instances?.challenge_definitions?.id}`;
@@ -1522,7 +1536,7 @@ function toLevelLetter(num) {
         const deduplicated = Array.from(mergedResults.values());
         currentDeduplicatedResults = deduplicated;
 
-        countChip.textContent = `${deduplicated.length} attempts (Merged)`;
+        countChip.textContent = `${deduplicated.length} Records (Highest Score)`;
 
         document.getElementById('results-grid-container').innerHTML = '';
         if (!deduplicated.length) {
@@ -1536,17 +1550,33 @@ function toLevelLetter(num) {
           pageSize: 20,
           searchKeys: ['students.name', 'challenge_instances.challenge_definitions.title', 'challenge_instances.challenge_definitions.challenge_type', 'students.programs.name', 'students.programs.institutions.name'],
           columns: [
-            { key: 'students.name', label: 'Student Name', sortable: true, render: (v, r) => `<span class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || 'â€”'}</span>` },
-            { key: 'students.programs.institutions.name', label: 'Program', sortable: true, render: (v, r) => `<span class="text-muted text-sm">${escapeHtml(r.students?.programs?.institutions?.name || 'â€”')}</span>` },
-            { key: 'students.programs.name', label: 'Class', sortable: true, render: (v, r) => `<span class="text-muted text-sm">${escapeHtml(r.students?.programs?.name || 'â€”')}</span>` },
+            { key: 'students.name', label: 'Student Name', sortable: true, render: (v, r) => `<span class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || '&mdash;'}</span>` },
+            { key: 'students.programs.institutions.name', label: 'Program', sortable: true, render: (v, r) => `<span class="text-muted text-sm">${escapeHtml(r.students?.programs?.institutions?.name || '&mdash;')}</span>` },
+            { key: 'students.programs.name', label: 'Class', sortable: true, render: (v, r) => `<span class="text-muted text-sm">${escapeHtml(r.students?.programs?.name || '&mdash;')}</span>` },
             { key: 'students.batches.name', label: 'Batch', sortable: true, render: (v, r) => `<span class="badge ${r.students?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.students?.batches?.name || 'Unassigned')}</span>` },
-            { key: 'challenge_instances.challenge_definitions.title', label: 'Exam Title', sortable: true, render: (v, r) => {
+            { key: 'challenge_instances.challenge_definitions.title', label: 'Assessment Title', sortable: true, render: (v, r) => {
               const def = r.challenge_instances?.challenge_definitions || {};
-              return `<span class="text-sm fw-600">${def.challenge_type ? escapeHtml(def.challenge_type) + ' â€” ' : ''}${escapeHtml(def.title || 'â€”')}</span>`;
+              return `<span class="text-sm fw-600">${def.challenge_type ? escapeHtml(def.challenge_type) + ' &mdash; ' : ''}${escapeHtml(def.title || '&mdash;')}</span>`;
             }},
-            { key: 'percentage', label: 'Score', sortable: true, render: (v, r) => `<div class="text-center fw-700 text-grade-${r.grade || 'F'}">${parseFloat(r.percentage || 0).toFixed(1)}%</div>` },
-            { key: 'grade', label: 'Grade', sortable: true, render: (v, r) => `<div class="text-center"><span class="grade-badge grade-${r.grade || 'F'}" style="width:30px;height:30px;font-size:0.85rem;">${r.grade || 'â€”'}</span></div>` },
-            { key: 'correct', label: 'âœ”ï¸ Correct', sortable: false, render: (v, r) => {
+            { key: 'percentage', label: 'Score', sortable: true, render: (v, r) => `
+              <div class="text-center fw-700 text-grade-${r.grade || 'F'}" style="display:flex;align-items:center;justify-content:center;gap:4px;">
+                <span>${parseFloat(r.percentage || 0).toFixed(1)}%</span>
+                <span class="badge badge-success text-xs" style="font-size:0.65rem;padding:1px 5px;" title="Highest score recorded across attempts">Highest</span>
+              </div>
+            ` },
+            { key: 'grade', label: 'Grade', sortable: true, render: (v, r) => `<div class="text-center"><span class="grade-badge grade-${r.grade || 'F'}" style="width:30px;height:30px;font-size:0.85rem;">${r.grade || '&mdash;'}</span></div>` },
+            { key: 'prereq', label: 'Prerequisite', sortable: false, render: (v, r) => {
+              const def = r.challenge_instances?.challenge_definitions || {};
+              const prereqId = def.prerequisite_assessment_id;
+              const minScore = Number(def.prerequisite_min_score) || 60;
+              if (!prereqId) return '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
+              const studentPrereqBest = studentBestScoreMap.get(`${r.student_id}_${prereqId}`);
+              if (studentPrereqBest != null && studentPrereqBest >= minScore) {
+                return `<div class="text-center"><span class="badge badge-success text-xs" style="font-size:0.75rem;padding:2px 6px;" title="Prerequisite completed (${studentPrereqBest.toFixed(1)}% &ge; ${minScore}%)">Unlocked &#9989;</span></div>`;
+              }
+              return `<div class="text-center"><span class="badge badge-danger" style="font-size:0.75rem;padding:2px 7px;font-weight:600;display:inline-flex;align-items:center;gap:3px;" title="Prerequisite requirement not completed (Required &ge; ${minScore}%)">Locked &#128274;</span></div>`;
+            }},
+            { key: 'correct', label: '&#9989; Correct', sortable: false, render: (v, r) => {
                 const answers = r.challenge_attempt_answers || [];
                 let attCorrect = 0;
                 answers.forEach(a => {
@@ -1554,10 +1584,10 @@ function toLevelLetter(num) {
                   const sc  = parseFloat(a.score || 0);
                   if (res === 'correct' || sc >= 1) attCorrect++;
                 });
-                return answers.length > 0 ? `<div class="text-center"><span class="badge badge-success" style="font-size:0.75rem;">${attCorrect}</span></div>` : '<div class="text-center"><span class="text-muted text-xs">â€”</span></div>';
+                return answers.length > 0 ? `<div class="text-center"><span class="badge badge-success" style="font-size:0.75rem;">${attCorrect}</span></div>` : '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
               }
             },
-            { key: 'half', label: 'âš ï¸ Half', sortable: false, render: (v, r) => {
+            { key: 'half', label: '&#9888;&#65039; Half', sortable: false, render: (v, r) => {
                 const answers = r.challenge_attempt_answers || [];
                 let attMinor = 0;
                 answers.forEach(a => {
@@ -1565,10 +1595,10 @@ function toLevelLetter(num) {
                   const sc  = parseFloat(a.score || 0);
                   if (res.includes('minor') || (sc > 0 && sc < 1)) attMinor++;
                 });
-                return answers.length > 0 ? `<div class="text-center"><span class="badge badge-warning" style="font-size:0.75rem;">${attMinor}</span></div>` : '<div class="text-center"><span class="text-muted text-xs">â€”</span></div>';
+                return answers.length > 0 ? `<div class="text-center"><span class="badge badge-warning" style="font-size:0.75rem;">${attMinor}</span></div>` : '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
               }
             },
-            { key: 'wrong', label: 'âŒ Incorrect', sortable: false, render: (v, r) => {
+            { key: 'wrong', label: '&#10060; Incorrect', sortable: false, render: (v, r) => {
                 const answers = r.challenge_attempt_answers || [];
                 let attWrong = 0;
                 answers.forEach(a => {
@@ -1576,11 +1606,11 @@ function toLevelLetter(num) {
                   const sc  = parseFloat(a.score || 0);
                   if (res !== 'correct' && sc < 1 && !res.includes('minor') && !(sc > 0 && sc < 1)) attWrong++;
                 });
-                return answers.length > 0 ? `<div class="text-center"><span class="badge badge-danger" style="font-size:0.75rem;">${attWrong}</span></div>` : '<div class="text-center"><span class="text-muted text-xs">â€”</span></div>';
+                return answers.length > 0 ? `<div class="text-center"><span class="badge badge-danger" style="font-size:0.75rem;">${attWrong}</span></div>` : '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
               }
             },
-            { key: 'submitted_at', label: 'Submitted At', sortable: true, render: (v, r) => `<div class="text-center text-muted text-xs">${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'â€”'}</div>` },
-            { key: 'actions', label: 'Profile', sortable: false, render: (v, r) => `<div class="text-center"><button class="btn btn-ghost btn-sm results-view-profile-btn" data-sid="${r.student_id}" style="font-size:0.75rem; padding:3px 10px; display:inline-flex; align-items:center; gap:4px;" title="View full student profile">ðŸ‘¤ Profile</button></div>` }
+            { key: 'submitted_at', label: 'Submitted At', sortable: true, render: (v, r) => `<div class="text-center text-muted text-xs">${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '&mdash;'}</div>` },
+            { key: 'actions', label: 'Profile', sortable: false, render: (v, r) => `<div class="text-center"><button class="btn btn-ghost btn-sm results-view-profile-btn" data-sid="${r.student_id}" style="font-size:0.75rem; padding:3px 10px; display:inline-flex; align-items:center; gap:4px;" title="View full student profile">&#128100; Profile</button></div>` }
           ]
         });
       };
@@ -1626,8 +1656,8 @@ function toLevelLetter(num) {
             'Institution': r.students?.programs?.institutions?.name || 'â€”',
             'Program': r.students?.programs?.name || 'â€”',
             'Batch': r.students?.batches?.name || 'â€”',
-            'Exam Title': def.title || 'â€”',
-            'Exam Type': def.challenge_type || 'â€”',
+            'Assessment Title': def.title || 'â€”',
+            'Assessment Type': def.challenge_type || 'â€”',
             'Score': r.score != null ? r.score : 'â€”',
             'Percentage (%)': r.percentage != null ? `${r.percentage}%` : 'â€”',
             'Grade': r.grade || (r.percentage != null ? getGrade(r.percentage) : 'â€”'),
@@ -1644,8 +1674,6 @@ function toLevelLetter(num) {
         showToast(`Exported ${exportData.length} records to ${filename}`, 'success');
       });
 
-      // Event delegation: Profile buttons (handled globally or here)
-      // Note: DataGrid handles row events, but if you have custom buttons in render, you can delegate it
       document.getElementById('results-grid-container').addEventListener('click', e => {
         const btn = e.target.closest('.results-view-profile-btn');
         if (!btn) return;
@@ -1658,7 +1686,7 @@ function toLevelLetter(num) {
       });
     }
 
-    // ÃƒÂ¢â€Ã¢â€šÂ¬ÃƒÂ¢â€Ã¢â€šÂ¬ STUDENT PROGRESS (Level Progression with Batch Grouping) ÃƒÂ¢â€Ã¢â€šÂ¬ÃƒÂ¢â€Ã¢â€šÂ¬
+    // ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ STUDENT PROGRESS (Level Progression with Batch Grouping) ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
 
     export async function renderProgressView(area) {
       area.innerHTML = `
@@ -1725,20 +1753,11 @@ function toLevelLetter(num) {
             </div>
           </div>
 
-          <!-- Filter Bar -->
-          <div class="filter-bar mb-4 p-3 rounded d-flex gap-3 align-center flex-wrap" style="background:var(--clr-surface-2);border:1px solid var(--clr-border);">
-            <div style="min-width:180px;">
-              <label class="text-xs text-muted d-block mb-1">Filter Program</label>
-              <select id="prog-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-                <option value="">ÃƒÂ¢Ã¢â€šÂ¬â€ All Institutions ÃƒÂ¢Ã¢â€šÂ¬â€</option>
-                ${(allPrograms || []).filter(p => !p.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
-              </select>
-            </div>
-
+          <div class="d-flex align-center gap-3 flex-wrap p-3 mb-4 rounded" style="background:var(--clr-surface-2); border:1px solid var(--clr-border);">
             <div style="min-width:180px;">
               <label class="text-xs text-muted d-block mb-1">Filter Class</label>
               <select id="prog-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-                <option value="">ÃƒÂ¢Ã¢â€šÂ¬â€ All Programs ÃƒÂ¢Ã¢â€šÂ¬â€</option>
+                <option value="">&mdash; All Programs &mdash;</option>
                 ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
               </select>
             </div>
@@ -1746,7 +1765,7 @@ function toLevelLetter(num) {
             <div style="min-width:180px;">
               <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
               <select id="prog-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
-                <option value="">ÃƒÂ¢Ã¢â€šÂ¬â€ All Batches ÃƒÂ¢Ã¢â€šÂ¬â€</option>
+                <option value="">&mdash; All Batches &mdash;</option>
                 ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
               </select>
             </div>
@@ -1757,7 +1776,7 @@ function toLevelLetter(num) {
             </div>
 
             <div class="d-flex align-end" style="padding-top:18px;">
-              <button class="btn btn-ghost btn-sm" id="prog-btn-reset" title="Reset all filters">ÃƒÂ¢Ã…â€œâ€¢ Reset</button>
+              <button class="btn btn-ghost btn-sm" id="prog-btn-reset" title="Reset all filters">&#10005; Reset</button>
             </div>
           </div>
 
@@ -1840,15 +1859,15 @@ function toLevelLetter(num) {
 
           tbody.innerHTML = filtered.map(r => `
             <tr>
-              <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.student?.name, r.student?.gender) || 'â€”'}</td>
-              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.institutions?.name || 'â€”')}</td>
-              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.name || 'â€”')}</td>
+              <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.student?.name, r.student?.gender) || 'Ã¢â‚¬â€'}</td>
+              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.institutions?.name || 'Ã¢â‚¬â€')}</td>
+              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.name || 'Ã¢â‚¬â€')}</td>
               <td><span class="badge ${r.student?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.student?.batches?.name || 'Unassigned')}</span></td>
-              <td class="fw-600 text-sm">${escapeHtml(r.assessmentTitle || 'â€”')}</td>
+              <td class="fw-600 text-sm">${escapeHtml(r.assessmentTitle || 'Ã¢â‚¬â€')}</td>
               <td class="text-center"><span class="badge badge-primary">Level ${toLevelLetter(r.levelNumber)} ${escapeHtml(r.levelName || '')}</span></td>
               <td class="text-center">
                 <span class="badge ${r.is_completed ? 'badge-success' : r.is_in_progress ? 'badge-warning' : 'badge-neutral'}">
-                  ${r.is_completed ? 'âœ”ï¸ Completed' : r.is_in_progress ? 'â–¶ï¸ In Progress' : 'ðŸ”’ Not Started'}
+                  ${r.is_completed ? 'Ã¢Å“â€Ã¯Â¸Â Completed' : r.is_in_progress ? 'Ã¢â€“Â¶Ã¯Â¸Â In Progress' : 'Ã°Å¸â€â€™ Not Started'}
                 </span>
               </td>
               <td class="text-center">
@@ -1930,10 +1949,10 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
     tbody.innerHTML = `<tr><td colspan="2" class="text-center text-danger">Error: ${err.message}</td></tr>`;
   }
 };
-    // ÃƒÂ¢â€Ã¢â€šÂ¬ÃƒÂ¢â€Ã¢â€šÂ¬ AUDIT LOG ÃƒÂ¢â€Ã¢â€šÂ¬ÃƒÂ¢â€Ã¢â€šÂ¬
+    // &mdash;&mdash; AUDIT LOG &mdash;&mdash;
 
     export async function renderRecalibrator(area) {
-      showLoading('Loading exams for recalibrationâ€¦');
+      showLoading('Loading exams for recalibration&hellip;');
       const allExams = await adminFetchAll('exams');
       hideLoading();
       const activeExams = allExams.filter(e => !e.deleted_at).sort((a, b) => (a.exam_title || '').localeCompare(b.exam_title || ''));
@@ -1941,7 +1960,7 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
       area.innerHTML = `
         <div class="section-header">
           <div>
-            <h2 class="section-title text-gradient" style="font-size:1.6rem;">ÃƒÂ¢Ã…Â¡Ã‚Â¡ Exam Recalibrator</h2>
+            <h2 class="section-title text-gradient" style="font-size:1.6rem;">&#9889; Exam Recalibrator</h2>
             <p class="section-subtitle">
               Recalculate historical submitted student attempts after updating questions, adding multiple correct answers (separated by <code>;</code> or <code>|</code>), or enabling hyphen tolerance.
             </p>
@@ -1953,13 +1972,13 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
             <div style="flex: 1; min-width: 280px;">
               <label class="form-label">Select Target Exam</label>
               <select class="form-control" id="recalibrator-exam-select">
-                <option value="">ÃƒÂ¢Ã¢â€šÂ¬â€ Choose an Exam to Recalibrate ÃƒÂ¢Ã¢â€šÂ¬â€</option>
+                <option value="">&mdash; Choose an Exam to Recalibrate &mdash;</option>
                 ${activeExams.map(e => `<option value="${e.id}">[${escapeHtml(e.exam_type || 'Exam')}] ${escapeHtml(e.exam_title || e.display_name || e.id)}</option>`).join('')}
               </select>
             </div>
             <div style="display: flex; gap: 12px; align-items: flex-end; padding-top: 20px;">
-              <button class="btn btn-primary" id="btn-preview-recal" disabled>ÃƒÂ°Ã…Â¸â€Ã‚Â Preview Recalibration</button>
-              <button class="btn btn-success" id="btn-apply-recal" disabled style="background:linear-gradient(135deg,#10b981,#059669);font-weight:700;">ÃƒÂ¢Ã…Â¡Ã‚Â¡ Apply Recalibration</button>
+              <button class="btn btn-primary" id="btn-preview-recal" disabled>&#128269; Preview Recalibration</button>
+              <button class="btn btn-success" id="btn-apply-recal" disabled style="background:linear-gradient(135deg,#10b981,#059669);font-weight:700;">&#9889; Apply Recalibration</button>
             </div>
           </div>
         </div>
@@ -1980,11 +1999,11 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
               <div class="fw-700" style="font-size:1.6rem; color:var(--clr-primary, #a78bfa);" id="recal-metric-affected">0</div>
             </div>
             <div class="glass-card p-4 text-center" style="border-left: 4px solid #10b981;">
-              <div class="text-xs text-muted mb-1">Status: FAIL âž” PASS</div>
+              <div class="text-xs text-muted mb-1">Status: FAIL &rarr; PASS</div>
               <div class="fw-700" style="font-size:1.6rem; color: #10b981;" id="recal-metric-fail-pass">0</div>
             </div>
             <div class="glass-card p-4 text-center" style="border-left: 4px solid #f43f5e;">
-              <div class="text-xs text-muted mb-1">Status: PASS âž” FAIL</div>
+              <div class="text-xs text-muted mb-1">Status: PASS &rarr; FAIL</div>
               <div class="fw-700" style="font-size:1.6rem; color: #f43f5e;" id="recal-metric-pass-fail">0</div>
             </div>
             <div class="glass-card p-4 text-center" style="border-left: 4px solid #38bdf8;">
@@ -2036,19 +2055,19 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
         <!-- Confirmation Modal for Recalibration -->
         <div class="modal-backdrop hidden" id="recal-confirm-modal" role="dialog" aria-modal="true">
           <div class="modal-box" style="max-width: 480px; text-align: center;">
-            <div style="font-size: 2.8rem; margin-bottom: 1rem;">ÃƒÂ¢Ã…Â¡Ã‚Â¡</div>
+            <div style="font-size: 2.8rem; margin-bottom: 1rem;">&#9889;</div>
             <h3 class="mb-2">Confirm Exam Recalibration?</h3>
             <p class="text-muted text-sm mb-4" id="recal-modal-desc">
               This will safely update historical submitted scores, percentages, grades, and student progression using the authoritative grading engine.
             </p>
             <div class="p-4 rounded text-left text-xs mb-6" style="background: rgba(255,255,255,0.04); border: 1px solid var(--clr-border);">
-              <div class="mb-1">ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ <b>Affected Attempts:</b> <span id="modal-affected-count" class="fw-700 text-primary">0</span></div>
-              <div class="mb-1">ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ <b>Status Transitions:</b> <span id="modal-status-changes" class="fw-700">0</span></div>
-              <div>ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ <b>Audit Trail:</b> An audit log entry will be permanently recorded.</div>
+              <div class="mb-1">&bull; <b>Affected Attempts:</b> <span id="modal-affected-count" class="fw-700 text-primary">0</span></div>
+              <div class="mb-1">&bull; <b>Status Transitions:</b> <span id="modal-status-changes" class="fw-700">0</span></div>
+              <div>&bull; <b>Audit Trail:</b> An audit log entry will be permanently recorded.</div>
             </div>
             <div class="d-flex gap-3 justify-between">
               <button class="btn btn-secondary" id="btn-recal-cancel" style="flex:1;">Cancel</button>
-              <button class="btn btn-primary" id="btn-recal-confirm-run" style="flex:1; background: linear-gradient(135deg,#10b981,#059669); border:none;">ÃƒÂ¢Ã…â€œâ€œ Yes, Apply Changes</button>
+              <button class="btn btn-primary" id="btn-recal-confirm-run" style="flex:1; background: linear-gradient(135deg,#10b981,#059669); border:none;">&#9989; Yes, Apply Changes</button>
             </div>
           </div>
         </div>
@@ -2100,9 +2119,9 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
 
           let statusBadge = '<span class="badge badge-neutral">No Change</span>';
           if (isStatusPass) {
-            statusBadge = '<span class="badge badge-success fw-700">FAIL âž” PASS âœ¨</span>';
+            statusBadge = '<span class="badge badge-success fw-700">FAIL &rarr; PASS &#10024;</span>';
           } else if (isStatusFail) {
-            statusBadge = '<span class="badge badge-danger fw-700">PASS âž” FAIL ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â</span>';
+            statusBadge = '<span class="badge badge-danger fw-700">PASS &rarr; FAIL &#9888;&#65039;</span>';
           } else if (item.isAffected) {
             statusBadge = isScoreUp ? '<span class="badge badge-info">+ Score Up</span>' : '<span class="badge badge-warning">- Score Down</span>';
           }
@@ -2132,7 +2151,7 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
         const examId = examSelect.value;
         if (!examId) return;
 
-        showLoading('Calculating recalibration preview across all attemptsâ€¦');
+        showLoading('Calculating recalibration preview across all attemptsÃ¢â‚¬Â¦');
         try {
           currentPreviewData = await previewRecalibrateExam(examId);
           hideLoading();
@@ -2178,7 +2197,7 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
         const examId = examSelect.value;
         if (!examId) return;
 
-        showLoading('Applying recalibration to historical student resultsâ€¦');
+        showLoading('Applying recalibration to historical student resultsÃ¢â‚¬Â¦');
         try {
           const res = await applyRecalibrateExam(examId);
           hideLoading();
@@ -2193,7 +2212,7 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
       });
     }
 
-    // â”€â”€ Class Instances UI â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Class Instances UI Ã¢â€â‚¬Ã¢â€â‚¬
     export async function renderClassInstances(area) {
       const [rawData, batches, classes] = await Promise.all([
         adminFetchAll('class_instances', '*, batches(name, programs(name, institutions(name))), classes(name)'),
@@ -2237,7 +2256,7 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
                 window._ciRecords = {};
                 return data.map(row => {
                   window._ciRecords[row.id] = row;
-                  let scheduleText = 'â€”';
+                  let scheduleText = 'Ã¢â‚¬â€';
                   if (row.recurring_schedule) {
                     try {
                       const parsed = typeof row.recurring_schedule === 'string' ? JSON.parse(row.recurring_schedule) : row.recurring_schedule;
@@ -2248,13 +2267,13 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
                   return `
                 <tr>
                   <td>
-                    <div class="fw-600">${escapeHtml(row.batches?.programs?.name || 'â€”')}</div>
-                    <div class="text-xs text-muted">${escapeHtml(row.batches?.programs?.institutions?.name || 'â€”')}</div>
+                    <div class="fw-600">${escapeHtml(row.batches?.programs?.name || 'Ã¢â‚¬â€')}</div>
+                    <div class="text-xs text-muted">${escapeHtml(row.batches?.programs?.institutions?.name || 'Ã¢â‚¬â€')}</div>
                   </td>
-                  <td>${escapeHtml(row.batches?.name || 'â€”')}</td>
-                  <td>${escapeHtml(row.classes?.name || 'â€”')}</td>
-                  <td>${row.start_date || 'â€”'}</td>
-                  <td>${row.estimated_finish || 'â€”'}</td>
+                  <td>${escapeHtml(row.batches?.name || 'Ã¢â‚¬â€')}</td>
+                  <td>${escapeHtml(row.classes?.name || 'Ã¢â‚¬â€')}</td>
+                  <td>${row.start_date || 'Ã¢â‚¬â€'}</td>
+                  <td>${row.estimated_finish || 'Ã¢â‚¬â€'}</td>
                   <td class="text-xs text-muted" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(scheduleText)}</td>
                   <td class="text-center">
                     <span class="badge ${row.status === 'active' ? 'badge-primary' : (row.status === 'finished' ? 'badge-success' : 'badge-neutral')}">${row.status}</span>
@@ -2272,6 +2291,6 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
       `;
     }
 
-    // ÃƒÂ¢â€Ã¢â€šÂ¬ÃƒÂ¢â€Ã¢â€šÂ¬ Student Import Engine ÃƒÂ¢â€Ã¢â€šÂ¬ÃƒÂ¢â€Ã¢â€šÂ¬
+    // ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ Student Import Engine ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
 
 

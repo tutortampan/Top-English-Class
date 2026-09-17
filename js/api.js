@@ -3476,3 +3476,43 @@ export async function fetchAssessments(filters = {}) {
   }
   return [];
 }
+
+/**
+ * TopsCore AI Evaluation Engine (TAEE) API Hook
+ */
+export async function invokeAIEvaluation(payload) {
+  const sb = await getSupabase();
+  try {
+    const { data, error } = await sb.functions.invoke('evaluate-assessment', {
+      body: payload
+    });
+    if (!error && data) return data;
+    throw error;
+  } catch (err) {
+    console.warn('Edge function invoke failed, routing to local client fallback:', err.message);
+    const { evaluateSubmission } = await import('./ai-evaluation-engine.js');
+    return await evaluateSubmission(payload);
+  }
+}
+
+export async function fetchAssessmentResultsFromDB(studentId, assessmentId = null) {
+  const sb = await getSupabase();
+  try {
+    let query = sb
+      .from('assessment_results')
+      .select('*')
+      .eq('student_id', studentId)
+      .order('created_at', { ascending: false });
+
+    if (assessmentId) {
+      query = query.eq('assessment_id', assessmentId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.warn('assessment_results fetch fallback:', err.message);
+    return [];
+  }
+}

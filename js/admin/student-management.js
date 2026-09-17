@@ -181,40 +181,11 @@ export async function renderStudents(area) {
       }
     },
     onRowClick: (row) => {
-      const body = `
-        <div style="display:flex; flex-direction:column; gap:1rem;">
-          <div style="display:flex; gap:1rem; align-items:center;">
-            ${row.photo_url ? `<img src="${row.photo_url}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;">` : `<div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;">${row.displayName.charAt(0)}</div>`}
-            <div>
-              <h4 style="margin:0; font-size:1.2rem;">${row.displayName}</h4>
-              <div class="text-muted text-sm">PIN: <strong style="color:var(--fm-text-primary);">${row.pinDisplay}</strong></div>
-            </div>
-          </div>
-          <hr style="border-color:var(--fm-border-subtle); margin:0;">
-          <div>
-            <div class="text-sm text-muted mb-1">Organization</div>
-            <div class="fw-600">${row.instName}</div>
-          </div>
-          <div>
-            <div class="text-sm text-muted mb-1">Program & Batch</div>
-            <div class="fw-600">${row.progName} / ${row.batchName}</div>
-          </div>
-          <div>
-            <div class="text-sm text-muted mb-1">Performance</div>
-            <div class="fw-600">Score: ${row.overallScoreStr} &bull; Grade: ${row.globalGrade}</div>
-          </div>
-          <div>
-            <div class="text-sm text-muted mb-1">Activity</div>
-            <div class="fw-600">Completed Exams: ${row.completedExams}</div>
-            <div class="text-xs text-muted mt-1">Last active: ${row.latestActivity}</div>
-          </div>
-        </div>
-      `;
-      const footer = `
-        <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
-        <button class="btn btn-primary" onclick="if(window.openStudentProfile) window.openStudentProfile('${row.id}'); closeRecordDrawer();">View Full Profile</button>
-      `;
-      if (window.openRecordDrawer) window.openRecordDrawer('Student Details', body, footer);
+      if (typeof window.openStudentFullEdit === 'function') {
+        window.openStudentFullEdit(row, () => renderStudents(area));
+      } else if (typeof window.openStudentProfile === 'function') {
+        window.openStudentProfile(row.id);
+      }
     },
     columns: [
       {

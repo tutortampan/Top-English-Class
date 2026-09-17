@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TOP OFFICE — TOPS CORE</title>
   <meta name="description" content="Top Office management console for TOPS CORE — manage institutions, programs, students, and exams." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css?v=4.1.0" />
   <link rel="stylesheet" href="css/admin.css?v=4.1.0" />
   <link rel="stylesheet" href="css/components/avatars.css?v=4.1.0" />
@@ -51,46 +54,51 @@
         <div class="logo-sub">TOP OFFICE</div>
       </div>
 
-      <!-- ABCD Architecture Primary Sidebar (ADMIN, BOARD, CHALLENGES, DESK) -->
+      <!-- ABCD Architecture Primary Sidebar (ADMIN, BOARD, CLASS, DESK) -->
       <nav class="admin-nav" aria-label="Navigation">
-        <!-- DOMAIN A: Admin (Professional Workspace) -->
+        <!-- DOMAIN A: Admin (Executive Workspace) -->
         <div class="nav-domain-group" data-domain="admin">
           <div class="nav-domain-header"><span class="domain-icon">💼</span>A — Admin</div>
-          <div class="admin-nav-item active" data-sub="profile"><span class="nav-icon">👤</span>My Profile</div>
+          <div class="admin-nav-item active" data-sub="dashboard"><span class="nav-icon">📊</span>Executive Dashboard</div>
+          <div class="admin-nav-item" data-sub="profile"><span class="nav-icon">👤</span>My Profile</div>
           <div class="admin-nav-item" data-sub="schedule"><span class="nav-icon">🗓️</span>Personal Schedule</div>
           <div class="admin-nav-item" data-sub="work_records"><span class="nav-icon">📂</span>Work Records</div>
           <div class="admin-nav-item" data-sub="cv_generator"><span class="nav-icon">📄</span>CV Generator</div>
         </div>
 
-        <!-- DOMAIN B: Board (Organizational Structure & Roster) -->
+        <!-- DOMAIN B: Board (Registry & Roster) -->
         <div class="nav-domain-group" data-domain="board">
           <div class="nav-domain-header"><span class="domain-icon">📐</span>B — Board</div>
+          <div class="admin-nav-item" data-sub="board_overview"><span class="nav-icon">📋</span>Board Overview</div>
           <div class="admin-nav-item" data-sub="institutions"><span class="nav-icon">🏢</span>Institutions</div>
           <div class="admin-nav-item" data-sub="programs"><span class="nav-icon">🏫</span>Programs</div>
           <div class="admin-nav-item" data-sub="batches"><span class="nav-icon">👥</span>Batches</div>
           <div class="admin-nav-item" data-sub="students"><span class="nav-icon">👨‍🎓</span>Students Roster</div>
+          <div class="admin-nav-item" data-sub="import-students"><span class="nav-icon">📥</span>Import Students</div>
         </div>
 
-        <!-- DOMAIN C: CHALLENGES (Curriculum, Assessments & Execution) -->
-        <div class="nav-domain-group" data-domain="challenges">
-          <div class="nav-domain-header"><span class="domain-icon">⚡</span>C — CHALLENGES</div>
-          <div class="admin-nav-item" data-sub="classes"><span class="nav-icon">📚</span>Classes</div>
+        <!-- DOMAIN C: Class (Curriculum & AI Assessment Engine) -->
+        <div class="nav-domain-group" data-domain="class">
+          <div class="nav-domain-header"><span class="domain-icon">⚡</span>C — Class</div>
+          <div class="admin-nav-item" data-sub="classes"><span class="nav-icon">📚</span>Classes (Level 1)</div>
+          <div class="admin-nav-item" data-sub="topics"><span class="nav-icon">🏷️</span>Topics (Level 2)</div>
+          <div class="admin-nav-item" data-sub="assessments"><span class="nav-icon">🤖</span>AI Assessments (Level 3)</div>
+          <div class="admin-nav-item" data-sub="import_ai_assessments"><span class="nav-icon">📥</span>Import AI Assessments</div>
           <div class="admin-nav-item" data-sub="class_instances"><span class="nav-icon">📅</span>Class Instances</div>
-          <div class="admin-nav-item" data-sub="topics"><span class="nav-icon">🏷️</span>Question Groups &amp; Topics</div>
           <div class="admin-nav-item" data-sub="questions"><span class="nav-icon">❓</span>Central Question Bank</div>
-          <div class="admin-nav-item" data-sub="exams"><span class="nav-icon">📂</span>All Challenges</div>
-          <div class="admin-nav-item" data-sub="results"><span class="nav-icon">📊</span>Challenge Results</div>
+          <div class="admin-nav-item" data-sub="exams"><span class="nav-icon">📂</span>All Assessments</div>
+          <div class="admin-nav-item" data-sub="results"><span class="nav-icon">📊</span>Assessment Results</div>
           <div class="admin-nav-item" data-sub="question_types"><span class="nav-icon">🔤</span>Validation Dictionary</div>
           <div class="admin-nav-item" data-sub="recalibrator"><span class="nav-icon">⚡</span>Recalibration Engine</div>
         </div>
 
-        <!-- DOMAIN D: DESK (System Administration, Security & Health) -->
+        <!-- DOMAIN D: DATA (System Administration, Security & Health) -->
         <div class="nav-domain-group" data-domain="desk">
-          <div class="nav-domain-header"><span class="domain-icon">🖥️</span>D — DESK</div>
+          <div class="nav-domain-header"><span class="domain-icon">🛡️</span>D &mdash; DATA</div>
+          <div class="admin-nav-item" data-sub="recycle"><span class="nav-icon">♻️</span>Recycle Bin</div>
           <div class="admin-nav-item" data-sub="audit"><span class="nav-icon">📋</span>Activity &amp; Audit Logs</div>
-          <div class="admin-nav-item" data-sub="health"><span class="nav-icon">🏥</span>Data Health</div>
-          <div class="admin-nav-item" data-sub="recycle"><span class="nav-icon">🗑️</span>Recycle Bin</div>
-          <div class="admin-nav-item" data-sub="settings"><span class="nav-icon">⚙️</span>Site Settings</div>
+          <div class="admin-nav-item" data-sub="health"><span class="nav-icon">🏥</span>Data Health &amp; Connectivity</div>
+          <div class="admin-nav-item" data-sub="settings"><span class="nav-icon">⚙️</span>Site Settings &amp; Cost Guard</div>
         </div>
       </nav>
 
@@ -139,15 +147,15 @@
             <div id="kpi-admin" class="kpi-value">-</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">📐 Blueprint Students</div>
+            <div class="kpi-label">📐 Board Students</div>
             <div id="kpi-board" class="kpi-value">-</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">⚡ Challenges Live</div>
-            <div id="kpi-challenges" class="kpi-value">-</div>
+            <div class="kpi-label">⚡ Assessments Live</div>
+            <div id="kpi-class" class="kpi-value">-</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">🖥️ Desk Attempts</div>
+            <div class="kpi-label">🛡️ Data Attempts</div>
             <div id="kpi-desk" class="kpi-value">-</div>
           </div>
         </div>
@@ -161,7 +169,7 @@
         <!-- Admin DOM Panels -->
         <div id="panel-admin-schedule" class="admin-panel hidden">
           <h2>🗓️ Personal Schedule (Agenda View)</h2>
-          <p class="text-muted">Recurring meetings synced from Challenge Class Instances</p>
+          <p class="text-muted">Recurring meetings synced from Class Instances</p>
         </div>
 
         <div id="panel-admin-cv_generator" class="admin-panel hidden">
@@ -205,9 +213,9 @@
       <span class="mobile-tab-icon">📐</span>
       <span class="mobile-tab-label">Board</span>
     </button>
-    <button class="mobile-tab" data-panel="challenges" aria-label="Challenges">
+    <button class="mobile-tab" data-panel="class" aria-label="Class">
       <span class="mobile-tab-icon">⚡</span>
-      <span class="mobile-tab-label">Challenges</span>
+      <span class="mobile-tab-label">Class</span>
     </button>
     <button class="mobile-tab" data-panel="desk" aria-label="Desk">
       <span class="mobile-tab-icon">🖥️</span>
@@ -389,7 +397,11 @@
     </div>
   </div>
 
-  <script type="module" src="js/admin/app.js?v=4.1.0"></script>
+  <script type="module">
+    import { DataGrid } from './js/admin/datagrid.js?v=4.3.0';
+    window.DataGrid = DataGrid;
+  </script>
+  <script type="module" src="js/admin/app.js?v=4.3.0"></script>
 </body>
 </html>
 

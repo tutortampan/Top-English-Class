@@ -1,4 +1,4 @@
-const CACHE_NAME = 'abcd-clean-v4.1.0';
+const CACHE_NAME = 'abcd-core-v4.3.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

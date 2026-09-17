@@ -44,12 +44,18 @@ export async function processAndCompressAvatar(file, type = "student") {
         ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
 
         // Attempt WebP, fallback to JPEG
-        const format = "image/webp";
-        const dataUrl = canvas.toDataURL(format, QUALITY);
-        
-        // Ensure size check (approximate base64 size)
-        const sizeKB = (dataUrl.length * (3/4)) / 1024;
-        
+        let format = "image/webp";
+        let currentQuality = QUALITY;
+        let dataUrl = canvas.toDataURL(format, currentQuality);
+        let sizeKB = (dataUrl.length * 0.75) / 1024;
+
+        // Adaptive compression if size exceeds limit
+        while (sizeKB > MAX_SIZE_KB && currentQuality > 0.3) {
+          currentQuality -= 0.1;
+          dataUrl = canvas.toDataURL(format, currentQuality);
+          sizeKB = (dataUrl.length * 0.75) / 1024;
+        }
+
         resolve(dataUrl);
       };
       img.onerror = () => reject(new Error("Invalid image file."));
@@ -59,4 +65,16 @@ export async function processAndCompressAvatar(file, type = "student") {
     reader.readAsDataURL(file);
   });
 }
+
+/**
+ * Cache-busting URL helper with graceful fallback to placeholder-3x4.svg
+ */
+export function getBustedAvatarUrl(url) {
+  if (!url || typeof url !== 'string' || !url.trim()) return 'assets/placeholder-3x4.svg';
+  const clean = url.trim();
+  if (clean.startsWith('data:')) return clean;
+  const separator = clean.includes('?') ? '&' : '?';
+  return `${clean}${separator}t=${Date.now()}`;
+}
+
 

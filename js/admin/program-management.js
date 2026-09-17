@@ -1,5 +1,7 @@
 import { adminFetchAll, adminSoftDelete } from '../api.js';
 import { showToast } from '../app.js';
+import { DataGrid } from './datagrid.js?v=4.1.0';
+if (typeof window !== 'undefined' && !window.DataGrid) window.DataGrid = DataGrid;
 
 let programsGrid, batchesGrid;
 
@@ -53,7 +55,7 @@ export async function renderClasses(area) {
     _raw: r
   }));
 
-  programsGrid = new window.DataGrid({
+  programsGrid = new (DataGrid || window.DataGrid)({
     container: 'programs-grid-container',
     data: gridData,
     pageSize: 50,
@@ -168,7 +170,7 @@ export async function renderBatches(area) {
     };
   });
 
-  batchesGrid = new window.DataGrid({
+  batchesGrid = new (DataGrid || window.DataGrid)({
     container: 'batches-grid-container',
     data: gridData,
     pageSize: 50,

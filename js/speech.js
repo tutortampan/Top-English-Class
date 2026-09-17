@@ -157,11 +157,30 @@ export function createSpeechSession({
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
 
+  const maxDurationSecs = parseInt(
+    localStorage.getItem('ai_max_audio_duration_seconds') ||
+    window.TOPSCORE_CONFIG?.maxAudioDuration ||
+    '180',
+    10
+  );
+  let _maxDurationTimer = null;
   let _listening = false;
 
   recognition.onstart = () => {
     _listening = true;
     onStart?.();
+
+    // Cost Guard: Hard cap audio recording duration
+    if (maxDurationSecs > 0) {
+      if (_maxDurationTimer) clearTimeout(_maxDurationTimer);
+      _maxDurationTimer = setTimeout(() => {
+        if (_listening) {
+          console.warn(`[Cost Guard] Maximum recording ceiling reached (${maxDurationSecs}s). Stopping recording.`);
+          try { recognition.stop(); } catch(_) {}
+          onError?.(`Cost Guard: Maximum recording limit of ${maxDurationSecs}s reached.`);
+        }
+      }, maxDurationSecs * 1000);
+    }
   };
 
   recognition.onresult = (event) => {
@@ -181,6 +200,10 @@ export function createSpeechSession({
 
   recognition.onerror = (event) => {
     _listening = false;
+    if (_maxDurationTimer) {
+      clearTimeout(_maxDurationTimer);
+      _maxDurationTimer = null;
+    }
     const messages = {
       'no-speech':         'No speech was detected. Please try again.',
       'audio-capture':     'Microphone not found. Please check your device settings.',
@@ -194,6 +217,10 @@ export function createSpeechSession({
 
   recognition.onend = () => {
     _listening = false;
+    if (_maxDurationTimer) {
+      clearTimeout(_maxDurationTimer);
+      _maxDurationTimer = null;
+    }
     onEnd?.();
   };
 
@@ -208,6 +235,10 @@ export function createSpeechSession({
       }
     },
     stop() {
+      if (_maxDurationTimer) {
+        clearTimeout(_maxDurationTimer);
+        _maxDurationTimer = null;
+      }
       if (_listening) {
         try { recognition.stop(); } catch {}
       }

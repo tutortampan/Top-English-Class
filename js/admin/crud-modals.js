@@ -118,7 +118,7 @@ const formFields = {
     { id: 'exam_type', label: 'Exam Type', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Final'], required: true, defaultValue: 'Daily' },
     
     { id: 'exam_order', label: 'Order (1, 2, 3...)', type: 'select', options: ['1','2','3','4','5','6','7','8','9','10'], required: true, defaultValue: '1' },
-    { id: 'exam_title', label: 'Exam Title (Auto-Generated)', type: 'text', required: true, placeholder: 'Auto-generated as: [Program] [Class] [Subject] [Type] [Level] [Order]' },
+    { id: 'exam_title', label: 'Assessment Title (Auto-Generated)', type: 'text', required: true, placeholder: 'Auto-generated as: [Class] - [Topic] - [Module] - [Type]' },
     { id: 'prerequisite_exam_id', label: 'Prerequisite Exam (Optional)', type: 'select', source: 'exams', required: false },
     { id: 'minimum_required_score', label: 'Passing Score % (Default: 60%)', type: 'number', required: true, defaultValue: 60 },
     { id: 'prerequisite_min_score', label: 'Prerequisite Min % (Default: 60%)', type: 'number', required: false, defaultValue: 60 },
@@ -300,17 +300,16 @@ async function openCrudModal(section, record) {
       const triggerAutoTitle = () => {
         if (_titleManuallyEdited || !titleInput) return;
         if (_currentSection === 'exams') {
-          const pText = progSelect && progSelect.selectedIndex > 0 ? progSelect.options[progSelect.selectedIndex].textContent.trim() : '';
-          const cText = classSelect && classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].textContent.trim() : '';
-          const sText = subjectSelect && subjectSelect.selectedIndex > 0 ? subjectSelect.options[subjectSelect.selectedIndex].textContent.trim() : '';
-          const typeText = examTypeInput ? examTypeInput.value.trim() : '';
+          const cText = (classSelect && classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].textContent.trim() : '') ||
+                        (progSelect && progSelect.selectedIndex > 0 ? progSelect.options[progSelect.selectedIndex].textContent.trim() : '');
+          const tText = subjectSelect && subjectSelect.selectedIndex > 0 ? subjectSelect.options[subjectSelect.selectedIndex].textContent.trim() : '';
           const selectedLvlOpt = levelSelect && levelSelect.selectedIndex > 0 ? levelSelect.options[levelSelect.selectedIndex] : null;
-          const lvlText = selectedLvlOpt ? (selectedLvlOpt.getAttribute('data-level-letter') || selectedLvlOpt.textContent.trim()) : '';
-          const ordText = orderSelect ? orderSelect.value.trim() : '';
+          const mText = selectedLvlOpt ? (selectedLvlOpt.getAttribute('data-level-letter') || selectedLvlOpt.textContent.trim()) : '';
+          const typeText = examTypeInput ? examTypeInput.value.trim() : '';
 
-          const parts = [pText, cText, sText, typeText, lvlText, ordText].filter(Boolean);
+          const parts = [cText, tText, mText, typeText].filter(Boolean);
           if (parts.length > 0) {
-            titleInput.value = parts.join(' ');
+            titleInput.value = parts.join(' - ');
           }
         } else if (_currentSection === 'assessments') {
           const mSelect = document.getElementById('field-module_id');

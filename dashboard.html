@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — TOPS CORE</title>
   <meta name="description" content="Your TOPS CORE learning dashboard — track progress, view subjects, and start exams." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css?v=4.1.0" />
   <link rel="stylesheet" href="css/dashboard.css?v=4.1.0" />
   <link rel="stylesheet" href="css/components/avatars.css?v=4.1.0" />
@@ -693,25 +696,38 @@
     </div>
   </div>
 
-  <!-- Education Setup Modal -->
-  <div id="education-setup-modal" class="modal-backdrop hidden" style="z-index: 100000; background: rgba(0,0,0,0.85); position: fixed; inset: 0;">
-    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-      <h2 style="margin-top: 0; color: #1e293b; font-size: 1.5rem; font-weight: 700;">Education Background</h2>
-      <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1.5rem;">
-        Please select your highest level of education. This is required for your student profile.
-      </p>
-      <div style="margin-bottom: 1.5rem; text-align: left;">
-        <label style="display: block; font-size: 0.85rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">Education Level</label>
-        <select id="onboard-education-level" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; background-color: white;">
-          <option value="" disabled selected>Select Education Level...</option>
-          <option value="Elementary School">Elementary School</option>
-          <option value="Middle School">Middle School</option>
-          <option value="High School">High School</option>
-          <option value="Undergraduate">Undergraduate (Bachelor's)</option>
-          <option value="Postgraduate">Postgraduate (Master's / PhD)</option>
-        </select>
+  <!-- Education Setup Modal (Hard Gate: Strictly max 2 latest entries: Institution & Year only) -->
+  <div id="education-setup-modal" class="modal-backdrop hidden" style="z-index: 100000; background: rgba(0,0,0,0.85); position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;">
+    <div style="background: #1e293b; color: #f8fafc; padding: 2rem; border-radius: 16px; max-width: 480px; width: 92%; box-shadow: 0 20px 40px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1);">
+      <div style="text-align: center; margin-bottom: 1.25rem;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎓</div>
+        <h2 style="margin: 0; color: #ffffff; font-size: 1.35rem; font-weight: 800;">Academic Background (Hard Gate)</h2>
+        <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.35rem;">
+          Mandatory before dashboard access. Provide up to 2 latest academic institutions and years.
+        </p>
       </div>
-      <button id="btn-confirm-education-setup" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 8px;">âœ“ Save &amp; Continue</button>
+      
+      <!-- Entry 1 (Mandatory) -->
+      <div style="background: rgba(0,0,0,0.25); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 1rem;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; margin-bottom: 0.5rem;">Entry 1: Latest Institution *</div>
+        <div style="display: flex; gap: 0.75rem;">
+          <input type="text" id="onboard-edu-inst-1" class="form-control" placeholder="Institution Name (e.g. Oxford)" style="flex: 2; padding: 0.65rem 0.8rem; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px; font-size: 0.9rem;" required />
+          <input type="number" id="onboard-edu-year-1" class="form-control" placeholder="Year (2025)" min="1970" max="2035" style="flex: 1; padding: 0.65rem 0.8rem; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px; font-size: 0.9rem;" required />
+        </div>
+      </div>
+
+      <!-- Entry 2 (Optional) -->
+      <div style="background: rgba(0,0,0,0.25); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.5rem;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.5rem;">Entry 2: Prior Institution (Optional)</div>
+        <div style="display: flex; gap: 0.75rem;">
+          <input type="text" id="onboard-edu-inst-2" class="form-control" placeholder="Institution Name (Optional)" style="flex: 2; padding: 0.65rem 0.8rem; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px; font-size: 0.9rem;" />
+          <input type="number" id="onboard-edu-year-2" class="form-control" placeholder="Year" min="1970" max="2035" style="flex: 1; padding: 0.65rem 0.8rem; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px; font-size: 0.9rem;" />
+        </div>
+      </div>
+
+      <button id="btn-confirm-education-setup" class="btn btn-primary btn-block" style="padding: 0.85rem; font-size: 0.95rem; font-weight: 700; border-radius: 8px;">
+        ✓ Save Academic Background &amp; Continue
+      </button>
     </div>
   </div>
 
@@ -906,10 +922,7 @@
           }
         };
 
-        document.getElementById('btn-skip-gender')?.addEventListener('click', () => {
-          doResolve();
-        });
-
+        // Hard Gate: No skip allowed. Gender/Honorific is mandatory.
         optMale.onclick = () => {
           selectedGender = 'male';
           optMale.style.borderColor = 'var(--clr-primary)';
@@ -919,7 +932,7 @@
           optFemale.style.background = 'rgba(255, 255, 255, 0.03)';
           optFemale.style.boxShadow = 'none';
           confirmBtn.disabled = false;
-          confirmBtn.textContent = 'Confirm as Male (Mr.) ←’';
+          confirmBtn.textContent = 'Confirm as Male (Mr.) ✓';
         };
 
         optFemale.onclick = () => {
@@ -931,7 +944,7 @@
           optMale.style.background = 'rgba(255, 255, 255, 0.03)';
           optMale.style.boxShadow = 'none';
           confirmBtn.disabled = false;
-          confirmBtn.textContent = 'Confirm as Female (Miss) ←’';
+          confirmBtn.textContent = 'Confirm as Female (Miss) ✓';
         };
 
         confirmBtn.onclick = async () => {
@@ -1211,15 +1224,12 @@
           }
         };
 
-        document.getElementById('btn-skip-birthday-setup')?.addEventListener('click', () => {
-          doResolve();
-        });
-
+        // Hard Gate: Birthday is mandatory before dashboard access
         document.getElementById('btn-confirm-birthday-setup')?.addEventListener('click', async () => {
           const bdInput = document.getElementById('onboard-birth-date');
           const bd = bdInput?.value;
           if (!bd) {
-            showToast('Please select your date of birth, or click Skip.', 'warning');
+            showToast('Date of Birth is mandatory. Please enter your birth date to continue.', 'warning');
             return;
           }
 
@@ -1230,11 +1240,12 @@
           try {
             await updateStudentBirthday(session.student_id, bd);
             showToast('Birthday registered successfully!', 'success');
+            doResolve();
           } catch (err) {
             console.warn('Error saving birthday:', err);
-            showToast('Could not save birthday, continuing: ' + err.message, 'warning');
-          } finally {
-            doResolve();
+            showToast('Could not save birthday: ' + err.message, 'error');
+            btn.disabled = false;
+            btn.textContent = 'Save & Continue';
           }
         });
       });
@@ -1246,8 +1257,12 @@
         const sb = await (await import('./js/supabase.js')).getSupabase();
         const { data: st } = await sb.from('students').select('education').eq('id', session.student_id).single();
         if (st && st.education) {
-          hasEducation = true;
-          if (!session.education) {
+          if (Array.isArray(st.education) && st.education.length > 0) {
+            hasEducation = true;
+          } else if (typeof st.education === 'string' && st.education.trim().length > 0) {
+            hasEducation = true;
+          }
+          if (hasEducation && !session.education) {
              session.education = st.education;
              const { setStudentSession } = await import('./js/session.js?v=4.1.0');
              setStudentSession(session);
@@ -1273,29 +1288,41 @@
           }
         };
 
+        // Hard Gate: Strictly max 2 latest entries: Institution & Year only
         document.getElementById('btn-confirm-education-setup')?.addEventListener('click', async () => {
-          const edInput = document.getElementById('onboard-education-level');
-          const ed = edInput?.value;
-          if (!ed) {
-            showToast('Please select your education level.', 'warning');
+          const inst1 = document.getElementById('onboard-edu-inst-1')?.value.trim();
+          const year1 = document.getElementById('onboard-edu-year-1')?.value.trim();
+          if (!inst1 || !year1) {
+            showToast('Please provide your latest academic institution and year.', 'warning');
             return;
+          }
+
+          const eduList = [
+            { institution: inst1, year: parseInt(year1, 10) || year1 }
+          ];
+
+          const inst2 = document.getElementById('onboard-edu-inst-2')?.value.trim();
+          const year2 = document.getElementById('onboard-edu-year-2')?.value.trim();
+          if (inst2 && year2) {
+            eduList.push({ institution: inst2, year: parseInt(year2, 10) || year2 });
           }
 
           const btn = document.getElementById('btn-confirm-education-setup');
           btn.disabled = true;
-          btn.textContent = 'Saving...';
+          btn.textContent = 'Verifying & Saving...';
           
           try {
-            await updateStudentEducation(session.student_id, ed);
-            session.education = ed;
+            await updateStudentEducation(session.student_id, eduList);
+            session.education = eduList;
             const { setStudentSession } = await import('./js/session.js?v=4.1.0');
             setStudentSession(session);
-            showToast('Education level registered successfully!', 'success');
+            showToast('Academic background verified!', 'success');
+            doResolve();
           } catch (err) {
             console.warn('Error saving education level:', err);
-            showToast('Could not save education, continuing: ' + err.message, 'warning');
-          } finally {
-            doResolve();
+            showToast('Could not save education: ' + err.message, 'error');
+            btn.disabled = false;
+            btn.textContent = '✓ Save Academic Background & Continue';
           }
         });
       });
@@ -1329,13 +1356,13 @@
         hideLoading();
         renderSubjects(subjects, progress);
 
-        // V1: assessments are directly assigned to program or batch, so no need to cross-check with challenge_instances
+        // V1: assessments are directly assigned to program or batch, so no need to cross-check with instances
         const v1Assessments = assessmentsRaw || [];
         if (v1Assessments.length > 0) {
           await renderAssignedAssessments(v1Assessments, attempts);
         }
 
-        await computeOverallStats(attempts);
+        await computeOverallStats(attempts, v1Assessments);
         setupProfileModal(attempts);
       } catch(e) {
         hideLoading();
@@ -1579,10 +1606,36 @@
         const grade = bestPct !== null ? getGrade(bestPct) : null;
         const passed = bestPct !== null && bestPct >= (asm.pass_threshold || 60);
 
-        // Check prerequisite
+        // Check dynamic prerequisites (0 to N parents + min score thresholds + aggregate average)
         let prereqMet = true;
         let prereqTitle = '';
-        if (asm.prerequisite_assessment_id || asm.prerequisite_exam_id) {
+
+        if (asm.prerequisites && typeof asm.prerequisites === 'object') {
+          const parents = Array.isArray(asm.prerequisites.parents) ? asm.prerequisites.parents : [];
+          let totalScore = 0;
+          let count = 0;
+          for (const parent of parents) {
+            const pid = parent.assessment_id;
+            const minScore = parent.min_score || 60;
+            const parentBest = bestByAssessment[pid];
+            const parentPct = parentBest ? parseFloat(parentBest.percentage || 0) : null;
+            if (parentPct === null || parentPct < minScore) {
+              prereqMet = false;
+              const pObj = assessments.find(a => a.id === pid);
+              prereqTitle = (pObj ? (pObj.title || pObj.name) : 'Prerequisite') + ` (Required: ≥${minScore}%)`;
+              break;
+            }
+            totalScore += parentPct;
+            count++;
+          }
+          if (prereqMet && asm.prerequisites.aggregate_avg_threshold && count > 0) {
+            const avg = totalScore / count;
+            if (avg < asm.prerequisites.aggregate_avg_threshold) {
+              prereqMet = false;
+              prereqTitle = `Aggregate Avg Required: ${asm.prerequisites.aggregate_avg_threshold}% (Current: ${Math.round(avg)}%)`;
+            }
+          }
+        } else if (asm.prerequisite_assessment_id || asm.prerequisite_exam_id) {
           const pid = asm.prerequisite_assessment_id || asm.prerequisite_exam_id;
           const prereqBest = bestByAssessment[pid];
           const prereqPct = prereqBest ? parseFloat(prereqBest.percentage || 0) : null;
@@ -1693,9 +1746,11 @@
       });
     }
 
-    // â”€â”€ Overall Stats Calculation (AGENTS.md Â§2.8 & Â§2.10) â”€â”€
-    async function computeOverallStats(attempts) {
-      // V1: prefer is_best_score flag; fallback to highest percentage per exam/assessment/instance
+    // ── Overall Stats Calculation (AGENTS.md §2.8 & §2.10) ──
+    async function computeOverallStats(attempts, assessments = []) {
+      // Rule 2.8: Overall score is average of all takeable exams for student.
+      // Rule 2.7: Global average strictly counts unopened/unattempted available modules as 0.
+      // Best score per assessment is preserved across attempts.
       const bestMap = {};
       attempts.forEach(att => {
         const uniqueKey = att.challenge_instance_id || att.assessment_id || att.exam_id;
@@ -1710,24 +1765,43 @@
         }
         if (att.is_best_score) bestMap[uniqueKey + '_locked'] = true;
       });
-      const uniqueScores = Object.entries(bestMap)
-        .filter(([k]) => !k.endsWith('_locked'))
-        .map(([, v]) => v);
 
+      // Filter assessments that are currently within their availability window
+      const now = new Date();
+      const availableAssms = (assessments || []).filter(a => {
+        const start = a.availability_start ? new Date(a.availability_start) : null;
+        const end = a.availability_end ? new Date(a.availability_end) : null;
+        return (!start || now >= start) && (!end || now <= end);
+      });
+
+      let scores = [];
+      if (availableAssms.length > 0) {
+        // Global average strictly counts unopened/unattempted available modules as 0
+        scores = availableAssms.map(a => {
+          const score = bestMap[a.id];
+          return score != null ? score : 0;
+        });
+      } else {
+        scores = Object.entries(bestMap)
+          .filter(([k]) => !k.endsWith('_locked'))
+          .map(([, v]) => v);
+      }
+
+      const completedCount = Object.keys(bestMap).filter(k => !k.endsWith('_locked')).length;
       const examsCountEl = document.getElementById('stat-exams-done');
-      if (examsCountEl) examsCountEl.textContent = uniqueScores.length;
+      if (examsCountEl) examsCountEl.textContent = completedCount;
       const ovCountEl = document.getElementById('overview-exams-count');
-      if (ovCountEl) ovCountEl.textContent = uniqueScores.length;
+      if (ovCountEl) ovCountEl.textContent = completedCount;
 
-      if (!uniqueScores.length) {
+      if (!scores.length) {
         document.getElementById('stat-overall-score').textContent = '0%';
-        document.getElementById('stat-overall-grade-badge').textContent = '\u2014';
+        document.getElementById('stat-overall-grade-badge').textContent = '—';
         renderCompletedExamsBottom(attempts);
         return;
       }
 
-      const totalPct = uniqueScores.reduce((acc, curr) => acc + curr, 0);
-      const avgPct = Math.round(totalPct / uniqueScores.length);
+      const totalPct = scores.reduce((acc, curr) => acc + curr, 0);
+      const avgPct = Math.round(totalPct / scores.length);
       const overallGrade = getGrade(avgPct);
 
       const scoreEl = document.getElementById('stat-overall-score');
@@ -1917,8 +1991,8 @@
       const closeBtn = document.getElementById('close-profile-modal');
 
       document.getElementById('prof-student-name').textContent = session.student_name;
-      document.getElementById('prof-student-prog').textContent = `Admin (Institution): ${session.institution_name}`;
-      document.getElementById('prof-student-class').textContent = `Blueprint (Program): ${session.program_name}`;
+      document.getElementById('prof-student-prog').textContent = `Institution: ${session.institution_name}`;
+      document.getElementById('prof-student-class').textContent = `Program: ${session.program_name}`;
       const batchEl = document.getElementById('prof-student-batch');
       if (batchEl) {
         if (session.batch_name) {

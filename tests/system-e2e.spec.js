@@ -21,7 +21,7 @@ test('Admin Console ABCD Navigation Verification', async ({ page }) => {
 await page.goto('/admin.html');
 await expect(page.locator('[data-domain="admin"]')).toBeVisible();
 await expect(page.locator('[data-domain="board"]')).toBeVisible();
-await expect(page.locator('[data-domain="challenges"]')).toBeVisible();
+await expect(page.locator('[data-domain="class"]')).toBeVisible();
 await expect(page.locator('[data-domain="desk"]')).toBeVisible();
 });
 });
