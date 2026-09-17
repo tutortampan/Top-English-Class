@@ -486,10 +486,6 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
               <button class="btn btn-danger btn-sm" data-del-prog="${r.id}">Delete</button>
             </div>
           </td>
-        `;        <button class="btn btn-secondary btn-sm" data-edit-prog="${r.id}">Edit</button>
-              <button class="btn btn-danger btn-sm" data-del-prog="${r.id}">Delete</button>
-            </div>
-          </td>
         `;
         tbody.appendChild(tr);
       });
