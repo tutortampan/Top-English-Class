@@ -139,7 +139,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       try {
         // 1. Primary Check: Master credentials (admin / admin123) or custom saved password
         const savedCustomPass = localStorage.getItem('tec_admin_custom_password');
-        const isMaster = (user.toLowerCase() === 'admin' && (pass === 'admin123' || (savedCustomPass && pass === savedCustomPass)));
+        const isMaster = (user.toLowerCase() === 'admin' && (savedCustomPass ? pass === savedCustomPass : pass === 'admin123'));
 
         if (isMaster) {
           setAdminSession({ admin_id: 'admin-master', username: 'admin' });
@@ -171,13 +171,8 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
         showToast('Invalid admin credentials. Please try again.', 'error');
       } catch(e) {
         hideLoading();
-        if (user.toLowerCase() === 'admin' && pass === 'admin123') {
-          setAdminSession({ admin_id: 'admin-master', username: 'admin' });
-          showToast('Welcome, Administrator!', 'success');
-          showConsole();
-        } else {
-          showToast(e.message || 'Authentication failed. Please check your credentials.', 'error');
-        }
+        console.error('Login flow error:', e);
+        showToast(e.message || 'Authentication failed due to an internal error.', 'error');
       }
     });
 
