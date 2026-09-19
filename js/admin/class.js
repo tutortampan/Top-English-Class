@@ -1,4 +1,4 @@
-// TOPS CORE Ã¯Â¿Â½ Centralized Assessment System V1 Admin UI
+// TOPS CORE Centralized Assessment System V1 Admin UI
 import {
   fetchGlobalClasses,
   fetchWordTypes,
@@ -69,7 +69,7 @@ export async function renderTopics(area) {
 
       ${window._filterSubjectId ? `
         <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
-          <span>Ã°Å¸â€œÂ Filtered by Subject: <strong>${escapeHtml(window._filterSubjectName || 'Selected Subject')}</strong></span>
+          <span>&#128209; Filtered by Subject: <strong>${escapeHtml(window._filterSubjectName || 'Selected Subject')}</strong></span>
           <button class="btn btn-ghost btn-xs" id="clear-subj-filter-btn" style="text-decoration:underline;color:#93c5fd;">Show All Subjects</button>
         </div>
       ` : ''}
@@ -182,7 +182,7 @@ function renderTopicRows(topicsList) {
   return topicsList.map(t => `
     <tr>
       <td><strong style="color:var(--clr-text-1);">${escapeHtml(t.name)}</strong></td>
-      <td><code>${escapeHtml(t.code || 'Ã¯Â¿Â½')}</code></td>
+      <td><code>${escapeHtml(t.code || '-')}</code></td>
       <td><span class="badge badge-info">${escapeHtml(t.classes?.name || 'General')}</span></td>
       <td>
         <span class="badge ${t.status === 'active' ? 'badge-success' : 'badge-secondary'}">
@@ -192,9 +192,9 @@ function renderTopicRows(topicsList) {
       <td style="font-size:0.8rem;color:var(--clr-text-muted);">${new Date(t.created_at).toLocaleDateString()}</td>
       <td style="text-align:right;">
         <div class="d-flex gap-1 justify-end">
-          <button class="btn btn-outline btn-xs btn-nav-questions" data-id="${t.id}" data-name="${escapeHtml(t.name)}" title="View Questions in this Topic">Questions Ã¢â€ â€™</button>
-          <button class="btn btn-ghost btn-sm btn-edit-topic" data-id="${t.id}" title="Edit Topic">Ã¢Å“ÂÃ¯Â¸Â</button>
-          <button class="btn btn-ghost btn-sm text-danger btn-del-topic" data-id="${t.id}" title="Delete Topic">Ã°Å¸â€”â€˜Ã¯Â¸Â</button>
+          <button class="btn btn-outline btn-xs btn-nav-questions" data-id="${t.id}" data-name="${escapeHtml(t.name)}" title="View Questions in this Topic">Questions &rarr;</button>
+          <button class="btn btn-ghost btn-sm btn-edit-topic" data-id="${t.id}" title="Edit Topic">&#9999;&#65039;</button>
+          <button class="btn btn-ghost btn-sm text-danger btn-del-topic" data-id="${t.id}" title="Delete Topic">&#128465;&#65039;</button>
         </div>
       </td>
     </tr>
@@ -302,7 +302,7 @@ export async function renderWordTypes(area) {
       </div>
 
       <div class="card p-4 mb-4" style="background:rgba(255,255,255,0.02);border:1px solid var(--clr-border);">
-        <h4 style="font-size:0.95rem;margin-bottom:0.75rem;">Ã¢Å¾â€¢ Add Custom Word Type</h4>
+        <h4 style="font-size:0.95rem;margin-bottom:0.75rem;">+ Add Custom Word Type</h4>
         <div class="d-flex gap-2 flex-wrap" style="max-width:500px;">
           <input type="text" class="form-control" id="new-word-type-input" placeholder="e.g. Phrasal Verb, Slang, Collocation" />
           <button class="btn btn-primary btn-sm" id="btn-add-word-type">+ Add</button>
@@ -315,7 +315,7 @@ export async function renderWordTypes(area) {
               const exists = wordTypes.some(wt => wt.name.toLowerCase() === st.toLowerCase());
               return `
                 <button class="btn btn-sm ${exists ? 'btn-ghost' : 'btn-outline-primary'} btn-suggest-wt" data-name="${st}" ${exists ? 'disabled title="Already added"' : ''}>
-                  ${st} ${exists ? 'Ã¢Å“â€œ' : '+'}
+                  ${st} ${exists ? '&#10003;' : '+'}
                 </button>
               `;
             }).join('')}
@@ -430,13 +430,13 @@ export async function renderCentralQuestionBank(area) {
         </div>
         <div class="d-flex gap-2 flex-wrap">
           <button class="btn btn-primary btn-sm" id="btn-add-question">+ Add New Question</button>
-          <button class="btn btn-secondary btn-sm" onclick="window.loadSection('import-questions')">Ã°Å¸â€œÂ¥ Import Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="window.loadSection('import-questions')">&#128229; Import Excel</button>
         </div>
       </div>
 
       ${window._filterTopicId ? `
         <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
-          <span>Ã°Å¸â€œÂ Filtered by Topic: <strong>${escapeHtml(window._filterTopicName || 'Selected Topic')}</strong></span>
+          <span>&#128209; Filtered by Topic: <strong>${escapeHtml(window._filterTopicName || 'Selected Topic')}</strong></span>
           <button class="btn btn-ghost btn-xs" id="clear-topic-filter-btn" style="text-decoration:underline;color:#93c5fd;">Show All Topics</button>
         </div>
       ` : ''}
@@ -445,7 +445,7 @@ export async function renderCentralQuestionBank(area) {
       <div class="card p-3 mb-4" style="background:rgba(255,255,255,0.02);border:1px solid var(--clr-border);">
         <div class="d-flex gap-3 flex-wrap align-center">
           <div style="flex:1;min-width:200px;">
-            <input type="text" class="form-control" id="q-search-input" placeholder="Ã°Å¸â€Â Search question or answer..." />
+            <input type="text" class="form-control" id="q-search-input" placeholder="&#128269; Search question or answer..." />
           </div>
           <div style="min-width:160px;">
             <select class="form-control" id="q-topic-filter">
@@ -581,7 +581,7 @@ function renderQuestionRows(list) {
           </span>
         </td>
         <td>
-          ${q.question_type ? `<span class="badge badge-secondary" style="font-size:0.75rem;">${escapeHtml(q.question_type)}</span>` : '<span class="text-muted">Ã¯Â¿Â½</span>'}
+          ${q.question_type ? `<span class="badge badge-secondary" style="font-size:0.75rem;">${escapeHtml(q.question_type)}</span>` : '<span class="text-muted">-</span>'}
         </td>
         <td>
           <strong style="color:var(--clr-text-1);font-size:0.95rem;">${escapeHtml(q.question_text)}</strong>
@@ -597,8 +597,8 @@ function renderQuestionRows(list) {
           </span>
         </td>
         <td style="text-align:right;">
-          <button class="btn btn-ghost btn-sm btn-edit-q" data-id="${q.id}" title="Edit Question">Ã¢Å“ÂÃ¯Â¸Â</button>
-          <button class="btn btn-ghost btn-sm text-danger btn-del-q" data-id="${q.id}" title="Delete Question">Ã°Å¸â€”â€˜Ã¯Â¸Â</button>
+          <button class="btn btn-ghost btn-sm btn-edit-q" data-id="${q.id}" title="Edit Question">&#9999;&#65039;</button>
+          <button class="btn btn-ghost btn-sm text-danger btn-del-q" data-id="${q.id}" title="Delete Question">&#128465;&#65039;</button>
         </td>
       </tr>
     `;
@@ -725,9 +725,6 @@ function openQuestionModal(question, { topics, subjects, wordTypes }, onSaved) {
 // ============================================================
 // 4. ASSIGNMENTS MANAGEMENT
 // ============================================================
-// ============================================================
-// 4. ASSIGNMENTS MANAGEMENT (Assessment Instances)
-// ============================================================
 export async function renderAssignments(area) {
   showLoading();
   try {
@@ -807,11 +804,11 @@ function renderAssignmentRows(list) {
   }
   return list.map(a => {
     const targetName = a.class_instances?.batches?.name 
-      ? `Ã°Å¸â€˜Â¥ Batch: ${escapeHtml(a.class_instances.batches.name)} (${escapeHtml(a.class_instances.classes?.name || 'Class')})`
-      : `Ã°Å¸â€˜Â¥ Unknown Target`;
+      ? `&#128101; Batch: ${escapeHtml(a.class_instances.batches.name)} (${escapeHtml(a.class_instances.classes?.name || 'Class')})`
+      : `&#128101; Unknown Target`;
 
     const windowText = (a.availability_start || a.availability_end)
-      ? `${a.availability_start ? new Date(a.availability_start).toLocaleDateString() : 'Now'} Ã¢â€ â€™ ${a.availability_end ? new Date(a.availability_end).toLocaleDateString() : 'Forever'}`
+      ? `${a.availability_start ? new Date(a.availability_start).toLocaleDateString() : 'Now'} &rarr; ${a.availability_end ? new Date(a.availability_end).toLocaleDateString() : 'Forever'}`
       : '<span class="text-success">Always Open</span>';
 
     return `
@@ -822,7 +819,7 @@ function renderAssignmentRows(list) {
         <td><small>${windowText}</small></td>
         <td><span class="badge badge-success">${escapeHtml(a.status || 'DRAFT')}</span></td>
         <td style="text-align:right;">
-          <button class="btn btn-ghost btn-sm text-danger btn-revoke-assignment" data-id="${a.id}" title="Revoke Assignment">Ã°Å¸â€”â€˜Ã¯Â¸Â Revoke</button>
+          <button class="btn btn-ghost btn-sm text-danger btn-revoke-assignment" data-id="${a.id}" title="Revoke Assignment">&#128465;&#65039; Revoke</button>
         </td>
       </tr>
     `;
@@ -914,7 +911,6 @@ function openAssignmentModal({ definitions, batches, classInsts, classes }, onSa
   };
 }
 
-
 // ============================================================
 // 5. CENTRAL QUESTION BANK EXCEL IMPORT (V1 Safe Workflow)
 // ============================================================
@@ -933,10 +929,10 @@ export async function renderCentralQuestionImport(area) {
       <div class="section-header d-flex justify-between align-center flex-wrap gap-3 mb-4">
         <div>
           <h2 class="section-title text-gradient">Import Questions to Central Bank (V1)</h2>
-          <p class="section-subtitle">Safely parse, validate word types, detect duplicates, and preview before committing.</p>
+          <p class="section-subtitle">Batch import vocabulary and questions using Excel</p>
         </div>
         <div>
-          <button class="btn btn-secondary btn-sm" id="btn-download-central-tmpl">Ã°Å¸â€œÂ¥ Download Excel Template</button>
+          <button class="btn btn-secondary btn-sm" id="btn-download-central-tmpl">&#128229; Download Excel Template</button>
         </div>
       </div>
 
@@ -952,7 +948,7 @@ export async function renderCentralQuestionImport(area) {
         </div>
 
         <div class="drop-zone p-5 text-center rounded" id="question-drop-zone" style="border:2px dashed var(--clr-border);cursor:pointer;background:rgba(255,255,255,0.01);transition:all 0.2s;">
-          <div style="font-size:2.8rem;margin-bottom:0.75rem;">Ã°Å¸â€œÂ</div>
+          <div style="font-size:2.8rem;margin-bottom:0.75rem;">&#128209;</div>
           <h3 style="font-size:1.1rem;margin-bottom:0.5rem;">Click to select Excel file or drag &amp; drop</h3>
           <p class="text-muted text-xs mb-3">Accepts .xlsx, .xls, .csv with columns: <strong>Topic | Word Type | Question | Answer</strong></p>
           <input type="file" id="central-excel-file-input" accept=".xlsx,.xls,.csv" style="display:none;" />
@@ -969,7 +965,7 @@ export async function renderCentralQuestionImport(area) {
           </div>
           <div class="d-flex gap-2">
             <button class="btn btn-secondary btn-sm" id="btn-cancel-preview">Cancel / Choose Another File</button>
-            <button class="btn btn-success btn-sm" id="btn-confirm-commit-import">Ã°Å¸Å¡â‚¬ Confirm &amp; Commit Import</button>
+            <button class="btn btn-success btn-sm" id="btn-confirm-commit-import">&#128640; Confirm &amp; Commit Import</button>
           </div>
         </div>
 
@@ -1108,7 +1104,7 @@ export async function renderCentralQuestionImport(area) {
         </div>
         <div class="card p-3" style="flex:1;min-width:130px;background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);text-align:center;">
           <div style="font-size:1.4rem;font-weight:800;color:${summary.invalidWordTypes > 0 ? '#ef4444' : 'var(--clr-text-muted)'};">${summary.invalidWordTypes}</div>
-          <div class="text-xs text-muted">Word Type Warnings</div>
+          <div class="text-xs text-muted">Word Type Suggestions</div>
         </div>
       `;
 
@@ -1117,14 +1113,14 @@ export async function renderCentralQuestionImport(area) {
       if (summary.possibleDuplicates > 0) {
         alertHtml += `
           <div class="alert alert-warning p-3 mb-3 text-xs" style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:8px;">
-            Ã¢Å¡Â Ã¯Â¸Â <strong>${summary.possibleDuplicates} Possible Duplicate(s) Found:</strong> High similarity detected. Review the comparisons below and choose whether to <em>Use Existing</em> or <em>Create New</em>.
+            &#9888;&#65039; <strong>${summary.possibleDuplicates} Possible Duplicate(s) Found:</strong> High similarity detected. Review the comparisons below and choose whether to <em>Use Existing</em> or <em>Create New</em>.
           </div>
         `;
       }
       if (summary.invalidWordTypes > 0) {
         alertHtml += `
           <div class="alert alert-info p-3 mb-3 text-xs" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;">
-            Ã°Å¸â€™Â¡ <strong>${summary.invalidWordTypes} Word Type Suggestion(s):</strong> Non-standard word types detected. Suggested standard types have been applied, or you can register them as custom types.
+            &#128161; <strong>${summary.invalidWordTypes} Word Type Suggestion(s):</strong> Non-standard word types detected. Suggested standard types have been applied, or you can register them as custom types.
           </div>
         `;
       }
@@ -1139,7 +1135,7 @@ export async function renderCentralQuestionImport(area) {
         if (r.duplicateStatus === 'EXACT_DUPLICATE') {
           statusBadge = `<span class="badge badge-info">Exact Match</span>`;
           if (r.answerKeyChanged) {
-            statusBadge += `<br/><span class="badge badge-warning mt-1" title="Existing: ${escapeHtml(r.existingAnswers.join(' / '))} -> New: ${escapeHtml(r.accepted_answers.join(' / '))}">Ã¢Å¡Â¡ Answer Update</span>`;
+            statusBadge += `<br/><span class="badge badge-warning mt-1" title="Existing: ${escapeHtml(r.existingAnswers.join(' / '))} -> New: ${escapeHtml(r.accepted_answers.join(' / '))}">&#9889; Answer Update</span>`;
           }
           actionCol = `
             <select class="form-control form-control-sm row-action-choice" data-idx="${idx}">
@@ -1166,9 +1162,9 @@ export async function renderCentralQuestionImport(area) {
           qDisplay += `<div class="text-muted text-xs mt-1" style="font-style:italic;">Existing: "${escapeHtml(r.existingQuestionText)}"</div>`;
         }
 
-        let wtDisplay = escapeHtml(r.wordType || 'Ã¯Â¿Â½');
+        let wtDisplay = escapeHtml(r.wordType || '-');
         if (r.wordTypeWarning) {
-          wtDisplay += `<div class="text-danger text-xs mt-1" title="${escapeHtml(r.wordTypeWarning)}">Ã¢Å¡Â Ã¯Â¸Â ${escapeHtml(r.wordTypeWarning)}</div>`;
+          wtDisplay += `<div class="text-danger text-xs mt-1" title="${escapeHtml(r.wordTypeWarning)}">&#9888;&#65039; ${escapeHtml(r.wordTypeWarning)}</div>`;
         }
 
         return `
@@ -1201,8 +1197,8 @@ export async function renderCentralQuestionImport(area) {
       const rows = currentParsedResult.rows;
 
       const confirmMsg = `Are you sure you want to commit this import?
-Ã¢â‚¬Â¢ ${currentParsedResult.summary.newQuestions} new questions will be added
-Ã¢â‚¬Â¢ ${currentParsedResult.summary.answerChanges} answer keys will be updated
+&bull; ${currentParsedResult.summary.newQuestions} new questions will be added
+&bull; ${currentParsedResult.summary.answerChanges} answer keys will be updated
 Existing historical attempt records will NOT be modified.`;
 
       if (!confirm(confirmMsg)) return;
@@ -1211,30 +1207,12 @@ Existing historical attempt records will NOT be modified.`;
       try {
         const sb = await (await import('../supabase.js')).getSupabase();
 
-        // 1. Resolve & Auto-create Topics
+        // PHASE 2: SAFE TOPIC BINDING (BYPASS RLS 401)
+        // 1. Stop trying to auto-create topics.
         const topicMap = new Map();
         existingTopics.filter(t => t.class_id === targetSubjectId).forEach(t => {
           topicMap.set(t.name.toLowerCase().trim(), t.id);
         });
-
-        const uniqueTopicNames = Array.from(new Set(rows.map(r => r.topicName.trim()).filter(Boolean)));
-        for (const tName of uniqueTopicNames) {
-          const key = tName.toLowerCase();
-          if (!topicMap.has(key)) {
-            const { data: newT, error: tErr } = await sb.from('topics')
-              .insert({
-                class_id: targetSubjectId,
-                name: tName,
-                status: 'active'
-              })
-              .select()
-              .single();
-            if (!tErr && newT) {
-              topicMap.set(key, newT.id);
-              existingTopics.push(newT);
-            }
-          }
-        }
 
         // 2. Auto-register any new custom Word Types
         const customWordTypesToRegister = Array.from(new Set(
@@ -1253,86 +1231,83 @@ Existing historical attempt records will NOT be modified.`;
         let skippedCount = 0;
 
         const questionsToInsert = [];
+        
+        // Grab the active topic_id from UI context
+        const activeUiTopicId = document.getElementById('q-topic-filter')?.value || window._filterTopicId;
+        const baseOrder = Math.floor(Math.random() * 999999);
 
-        for (const r of rows) {
+        for (const [idx, r] of rows.entries()) {
           if (r.actionChoice === 'SKIP') {
             skippedCount++;
             continue;
           }
 
-          const topicId = topicMap.get(r.topicName.toLowerCase().trim()) || existingTopics[0]?.id;
+          let topicId = topicMap.get((r.topicName || '').toLowerCase().trim());
+          if (!topicId) {
+            topicId = activeUiTopicId || existingTopics[0]?.id || null;
+          }
 
           if (r.duplicateStatus === 'EXACT_DUPLICATE' && r.actionChoice === 'USE_EXISTING') {
             if (r.answerKeyChanged && r.duplicateOfId) {
-              // Update central question accepted_answers
-              await sb.from('questions')
-                .update({ accepted_answers: r.accepted_answers, updated_at: new Date().toISOString() })
-                .eq('id', r.duplicateOfId);
-              updatedCount++;
+              try {
+                // Update central question correct_answer (map to accepted_answers array)
+                const fArray = Array.isArray(r.accepted_answers) ? r.accepted_answers : (r.accepted_answers ? String(r.accepted_answers).split(/[;/]/).map(a => a.trim()).filter(Boolean) : []);
+                const { error: updErr } = await sb.from('questions')
+                  .update({ 
+                    question_text: r.question_text.trim(),
+                    accepted_answers: fArray,
+                    updated_at: new Date().toISOString() 
+                  })
+                  .eq('id', r.duplicateOfId);
+                if (updErr) throw updErr;
+                updatedCount++;
+              } catch (updCatch) {
+                console.error("Failed to update answer key (PATCH):", updCatch.message);
+              }
             } else {
               skippedCount++;
             }
           } else if (r.duplicateStatus === 'POSSIBLE_DUPLICATE' && r.actionChoice === 'USE_EXISTING') {
             skippedCount++;
           } else {
-            // New Question Insert
+            let fArray = [];
+            if (Array.isArray(r.accepted_answers)) {
+              fArray = r.accepted_answers;
+            } else if (typeof r.accepted_answers === 'string') {
+              fArray = String(r.accepted_answers).split(/[;/]/).map(a => a.trim()).filter(Boolean);
+            }
+
+            // RESTORED FULL PAYLOAD
             questionsToInsert.push({
-              class_id: targetSubjectId,
+              question_text: r.question_text.trim() || r.Question || r.QUESTION || '',
+              question_type: r.wordType || r.question_type || 'General',
+              accepted_answers: fArray, // MUST BE ARRAY FOR JSONB
+              status: 'ACTIVE',
               topic_id: topicId,
-              question_type: r.wordType || null,
-              question_text: r.question_text.trim(),
-              accepted_answers: r.accepted_answers,
-              status: 'active'
+              class_id: classId,
+              question_order: baseOrder + idx
             });
           }
         }
 
+        // PHASE 4: THE BULK INSERT
         if (questionsToInsert.length > 0) {
           // Batch in chunks of 100 for safety
           const chunkSize = 100;
           for (let i = 0; i < questionsToInsert.length; i += chunkSize) {
             const chunk = questionsToInsert.slice(i, i + chunkSize);
-            let insErr = null;
             try {
-              const { error } = await sb.from('questions').insert(chunk);
-              insErr = error;
-            } catch (e) {
-              insErr = e;
-            }
-
-            if (insErr) {
-              console.warn('V1 questions insert notice, using legacy schema fallback:', insErr.message);
-              // Resolve active exam for this subject to satisfy exam_id NOT NULL constraint
-              let fallbackExamId = null;
-              const { data: exData } = await sb.from('exams')
-                .select('id')
-                .eq('class_id', targetSubjectId)
-                .is('deleted_at', null)
-                .limit(1);
-
-              if (exData && exData.length > 0) {
-                fallbackExamId = exData[0].id;
-              } else {
-                const { data: anyEx } = await sb.from('exams').select('id').is('deleted_at', null).limit(1);
-                fallbackExamId = anyEx?.[0]?.id || null;
-              }
-
-              if (fallbackExamId) {
-                const legacyChunk = chunk.map((q, qIdx) => ({
-                  exam_id: fallbackExamId,
-                  question_order: qIdx + 1,
-                  question_text: q.question_text,
-                  correct_answer: Array.isArray(q.accepted_answers) ? q.accepted_answers.join(' / ') : String(q.accepted_answers || ''),
-                  answer_type: 'written',
-                  metadata: { topic: q.topic_id || 'General', question_type: q.question_type || '' }
-                }));
-                const { error: legErr } = await sb.from('questions').insert(legacyChunk);
-                if (legErr) throw legErr;
-              } else {
+              const { error: insErr } = await sb.from('questions').insert(chunk);
+              if (insErr) {
+                console.error("Final Insert Error:", insErr);
+                showToast(insErr.message, 'error');
                 throw insErr;
               }
+              insertedCount += chunk.length;
+            } catch (err) {
+              // Caught and toasted above, throw to abort import flow
+              throw err;
             }
-            insertedCount += chunk.length;
           }
         }
 
@@ -1374,7 +1349,7 @@ function toLevelLetter(num) {
 
     export async function renderResults(area) {
       const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
-        adminFetchAll('challenge_attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), challenge_instances(challenge_definitions(id, title, challenge_type, prerequisite_assessment_id, prerequisite_min_score)), challenge_attempt_answers(id, evaluation_result, score)'),
+        adminFetchAll('challenge_attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), challenge_instances(challenge_definitions(id, title, challenge_type)), challenge_attempt_answers(id, evaluation_result, score)'),
         adminFetchAll('institutions'),
         adminFetchAll('programs'),
         adminFetchAll('batches')
@@ -1504,7 +1479,7 @@ function toLevelLetter(num) {
         const q = searchInput.value.toLowerCase().trim();
 
         const filtered = allData.filter(r => {
-          const studentProgId = r.students?.programs?.institutions?.id || r.students?.programs?.institution_id;
+          const studentProgId = r.student?.programs?.institutions?.id || r.student?.programs?.institution_id;
           if (pId && studentProgId !== pId) return false;
           if (cId && r.students?.program_id !== cId) return false;
           if (bId && r.students?.batch_id !== bId) return false;
@@ -1651,18 +1626,18 @@ function toLevelLetter(num) {
         const exportData = rowsToExport.map(r => {
           const def = r.challenge_instances?.challenge_definitions || {};
           return {
-            'Student Name': r.students?.name || 'â€”',
-            'Gender': r.students?.gender ? (r.students.gender === 'female' ? 'Female' : 'Male') : 'â€”',
-            'Institution': r.students?.programs?.institutions?.name || 'â€”',
-            'Program': r.students?.programs?.name || 'â€”',
-            'Batch': r.students?.batches?.name || 'â€”',
-            'Assessment Title': def.title || 'â€”',
-            'Assessment Type': def.challenge_type || 'â€”',
-            'Score': r.score != null ? r.score : 'â€”',
-            'Percentage (%)': r.percentage != null ? `${r.percentage}%` : 'â€”',
-            'Grade': r.grade || (r.percentage != null ? getGrade(r.percentage) : 'â€”'),
-            'Submitted At': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'â€”',
-            'Status': r.status || 'â€”'
+            'Student Name': r.students?.name || '—',
+            'Gender': r.students?.gender ? (r.students.gender === 'female' ? 'Female' : 'Male') : '—',
+            'Institution': r.students?.programs?.institutions?.name || '—',
+            'Program': r.students?.programs?.name || '—',
+            'Batch': r.students?.batches?.name || '—',
+            'Assessment Title': def.title || '—',
+            'Assessment Type': def.challenge_type || '—',
+            'Score': r.score != null ? r.score : '—',
+            'Percentage (%)': r.percentage != null ? `${r.percentage}%` : '—',
+            'Grade': r.grade || (r.percentage != null ? getGrade(r.percentage) : '—'),
+            'Submitted At': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '—',
+            'Status': r.status || '—'
           };
         });
 
@@ -1686,7 +1661,9 @@ function toLevelLetter(num) {
       });
     }
 
-    // ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ STUDENT PROGRESS (Level Progression with Batch Grouping) ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
+    // ============================================================
+    // STUDENT PROGRESS (Level Progression with Batch Grouping)
+    // ============================================================
 
     export async function renderProgressView(area) {
       area.innerHTML = `
@@ -1701,13 +1678,13 @@ function toLevelLetter(num) {
 
       try {
         const [allStudents, allPrograms, allClasses, allBatches, allAssignments, allAssessments, allAttempts] = await Promise.all([
-          adminFetchAll('students', '*, batches(name), programs(name, institution_id, institutions(name))'),
+          adminFetchAll('students', '*, batches!batch_id(name), programs!program_id(name, institution_id, institutions!institution_id(name))'),
           adminFetchAll('institutions'),
           adminFetchAll('programs'),
           adminFetchAll('batches'),
           adminFetchAll('challenge_instances', 'student_id, batch_id, challenge_definition_id'),
           adminFetchAll('challenge_definitions', 'id, title, level_id, levels(name, level_number)'),
-          adminFetchAll('challenge_attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), challenge_instances(challenge_definitions(title, challenge_type)), challenge_attempt_answers(id, evaluation_result, score)')
+          adminFetchAll('challenge_attempts', '*, students!student_id(name, gender, batch_id, batches!batch_id(name), program_id, programs!program_id(name, institution_id, institutions!institution_id(name))), challenge_instances(challenge_definitions(title, challenge_type)), challenge_attempt_answers(id, evaluation_result, score)')
         ]);
 
         const allData = [];
@@ -1776,7 +1753,7 @@ function toLevelLetter(num) {
             </div>
 
             <div class="d-flex align-end" style="padding-top:18px;">
-              <button class="btn btn-ghost btn-sm" id="prog-btn-reset" title="Reset all filters">&#10005; Reset</button>
+              <button class="btn btn-ghost btn-sm" id="prog-btn-reset" title="Reset all filters">&#10006; Reset</button>
             </div>
           </div>
 
@@ -1807,7 +1784,8 @@ function toLevelLetter(num) {
         const countChip   = document.getElementById('prog-count-chip');
 
         const updateClassOptions = () => {
-          const pId = progSelect.value;
+          const pId = progSelect?.value;
+          if (!pId) return;
           Array.from(classSelect.options).forEach((opt, idx) => {
             if (idx === 0) return;
             const match = !pId || opt.getAttribute('data-prog') === pId;
@@ -1832,7 +1810,7 @@ function toLevelLetter(num) {
         };
 
         const renderTable = () => {
-          const pId = progSelect.value;
+          const pId = progSelect ? progSelect.value : '';
           const cId = classSelect.value;
           const bId = batchSelect.value;
           const q = searchInput.value.toLowerCase().trim();
@@ -1859,15 +1837,15 @@ function toLevelLetter(num) {
 
           tbody.innerHTML = filtered.map(r => `
             <tr>
-              <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.student?.name, r.student?.gender) || 'Ã¢â‚¬â€'}</td>
-              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.institutions?.name || 'Ã¢â‚¬â€')}</td>
-              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.name || 'Ã¢â‚¬â€')}</td>
+              <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.student?.name, r.student?.gender) || '—'}</td>
+              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.institutions?.name || '—')}</td>
+              <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.name || '—')}</td>
               <td><span class="badge ${r.student?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.student?.batches?.name || 'Unassigned')}</span></td>
-              <td class="fw-600 text-sm">${escapeHtml(r.assessmentTitle || 'Ã¢â‚¬â€')}</td>
+              <td class="fw-600 text-sm">${escapeHtml(r.assessmentTitle || '—')}</td>
               <td class="text-center"><span class="badge badge-primary">Level ${toLevelLetter(r.levelNumber)} ${escapeHtml(r.levelName || '')}</span></td>
               <td class="text-center">
                 <span class="badge ${r.is_completed ? 'badge-success' : r.is_in_progress ? 'badge-warning' : 'badge-neutral'}">
-                  ${r.is_completed ? 'Ã¢Å“â€Ã¯Â¸Â Completed' : r.is_in_progress ? 'Ã¢â€“Â¶Ã¯Â¸Â In Progress' : 'Ã°Å¸â€â€™ Not Started'}
+                  ${r.is_completed ? '&#10004;&#65039; Completed' : r.is_in_progress ? '&#9654;&#65039; In Progress' : '&#128276; Not Started'}
                 </span>
               </td>
               <td class="text-center">
@@ -1879,12 +1857,12 @@ function toLevelLetter(num) {
           `).join('');
         };
 
-        progSelect.addEventListener('change', () => { updateClassOptions(); renderTable(); });
+        progSelect?.addEventListener('change', () => { updateClassOptions(); renderTable(); });
         classSelect.addEventListener('change', () => { updateBatchOptions(); renderTable(); });
         batchSelect.addEventListener('change', renderTable);
         searchInput.addEventListener('input', renderTable);
         document.getElementById('prog-btn-reset')?.addEventListener('click', () => {
-          progSelect.value = '';
+          if (progSelect) progSelect.value = '';
           classSelect.value = '';
           batchSelect.value = '';
           searchInput.value = '';
@@ -1949,7 +1927,10 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
     tbody.innerHTML = `<tr><td colspan="2" class="text-center text-danger">Error: ${err.message}</td></tr>`;
   }
 };
-    // &mdash;&mdash; AUDIT LOG &mdash;&mdash;
+
+    // ============================================================
+    // EXAM RECALIBRATOR
+    // ============================================================
 
     export async function renderRecalibrator(area) {
       showLoading('Loading exams for recalibration&hellip;');
@@ -2151,7 +2132,7 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
         const examId = examSelect.value;
         if (!examId) return;
 
-        showLoading('Calculating recalibration preview across all attemptsÃ¢â‚¬Â¦');
+        showLoading('Calculating recalibration preview across all attempts...');
         try {
           currentPreviewData = await previewRecalibrateExam(examId);
           hideLoading();
@@ -2197,7 +2178,7 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
         const examId = examSelect.value;
         if (!examId) return;
 
-        showLoading('Applying recalibration to historical student resultsÃ¢â‚¬Â¦');
+        showLoading('Applying recalibration to historical student results...');
         try {
           const res = await applyRecalibrateExam(examId);
           hideLoading();
@@ -2212,10 +2193,12 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
       });
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ Class Instances UI Ã¢â€â‚¬Ã¢â€â‚¬
+    // ============================================================
+    // CLASS INSTANCES UI
+    // ============================================================
     export async function renderClassInstances(area) {
       const [rawData, batches, classes] = await Promise.all([
-        adminFetchAll('class_instances', '*, batches(name, programs(name, institutions(name))), classes(name)'),
+        adminFetchAll('class_instances', '*, batches!batch_id(name, programs!program_id(name, institutions!institution_id(name)))'),
         adminFetchAll('batches', 'id, name'),
         adminFetchAll('classes', 'id, name, institution_id')
       ]);
@@ -2256,7 +2239,7 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
                 window._ciRecords = {};
                 return data.map(row => {
                   window._ciRecords[row.id] = row;
-                  let scheduleText = 'Ã¢â‚¬â€';
+                  let scheduleText = '—';
                   if (row.recurring_schedule) {
                     try {
                       const parsed = typeof row.recurring_schedule === 'string' ? JSON.parse(row.recurring_schedule) : row.recurring_schedule;
@@ -2267,13 +2250,13 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
                   return `
                 <tr>
                   <td>
-                    <div class="fw-600">${escapeHtml(row.batches?.programs?.name || 'Ã¢â‚¬â€')}</div>
-                    <div class="text-xs text-muted">${escapeHtml(row.batches?.programs?.institutions?.name || 'Ã¢â‚¬â€')}</div>
+                    <div class="fw-600">${escapeHtml(row.batches?.programs?.name || '—')}</div>
+                    <div class="text-xs text-muted">${escapeHtml(row.batches?.programs?.institutions?.name || '—')}</div>
                   </td>
-                  <td>${escapeHtml(row.batches?.name || 'Ã¢â‚¬â€')}</td>
-                  <td>${escapeHtml(row.classes?.name || 'Ã¢â‚¬â€')}</td>
-                  <td>${row.start_date || 'Ã¢â‚¬â€'}</td>
-                  <td>${row.estimated_finish || 'Ã¢â‚¬â€'}</td>
+                  <td>${escapeHtml(row.batches?.name || '—')}</td>
+                  <td>${escapeHtml(row.classes?.name || '—')}</td>
+                  <td>${row.start_date || '—'}</td>
+                  <td>${row.estimated_finish || '—'}</td>
                   <td class="text-xs text-muted" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(scheduleText)}</td>
                   <td class="text-center">
                     <span class="badge ${row.status === 'active' ? 'badge-primary' : (row.status === 'finished' ? 'badge-success' : 'badge-neutral')}">${row.status}</span>
@@ -2290,7 +2273,3 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
         </div>
       `;
     }
-
-    // ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ Student Import Engine ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢Ã¢â‚¬ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
-
-

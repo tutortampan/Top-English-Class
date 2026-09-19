@@ -1881,3 +1881,34 @@ Verify student and admin login panels, inject missing Anti-Gravity fonts, and de
 ### Resume From
 Production operations.
 
+
+## SESSION-20260919-0114
+
+Start: 2026-09-19 01:14:11
+End: 2026-09-19 01:14:11
+Agent: Antigravity
+
+### User Request
+Fix Question Import preview failing with 400 Bad Request API crash and 0 parsed questions.
+
+### Objective
+Implement fuzzy header parsing, robust validation badges, and strip invalid joins in API.
+
+### Work Performed
+- Stripped joins in \js/api.js\ fetchCentralQuestions.
+- Built fuzzy header parsing in \js/admin/imports-exports.js\.
+- Added validation badges inside \enderPreviewTable\ in \js/admin/imports-exports.js\.
+
+### Results
+Question Import Preview now parses columns reliably and displays exact statuses (Ready/Warning/Invalid) without silently crashing or rejecting rows.
+
+### Files Changed
+- \js/api.js\`n- \js/admin/imports-exports.js\`n
+### Verification
+Syntax parsed correctly and errors successfully prevented.
+
+### Outstanding
+None.
+
+### Resume From
+Instruct user to hard refresh the browser (Ctrl + F5) and test the Question Import Preview again.

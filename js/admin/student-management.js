@@ -1,12 +1,12 @@
-import { adminFetchAll, formatStudentName, adminSoftDelete } from '../api.js?v=4.1.0';
-import { getGrade, showToast } from '../app.js?v=4.1.0';
-import { DataGrid } from './datagrid.js';
+import { adminFetchAll, formatStudentName, adminSoftDelete } from '../api.js?v=4.4.3';
+import { getGrade, showToast } from '../app.js?v=4.4.3';
+import { DataGrid } from './datagrid.js?v=4.4.3';
 
 let studentGrid = null;
 
 export async function renderStudents(area) {
   const [rawData, allAttempts, allLevels] = await Promise.all([
-    adminFetchAll('students', '*, programs(name), institutions(name), batches(name)'),
+    adminFetchAll('students', '*, programs!program_id(name), institutions!institution_id(name), batches!batch_id(name)'),
     adminFetchAll('attempts'),
     adminFetchAll('levels')
   ]);
@@ -79,9 +79,9 @@ export async function renderStudents(area) {
         <p class="section-subtitle">Manage enrolled students with Batch, Overall Score & Global Grade</p>
       </div>
       <div class="d-flex gap-2">
-        ${totalDuplicates > 0 ? `<button class="btn btn-warning btn-sm" id="students-merge-shortcut" style="font-weight:700;">Ã°Å¸â€â€ž Resolve Duplicates (${totalDuplicates})</button>` : ''}
-        <button class="btn btn-secondary btn-sm" id="students-import-shortcut">Ã°Å¸â€œÂ¥ Import</button>
-        <button class="btn btn-success btn-sm" id="students-export-btn">Ã°Å¸â€œÅ  Export CSV</button>
+        ${totalDuplicates > 0 ? `<button class="btn btn-warning btn-sm" id="students-merge-shortcut" style="font-weight:700;">&#9888;&#65039; Resolve Duplicates (${totalDuplicates})</button>` : ''}
+        <button class="btn btn-secondary btn-sm" id="students-import-shortcut">📤 Import</button>
+        <button class="btn btn-success btn-sm" id="students-export-btn">📊 Export CSV</button>
         <button class="btn btn-primary btn-sm" id="students-add-shortcut">+ Add Student</button>
       </div>
     </div>
@@ -89,7 +89,7 @@ export async function renderStudents(area) {
     ${window._filterBatchId ? `
       <div class="mb-4 p-3 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.4);color:#93c5fd;">
         <div class="d-flex align-center gap-2">
-          <span style="font-size:1.2rem;">Ã°Å¸Ââ€ºÃ¯Â¸Â</span>
+          <span style="font-size:1.2rem;">&#128101;</span>
           <span>Filtered by Batch: <strong>${window._filterBatchName || 'Selected Batch'}</strong> (${filteredGridData.length} students)</span>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="window._filterBatchId=null; window._filterBatchName=null; window.loadSection('students');" style="text-decoration:underline;color:#93c5fd;">
@@ -101,7 +101,7 @@ export async function renderStudents(area) {
     ${totalDuplicates > 0 ? `
       <div class="mb-4 p-3 rounded d-flex align-center justify-between" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:#fef3c7;">
         <div class="d-flex align-center gap-3">
-          <span style="font-size:1.4rem;">Ã¢Å¡Â Ã¯Â¸Â</span>
+          <span style="font-size:1.4rem;">&#9888;&#65039;</span>
           <div>
             <div class="fw-700 text-sm">Detected ${totalDuplicates} Duplicate Student Profiles</div>
             <div class="text-xs text-muted" style="color:rgba(255,255,255,0.85)!important;">
@@ -110,7 +110,7 @@ export async function renderStudents(area) {
           </div>
         </div>
         <button class="btn btn-warning btn-sm" id="btn-banner-merge-duplicates" style="background:#f59e0b;color:#000;font-weight:700;border:none;">
-          Ã°Å¸â€â€ž Resolve All Duplicates
+          &#9888;&#65039; Resolve All Duplicates
         </button>
       </div>
     ` : ''}
@@ -245,7 +245,7 @@ export async function renderStudents(area) {
           const profileBtn = document.createElement('button');
           profileBtn.className = 'btn btn-secondary btn-icon btn-sm';
           profileBtn.title = 'View Profile';
-          profileBtn.innerHTML = 'Ã°Å¸â€˜Â¤';
+          profileBtn.innerHTML = '&#128100;';
           profileBtn.onclick = () => {
              if(typeof window.openStudentProfile === 'function') window.openStudentProfile(row.id);
           };
@@ -288,14 +288,14 @@ export async function renderStudents(area) {
 
           const editBtn = document.createElement('button');
           editBtn.className = 'btn btn-secondary btn-icon btn-sm';
-          editBtn.innerHTML = 'âœ ï¸ ';
+          editBtn.innerHTML = '✏️';
           editBtn.onclick = () => {
              if (window.openStudentFullEdit) window.openStudentFullEdit(row, () => window.loadSection('students'));
           };
           
           const delBtn = document.createElement('button');
           delBtn.className = 'btn btn-danger btn-icon btn-sm';
-          delBtn.innerHTML = 'âŒ';
+          delBtn.innerHTML = '&#128465;';
           delBtn.onclick = () => {
              if (window._deleteRecord) window._deleteRecord('students', row.id, row.displayName);
           };
@@ -316,5 +316,6 @@ export function openStudentProfile(studentId, batchStudentIds = [], skipHistory 
     return window.openStudentProfile(studentId, batchStudentIds, skipHistory);
   }
 }
+
 
 

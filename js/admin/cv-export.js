@@ -54,7 +54,7 @@ export function triggerCVExport(student) {
         </div>
       </div>
       <div>
-        <img src="${avatarUrl}" class="cv-photo-print" alt="Profile" style="width: 72px; height: 96px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1;" />
+        <img src="${avatarUrl}" class="cv-photo-print" alt="Profile" onerror="this.onerror=null;this.src='assets/placeholder-3x4.svg';" style="width: 72px; height: 96px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1;" />
       </div>
     </div>
     
@@ -178,7 +178,7 @@ export function generateExecutiveCV(profile, workRecords = [], skills = []) {
             </div>
           </div>
           <div style="flex-shrink: 0;">
-            <img src="${avatarUrl}" class="cv-photo-print" alt="Executive Photo" style="width: 80px; height: 106px; object-fit: cover; border-radius: 6px; border: 1.5px solid #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" />
+            <img src="${avatarUrl}" class="cv-photo-print" alt="Executive Photo" onerror="this.onerror=null;this.src='assets/placeholder-3x4.svg';" style="width: 80px; height: 106px; object-fit: cover; border-radius: 6px; border: 1.5px solid #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" />
           </div>
         </div>
 

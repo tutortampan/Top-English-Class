@@ -1,6 +1,6 @@
-import { DataGrid } from './datagrid.js?v=4.3.0';
+import { DataGrid } from './datagrid.js?v=4.4.5';
 window.DataGrid = DataGrid;
-import { renderAIAssessments, renderImportAIAssessments } from './panel-c-builder.js?v=4.3.0';
+import { renderAIAssessments, renderImportAIAssessments } from './panel-c-builder.js?v=4.4.5';
 import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete,
   adminFetchDeleted, adminRestore,
@@ -8,26 +8,26 @@ import {
   detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions,
   fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
   testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
-} from '../api.js?v=4.3.0';
-import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.3.0';
-import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=4.3.0';
-import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.3.0';
-import { getSupabase } from '../supabase.js?v=4.3.0';
-import { openAssessmentBuilder } from './exam-builder.js?v=4.3.0';
-import { renderStudents as _renderStudentsModule } from './student-management.js?v=4.3.0';
-import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=4.3.0';
-import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport, renderResults, renderProgressView, renderRecalibrator, renderClassInstances } from './class.js?v=4.3.0';
-import { renderExams } from './exam-management.js?v=4.3.0';
-import { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin } from './desk.js?v=4.3.0';
-import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=4.3.0';
-import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin } from './crud-modals.js?v=4.3.0';
-import { renderDashboard, renderAdminProfile, renderAdminSchedule, renderWorkRecords, renderCVGenerator } from './admin-deck.js?v=4.3.0';
-import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
+} from '../api.js?v=4.4.5';
+import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.4.5';
+import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=4.4.5';
+import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.4.5';
+import { getSupabase } from '../supabase.js?v=4.4.5';
+import { openAssessmentBuilder } from './exam-builder.js?v=4.4.5';
+import { renderStudents as _renderStudentsModule } from './student-management.js?v=4.4.5';
+import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=4.4.5';
+import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport, renderResults, renderProgressView, renderRecalibrator, renderClassInstances } from './class.js?v=4.4.14';
+import { renderExams } from './exam-management.js?v=4.4.5';
+import { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin } from './desk.js?v=4.4.5';
+import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=4.4.5';
+import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin } from './crud-modals.js?v=4.4.5';
+import { renderDashboard, renderAdminProfile, renderAdminSchedule, renderWorkRecords, renderCVGenerator } from './admin-deck.js?v=4.4.5';
+import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
 
     // -- Primary Tab Switching Variables --
     const mobileTabs = document.querySelectorAll('.mobile-tab');
 
-    // ——— ABCD Primary Architecture Section Titles ———
+    // â€”â€”â€” ABCD Primary Architecture Section Titles â€”â€”â€”
     const sectionTitles = {
       dashboard: 'Executive Dashboard', profile: 'My Profile', schedule: 'Personal Schedule', work_records: 'Work Records', cv_generator: 'CV Generator',
       assessments: 'AI Assessments', import_ai_assessments: 'Import AI Assessments', board_overview: 'Board Overview',
@@ -49,7 +49,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
     // Mobile Bottom Tab Panels -> Primary Domain
     const domainToPanelMap = {
       ADMIN: 'admin', BOARD: 'board', CLASS: 'class', DATA: 'desk', DESK: 'desk',
-      CHALLENGES: 'class', // Legacy alias
+      ASSESSMENTS: 'class', // Legacy alias
       DATABASE: 'board', STUDENT: 'board', EXAM: 'class',
       ACADEMY: 'board'
     };
@@ -58,7 +58,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       admin: 'dashboard',
       board: 'board_overview',
       class: 'classes',
-      challenges: 'classes', // Legacy alias
+      assessments: 'classes', // Legacy alias
       desk: 'recycle',
       data: 'recycle',
       database: 'classes', student: 'students', exam: 'exams',
@@ -82,10 +82,10 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       'class-assignments': 'challenge_instances',
       'class-results': 'results',
       'class-recalibrator': 'recalibrator',
-      'challenges-hub': 'exams',
-      'challenges-assignments': 'challenge_instances',
-      'challenges-results': 'results',
-      'challenges-recalibrator': 'recalibrator',
+      'assessments-hub': 'exams',
+      'assessments-assignments': 'challenge_instances',
+      'assessments-results': 'results',
+      'assessments-recalibrator': 'recalibrator',
       'desk-audit': 'audit',
       'desk-settings': 'settings',
       'desk-recycle': 'recycle',
@@ -102,7 +102,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
         ]);
         const kpiAcad = document.getElementById('kpi-board');
         if (kpiAcad) kpiAcad.textContent = stds.filter(s => !s.deleted_at).length;
-        const kpiChal = document.getElementById('kpi-class') || document.getElementById('kpi-challenges');
+        const kpiChal = document.getElementById('kpi-class') || document.getElementById('kpi-assessments');
         if (kpiChal) kpiChal.textContent = asms.filter(a => !a.deleted_at && a.exam_status === 'published').length;
         const kpiDesk = document.getElementById('kpi-desk');
         if (kpiDesk) kpiDesk.textContent = atts.length;
@@ -126,7 +126,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       return result;
     }
 
-    // â”€â”€ Auth â”€â”€
+    // --- Auth ---
     const session = getAdminSession();
     if (session) showConsole();
 
@@ -200,7 +200,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       if (targetSec && (sectionTitles[targetSec] || targetSec === 'students')) {
         loadSection(targetSec, true);
       } else if (hash && hash.startsWith('profile-')) {
-        const studentId = hash.replace('profile-', '');
+        const studentId = (hash || '').replace('profile-', '');
         activatePrimaryTab('board');
         openStudentProfile(studentId, [], true);
       } else {
@@ -216,7 +216,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       if (targetSec && (sectionTitles[targetSec] || targetSec === 'students')) {
         loadSection(targetSec, true);
       } else if (hash && hash.startsWith('profile-')) {
-        const studentId = hash.replace('profile-', '');
+        const studentId = (hash || '').replace('profile-', '');
         const batchStudentIds = e.state?.batchStudentIds || [];
         openStudentProfile(studentId, batchStudentIds, true);
       }
@@ -232,7 +232,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
           admin: 'ADMIN',
           board: 'BOARD',
           class: 'CLASS',
-          challenges: 'CLASS', // Legacy fallback
+          assessments: 'CLASS', // Legacy fallback
           desk: 'DATA',
           data: 'DATA',
           academy: 'BOARD' // Legacy fallback
@@ -241,9 +241,9 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       }
     }
 
-    // â”€â”€ Topbar Domain Switcher Click (removed â€” no domain pill elements exist) â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Topbar Domain Switcher Click (removed â€” no domain pill elements exist) Ã¢â€â‚¬Ã¢â€â‚¬
 
-    // â”€â”€ Mobile Bottom Tab Switching â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Mobile Bottom Tab Switching Ã¢â€â‚¬Ã¢â€â‚¬
     mobileTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         const panel = tab.dataset.panel;
@@ -252,7 +252,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       });
     });
 
-    // â”€â”€ Sidebar Toggle for Mobile â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Sidebar Toggle for Mobile Ã¢â€â‚¬Ã¢â€â‚¬
     const sidebarToggleBtn = document.getElementById('sidebar-toggle');
     const adminSidebar = document.getElementById('admin-sidebar');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -273,7 +273,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
     });
     sidebarOverlay?.addEventListener('click', closeSidebar);
 
-    // â”€â”€ Sub-nav item click â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Sub-nav item click Ã¢â€â‚¬Ã¢â€â‚¬
     document.querySelectorAll('.admin-nav-item').forEach(item => {
       item.addEventListener('click', () => {
         document.querySelectorAll('.admin-nav-item').forEach(i => i.classList.remove('active'));
@@ -283,7 +283,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       });
     });
 
-    // â”€â”€ Global String & HTML Utilities â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Global String & HTML Utilities Ã¢â€â‚¬Ã¢â€â‚¬
     function escapeHtml(str) {
       return String(str || '')
         .replace(/&/g, '&amp;')
@@ -325,14 +325,14 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       return parts.length > 0 ? parts.join(' &middot; ') : (exam.exam_title || 'Exam');
     }
 
-    // ── DB Connection Status Banner ──
+    // â”€â”€ DB Connection Status Banner â”€â”€
     async function initConnectionBanner() {
       const banner = document.getElementById('db-connection-banner');
       const statusDot = document.getElementById('db-status-dot');
       const statusText = document.getElementById('db-status-text');
       if (!banner) return;
 
-      // Show checking state — use CSS classes, not inline styles
+      // Show checking state â€” use CSS classes, not inline styles
       statusText.textContent = 'Checking database connection...';
 
       const result = await testSupabaseConnection();
@@ -361,7 +361,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       return atype.replace('_', ' ');
     }
 
-    let _currentSection = null;
+    var _currentSection = null;
     async function loadSection(section, skipHistory = false) {
       if (!section) return;
       const rawSection = section;
@@ -389,7 +389,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       if (domainEl) domainEl.textContent = domain;
       document.getElementById('topbar-title').textContent = sectionTitles[section] || section;
       const area = document.getElementById('admin-content-area');
-      area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loadingâ€¦</p></div>';
+      area.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loading...</p></div>';
 
       // Set up Add button
       document.getElementById('add-record-btn').onclick = () => {
@@ -437,11 +437,21 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
         }
       } catch(e) {
         console.error('[loadSection] error:', section, e);
-        area.innerHTML = `<div class="empty-state"><p class="text-danger">Failed to load: ${e.message}</p></div>`;
+        area.innerHTML = `
+          <div class="empty-state card mt-4" style="padding:3.5rem 1.5rem; text-align:center; max-width:600px; margin:2rem auto; border:1px solid rgba(239,68,68,0.3); background:rgba(239,68,68,0.04);">
+            <div style="font-size:2.5rem; margin-bottom:1rem;">âš ï¸</div>
+            <h3 style="color:var(--clr-text-1); font-size:1.25rem; font-weight:700; margin-bottom:0.5rem;">Section Loading Interrupted</h3>
+            <p class="text-danger text-sm" style="margin-bottom:1.5rem; word-break:break-word;">${escapeHtml(e?.message || 'An unexpected error occurred.')}</p>
+            <div class="d-flex gap-3 justify-center">
+              <button class="btn btn-primary btn-sm" onclick="window.loadSection('${section}')">ðŸ”„ Retry Section</button>
+              <button class="btn btn-secondary btn-sm" onclick="window.location.reload()">Reload Application</button>
+            </div>
+          </div>
+        `;
       }
     }
 
-    // ── INSTITUTIONS ──
+    // â”€â”€ INSTITUTIONS â”€â”€
 
     async function renderPrograms(area) {
       const rawData = await adminFetchAll('institutions');
@@ -515,7 +525,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       });
     }
 
-    // â”€â”€ CLASSES (Formerly Subjects) â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ CLASSES (Formerly Subjects) Ã¢â€â‚¬Ã¢â€â‚¬
     async function renderSubjects(area) {
       const [rawData, institutions] = await Promise.all([adminFetchAll('classes', '*, institutions(name)'), adminFetchAll('institutions')]);
       // Sort by Institution Name (A-Z), then Class Name (A-Z)
@@ -592,7 +602,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
       });
     }
 
-    // â”€â”€ LEVELS â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ LEVELS Ã¢â€â‚¬Ã¢â€â‚¬
     async function renderLevels(area) {
       const [rawData, allClasses] = await Promise.all([
         adminFetchAll('levels', '*, classes(name, institution_id, institutions(name))'),
@@ -699,7 +709,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
     }
 
 
-    // â”€â”€ INDIVIDUAL STUDENT PROFILE (Detailed Progress, Correct/Incorrect Counts, Batch Navigation) â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ INDIVIDUAL STUDENT PROFILE (Detailed Progress, Correct/Incorrect Counts, Batch Navigation) Ã¢â€â‚¬Ã¢â€â‚¬
     async function openStudentProfile(studentId, batchStudentIds = [], skipHistory = false) {
       window.openStudentProfile = openStudentProfile;
       if (!skipHistory) {
@@ -1126,7 +1136,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
             const arrow = document.getElementById(`arrow-${attId}`);
             if (detailRow) {
               const isNowHidden = detailRow.classList.toggle('hidden');
-              if (arrow) arrow.textContent = isNowHidden ? 'â–¶ï¸' : 'Ã¢â€“Â¼';
+              if (arrow) arrow.textContent = isNowHidden ? '\u25B6\uFE0F' : '\u25BC';
             }
           });
         });
@@ -1135,17 +1145,17 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.3.0';
         console.error('Failed to render student profile:', err);
         area.innerHTML = `
           <div class="empty-state p-6 text-center">
-            <div style="font-size:2.5rem; margin-bottom:8px;">Ã¢Å¡Â Ã¯Â¸Â</div>
+            <div style="font-size:2.5rem; margin-bottom:8px;">&#9888;&#65039;</div>
             <h4 class="text-danger">Failed to load student profile</h4>
             <p class="text-xs text-muted mb-4">${escapeHtml(err.message)}</p>
-            <button class="btn btn-secondary btn-sm" id="btn-err-back">Ã¢â€ Â Back to Students</button>
+            <button class="btn btn-secondary btn-sm" id="btn-err-back">&larr; Back to Students</button>
           </div>
         `;
         document.getElementById('btn-err-back')?.addEventListener('click', () => loadSection('students'));
       }
     }
 
-    // â”€â”€ EXAM MANAGEMENT HUB (Restored & Elevated) â”€â”€
+    // --- EXAM MANAGEMENT HUB (Restored & Elevated) ---
 
 
 // Global edit/delete handlers
@@ -1156,17 +1166,20 @@ window._editRecord = async (section, id, jsonStr) => {
 
 let _deleteSection, _deleteId;
 window._deleteRecord = (section, id, name) => {
-  _deleteSection = section; _deleteId = id;
+  _deleteSection = section || window._currentSection || 'batches';
+  _deleteId = id;
   document.getElementById('delete-modal-message').textContent = `Soft-delete "${name}"? Historical data is preserved.`;
   document.getElementById('delete-modal').classList.remove('hidden');
 };
 
 document.getElementById('delete-confirm-btn').addEventListener('click', async () => {
+  if (!_deleteSection || !_deleteId) return; // Prevent duplicate/empty listener execution
   try {
     await adminSoftDelete(_deleteSection, _deleteId);
     showToast('Record deleted.', 'success');
     document.getElementById('delete-modal').classList.add('hidden');
-    loadSection(_currentSection);
+    if (window._currentSection) loadSection(window._currentSection);
+    _deleteSection = null; _deleteId = null; // Clear state
   } catch(e) { showToast(e.message, 'error'); }
 });
 
@@ -1180,5 +1193,7 @@ window.openDuplicateStudentsModal = openDuplicateStudentsModal;
 window.openDuplicateQuestionsModal = openDuplicateQuestionsModal;
 window.loadSection = loadSection;
 window.openStudentProfile = openStudentProfile;
+
+
 
 

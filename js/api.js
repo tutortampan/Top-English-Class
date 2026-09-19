@@ -154,7 +154,7 @@ export async function fetchPrograms(institutionId, forceRefresh = false) {
       try {
         const sb = await getSupabase();
         const { data, error } = await sb.from('programs')
-          .select('id, name, institution_id')
+          .select('*, institutions(name)')
           .eq('institution_id', institutionId)
           .eq('is_active', true)
           .is('deleted_at', null)
@@ -1007,11 +1007,42 @@ export async function fetchAttemptResult(attemptId) {
 /** Fetch attempt answers for result display */
 export async function fetchAttemptAnswers(attemptId) {
   const sb = await getSupabase();
+  
+  // 1. Fetch attempt status first to determine if we should sanitize answers
+  let status = null;
+  try {
+    const { data: att } = await sb.from('attempts').select('status').eq('id', attemptId).maybeSingle();
+    if (att) status = att.status;
+    else {
+      const { data: cAtt } = await sb.from('challenge_attempts').select('status').eq('id', attemptId).maybeSingle();
+      if (cAtt) status = cAtt.status;
+    }
+  } catch (_) {}
+  
   const { data, error } = await sb.from('attempt_answers')
-    .select('id, attempt_id, question_id, student_answer, score, evaluation_result, question_snapshot, topic_snapshot, question_type_snapshot, correct_answer_snapshot, is_review_required, created_at, updated_at')
+    .select('id, attempt_id, question_id, student_answer, score, evaluation_result, question_snapshot, topic_snapshot, question_type_snapshot, correct_answer_snapshot, accepted_answers_snapshot, is_review_required, created_at, updated_at')
     .eq('attempt_id', attemptId);
   if (error) throw error;
-  return data;
+  
+  const normStatus = (status || '').toUpperCase();
+  const isFinished = ['SUBMITTED', 'AUTO_SUBMITTED', 'COMPLETED', 'EXPIRED'].includes(normStatus);
+  
+  // SECURITY: If attempt is IN_PROGRESS or not finished, strictly strip out answer keys
+  if (!isFinished) {
+    return (data || []).map(a => { 
+      const clean = { ...a };
+      delete clean.correct_answer_snapshot; 
+      delete clean.accepted_answers_snapshot; 
+      if (clean.question_snapshot && typeof clean.question_snapshot === 'object') {
+        clean.question_snapshot = { ...clean.question_snapshot };
+        delete clean.question_snapshot.correct_answer;
+        delete clean.question_snapshot.accepted_answers;
+      }
+      return clean; 
+    });
+  }
+  
+  return data || [];
 }
 
 // ============================================================
@@ -1030,6 +1061,10 @@ const MOCK_ADMIN_STORE = {
     { id: '22222222-2222-2222-2222-444444444444', institution_id: '11111111-1111-1111-1111-222222222222', name: 'Class C (IELTS Prep)', is_active: true, created_at: '2026-01-25T08:00:00Z' }
   ],
   subjects: [
+    { id: '33333333-3333-3333-3333-333333333333', institution_id: '11111111-1111-1111-1111-111111111111', name: 'English Grammar & Vocabulary', is_active: true, created_at: '2026-01-12T08:00:00Z' },
+    { id: '33333333-3333-3333-3333-444444444444', institution_id: '11111111-1111-1111-1111-111111111111', name: 'Conversational Speaking', is_active: true, created_at: '2026-01-14T08:00:00Z' }
+  ],
+  classes: [
     { id: '33333333-3333-3333-3333-333333333333', institution_id: '11111111-1111-1111-1111-111111111111', name: 'English Grammar & Vocabulary', is_active: true, created_at: '2026-01-12T08:00:00Z' },
     { id: '33333333-3333-3333-3333-444444444444', institution_id: '11111111-1111-1111-1111-111111111111', name: 'Conversational Speaking', is_active: true, created_at: '2026-01-14T08:00:00Z' }
   ],
@@ -1098,61 +1133,81 @@ const MOCK_ADMIN_STORE = {
 };
 
 function hydrateMockRelations(table, item) {
-  if (!item) return item;
-  const clone = { ...item };
-  const store = MOCK_ADMIN_STORE;
-  if (table === 'topics') {
-    clone.classes = (store.classes || []).find(s => s.id === clone.class_id) || null;
-  } else if (table === 'challenge_instances') {
-    clone.assessments = (store.challenge_definitions || []).find(a => a.id === clone.challenge_definition_id) || (store.exams || []).find(e => e.id === clone.challenge_definition_id) || null;
-    clone.batches = (store.batches || []).find(b => b.id === clone.batch_id) || null;
-    clone.students = (store.students || []).find(s => s.id === clone.student_id) || null;
+  if (!item || typeof item !== 'object') return item;
+  try {
+    const clone = { ...item };
+    const store = (typeof MOCK_ADMIN_STORE === 'object' && MOCK_ADMIN_STORE !== null) ? MOCK_ADMIN_STORE : {};
+
+    const getList = (key) => {
+      if (Array.isArray(store[key])) return store[key];
+      if (key === 'classes' && Array.isArray(store.subjects)) return store.subjects;
+      if (key === 'subjects' && Array.isArray(store.classes)) return store.classes;
+      return [];
+    };
+
+    const findItem = (key, predicate) => {
+      const list = getList(key);
+      return list.find(predicate) || null;
+    };
+
+    if (table === 'topics') {
+      clone.classes = findItem('classes', s => s?.id === clone.class_id);
+    } else if (table === 'challenge_instances') {
+      clone.assessments = findItem('challenge_definitions', a => a?.id === clone.challenge_definition_id) ||
+                          findItem('exams', e => e?.id === clone.challenge_definition_id);
+      clone.batches = findItem('batches', b => b?.id === clone.batch_id);
+      clone.students = findItem('students', s => s?.id === clone.student_id);
+    }
+
+    if (table === 'classes' || table === 'subjects') {
+      clone.institutions = findItem('institutions', p => p?.id === clone.institution_id);
+    } else if (table === 'levels') {
+      const subj = findItem('classes', s => s?.id === clone.class_id);
+      clone.classes = subj ? { ...subj, institution_id: subj.institution_id } : null;
+    } else if (table === 'programs') {
+      clone.institutions = findItem('institutions', p => p?.id === clone.institution_id);
+    } else if (table === 'batches') {
+      const cls = findItem('programs', c => c?.id === clone.program_id);
+      clone.programs = cls ? { ...cls, institutions: findItem('institutions', p => p?.id === cls.institution_id) } : null;
+    } else if (table === 'students') {
+      clone.programs = findItem('programs', c => c?.id === clone.program_id);
+      clone.institutions = findItem('institutions', p => p?.id === clone.institution_id);
+      clone.batches = findItem('batches', b => b?.id === clone.batch_id);
+    } else if (table === 'exams') {
+      clone.institutions = findItem('institutions', p => p?.id === clone.institution_id);
+      clone.classes = findItem('classes', s => s?.id === clone.class_id);
+    } else if (table === 'questions') {
+      clone.exams = findItem('exams', e => e?.id === clone.exam_id);
+    } else if (table === 'program_classes') {
+      const cls = findItem('programs', c => c?.id === clone.program_id);
+      clone.programs = cls ? { ...cls, institutions: findItem('institutions', p => p?.id === cls.institution_id) } : null;
+      clone.classes = findItem('classes', s => s?.id === clone.class_id);
+    } else if (table === 'exam_programs') {
+      const cls = findItem('programs', c => c?.id === clone.program_id);
+      clone.programs = cls ? { ...cls, institutions: findItem('institutions', p => p?.id === cls.institution_id) } : null;
+      clone.exams = findItem('exams', e => e?.id === clone.exam_id);
+    } else if (table === 'attempts') {
+      const st = findItem('students', s => s?.id === clone.student_id);
+      clone.students = st ? { ...st, programs: findItem('programs', c => c?.id === st.program_id) } : null;
+      clone.exams = findItem('exams', e => e?.id === clone.exam_id);
+    } else if (table === 'progress') {
+      const st = findItem('students', s => s?.id === clone.student_id);
+      clone.students = st ? { ...st, programs: findItem('programs', c => c?.id === st.program_id) } : null;
+      clone.classes = findItem('classes', s => s?.id === clone.class_id);
+    }
+
+    return clone;
+  } catch (err) {
+    console.warn(`[hydrateMockRelations] Error hydrating table "${table}":`, err);
+    return item;
   }
-  
-  if (table === 'classes') {
-    clone.institutions = store.institutions.find(p => p.id === clone.institution_id) || null;
-  } else if (table === 'levels') {
-    const subj = store.classes.find(s => s.id === clone.class_id);
-    clone.classes = subj ? { ...subj, institution_id: subj.institution_id } : null;
-  } else if (table === 'programs') {
-    clone.institutions = store.institutions.find(p => p.id === clone.institution_id) || null;
-  } else if (table === 'batches') {
-    const cls = store.programs.find(c => c.id === clone.program_id);
-    clone.programs = cls ? { ...cls, institutions: store.institutions.find(p => p.id === cls.institution_id) } : null;
-  } else if (table === 'students') {
-    clone.programs = store.programs.find(c => c.id === clone.program_id) || null;
-    clone.institutions = store.institutions.find(p => p.id === clone.institution_id) || null;
-    clone.batches = store.batches.find(b => b.id === clone.batch_id) || null;
-  } else if (table === 'exams') {
-    clone.institutions = store.institutions.find(p => p.id === clone.institution_id) || null;
-    clone.classes = store.classes.find(s => s.id === clone.class_id) || null;
-      } else if (table === 'questions') {
-    clone.exams = store.exams.find(e => e.id === clone.exam_id) || null;
-  } else if (table === 'program_classes') {
-    const cls = store.programs.find(c => c.id === clone.program_id);
-    clone.programs = cls ? { ...cls, institutions: store.institutions.find(p => p.id === cls.institution_id) } : null;
-    clone.classes = store.classes.find(s => s.id === clone.class_id) || null;
-  } else if (table === 'exam_programs') {
-    const cls = store.programs.find(c => c.id === clone.program_id);
-    clone.programs = cls ? { ...cls, institutions: store.institutions.find(p => p.id === cls.institution_id) } : null;
-    clone.exams = store.exams.find(e => e.id === clone.exam_id) || null;
-  } else if (table === 'attempts') {
-    const st = store.students.find(s => s.id === clone.student_id);
-    clone.students = st ? { ...st, programs: store.programs.find(c => c.id === st.program_id) } : null;
-    clone.exams = store.exams.find(e => e.id === clone.exam_id) || null;
-  } else if (table === 'progress') {
-    const st = store.students.find(s => s.id === clone.student_id);
-    clone.students = st ? { ...st, programs: store.programs.find(c => c.id === st.program_id) } : null;
-    clone.classes = store.classes.find(s => s.id === clone.class_id) || null;
-      }
-  return clone;
 }
 
 let _adminCache = new Map();
 
 export function clearAdminCache(table = null) {
   if (table) {
-    const normTable = table.replace('-', '_');
+    const normTable = (table || '').replace('-', '_');
     for (const key of _adminCache.keys()) {
       if (key.startsWith(normTable + '|')) {
         _adminCache.delete(key);
@@ -1164,7 +1219,7 @@ export function clearAdminCache(table = null) {
 }
 
 export async function adminFetchAll(table, select = '*', filters = {}, forceRefresh = false) {
-  const normTable = table.replace('-', '_');
+  const normTable = (table || '').replace('-', '_');
   const cacheKey = normTable + '|' + select + '|' + JSON.stringify(filters);
 
   if (!forceRefresh && _adminCache.has(cacheKey)) {
@@ -1172,17 +1227,34 @@ export async function adminFetchAll(table, select = '*', filters = {}, forceRefr
   }
 
   if (isPlaceholderUrl()) {
-    let rows = MOCK_ADMIN_STORE[normTable] || [];
+    let rows = MOCK_ADMIN_STORE[normTable] || (normTable === 'classes' ? MOCK_ADMIN_STORE.subjects : (normTable === 'subjects' ? MOCK_ADMIN_STORE.classes : [])) || [];
     for (const [key, val] of Object.entries(filters)) {
-      rows = rows.filter(r => r[key] === val);
+      rows = rows.filter(r => r && r[key] === val);
     }
     return rows.map(r => hydrateMockRelations(normTable, r));
   }
   try {
     const sb = await getSupabase();
-    let query = sb.from(normTable).select(select);
+    if (!sb) {
+      throw new Error('Supabase client unavailable');
+    }
+    // Disambiguate foreign key relations if standard embed syntax is used
+    let resolvedSelect = select;
+    if (resolvedSelect !== '*') {
+      // Disambiguate relations using explicit foreign key constraint hints where ambiguity exists
+      resolvedSelect = resolvedSelect
+        .replace(/\binstitutions(?!!)\(/g, 'institutions!institution_id(')
+        .replace(/\bprograms(?!!)\(/g, 'programs!program_id(')
+        .replace(/\bbatches(?!!)\(/g, 'batches!batch_id(')
+        .replace(/\blevels(?!!)\(/g, 'levels!level_id(')
+        .replace(/\bexams(?!!)\(/g, 'exams!exam_id(')
+        .replace(/\bstudents(?!!)\(/g, 'students!student_id(');
+    }
+
+    let query = sb.from(normTable).select(resolvedSelect);
     // Only filter by deleted_at if the table supports soft delete
-    if (!['program_classes', 'exam_programs', 'attempts', 'attempt_answers', 'progress', 'audit_logs', 'site_settings'].includes(normTable)) {
+    const noDeletedAtTables = ['program_classes', 'exam_programs', 'attempts', 'attempt_answers', 'progress', 'audit_logs', 'site_settings', 'challenge_attempts', 'challenge_attempt_answers'];
+    if (!noDeletedAtTables.includes(normTable)) {
       query = query.is('deleted_at', null);
     }
     for (const [key, val] of Object.entries(filters)) {
@@ -1190,9 +1262,9 @@ export async function adminFetchAll(table, select = '*', filters = {}, forceRefr
     }
     let { data, error } = await query;
     if (error && select !== '*') {
-      console.warn(`Query with relation "${select}" on ${normTable} failed, retrying with '*':`, error.message);
+      console.warn(`Query with relation "${resolvedSelect}" on ${normTable} failed, retrying with '*':`, error.message);
       let fallbackQuery = sb.from(normTable).select('*');
-      if (!['program_classes', 'exam_programs', 'attempts', 'attempt_answers', 'progress', 'audit_logs', 'site_settings'].includes(normTable)) {
+      if (!noDeletedAtTables.includes(normTable)) {
         fallbackQuery = fallbackQuery.is('deleted_at', null);
       }
       for (const [key, val] of Object.entries(filters)) {
@@ -1204,43 +1276,126 @@ export async function adminFetchAll(table, select = '*', filters = {}, forceRefr
         error = null;
       }
     }
-    if (error) throw error;
+    if (error) {
+      console.warn(`adminFetchAll soft warning: Query on ${normTable} failed:`, error.message);
+      return [];
+    }
     let list = data || [];
+
+    // Hydrate missing institutions relationship if the original query requested it but it failed and fell back
+    if (list.length > 0 && select.includes('institutions') && list.some(r => !r.institutions && r.institution_id)) {
+      try {
+        const instRes = await sb.from('institutions').select('id, name');
+        const instList = instRes.data || [];
+        list.forEach(r => {
+          if (!r.institutions && r.institution_id) {
+            const match = instList.find(i => i.id === r.institution_id);
+            if (match) r.institutions = { name: match.name };
+          }
+        });
+      } catch (hydrationErr) {
+        console.warn('Institutions hydration warning:', hydrationErr.message);
+      }
+    }
+
+    // Hydrate missing classes relationship if the original query requested it but it failed and fell back
+    if (list.length > 0 && select.includes('classes') && list.some(r => !r.classes && r.class_id)) {
+      try {
+        const clsRes = await sb.from('classes').select('id, name');
+        const clsList = clsRes.data || [];
+        list.forEach(r => {
+          if (!r.classes && r.class_id) {
+            const match = clsList.find(c => c.id === r.class_id);
+            if (match) r.classes = { name: match.name };
+          }
+        });
+      } catch (clsHydrationErr) {
+        console.warn('Classes hydration warning:', clsHydrationErr.message);
+      }
+    }
+
+    // Hydrate missing programs relationship if the original query requested it but it failed and fell back
+    if (list.length > 0 && select.includes('programs') && list.some(r => !r.programs && r.program_id)) {
+      try {
+        const progRes = await sb.from('programs').select('id, name, institution_id');
+        const progList = progRes.data || [];
+        list.forEach(r => {
+          if (!r.programs && r.program_id) {
+            const match = progList.find(p => p.id === r.program_id);
+            if (match) r.programs = { name: match.name, institution_id: match.institution_id };
+          }
+        });
+      } catch (progHydrationErr) {
+        console.warn('Programs hydration warning:', progHydrationErr.message);
+      }
+    }
+
+    // Hydrate missing batches relationship if the original query requested it but it failed and fell back
+    if (list.length > 0 && select.includes('batches') && list.some(r => !r.batches && r.batch_id)) {
+      try {
+        const batchRes = await sb.from('batches').select('id, name');
+        const batchList = batchRes.data || [];
+        list.forEach(r => {
+          if (!r.batches && r.batch_id) {
+            const match = batchList.find(b => b.id === r.batch_id);
+            if (match) r.batches = { name: match.name };
+          }
+        });
+      } catch (batchHydrationErr) {
+        console.warn('Batches hydration warning:', batchHydrationErr.message);
+      }
+    }
 
     // Hydrate exams with program_id, prerequisite_exam_id, exam_order
     if (normTable === 'exams' && list.length > 0) {
       try {
-        const [ecRes, auditRes] = await Promise.all([
-          sb.from('exam_programs').select('*'),
-          sb.from('audit_logs').select('entity_id, new_value, created_at').eq('entity_type', 'exam').eq('action', 'exam_metadata')
-        ]);
-        const ecList = ecRes.data || [];
-        const logsList = auditRes.data || [];
+        let ecList = [];
+        let logsList = [];
+        try {
+          const { data, error } = await sb.from('exam_programs').select('*');
+          if (!error && Array.isArray(data)) ecList = data;
+        } catch (_) {}
+
+        try {
+          const { data, error } = await sb.from('audit_logs')
+            .select('entity_id, new_value, created_at')
+            .eq('entity_type', 'exam')
+            .eq('action', 'exam_metadata');
+          if (!error && Array.isArray(data)) logsList = data;
+        } catch (_) {}
+
         list.forEach(r => {
+          if (!r) return;
           if (!r.program_id) {
-            const match = ecList.find(c => c.exam_id === r.id);
+            const match = ecList.find(c => c?.exam_id === r.id);
             if (match) r.program_id = match.program_id;
           }
-          const examLogs = logsList.filter(l => l.entity_id === r.id).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-          if (examLogs.length > 0 && examLogs[0].new_value) {
-            const nv = examLogs[0].new_value;
-            if (!r.prerequisite_exam_id && nv.prerequisite_exam_id) r.prerequisite_exam_id = nv.prerequisite_exam_id;
-            if (!r.exam_order && nv.exam_order) r.exam_order = nv.exam_order;
-            if (!r.program_id && nv.program_id) r.program_id = nv.program_id;
+          const examLogs = logsList.filter(l => l?.entity_id === r.id).sort((a,b) => new Date(b?.created_at || 0) - new Date(a?.created_at || 0));
+          let nv = {};
+          if (examLogs.length > 0 && examLogs[0]?.new_value) {
+            try {
+              nv = typeof examLogs[0].new_value === 'string' ? JSON.parse(examLogs[0].new_value) : examLogs[0].new_value;
+            } catch (_) {
+              nv = {};
+            }
           }
-          if (!r.exam_order) r.exam_order = '1';
+          nv = (nv && typeof nv === 'object') ? nv : {};
+          if (!r.prerequisite_exam_id && nv?.prerequisite_exam_id) r.prerequisite_exam_id = nv.prerequisite_exam_id;
+          if (!r.exam_order && nv?.exam_order) r.exam_order = nv.exam_order;
+          if (!r.program_id && nv?.program_id) r.program_id = nv.program_id;
+          if (!r.exam_order) r.exam_order = 1;
         });
       } catch (hydrationErr) {
-        console.warn('Metadata hydration warning:', hydrationErr.message);
+        console.warn('Metadata hydration warning:', hydrationErr?.message || hydrationErr);
       }
     }
     _adminCache.set(cacheKey, JSON.parse(JSON.stringify(list)));
     return list;
   } catch(e) {
-    console.warn(`Supabase query failed for ${table}, using mock store:`, e.message);
-    let rows = MOCK_ADMIN_STORE[normTable] || [];
+    console.warn(`Supabase query failed for ${table}, using mock store:`, e?.message || e);
+    let rows = MOCK_ADMIN_STORE[normTable] || (normTable === 'classes' ? MOCK_ADMIN_STORE.subjects : (normTable === 'subjects' ? MOCK_ADMIN_STORE.classes : [])) || [];
     for (const [key, val] of Object.entries(filters)) {
-      rows = rows.filter(r => r[key] === val);
+      rows = rows.filter(r => r && r[key] === val);
     }
     const list = rows.map(r => hydrateMockRelations(normTable, r));
     _adminCache.set(cacheKey, JSON.parse(JSON.stringify(list)));
@@ -1249,7 +1404,7 @@ export async function adminFetchAll(table, select = '*', filters = {}, forceRefr
 }
 
 export async function adminInsert(table, payload) {
-  const normTable = table.replace('-', '_');
+  const normTable = (table || '').replace('-', '_');
   if (isPlaceholderUrl()) {
     const newItem = { id: crypto.randomUUID(), ...payload, created_at: new Date().toISOString() };
     if (!MOCK_ADMIN_STORE[normTable]) MOCK_ADMIN_STORE[normTable] = [];
@@ -1353,7 +1508,7 @@ export async function adminInsert(table, payload) {
 }
 
 export async function adminUpdate(table, id, payload) {
-  const normTable = table.replace('-', '_');
+  const normTable = (table || '').replace('-', '_');
   if (isPlaceholderUrl()) {
     const list = MOCK_ADMIN_STORE[normTable] || [];
     const idx = list.findIndex(r => r.id === id);
@@ -1490,7 +1645,7 @@ export async function adminUpdate(table, id, payload) {
 }
 
 export async function adminSoftDelete(table, id) {
-  const normTable = table.replace('-', '_');
+  const normTable = (table || '').replace('-', '_');
   if (isPlaceholderUrl()) {
     const list = MOCK_ADMIN_STORE[normTable] || [];
     const idx = list.findIndex(r => r.id === id);
@@ -1517,7 +1672,7 @@ export async function adminSoftDelete(table, id) {
 }
 
 export async function adminFetchDeleted(table) {
-  const normTable = table.replace('-', '_');
+  const normTable = (table || '').replace('-', '_');
   if (isPlaceholderUrl()) return [];
   const sb = await getSupabase();
   const { data, error } = await sb.from(normTable).select('*').not('deleted_at', 'is', null);
@@ -1531,7 +1686,7 @@ export async function adminFetchDeleted(table) {
 }
 
 export async function adminRestore(table, id) {
-  const normTable = table.replace('-', '_');
+  const normTable = (table || '').replace('-', '_');
   if (isPlaceholderUrl()) return;
   const sb = await getSupabase();
   const { error } = await sb.from(normTable).update({ deleted_at: null }).eq('id', id);
@@ -1548,7 +1703,7 @@ export async function adminRestore(table, id) {
 }
 
 export async function adminHardDelete(table, id) {
-  const normTable = table.replace('-', '_');
+  const normTable = (table || '').replace('-', '_');
   if (isPlaceholderUrl()) {
     const list = MOCK_ADMIN_STORE[normTable] || [];
     const idx = list.findIndex(r => r.id === id);
@@ -1873,11 +2028,18 @@ export async function batchResolveExamDuplicateQuestions(examId) {
  * @param {'same_class'|'cross_class'} scope
  */
 export async function detectDuplicateStudents(scope = 'same_class') {
-  const [students, attempts, progress] = await Promise.all([
-    adminFetchAll('students', '*, programs(id, name, institution_id, institutions(name)), batches(id, name)'),
-    adminFetchAll('attempts', 'id, student_id, score, percentage, grade, status'),
-    adminFetchAll('progress', 'id, student_id, class_id')
+  const [students, attempts, progress, programs, batches, institutions] = await Promise.all([
+    adminFetchAll('students'),
+    adminFetchAll('attempts', 'id, student_id, score, percentage, grade, status').catch(() => []),
+    adminFetchAll('progress', 'id, student_id').catch(() => []),
+    adminFetchAll('programs').catch(() => []),
+    adminFetchAll('batches').catch(() => []),
+    adminFetchAll('institutions').catch(() => [])
   ]);
+
+  const progMap = new Map((programs || []).map(p => [p.id, p]));
+  const batchMap = new Map((batches || []).map(b => [b.id, b]));
+  const instMap = new Map((institutions || []).map(i => [i.id, i]));
 
   const activeStudents = (students || []).filter(s => !s.deleted_at);
 
@@ -1903,15 +2065,20 @@ export async function detectDuplicateStudents(scope = 'same_class') {
       const studentAttempts = (attempts || []).filter(a => a.student_id === c.id);
       const studentProgress = (progress || []).filter(p => p.student_id === c.id);
       const bestAttempt = [...studentAttempts].sort((a, b) => (Number(b.percentage) || 0) - (Number(a.percentage) || 0))[0];
+      const prog = progMap.get(c.program_id);
+      const batch = batchMap.get(c.batch_id);
+      const inst = instMap.get(c.institution_id || prog?.institution_id);
       return {
         ...c,
         attemptsCount: studentAttempts.length,
         progressCount: studentProgress.length,
         bestScore: bestAttempt ? parseFloat(bestAttempt.percentage || 0).toFixed(1) : null,
         globalGrade: bestAttempt ? bestAttempt.grade : null,
-        programName: c.programs?.name || '—',
-        institutionName: c.programs?.institutions?.name || '—',
-        batchName: c.batches?.name || 'Unassigned'
+        programName: prog?.name || c.programs?.name || '—',
+        institutionName: inst?.name || prog?.institutions?.name || '—',
+        batchName: batch?.name || c.batches?.name || 'Unassigned',
+        programs: prog || c.programs || { name: '—' },
+        institutions: inst || c.institutions || { name: '—' }
       };
     });
 
@@ -1981,14 +2148,19 @@ export async function mergeStudentPair(primaryId, duplicateId, softDelete = true
   }
 
   // 3. Re-link progress
-  const primaryProgress = await adminFetchAll('progress', '*', { student_id: primary.id });
-  for (const dp of allProgress) {
-    const exists = primaryProgress.some(p => p.class_id === dp.class_id);
-    if (!exists) {
-      await adminUpdate('progress', dp.id, { student_id: primary.id, updated_at: new Date().toISOString() });
-    } else {
-      await adminHardDelete('progress', dp.id);
+  try {
+    const primaryProgress = await adminFetchAll('progress', '*', { student_id: primary.id }).catch(() => []);
+    for (const dp of (allProgress || [])) {
+      const pKey = dp.subject_id || dp.class_id;
+      const exists = primaryProgress.some(p => (p.subject_id || p.class_id) === pKey);
+      if (!exists) {
+        await adminUpdate('progress', dp.id, { student_id: primary.id, updated_at: new Date().toISOString() });
+      } else {
+        await adminHardDelete('progress', dp.id).catch(() => {});
+      }
     }
+  } catch (progErr) {
+    console.warn('Progress relink warning during merge:', progErr.message);
   }
 
   // 4. Delete or soft-delete duplicate student
@@ -2473,54 +2645,19 @@ export async function fetchCentralQuestions(filters = {}) {
   const sb = await getSupabase();
   try {
     let query = sb.from('questions')
-      .select('*, topics(name, code), classes(name)')
+      .select('*')
       .is('deleted_at', null);
 
     if (filters.class_id) query = query.eq('class_id', filters.class_id);
-    if (filters.topic_id) query = query.eq('topic_id', filters.topic_id);
     if (filters.question_type) query = query.eq('question_type', filters.question_type);
     if (filters.status) query = query.eq('status', filters.status);
 
     const { data, error } = await query.order('created_at', { ascending: false });
-    if (!error && data) return data;
+    if (error) throw error;
+    return data || [];
   } catch (err) {
-    console.warn('Central questions query fallback to legacy questions:', err.message);
-  }
-
-  // Fallback to legacy questions table
-  try {
-    const { data: legacyQ, error: legErr } = await sb.from('questions')
-      .select('*')
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
-
-    if (!legErr && legacyQ) {
-      return legacyQ.map(q => {
-        let metaObj = {};
-        if (typeof q.metadata === 'object' && q.metadata) metaObj = q.metadata;
-        else if (typeof q.metadata === 'string') {
-          try { metaObj = JSON.parse(q.metadata); } catch (_) {}
-        }
-        const topicName = metaObj.topic || 'General';
-        const wordType = metaObj.type || q.question_type || null;
-        const accepted = Array.isArray(q.accepted_answers) && q.accepted_answers.length > 0
-          ? q.accepted_answers
-          : (q.correct_answer ? [q.correct_answer] : []);
-
-        return {
-          ...q,
-          topic_id: null,
-          topic_name: topicName,
-          question_type: wordType,
-          topics: { name: topicName, code: 'GEN' },
-          subjects: { name: 'General' },
-          accepted_answers: accepted,
-          status: 'active'
-        };
-      });
-    }
-  } catch (e2) {
-    console.warn('Legacy questions fetch fallback error:', e2.message);
+    console.warn('Central questions query failed:', err.message);
+    return [];
   }
   return [];
 }
@@ -2536,14 +2673,33 @@ export async function createCentralQuestion(payload) {
     acceptedAnswers = String(payload.correct_answer).split(/[;/|]/).map(s => s.trim()).filter(Boolean);
   }
 
+  const { data: exData } = await sb.from('exams')
+    .select('id')
+    .eq('topic_id', payload.topic_id)
+    .is('deleted_at', null)
+    .limit(1);
+    
+  let targetExamId = null;
+  if (exData && exData.length > 0) {
+    targetExamId = exData[0].id;
+  } else {
+    const { data: anyEx } = await sb.from('exams').select('id').is('deleted_at', null).limit(1);
+    targetExamId = anyEx?.[0]?.id || null;
+  }
+  if (!targetExamId) throw new Error("No exams available to host questions.");
+
   const { data, error } = await sb.from('questions')
     .insert({
-      class_id: payload.class_id,
-      topic_id: payload.topic_id,
-      question_type: payload.question_type || null,
+      exam_id: targetExamId,
+      question_order: Math.floor(Math.random() * 1000000),
       question_text: payload.question_text.trim(),
-      accepted_answers: acceptedAnswers,
-      status: payload.status || 'active'
+      correct_answer: acceptedAnswers.join(' / '),
+      answer_type: 'written',
+      metadata: { 
+        topic: payload.topic_id || 'General', 
+        question_type: payload.question_type || '', 
+        accepted_answers_array: acceptedAnswers 
+      }
     })
     .select()
     .single();
@@ -2554,10 +2710,33 @@ export async function createCentralQuestion(payload) {
 
 export async function updateCentralQuestion(id, payload) {
   const sb = await getSupabase();
-  const updateData = { ...payload };
-  if (updateData.accepted_answers && !Array.isArray(updateData.accepted_answers)) {
-    updateData.accepted_answers = String(updateData.accepted_answers).split(/[;/|]/).map(s => s.trim()).filter(Boolean);
+  const updateData = {};
+  let fArray = null;
+
+  if (payload.accepted_answers) {
+    if (Array.isArray(payload.accepted_answers)) {
+      fArray = payload.accepted_answers;
+    } else {
+      fArray = String(payload.accepted_answers).split(/[;/|]/).map(s => s.trim()).filter(Boolean);
+    }
+    updateData.correct_answer = fArray.join(' / ');
+  } else if (payload.correct_answer) {
+    updateData.correct_answer = payload.correct_answer;
   }
+  
+  if (payload.question_text !== undefined) {
+    updateData.question_text = payload.question_text.trim();
+  }
+  
+  if (payload.topic_id !== undefined || payload.question_type !== undefined || fArray !== null) {
+    const { data: existing } = await sb.from('questions').select('metadata').eq('id', id).single();
+    let meta = existing?.metadata || {};
+    if (payload.topic_id !== undefined) meta.topic = payload.topic_id;
+    if (payload.question_type !== undefined) meta.question_type = payload.question_type;
+    if (fArray !== null) meta.accepted_answers_array = fArray;
+    updateData.metadata = meta;
+  }
+
   const { data, error } = await sb.from('questions')
     .update(updateData)
     .eq('id', id)
@@ -2573,7 +2752,7 @@ export async function deleteCentralQuestion(id) {
 }
 
 /** Assessments (Evaluations & Exams) */
-export async function fetchChallengeDefinitions(filters = {}) {
+export async function fetchAssessmentDefinitions(filters = {}) {
   const sb = await getSupabase();
   let query = sb.from('challenge_definitions').select('*, classes(name)').is('deleted_at', null);
 
@@ -2601,7 +2780,7 @@ export async function fetchChallengeDefinitions(filters = {}) {
   }));
 }
 
-export async function createChallengeDefinitionWithTopics(payload, topicIds = []) {
+export async function createAssessmentDefinitionWithTopics(payload, topicIds = []) {
   const sb = await getSupabase();
   try {
     const { data: assessment, error } = await sb.from('challenge_definitions')
@@ -2634,7 +2813,7 @@ export async function createChallengeDefinitionWithTopics(payload, topicIds = []
       return assessment;
     }
   } catch (err) {
-    console.warn('createChallengeDefinitionWithTopics fallback to exams:', err.message);
+    console.warn('createAssessmentDefinitionWithTopics fallback to exams:', err.message);
   }
 
   // Fallback to legacy exams table
@@ -3025,7 +3204,7 @@ export async function fetchClasses(forceRefresh = false) {
 /** Class Instances (Phase 6) */
 export async function fetchClassInstances(batchId = null) {
   const sb = await getSupabase();
-  let query = sb.from('class_instances').select('*, classes(name), batches(name)');
+  let query = sb.from('class_instances').select('*');
   if (batchId) query = query.eq('batch_id', batchId);
   const { data, error } = await query.is('deleted_at', null).order('created_at', { ascending: false });
   if (error) throw error;
@@ -3099,14 +3278,41 @@ export async function fetchClassMeetings(classInstanceId) {
 
 
 
-export async function fetchChallengeDefinitionTopics(id) {
+export async function fetchChallengeDefinitions(filters = {}) {
+  const sb = await getSupabase();
+  let query = sb.from('challenge_definitions').select('*, classes(name)').is('deleted_at', null);
+
+  if (filters.class_id) query = query.eq('class_id', filters.class_id);
+  if (filters.challenge_definition_type) query = query.eq('challenge_definition_type', filters.challenge_definition_type);
+  if (filters.status) query = query.eq('status', filters.status);
+
+  try {
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (!error && data) return data;
+  } catch (err) {
+    console.warn('Assessments table query fallback to exams:', err.message);
+  }
+
+  const legacyList = await adminFetchAll('exams', '*, classes(name)');
+  return legacyList.map(e => ({
+    id: e.id,
+    title: e.title || e.exam_title,
+    challenge_definition_type: e.challenge_definition_type || 'EVALUATION',
+    status: (e.exam_status || 'draft').toUpperCase(),
+    working_duration_minutes: e.time_limit_minutes || 60,
+    created_at: e.created_at,
+    ...e
+  }));
+}
+
+export async function fetchAssessmentDefinitionTopics(id) {
   const sb = await getSupabase();
   const { data, error } = await sb.from('challenge_definition_topics').select('topic_id').eq('challenge_definition_id', id);
   if (error) throw error;
   return (data || []).map(d => d.topic_id);
 }
 
-export async function createChallengeDefinition(payload, topicIds = []) {
+export async function createAssessmentDefinition(payload, topicIds = []) {
   const sb = await getSupabase();
   const { data, error } = await sb.from('challenge_definitions')
     .insert({
@@ -3135,7 +3341,7 @@ export async function createChallengeDefinition(payload, topicIds = []) {
   return data;
 }
 
-export async function updateChallengeDefinition(id, payload, topicIds = null) {
+export async function updateAssessmentDefinition(id, payload, topicIds = null) {
   const sb = await getSupabase();
   const { data, error } = await sb.from('challenge_definitions')
     .update({
@@ -3164,6 +3370,43 @@ export async function updateChallengeDefinition(id, payload, topicIds = null) {
     }
   }
   return data;
+}
+
+export async function publishAssessmentDefinition(id) {
+  const sb = await getSupabase();
+  const { data: topics, error: tErr } = await sb.from('challenge_definition_topics')
+    .select('topic_id')
+    .eq('challenge_definition_id', id);
+  if (tErr) throw tErr;
+  
+  let questionIds = [];
+  if (topics && topics.length > 0) {
+    const tIds = topics.map(t => t.topic_id);
+    const { data: qData, error: qErr } = await sb.from('questions')
+      .select('id')
+      .in('topic_id', tIds)
+      .is('deleted_at', null)
+      .eq('is_active', true);
+    if (qErr) throw qErr;
+    questionIds = (qData || []).map(q => q.id);
+  }
+  
+  if (questionIds.length > 0) {
+    await sb.from('challenge_definition_questions').delete().eq('challenge_definition_id', id);
+    const inserts = questionIds.map(qid => ({
+      challenge_definition_id: id,
+      question_id: qid
+    }));
+    await sb.from('challenge_definition_questions').insert(inserts);
+  }
+
+  const { data, error } = await sb.from('challenge_definitions')
+    .update({ status: 'READY', updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return { ...data, _frozenCount: questionIds.length };
 }
 
 export async function publishChallengeDefinition(id) {
@@ -3203,12 +3446,41 @@ export async function publishChallengeDefinition(id) {
   return { ...data, _frozenCount: questionIds.length };
 }
 
-/** Challenge Instances (Phase 9) */
-export async function fetchChallengeInstances(classInstanceId = null) {
+/** Assessment Instances (Phase 9) */
+export async function fetchAssessmentInstances(classInstanceId = null) {
   const sb = await getSupabase();
-  let query = sb.from('challenge_instances').select('*, challenge_definitions(title, challenge_type), class_instances(batches(name), classes(name))').is('deleted_at', null);
+  let query = sb.from('challenge_instances').select('*, challenge_definitions(title, challenge_type), class_instances(*)').is('deleted_at', null);
   if (classInstanceId) query = query.eq('class_instance_id', classInstanceId);
   const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchChallengeInstances(classInstanceId = null) {
+  const sb = await getSupabase();
+  let query = sb.from('challenge_instances').select('*, challenge_definitions(title, challenge_type), class_instances(*)').is('deleted_at', null);
+  if (classInstanceId) query = query.eq('class_instance_id', classInstanceId);
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createAssessmentInstance(payload) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('challenge_instances')
+    .insert({
+      class_instance_id: payload.class_instance_id,
+      challenge_definition_id: payload.challenge_definition_id,
+      title_override: payload.title_override || null,
+      availability_start: payload.availability_start || null,
+      availability_end: payload.availability_end || null,
+      working_duration_minutes: payload.working_duration_minutes || 60,
+      max_attempts: payload.max_attempts || null,
+      status: payload.status || 'DRAFT',
+      assigned_by: payload.assigned_by || 'admin'
+    })
+    .select()
+    .single();
   if (error) throw error;
   return data;
 }
@@ -3233,16 +3505,16 @@ export async function createChallengeInstance(payload) {
   return data;
 }
 
-export async function startChallengeAttempt(studentId, challengeInstanceId) {
+export async function startAssessmentAttempt(studentId, assessmentInstanceId) {
   const sb = await getSupabase();
 
-  // 1. Fetch Challenge Instance and Definition Details
+  // 1. Fetch Assessment Instance and Definition Details
   const { data: instData, error: instErr } = await sb.from('challenge_instances')
     .select('*, challenge_definitions(*)')
-    .eq('id', challengeInstanceId)
+    .eq('id', assessmentInstanceId)
     .single();
 
-  if (instErr || !instData) throw new Error('Challenge instance not found.');
+  if (instErr || !instData) throw new Error('Assessment instance not found.');
   const definition = instData.challenge_definitions;
 
   // 2. Determine max attempts
@@ -3252,7 +3524,7 @@ export async function startChallengeAttempt(studentId, challengeInstanceId) {
   const { data: existAtt, error: existErr } = await sb.from('challenge_attempts')
     .select('id, status')
     .eq('student_id', studentId)
-    .eq('challenge_instance_id', challengeInstanceId)
+    .eq('challenge_instance_id', assessmentInstanceId)
     .order('created_at', { ascending: false });
 
   if (!existErr && existAtt && existAtt.length > 0) {
@@ -3261,7 +3533,7 @@ export async function startChallengeAttempt(studentId, challengeInstanceId) {
       return { attemptId: inProgress.id, status: 'RESUMED' }; // Resume existing
     }
     if (existAtt.length >= maxAttempts) {
-      throw new Error(`Maximum attempts (${maxAttempts}) reached for this challenge.`);
+      throw new Error(`Maximum attempts (${maxAttempts}) reached for this assessment.`);
     }
   }
 
@@ -3273,7 +3545,7 @@ export async function startChallengeAttempt(studentId, challengeInstanceId) {
   const { data: newAtt, error: attErr } = await sb.from('challenge_attempts')
     .insert({
       student_id: studentId,
-      challenge_instance_id: challengeInstanceId,
+      challenge_instance_id: assessmentInstanceId,
       status: 'IN_PROGRESS',
       expected_end_at: deadline.toISOString(),
       score: 0,
@@ -3321,7 +3593,7 @@ export async function startChallengeAttempt(studentId, challengeInstanceId) {
   return { attemptId: newAtt.id, status: 'STARTED' };
 }
 
-export async function submitChallengeAttempt(attemptId, answersMap, options = {}) {
+export async function submitAssessmentAttempt(attemptId, answersMap, options = {}) {
   const sb = await getSupabase();
 
   // 1. Fetch the attempt to ensure it's valid and not already submitted
@@ -3434,18 +3706,18 @@ export async function submitChallengeAttempt(attemptId, answersMap, options = {}
   return updatedAtt;
 }
 
-export async function fetchChallengeDefinitionQuestions(challengeDefinitionId) {
+export async function fetchAssessmentDefinitionQuestions(assessmentDefinitionId) {
   const sb = await getSupabase();
   const { data, error } = await sb
     .from('assessment_questions')
     .select('*, questions(*)')
-    .eq('assessment_id', challengeDefinitionId)
+    .eq('assessment_id', assessmentDefinitionId)
     .order('question_order', { ascending: true });
   if (error) {
     const { data: qData, error: qErr } = await sb
       .from('questions')
       .select('*')
-      .eq('exam_id', challengeDefinitionId)
+      .eq('exam_id', assessmentDefinitionId)
       .order('created_at', { ascending: true });
     if (qErr) throw qErr;
     return qData || [];
@@ -3516,3 +3788,58 @@ export async function fetchAssessmentResultsFromDB(studentId, assessmentId = nul
     return [];
   }
 }
+
+
+/** Generate AI Narrative Report for an attempt */
+export async function generateAttemptNarrative(attemptId) {
+  const sb = await getSupabase();
+  const { data: attempt, error: attemptErr } = await sb.from('attempts')
+    .select('id, score, percentage, grade, status, students (name), exams (exam_title, exam_type), challenge_definitions (title, challenge_type)')
+    .eq('id', attemptId)
+    .single();
+
+  if (attemptErr || !attempt) throw new Error('Failed to fetch attempt details for narrative generation.');
+
+  const { data: answers, error: ansErr } = await sb.from('attempt_answers').select('question_snapshot, student_answer, is_correct, evaluation_result, score').eq('attempt_id', attemptId);
+  if (ansErr) throw ansErr;
+
+  const studentName = attempt.students?.name || 'The student';
+  const examTitle = attempt.exams?.exam_title || attempt.challenge_definitions?.title || 'the assessment';
+  const score = attempt.score;
+  const percentage = attempt.percentage;
+  const grade = attempt.grade;
+
+  const incorrectAnswers = (answers || []).filter(a => !a.is_correct || a.score === 0);
+  const areasForImprovement = incorrectAnswers.slice(0, 3).map(a => {
+    let qText = 'Unknown Question';
+    try {
+      if (a.question_snapshot) {
+        const qObj = typeof a.question_snapshot === 'string' ? JSON.parse(a.question_snapshot) : a.question_snapshot;
+        qText = qObj.question_text || 'Unknown Question';
+      }
+    } catch(e) {}
+    return '- Question: ' + qText + '. Student Answer: ' + (a.student_answer || 'N/A');
+  }).join('\n');
+
+  const payload = {
+    prompt: "Act as a Cambridge English Examiner. Review this student's exam data. Write a 1-paragraph (max 4 sentences) encouraging but professional English narrative report highlighting their strengths and 1 area for improvement based on their incorrect answers. Student: " + studentName + " Assessment: " + examTitle + " Score: " + score + " (" + percentage + "% - Grade " + grade + "). Incorrect Answers Sample: " + (areasForImprovement || 'None. Perfect score!')
+  };
+
+  let narrativeText = '';
+  try {
+    const aiResponse = await callEdgeFunction('generate-narrative', payload);
+    narrativeText = aiResponse.narrative || aiResponse.text || aiResponse.result || '';
+  } catch (aiErr) {
+    console.warn('Edge Function unavailable. Using local fallback.', aiErr.message);
+    const strengthAdjectives = percentage >= 90 ? 'outstanding' : percentage >= 70 ? 'commendable' : 'developing';
+    const improvement = incorrectAnswers.length > 0 ? 'One area for improvement is careful attention to detail in sections where errors occurred.' : 'The student demonstrated exceptional mastery across all tested areas.';
+    narrativeText = studentName + ' has shown ' + strengthAdjectives + ' performance in ' + examTitle + ', achieving a solid score of ' + percentage + '%. The results indicate a good foundational understanding of the core concepts tested. ' + improvement + ' With continued practice, ' + studentName + ' is well-positioned for further academic success.';
+  }
+
+  if (!narrativeText) throw new Error('AI Engine returned an empty response.');
+
+  await sb.from('attempts').update({ narrative_report: narrativeText }).eq('id', attemptId);
+  try { await sb.from('challenge_attempts').update({ narrative_report: narrativeText }).eq('id', attemptId); } catch(e) {}
+  return narrativeText;
+}
+

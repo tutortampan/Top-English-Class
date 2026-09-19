@@ -1,6 +1,6 @@
-import { adminFetchAll, adminSoftDelete } from '../api.js';
-import { showToast } from '../app.js';
-import { DataGrid } from './datagrid.js?v=4.1.0';
+import { adminFetchAll, adminSoftDelete } from '../api.js?v=4.4.3';
+import { showToast } from '../app.js?v=4.4.3';
+import { DataGrid } from './datagrid.js?v=4.4.3';
 if (typeof window !== 'undefined' && !window.DataGrid) window.DataGrid = DataGrid;
 
 let programsGrid, batchesGrid;
@@ -9,7 +9,15 @@ let programsGrid, batchesGrid;
  * Renders the Programs (Classes) section
  */
 export async function renderClasses(area) {
-  const rawData = await adminFetchAll('programs', '*, institutions(name)');
+  const [rawPrograms, institutions] = await Promise.all([
+    adminFetchAll('programs', '*, institutions(name)'),
+    adminFetchAll('institutions')
+  ]);
+  const instMap = new Map((institutions || []).map(i => [i.id, i.name]));
+  const rawData = (rawPrograms || []).map(p => ({
+    ...p,
+    institutions: p.institutions || { name: instMap.get(p.institution_id) || '' }
+  }));
   
   // Sort by Institution Name (A-Z), then Program Name (A-Z)
   const data = [...rawData].sort((a, b) => {
@@ -66,7 +74,7 @@ export async function renderClasses(area) {
         <div style="display:flex; flex-direction:column; gap:1rem;">
           <div>
             <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.name)}</h4>
-            <div class="text-muted text-sm">Status: <strong class="${row._raw.is_active ? 'text-success' : 'text-muted'}">${row.status}</strong></div>
+            <div class="text-muted text-sm">Status: <strong class="${row?._raw?.is_active ? 'text-success' : 'text-muted'}">${row.status}</strong></div>
           </div>
           <hr style="border-color:var(--fm-border-subtle); margin:0;">
           <div>
@@ -87,20 +95,39 @@ export async function renderClasses(area) {
       if (window.openRecordDrawer) window.openRecordDrawer('Program Details', body, footer);
     },
     columns: [
-      { key: 'institutionName', label: 'Institution', sortable: true },
-      { key: 'name', label: 'Program Name', sortable: true, render: (val) => `<span class="fw-600">${escapeHtml(val)}</span>` },
-      { key: 'status', label: 'Status', sortable: true, render: (val, row) => `<span class="badge ${row._raw.is_active ? 'badge-success' : 'badge-neutral'}">${val}</span>` },
+      { 
+        key: 'institutionName', 
+        label: 'Institution', 
+        sortable: true, 
+        render: (val, row) => { 
+          const nameStr = row?._raw?.institutions?.name || row?._raw?.institution_name || 'N/A';
+          return escapeHtml(String(nameStr)); 
+        } 
+      },
+      { 
+        key: 'name', 
+        label: 'Program Name', 
+        sortable: true, 
+        render: (val, row) => { 
+          const nameStr = row?._raw?.name || row?._raw?.program_name || 'N/A';
+          return `<span class="fw-600">${escapeHtml(String(nameStr))}</span>`; 
+        } 
+      },
+      { key: 'status', label: 'Status', sortable: true, render: (val, row) => `<span class="badge ${row?._raw?.is_active ? 'badge-success' : 'badge-neutral'}">${val}</span>` },
       { 
         key: 'actions', 
         label: 'Actions', 
         sortable: false,
-        render: (val, row) => `
+        render: (val, row) => {
+          if (!row) return '';
+          const rName = typeof row?.name === 'object' ? (row?.name?.name || JSON.stringify(row?.name)) : (row?.name || '');
+          return `
           <div class="d-flex gap-2 justify-end">
-            <button class="btn btn-outline btn-sm" onclick='window._filterProgramId="${row.id}"; window._filterProgramName="${escapeHtml(row.name)}"; window.loadSection("batches");' title="View Batches in ${escapeHtml(row.name)}">Batches →</button>
-            <button class="btn btn-secondary btn-sm" onclick='window._editRecord("programs", "${row.id}", ${JSON.stringify(JSON.stringify(row._raw))})'>Edit</button>
-            <button class="btn btn-danger btn-sm" onclick='window._deleteRecord("programs", "${row.id}", "${escapeHtml(row.name)}")'>Delete</button>
+            <button class="btn btn-outline btn-sm" onclick='window._filterProgramId="${row?.id || ''}"; window._filterProgramName="${escapeHtml(String(rName))}"; window.loadSection("batches");' title="View Batches in ${escapeHtml(String(rName))}">Batches &rarr;</button>
+            <button class="btn btn-secondary btn-sm" onclick='window._editRecord("programs", "${row?.id || ''}", ${JSON.stringify(JSON.stringify(row?._raw || {}))})'>Edit</button>
+            <button class="btn btn-danger btn-sm" onclick='window._deleteRecord("programs", "${row?.id || ''}", "${escapeHtml(String(rName))}")'>Delete</button>
           </div>
-        `
+        `}
       }
     ]
   });
@@ -111,7 +138,7 @@ export async function renderClasses(area) {
  */
 export async function renderBatches(area) {
   const [rawData, allStudents] = await Promise.all([
-    adminFetchAll('batches', '*, programs(name, institution_id, institutions(name))'),
+    adminFetchAll('batches', '*, programs!program_id(name, institution_id, institutions!institution_id(name))'),
     adminFetchAll('students')
   ]);
 
@@ -181,7 +208,7 @@ export async function renderBatches(area) {
         <div style="display:flex; flex-direction:column; gap:1rem;">
           <div>
             <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.name)}</h4>
-            <div class="text-muted text-sm">Status: <strong class="${row._raw.is_active ? 'text-success' : 'text-muted'}">${row.status}</strong></div>
+            <div class="text-muted text-sm">Status: <strong class="${row?._raw?.is_active ? 'text-success' : 'text-muted'}">${row.status}</strong></div>
           </div>
           <hr style="border-color:var(--fm-border-subtle); margin:0;">
           <div>
@@ -202,31 +229,60 @@ export async function renderBatches(area) {
       if (window.openRecordDrawer) window.openRecordDrawer('Batch Details', body, footer);
     },
     columns: [
-      { key: 'program', label: 'Program', sortable: true },
-      { key: 'className', label: 'Class', sortable: true },
-      { key: 'name', label: 'Batch Name', sortable: true, render: (val) => `<span class="fw-600">${escapeHtml(val)}</span>` },
+      { 
+        key: 'program', 
+        label: 'Program', 
+        sortable: true, 
+        render: (val, row) => { 
+          const nameStr = row?._raw?.programs?.name || row?._raw?.program_name || val;
+          return escapeHtml(String(nameStr || 'N/A')); 
+        } 
+      },
+      { 
+        key: 'className', 
+        label: 'Class', 
+        sortable: true, 
+        render: (val, row) => { 
+          const nameStr = row?._raw?.classes?.name || row?._raw?.class_name || val;
+          return escapeHtml(String(nameStr || 'N/A')); 
+        } 
+      },
+      { 
+        key: 'name', 
+        label: 'Batch Name', 
+        sortable: true, 
+        render: (val, row) => { 
+          const nameStr = row?._raw?.name || val;
+          return `<span class="fw-600">${escapeHtml(String(nameStr || 'N/A'))}</span>`; 
+        } 
+      },
       { 
         key: 'studentCount', 
         label: 'Active Students', 
         sortable: true,
-        render: (val, row) => `
-          <button class="btn btn-ghost btn-xs fw-600" onclick='window._filterBatchId="${row.id}"; window._filterBatchName="${escapeHtml(row.name)}"; window.loadSection("students");' title="View ${val} Students in ${escapeHtml(row.name)}">
+        render: (val, row) => {
+          if (!row) return '';
+          return `
+          <button class="btn btn-ghost btn-xs fw-600" onclick='window._filterBatchId="${row?.id || ''}"; window._filterBatchName="${escapeHtml(row?.name || '')}"; window.loadSection("students");' title="View ${val} Students in ${escapeHtml(row?.name || '')}">
             ${val} Students →
           </button>
-        `
+        `}
       },
-      { key: 'status', label: 'Status', sortable: true, render: (val, row) => `<span class="badge ${row._raw.is_active ? 'badge-success' : 'badge-neutral'}">${val}</span>` },
+      { key: 'status', label: 'Status', sortable: true, render: (val, row) => `<span class="badge ${row?._raw?.is_active ? 'badge-success' : 'badge-neutral'}">${val}</span>` },
       { 
         key: 'actions', 
         label: 'Actions', 
         sortable: false,
-        render: (val, row) => `
+        render: (val, row) => {
+          if (!row) return '';
+          const rName = typeof row?.name === 'object' ? (row?.name?.name || JSON.stringify(row?.name)) : (row?.name || '');
+          return `
           <div class="d-flex gap-2 justify-end">
-            <button class="btn btn-outline btn-sm" onclick='window._filterBatchId="${row.id}"; window._filterBatchName="${escapeHtml(row.name)}"; window.loadSection("students");' title="View Students in ${escapeHtml(row.name)}">Students →</button>
-            <button class="btn btn-secondary btn-sm" onclick='window._editRecord("batches", "${row.id}", ${JSON.stringify(JSON.stringify(row._raw))})'>Edit</button>
-            <button class="btn btn-danger btn-sm" onclick='window._deleteRecord("batches", "${row.id}", "${escapeHtml(row.name)}")'>Delete</button>
+            <button class="btn btn-outline btn-sm" onclick='window._filterBatchId="${row?.id || ''}"; window._filterBatchName="${escapeHtml(String(rName))}"; window.loadSection("students");' title="View Students in ${escapeHtml(String(rName))}">Students &rarr;</button>
+            <button class="btn btn-secondary btn-sm" onclick='window._editRecord("batches", "${row?.id || ''}", ${JSON.stringify(JSON.stringify(row?._raw || {}))})'>Edit</button>
+            <button class="btn btn-danger btn-sm" onclick='window._deleteRecord("batches", "${row?.id || ''}", "${escapeHtml(String(rName))}")'>Delete</button>
           </div>
-        `
+        `}
       }
     ]
   });

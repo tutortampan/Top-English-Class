@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TOP OFFICE — TOPS CORE</title>
-  <meta name="description" content="Top Office management console for TOPS CORE — manage institutions, programs, students, and exams." />
+  <title>TOP OFFICE â€” TOPS CORE</title>
+  <meta name="description" content="Top Office management console for TOPS CORE â€” manage institutions, programs, students, and exams." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
@@ -19,15 +19,15 @@
 
   <div id="toast-container"></div>
 
-  <!-- ═══ ADMIN LOGIN ═══ -->
+  <!-- â•Ââ•Ââ•Â ADMIN LOGIN â•Ââ•Ââ•Â -->
   <div id="admin-login-screen" class="auth-page">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="auth-card">
       <div class="auth-brand">
-        <div class="brand-icon">🛡️</div>
+        <div class="brand-icon">ðŸ›¡ï¸</div>
         <h1>TOP OFFICE</h1>
-        <p>Tops Core — ABCD System</p>
+        <p>Tops Core â€” ABCD System</p>
       </div>
       <div class="form-group">
         <label class="form-label" for="admin-username">Username</label>
@@ -39,12 +39,12 @@
       </div>
       <button class="btn btn-primary" style="width:100%;" id="admin-login-btn">Sign In to Console</button>
       <div class="auth-footer-link" style="text-align:center; margin-top:1rem; font-size:0.8rem;">
-        <a href="index.html">← Top Space</a>
+        <a href="index.html">â† Top Space</a>
       </div>
     </div>
   </div>
 
-  <!-- ═══ ADMIN CONSOLE ═══ -->
+  <!-- â•Ââ•Ââ•Â ADMIN CONSOLE â•Ââ•Ââ•Â -->
   <div id="admin-console" class="admin-layout hidden">
 
     <!-- Sidebar -->
@@ -58,47 +58,47 @@
       <nav class="admin-nav" aria-label="Navigation">
         <!-- DOMAIN A: Admin (Executive Workspace) -->
         <div class="nav-domain-group" data-domain="admin">
-          <div class="nav-domain-header"><span class="domain-icon">💼</span>A — Admin</div>
-          <div class="admin-nav-item active" data-sub="dashboard"><span class="nav-icon">📊</span>Executive Dashboard</div>
-          <div class="admin-nav-item" data-sub="profile"><span class="nav-icon">👤</span>My Profile</div>
-          <div class="admin-nav-item" data-sub="schedule"><span class="nav-icon">🗓️</span>Personal Schedule</div>
-          <div class="admin-nav-item" data-sub="work_records"><span class="nav-icon">📂</span>Work Records</div>
-          <div class="admin-nav-item" data-sub="cv_generator"><span class="nav-icon">📄</span>CV Generator</div>
+          <div class="nav-domain-header"><span class="domain-icon">&#128188;</span>A â€” Admin</div>
+          <div class="admin-nav-item active" data-sub="dashboard"><span class="nav-icon">&#128202;</span>Executive Dashboard</div>
+          <div class="admin-nav-item" data-sub="profile"><span class="nav-icon">&#128100;</span>My Profile</div>
+          <div class="admin-nav-item" data-sub="schedule"><span class="nav-icon">&#128197;</span>Personal Schedule</div>
+          <div class="admin-nav-item" data-sub="work_records"><span class="nav-icon">&#128194;</span>Work Records</div>
+          <div class="admin-nav-item" data-sub="cv_generator"><span class="nav-icon">&#128196;</span>CV Generator</div>
         </div>
 
         <!-- DOMAIN B: Board (Registry & Roster) -->
         <div class="nav-domain-group" data-domain="board">
-          <div class="nav-domain-header"><span class="domain-icon">📐</span>B — Board</div>
-          <div class="admin-nav-item" data-sub="board_overview"><span class="nav-icon">📋</span>Board Overview</div>
-          <div class="admin-nav-item" data-sub="institutions"><span class="nav-icon">🏢</span>Institutions</div>
-          <div class="admin-nav-item" data-sub="programs"><span class="nav-icon">🏫</span>Programs</div>
-          <div class="admin-nav-item" data-sub="batches"><span class="nav-icon">👥</span>Batches</div>
-          <div class="admin-nav-item" data-sub="students"><span class="nav-icon">👨‍🎓</span>Students Roster</div>
-          <div class="admin-nav-item" data-sub="import-students"><span class="nav-icon">📥</span>Import Students</div>
+          <div class="nav-domain-header"><span class="domain-icon">&#128208;</span>B â€” Board</div>
+          <div class="admin-nav-item" data-sub="board_overview"><span class="nav-icon">&#128203;</span>Board Overview</div>
+          <div class="admin-nav-item" data-sub="institutions"><span class="nav-icon">&#127970;</span>Institutions</div>
+          <div class="admin-nav-item" data-sub="programs"><span class="nav-icon">&#127979;</span>Programs</div>
+          <div class="admin-nav-item" data-sub="batches"><span class="nav-icon">&#128101;</span>Batches</div>
+          <div class="admin-nav-item" data-sub="students"><span class="nav-icon">&#127891;</span>Students Roster</div>
+          <div class="admin-nav-item" data-sub="import-students"><span class="nav-icon">&#128229;</span>Import Students</div>
         </div>
 
         <!-- DOMAIN C: Class (Curriculum & AI Assessment Engine) -->
         <div class="nav-domain-group" data-domain="class">
-          <div class="nav-domain-header"><span class="domain-icon">⚡</span>C — Class</div>
-          <div class="admin-nav-item" data-sub="classes"><span class="nav-icon">📚</span>Classes (Level 1)</div>
-          <div class="admin-nav-item" data-sub="topics"><span class="nav-icon">🏷️</span>Topics (Level 2)</div>
-          <div class="admin-nav-item" data-sub="assessments"><span class="nav-icon">🤖</span>AI Assessments (Level 3)</div>
-          <div class="admin-nav-item" data-sub="import_ai_assessments"><span class="nav-icon">📥</span>Import AI Assessments</div>
-          <div class="admin-nav-item" data-sub="class_instances"><span class="nav-icon">📅</span>Class Instances</div>
-          <div class="admin-nav-item" data-sub="questions"><span class="nav-icon">❓</span>Central Question Bank</div>
-          <div class="admin-nav-item" data-sub="exams"><span class="nav-icon">📂</span>All Assessments</div>
-          <div class="admin-nav-item" data-sub="results"><span class="nav-icon">📊</span>Assessment Results</div>
-          <div class="admin-nav-item" data-sub="question_types"><span class="nav-icon">🔤</span>Validation Dictionary</div>
-          <div class="admin-nav-item" data-sub="recalibrator"><span class="nav-icon">⚡</span>Recalibration Engine</div>
+          <div class="nav-domain-header"><span class="domain-icon">&#9889;</span>C â€” Class</div>
+          <div class="admin-nav-item" data-sub="classes"><span class="nav-icon">&#128218;</span>Classes (Level 1)</div>
+          <div class="admin-nav-item" data-sub="topics"><span class="nav-icon">&#127991;&#65039;</span>Topics (Level 2)</div>
+          <div class="admin-nav-item" data-sub="assessments"><span class="nav-icon">&#129302;</span>AI Assessments (Level 3)</div>
+          <div class="admin-nav-item" data-sub="import_ai_assessments"><span class="nav-icon">&#128229;</span>Import AI Assessments</div>
+          <div class="admin-nav-item" data-sub="class_instances"><span class="nav-icon">&#128197;</span>Class Instances</div>
+          <div class="admin-nav-item" data-sub="questions"><span class="nav-icon">&#10067;</span>Central Question Bank</div>
+          <div class="admin-nav-item" data-sub="exams"><span class="nav-icon">&#128194;</span>All Assessments</div>
+          <div class="admin-nav-item" data-sub="results"><span class="nav-icon">&#128202;</span>Assessment Results</div>
+          <div class="admin-nav-item" data-sub="question_types"><span class="nav-icon">&#128284;</span>Validation Dictionary</div>
+          <div class="admin-nav-item" data-sub="recalibrator"><span class="nav-icon">&#9889;</span>Recalibration Engine</div>
         </div>
 
         <!-- DOMAIN D: DATA (System Administration, Security & Health) -->
         <div class="nav-domain-group" data-domain="desk">
-          <div class="nav-domain-header"><span class="domain-icon">🛡️</span>D &mdash; DATA</div>
-          <div class="admin-nav-item" data-sub="recycle"><span class="nav-icon">♻️</span>Recycle Bin</div>
-          <div class="admin-nav-item" data-sub="audit"><span class="nav-icon">📋</span>Activity &amp; Audit Logs</div>
-          <div class="admin-nav-item" data-sub="health"><span class="nav-icon">🏥</span>Data Health &amp; Connectivity</div>
-          <div class="admin-nav-item" data-sub="settings"><span class="nav-icon">⚙️</span>Site Settings &amp; Cost Guard</div>
+          <div class="nav-domain-header"><span class="domain-icon">&#128737;&#65039;</span>D &mdash; DATA</div>
+          <div class="admin-nav-item" data-sub="recycle"><span class="nav-icon">&#9851;&#65039;</span>Recycle Bin</div>
+          <div class="admin-nav-item" data-sub="audit"><span class="nav-icon">&#128203;</span>Activity &amp; Audit Logs</div>
+          <div class="admin-nav-item" data-sub="health"><span class="nav-icon">&#127973;</span>Data Health &amp; Connectivity</div>
+          <div class="admin-nav-item" data-sub="settings"><span class="nav-icon">&#9881;&#65039;</span>Site Settings &amp; Cost Guard</div>
         </div>
       </nav>
 
@@ -109,7 +109,7 @@
             <div class="user-name">Administrator</div>
             <div class="user-role">Super Admin</div>
           </div>
-          <button class="btn btn-ghost btn-icon btn-sm" id="admin-logout-btn" title="Logout" style="margin-left:auto;font-size:1.1rem;">🚪</button>
+          <button class="btn btn-ghost btn-icon btn-sm" id="admin-logout-btn" title="Logout" style="margin-left:auto;font-size:1.1rem;">&#128682;</button>
         </div>
       </div>
     </aside>
@@ -119,7 +119,7 @@
 
       <header class="admin-topbar">
         <div class="d-flex align-center gap-3">
-          <button class="btn btn-ghost btn-icon" id="sidebar-toggle" aria-label="Toggle sidebar">☰</button>
+          <button class="btn btn-ghost btn-icon" id="sidebar-toggle" aria-label="Toggle sidebar">â˜°</button>
           <div class="topbar-breadcrumb">
             <span class="breadcrumb-domain" id="topbar-domain">ADMIN</span>
             <span class="breadcrumb-sep">/</span>
@@ -137,25 +137,25 @@
         <div id="db-connection-banner" class="db-status-banner">
           <div id="db-status-dot" class="status-dot"></div>
           <span id="db-status-text">Checking database connection...</span>
-          <button onclick="this.parentElement.style.display='none'" class="btn-dismiss-banner" title="Dismiss">×</button>
+          <button onclick="this.parentElement.style.display='none'" class="btn-dismiss-banner" title="Dismiss">Ã—</button>
         </div>
 
         <!-- ABCD Status Overview Strip -->
         <div id="admin-kpi-banner" class="admin-kpi-strip">
           <div class="kpi-card">
-            <div class="kpi-label">💼 Admin Active</div>
+            <div class="kpi-label">&#128188; Admin Active</div>
             <div id="kpi-admin" class="kpi-value">-</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">📐 Board Students</div>
+            <div class="kpi-label">&#128208; Board Students</div>
             <div id="kpi-board" class="kpi-value">-</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">⚡ Assessments Live</div>
+            <div class="kpi-label">&#9889; Assessments Live</div>
             <div id="kpi-class" class="kpi-value">-</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">🛡️ Data Attempts</div>
+            <div class="kpi-label">&#128737;&#65039; Data Attempts</div>
             <div id="kpi-desk" class="kpi-value">-</div>
           </div>
         </div>
@@ -168,14 +168,14 @@
 
         <!-- Admin DOM Panels -->
         <div id="panel-admin-schedule" class="admin-panel hidden">
-          <h2>🗓️ Personal Schedule (Agenda View)</h2>
+          <h2>&#128197; Personal Schedule (Agenda View)</h2>
           <p class="text-muted">Recurring meetings synced from Class Instances</p>
         </div>
 
         <div id="panel-admin-cv_generator" class="admin-panel hidden">
           <h2 style="display: flex; align-items: center; justify-content: space-between;">
-            <span>📄 Teaching CV Generator</span>
-            <button class="btn btn-primary btn-sm" id="btn-export-cv">📥 Export CV to Excel (.xlsx)</button>
+            <span>&#128196; Teaching CV Generator</span>
+            <button class="btn btn-primary btn-sm" id="btn-export-cv">&#128229; Export CV to Excel (.xlsx)</button>
           </h2>
           <p class="text-muted">Aggregated from completed batches and classes</p>
           <div class="table-responsive mt-3">
@@ -190,7 +190,7 @@
                 </tr>
               </thead>
               <tbody id="cv-tbody">
-                <tr><td colspan="5" class="text-center text-muted p-4">Loading teaching history…</td></tr>
+                <tr><td colspan="5" class="text-center text-muted p-4">Loading teaching historyâ€¦</td></tr>
               </tbody>
             </table>
           </div>
@@ -206,19 +206,19 @@
   <!-- Mobile bottom tab bar -->
   <nav class="mobile-bottom-tabs" id="mobile-bottom-tabs" aria-label="Primary navigation">
     <button class="mobile-tab active" data-panel="admin" aria-label="Admin">
-      <span class="mobile-tab-icon">💼</span>
+      <span class="mobile-tab-icon">&#128188;</span>
       <span class="mobile-tab-label">Admin</span>
     </button>
     <button class="mobile-tab" data-panel="board" aria-label="Board">
-      <span class="mobile-tab-icon">📐</span>
+      <span class="mobile-tab-icon">&#128208;</span>
       <span class="mobile-tab-label">Board</span>
     </button>
     <button class="mobile-tab" data-panel="class" aria-label="Class">
-      <span class="mobile-tab-icon">⚡</span>
+      <span class="mobile-tab-icon">&#9889;</span>
       <span class="mobile-tab-label">Class</span>
     </button>
     <button class="mobile-tab" data-panel="desk" aria-label="Desk">
-      <span class="mobile-tab-icon">🖥️</span>
+      <span class="mobile-tab-icon">&#128421;&#65039;</span>
       <span class="mobile-tab-label">Desk</span>
     </button>
   </nav>
@@ -228,7 +228,7 @@
     <div class="modal-box">
       <div class="modal-header">
         <h3 id="crud-modal-title">Add Record</h3>
-        <button class="btn btn-ghost btn-icon" id="close-crud-modal" aria-label="Close">✕</button>
+        <button class="btn btn-ghost btn-icon" id="close-crud-modal" aria-label="Close">âœ•</button>
       </div>
       <form id="crud-form" novalidate></form>
       <div class="d-flex gap-3 justify-between mt-6">
@@ -241,7 +241,7 @@
   <!-- Delete confirm modal -->
   <div class="modal-backdrop hidden" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
     <div class="modal-box" style="max-width:420px;text-align:center;">
-      <div style="font-size:2.5rem;margin-bottom:var(--space-4);">⚠️</div>
+      <div style="font-size:2.5rem;margin-bottom:var(--space-4);">&#9888;&#65039;</div>
       <h3 id="delete-modal-title" class="mb-3">Delete Record?</h3>
       <p class="text-muted text-sm mb-6" id="delete-modal-message">This action soft-deletes the record. Historical data is preserved.</p>
       <div class="d-flex gap-3 justify-between">
@@ -251,30 +251,30 @@
     </div>
   </div>
 
-  <!-- ═══ DUPLICATE STUDENTS REVIEW & RESOLVER MODAL ═══ -->
+  <!-- â•â•â• DUPLICATE STUDENTS REVIEW & RESOLVER MODAL â•â•â• -->
   <div class="modal-backdrop hidden" id="duplicate-students-modal" role="dialog" aria-modal="true" aria-labelledby="dup-students-modal-title" style="z-index:var(--z-modal,1000);">
     <div class="modal-box" style="max-width:960px; max-height:88vh; display:flex; flex-direction:column; padding:24px;">
       <div class="modal-header" style="padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--clr-border);">
         <div>
-          <h3 id="dup-students-modal-title" style="margin:0; font-size:1.25rem;">🔍 Duplicate Students Review &amp; Resolver</h3>
+          <h3 id="dup-students-modal-title" style="margin:0; font-size:1.25rem;">&#128269; Duplicate Students Review &amp; Resolver</h3>
           <p class="text-xs text-muted" style="margin:4px 0 0;">Compare duplicate student profiles side-by-side and safely unify their exam attempts and progress.</p>
         </div>
-        <button class="btn btn-ghost btn-icon" id="close-dup-students-modal" aria-label="Close">✕</button>
+        <button class="btn btn-ghost btn-icon" id="close-dup-students-modal" aria-label="Close">âœ•</button>
       </div>
 
       <!-- Scope Switcher Tabs & Bulk Action -->
       <div class="d-flex align-center justify-between flex-wrap gap-3 mb-4">
         <div class="d-flex gap-2">
           <button class="btn btn-primary btn-sm dup-stud-tab-btn" data-scope="same_class" id="tab-btn-same-class">
-            🏫 Same Class Duplicates (<span id="dup-stud-same-count">0</span>)
+            &#127979; Same Class Duplicates (<span id="dup-stud-same-count">0</span>)
           </button>
           <button class="btn btn-secondary btn-sm dup-stud-tab-btn" data-scope="cross_class" id="tab-btn-cross-class">
-            🌐 Cross-Class Same Name (<span id="dup-stud-cross-count">0</span>)
+            &#127760; Cross-Class Same Name (<span id="dup-stud-cross-count">0</span>)
           </button>
         </div>
         <div class="d-flex gap-2">
           <button class="btn btn-warning btn-sm" id="btn-merge-all-visible-students" style="font-weight:700;">
-            ⚡ Quick Merge All Groups
+            &#9889; Quick Merge All Groups
           </button>
         </div>
       </div>
@@ -286,15 +286,15 @@
     </div>
   </div>
 
-  <!-- ═══ DUPLICATE QUESTIONS REVIEW & RESOLVER MODAL ═══ -->
+  <!-- â•â•â• DUPLICATE QUESTIONS REVIEW & RESOLVER MODAL â•â•â• -->
   <div class="modal-backdrop hidden" id="duplicate-questions-modal" role="dialog" aria-modal="true" aria-labelledby="dup-questions-modal-title" style="z-index:var(--z-modal,1000);">
     <div class="modal-box" style="max-width:960px; max-height:88vh; display:flex; flex-direction:column; padding:24px;">
       <div class="modal-header" style="padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--clr-border);">
         <div>
-          <h3 id="dup-questions-modal-title" style="margin:0; font-size:1.25rem;">🔍 Duplicate Questions Review &amp; Resequencer</h3>
+          <h3 id="dup-questions-modal-title" style="margin:0; font-size:1.25rem;">&#128269; Duplicate Questions Review &amp; Resequencer</h3>
           <p class="text-xs text-muted" style="margin:4px 0 0;">Detect duplicate question texts within exams and auto-resequence question orders seamlessly.</p>
         </div>
-        <button class="btn btn-ghost btn-icon" id="close-dup-questions-modal" aria-label="Close">✕</button>
+        <button class="btn btn-ghost btn-icon" id="close-dup-questions-modal" aria-label="Close">âœ•</button>
       </div>
 
       <!-- Scope / Filter Bar -->
@@ -303,24 +303,24 @@
           <div style="min-width:240px; flex:1;">
             <label class="text-xs text-muted d-block mb-1">Filter by Exam</label>
             <select id="dup-q-exam-select" class="form-control" style="font-size:0.85rem; padding:6px 10px;">
-              <option value="">— All Exams —</option>
+              <option value="">â€” All Exams â€”</option>
             </select>
           </div>
           <div class="d-flex gap-2" style="padding-top:16px;">
             <button class="btn btn-primary btn-sm dup-q-tab-btn" data-qtab="same_exam" id="tab-btn-q-same">
-              ⚠️ Same-Exam Duplicates (<span id="dup-q-same-count">0</span>)
+              &#9888;&#65039; Same-Exam Duplicates (<span id="dup-q-same-count">0</span>)
             </button>
             <button class="btn btn-secondary btn-sm dup-q-tab-btn" data-qtab="order_conflicts" id="tab-btn-q-order">
-              🔢 Order Conflicts (<span id="dup-q-order-count">0</span>)
+              &#128290; Order Conflicts (<span id="dup-q-order-count">0</span>)
             </button>
             <button class="btn btn-secondary btn-sm dup-q-tab-btn" data-qtab="cross_exam" id="tab-btn-q-cross">
-              🌐 Cross-Exam Duplicates (<span id="dup-q-cross-count">0</span>)
+              &#127760; Cross-Exam Duplicates (<span id="dup-q-cross-count">0</span>)
             </button>
           </div>
         </div>
         <div class="d-flex align-end" style="padding-top:16px;">
           <button class="btn btn-danger btn-sm" id="btn-batch-clean-exam-questions" style="font-weight:700; white-space:nowrap;">
-            ⚡ Clean All &amp; Resequence (1..N)
+            &#9889; Clean All &amp; Resequence (1..N)
           </button>
         </div>
       </div>
@@ -332,7 +332,7 @@
     </div>
   </div>
 
-  <!-- ✨ RECORD DRAWER ✨ -->
+  <!-- âœ¨ RECORD DRAWER âœ¨ -->
   <div id="datagrid-drawer-overlay" class="datagrid-drawer-overlay hidden" onclick="closeRecordDrawer()"></div>
   <div id="datagrid-drawer" class="datagrid-drawer">
     <div class="datagrid-drawer-header">
@@ -376,7 +376,7 @@
           <h3 id="roster-modal-title" style="margin:0; font-size:1.25rem;">Class Roster</h3>
           <p class="text-xs text-muted" style="margin:4px 0 0;" id="roster-modal-subtitle">Auto-enrolled vs Manually Added Students</p>
         </div>
-        <button class="btn btn-ghost btn-icon" onclick="document.getElementById('roster-modal').classList.add('hidden')">✕</button>
+        <button class="btn btn-ghost btn-icon" onclick="document.getElementById('roster-modal').classList.add('hidden')">âœ•</button>
       </div>
       <div style="display:flex; gap:10px; margin-bottom:15px;">
         <select id="roster-add-student-select" class="form-control" style="flex:1;">
@@ -398,10 +398,10 @@
   </div>
 
   <script type="module">
-    import { DataGrid } from './js/admin/datagrid.js?v=4.3.0';
+    import { DataGrid } from './js/admin/datagrid.js?v=4.4.5';
     window.DataGrid = DataGrid;
   </script>
-  <script type="module" src="js/admin/app.js?v=4.3.0"></script>
+  <script type="module" src="js/admin/app.js?v=4.4.14"></script>
 </body>
 </html>
 

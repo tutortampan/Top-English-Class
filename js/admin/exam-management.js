@@ -1,23 +1,29 @@
-import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js';
-import { openAssessmentBuilder } from './exam-builder.js';
-import { showToast, showLoading, hideLoading } from '../app.js';
-import { getSupabase } from '../supabase.js';
-import { DataGrid } from './datagrid.js?v=4.1.0';
-if (typeof window !== 'undefined' && !window.DataGrid) window.DataGrid = DataGrid;
+import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js?v=4.3.5';
+import { openAssessmentBuilder } from './exam-builder.js?v=4.3.5';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.3.5';
+import { getSupabase } from '../supabase.js?v=4.3.5';
+import { DataGrid } from './datagrid.js?v=4.3.5';
+if (typeof window !== 'undefined') window.DataGrid = DataGrid;
 
 let examsGrid;
 
 export async function renderExams(area) {
-  const [rawData, allQuestions, allClasses] = await Promise.all([
-    adminFetchAll('exams', '*, classes(name), levels(name, level_number), institutions(name)'),
+  const [rawData, allQuestions, allClasses, allLevels, allBoardClasses] = await Promise.all([
+    adminFetchAll('exams'),
     adminFetchAll('questions', 'id, exam_id'),
-    adminFetchAll('programs', 'id, name')
+    adminFetchAll('programs', 'id, name').catch(() => []),
+    adminFetchAll('levels').catch(() => []),
+    adminFetchAll('classes').catch(() => [])
   ]);
 
   const classMap = {};
-  allClasses.forEach(c => { classMap[c.id] = c; });
+  (allClasses || []).forEach(c => { classMap[c.id] = c; });
+  const boardClassMap = {};
+  (allBoardClasses || []).forEach(c => { boardClassMap[c.id] = c; });
+  const levelMap = {};
+  (allLevels || []).forEach(l => { levelMap[l.id] = l; });
   const examMap = {};
-  rawData.forEach(e => { examMap[e.id] = e; });
+  (rawData || []).forEach(e => { examMap[e.id] = e; });
 
   const data = [...rawData].sort((a, b) => (a.exam_title || '').localeCompare(b.exam_title || ''));
 
@@ -72,26 +78,31 @@ export async function renderExams(area) {
   });
 
   const gridData = data.map(r => {
-    const qCount = allQuestions.filter(q => q.exam_id === r.id).length;
-    const programName = r.program_id && classMap[r.program_id]?.name ? classMap[r.program_id].name : 'All Programs';
-    const prereqExam = r.prerequisite_exam_id && examMap[r.prerequisite_exam_id];
+    const qCount = (allQuestions || []).filter(q => q?.exam_id === r?.id).length;
+    const programName = (r?.program_id && classMap[r.program_id]?.name) ? classMap[r.program_id].name : 'All Programs';
+    const prereqExam = (r?.prerequisite_exam_id && examMap[r.prerequisite_exam_id]) ? examMap[r.prerequisite_exam_id] : null;
+    const boardName = (r?.class_id && boardClassMap[r.class_id]?.name) || r?.classes?.name || '—';
+    const lvlObj = (r?.level_id && levelMap[r.level_id]) || r?.levels;
+    const lvlNum = lvlObj?.level_number || 1;
+    const levelDisplay = window.toLevelLetter ? window.toLevelLetter(lvlNum) : lvlNum;
+    const prereqTitle = prereqExam?.exam_title || r?.prereq?.name || r?.prerequisite?.name || r?.prereq || '';
     
     return {
-      id: r.id,
-      title: r.exam_title,
+      id: r?.id || '',
+      title: r?.exam_title || 'Untitled Assessment',
       programName,
-      classBoard: r.classes?.name || '—',
-      level: window.toLevelLetter ? window.toLevelLetter(r.levels?.level_number || 1) : r.levels?.level_number,
-      order: r.exam_order || 1,
-      prereq: prereqExam ? prereqExam.exam_title : '',
-      answerType: formatAnswerType(r.answer_type),
-      questionOrder: r.question_order === 'random' ? 'Random' : 'Seq',
-      examCategory: r.exam_type || 'Daily',
-      timeLimit: r.time_limit_minutes || 60,
-      minScore: r.minimum_required_score || 60,
+      classBoard: boardName,
+      level: levelDisplay,
+      order: r?.exam_order || 1,
+      prereq: prereqTitle,
+      answerType: formatAnswerType(r?.answer_type),
+      questionOrder: r?.question_order === 'random' ? 'Random' : 'Seq',
+      examCategory: r?.exam_type || 'Daily',
+      timeLimit: r?.time_limit_minutes || 60,
+      minScore: r?.minimum_required_score || 60,
       qCount,
-      status: r.exam_status,
-      _raw: r
+      status: r?.exam_status || 'draft',
+      _raw: r || {}
     };
   });
 
@@ -116,36 +127,38 @@ export async function renderExams(area) {
       }
     },
     onRowClick: (row) => {
+      const r = (row && typeof row === 'object') ? row : {};
+      const prereqText = r?.prereq?.name || r?.prerequisite?.name || r?.prereq || '';
       const body = `
         <div style="display:flex; flex-direction:column; gap:1rem;">
           <div>
-            <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.title)}</h4>
-            <div class="text-muted text-sm">Status: <strong class="${statusColors[row.status] || 'text-muted'}" style="text-transform:uppercase;">${row.status}</strong></div>
+            <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(r?.title || 'Untitled Assessment')}</h4>
+            <div class="text-muted text-sm">Status: <strong class="${statusColors[r?.status] || 'text-muted'}" style="text-transform:uppercase;">${r?.status || 'draft'}</strong></div>
           </div>
           <hr style="border-color:var(--fm-border-subtle); margin:0;">
           <div>
             <div class="text-sm text-muted mb-1">Target</div>
-            <div class="fw-600">Program: ${escapeHtml(row.programName)}</div>
-            <div class="fw-600">Class Board: ${escapeHtml(row.classBoard)}</div>
+            <div class="fw-600">Program: ${escapeHtml(r?.programName || 'Unknown')}</div>
+            <div class="fw-600">Class Board: ${escapeHtml(r?.classBoard || 'Unknown')}</div>
           </div>
           <div>
             <div class="text-sm text-muted mb-1">Structure</div>
-            <div class="fw-600">Type: ${escapeHtml(row.examCategory)} &bull; ${row.qCount} Qs</div>
-            <div class="fw-600">Answer: ${formatAnswerType(row.answerType)}</div>
+            <div class="fw-600">Type: ${escapeHtml(r?.examCategory || 'Daily')} &bull; ${r?.qCount || 0} Qs</div>
+            <div class="fw-600">Answer: ${formatAnswerType(r?.answerType)}</div>
           </div>
           <div>
             <div class="text-sm text-muted mb-1">Constraints</div>
-            <div class="fw-600">Time Limit: ${row.timeLimit} min</div>
-            <div class="fw-600">Pass Mark: ${row.minScore}%</div>
-            ${row.prereq ? `<div class="fw-600 text-warning">Prerequisite: ${escapeHtml(row.prereq)}</div>` : ''}
+            <div class="fw-600">Time Limit: ${r?.timeLimit || 60} min</div>
+            <div class="fw-600">Pass Mark: ${r?.minScore || 60}%</div>
+            ${prereqText ? `<div class="fw-600 text-warning">Prerequisite: ${escapeHtml(prereqText)}</div>` : ''}
           </div>
         </div>
       `;
       const footer = `
         <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
-        <button class="btn btn-outline" onclick="window.openAssessmentBuilder('${row.id}'); closeRecordDrawer();">Edit Builder</button>
-        <button class="btn ${row.status === 'published' ? 'btn-danger' : 'btn-success'}" onclick="window._publishExam('${row.id}', '${row.status}'); closeRecordDrawer();">
-          ${row.status === 'published' ? 'Unpublish' : 'Publish'}
+        <button class="btn btn-outline" onclick="window.openAssessmentBuilder('${r?.id || ''}'); closeRecordDrawer();">Edit Builder</button>
+        <button class="btn ${r?.status === 'published' ? 'btn-danger' : 'btn-success'}" onclick="window._publishExam('${r?.id || ''}', '${r?.status || 'draft'}'); closeRecordDrawer();">
+          ${r?.status === 'published' ? 'Unpublish' : 'Publish'}
         </button>
       `;
       if (window.openRecordDrawer) window.openRecordDrawer('Assessment Details', body, footer);
@@ -155,62 +168,83 @@ export async function renderExams(area) {
         key: 'title', 
         label: 'Assessment Details', 
         sortable: true,
-        render: (val, row) => `
-          <div class="fw-800" style="color:var(--clr-text-1); font-size:1rem;">${escapeHtml(val)}</div>
-          <div class="text-muted text-xs mt-1 fw-600 d-flex gap-2 flex-wrap align-center">
-            <span><span class="text-accent">PROGRAM:</span> ${escapeHtml(row.programName)}</span>
-            <span>&bull;</span>
-            <span><span class="text-accent">CLASS:</span> ${escapeHtml(row.classBoard)}</span>
-            <span>&bull;</span>
-            <span><span class="badge badge-primary" style="font-size:0.6rem; padding: 2px 6px;">LVL ${row.level}</span></span>
-            <span><span class="badge badge-neutral" style="font-size:0.6rem; padding: 2px 6px;">ORD ${row.order}</span></span>
-          </div>
-          ${row.prereq ? `<div class="mt-2"><span class="badge badge-warning text-xs">&#9888;&#65039; Prereq: ${escapeHtml(row.prereq)}</span></div>` : ''}
-        `
+        render: (val, row) => {
+          const r = (row && typeof row === 'object') ? row : (val && typeof val === 'object' ? val : {}) || {};
+          const title = (typeof val === 'string' ? val : r?.title) || 'Untitled Assessment';
+          const prereqDisplay = r?.prereq?.name || r?.prerequisite?.name || r?.prereq || '';
+          return `
+            <div class="fw-800" style="color:var(--clr-text-1); font-size:1rem;">${escapeHtml(title)}</div>
+            <div class="text-muted text-xs mt-1 fw-600 d-flex gap-2 flex-wrap align-center">
+              <span><span class="text-accent">PROGRAM:</span> ${escapeHtml(r?.programName || 'Unknown')}</span>
+              <span>&bull;</span>
+              <span><span class="text-accent">CLASS:</span> ${escapeHtml(r?.classBoard || 'Unknown')}</span>
+              <span>&bull;</span>
+              <span><span class="badge badge-primary" style="font-size:0.6rem; padding: 2px 6px;">LVL ${r?.level || '-'}</span></span>
+              <span><span class="badge badge-neutral" style="font-size:0.6rem; padding: 2px 6px;">ORD ${r?.order || '-'}</span></span>
+            </div>
+            ${prereqDisplay ? `<div class="mt-2"><span class="badge badge-warning text-xs">&#9888;&#65039; Prereq: ${escapeHtml(prereqDisplay)}</span></div>` : ''}
+          `;
+        }
       },
       { 
         key: 'answerType', 
         label: 'Settings', 
         sortable: false,
-        render: (val, row) => `
-          <div class="d-flex flex-wrap gap-1">
-            <span class="badge badge-info text-xs">${val}</span>
-            <span class="badge ${row.questionOrder === 'Random' ? 'badge-primary' : 'badge-neutral'} text-xs">${row.questionOrder === 'Random' ? '&#128256; Random' : '&rarr; Seq'}</span>
-            <span class="badge badge-neutral text-xs">${escapeHtml(row.examCategory)}</span>
-          </div>
-          <div class="text-muted text-xs mt-2 fw-600">
-            &#9201;&#65039; ${row.timeLimit} min &nbsp; | &nbsp; &#127919; Pass: ${row.minScore}%
-          </div>
-        `
+        render: (val, row) => {
+          const r = (row && typeof row === 'object') ? row : (val && typeof val === 'object' ? val : {}) || {};
+          const ansType = (typeof val === 'string' ? val : r?.answerType) || 'Multiple Choice';
+          return `
+            <div class="d-flex flex-wrap gap-1">
+              <span class="badge badge-info text-xs">${escapeHtml(ansType)}</span>
+              <span class="badge ${r?.questionOrder === 'Random' ? 'badge-primary' : 'badge-neutral'} text-xs">${r?.questionOrder === 'Random' ? '&#128256; Random' : '&rarr; Seq'}</span>
+              <span class="badge badge-neutral text-xs">${escapeHtml(r?.examCategory || 'Daily')}</span>
+            </div>
+            <div class="text-muted text-xs mt-2 fw-600">
+              &#9201;&#65039; ${r?.timeLimit || 60} min &nbsp; | &nbsp; &#127919; Pass: ${r?.minScore || 60}%
+            </div>
+          `;
+        }
       },
       { 
         key: 'qCount', 
         label: 'Questions', 
         sortable: true,
-        render: (val) => `<span class="badge ${val > 0 ? 'badge-info' : 'badge-danger'} fw-700">${val} Qs</span>`
+        render: (val, row) => {
+          const r = (row && typeof row === 'object') ? row : (val && typeof val === 'object' ? val : {}) || {};
+          const count = typeof val === 'number' ? val : (r?.qCount || 0);
+          return `<span class="badge ${count > 0 ? 'badge-info' : 'badge-danger'} fw-700">${count} Qs</span>`;
+        }
       },
       { 
         key: 'status', 
         label: 'Status', 
         sortable: true,
-        render: (val) => `<span class="badge ${statusColors[val] || 'badge-neutral'} fw-700" style="text-transform: uppercase;">${val}</span>`
+        render: (val, row) => {
+          const r = (row && typeof row === 'object') ? row : (val && typeof val === 'object' ? val : {}) || {};
+          const st = (typeof val === 'string' ? val : r?.status) || 'draft';
+          return `<span class="badge ${statusColors[st] || 'badge-neutral'} fw-700" style="text-transform: uppercase;">${escapeHtml(st)}</span>`;
+        }
       },
       { 
         key: 'actions', 
         label: 'Actions', 
         sortable: false,
-        render: (val, row) => `
-          <div class="d-flex gap-2 justify-end">
-            <button class="btn btn-ghost btn-sm" title="View Results" onclick="window._filterExamResults='${row.id}'; window.loadSection('results');">ðŸ“Š Results</button>
-            <button class="btn btn-ghost btn-sm" title="Recalibrate Exam" onclick="window._filterRecalibrateExam='${row.id}'; window.loadSection('recalibrator');">âš–ï¸</button>
-            <button class="btn btn-secondary btn-sm" onclick="window._duplicateExam('${row.id}')" title="Duplicate Exam">Copy</button>
-            <button class="btn ${row.status === 'published' ? 'btn-danger' : 'btn-success'} btn-sm" onclick="window._publishExam('${row.id}', '${row.status}')">
-              ${row.status === 'published' ? 'Unpublish' : 'Publish'}
-            </button>
-            <button class="btn btn-secondary btn-sm" onclick="window.openAssessmentBuilder('${row.id}')">Edit</button>
-            <button class="btn btn-secondary btn-sm" style="color: var(--clr-accent-1);" onclick="window._deleteRecord('exams', '${row.id}', '${escapeHtml(row.title)}')">Del</button>
-          </div>
-        `
+        render: (val, row) => {
+          const r = (row && typeof row === 'object') ? row : (val && typeof val === 'object' ? val : {}) || {};
+          const id = r?.id || '';
+          return `
+            <div class="d-flex gap-2 justify-end">
+              <button class="btn btn-ghost btn-sm" title="View Results" onclick="window._filterExamResults='${id}'; window.loadSection('results');">&#128202; Results</button>
+              <button class="btn btn-ghost btn-sm" title="Recalibrate Exam" onclick="window._filterRecalibrateExam='${id}'; window.loadSection('recalibrator');">&#9878;&#65039;</button>
+              <button class="btn btn-secondary btn-sm" onclick="window._duplicateExam('${id}')" title="Duplicate Exam">Copy</button>
+              <button class="btn ${r?.status === 'published' ? 'btn-danger' : 'btn-success'} btn-sm" onclick="window._publishExam('${id}', '${r?.status || 'draft'}')">
+                ${r?.status === 'published' ? 'Unpublish' : 'Publish'}
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="window.openAssessmentBuilder('${id}')">Edit</button>
+              <button class="btn btn-secondary btn-sm" style="color: var(--clr-accent-1);" onclick="window._deleteRecord('exams', '${id}', '${escapeHtml(r?.title || '')}')">Del</button>
+            </div>
+          `;
+        }
       }
     ]
   });
@@ -224,10 +258,10 @@ function escapeHtml(unsafe) {
 
 function formatAnswerType(type) {
   switch(type) {
-    case 'speech_to_text': return 'ðŸŽ™ï¸ Speech';
-    case 'dropdown': return 'ðŸ”½ Drop-down';
-    case 'multiple_choice': return 'ðŸ”˜ Mult Choice';
-    case 'written': return 'âœï¸ Written';
+    case 'speech_to_text': return '\uD83C\uDF99\uFE0F Speech';
+    case 'dropdown': return '\uD83D\uDD3D Drop-down';
+    case 'multiple_choice': return '\uD83D\uDD18 Mult Choice';
+    case 'written': return '\u270F\uFE0F Written';
     default: return String(type);
   }
 }
@@ -312,10 +346,12 @@ window.openAssessmentBuilder = async (examId) => {
 };
 
 export async function renderQuestions(area) {
-  const [questions, exams] = await Promise.all([
-    adminFetchAll('questions', '*, exams(id, exam_title, exam_type, classes(name), levels(name, level_number))'),
-    adminFetchAll('exams', 'id, exam_title, exam_type, institutions(name), classes(name), levels(name, level_number)')
+  const [questions, rawExams] = await Promise.all([
+    adminFetchAll('questions'),
+    adminFetchAll('exams', 'id, exam_title, exam_type').catch(() => [])
   ]);
+
+  const examMap = new Map((rawExams || []).map(e => [e.id, e]));
 
   area.innerHTML = `
     <div class="section-header">
@@ -331,7 +367,8 @@ export async function renderQuestions(area) {
   questions.forEach(q => { window._qRecords[q.id] = q; });
 
   const gridData = questions.map(q => {
-    const examDisplay = q.exams ? window.formatExamDisplayName(q.exams) : ((q.exam_sections && q.exam_sections.exams) ? window.formatExamDisplayName(q.exam_sections.exams) + ` (Sec: ${q.exam_sections.title})` : '—');
+    const matchedExam = examMap.get(q.exam_id);
+    const examDisplay = matchedExam ? `${matchedExam.exam_type ? matchedExam.exam_type + ' — ' : ''}${matchedExam.exam_title}` : (q.exams ? window.formatExamDisplayName(q.exams) : '—');
     return {
       id: q.id,
       order: q.question_order,
@@ -378,24 +415,33 @@ export async function renderQuestions(area) {
       if (window.openRecordDrawer) window.openRecordDrawer('Question Details', body, footer);
     },
     columns: [
-      { key: 'order', label: 'No', sortable: true, render: (val) => `<div class="text-center text-muted fw-700">${val}</div>` },
-      { key: 'text', label: 'Question Text', sortable: true, render: (val) => `<div class="fw-600">${escapeHtml(val.slice(0, 70))}${val.length > 70 ? '...' : ''}</div>` },
-      { key: 'correctAnswer', label: 'Correct Answer', sortable: true, render: (val) => `<div class="text-sm" style="color:var(--clr-success,#4ade80);font-family:monospace;">${escapeHtml(val.slice(0, 40))}${val.length > 40 ? '...' : ''}</div>` },
-      { key: 'type', label: 'Answer Type', sortable: true, render: (val) => `<div class="text-center"><span class="badge badge-info">${formatAnswerType(val)}</span></div>` },
-      { key: 'examDisplay', label: 'Exam Title', sortable: true, render: (val) => `<div class="text-muted text-sm">${escapeHtml(val)}</div>` },
-      { key: 'actions', label: 'Actions', sortable: false, render: (val, row) => `
-        <div class="d-flex gap-2 justify-end">
-          <button class="btn btn-secondary btn-sm" onclick="window.openCrudModal('questions', window._qRecords['${row.id}'])">Edit</button>
-          <button class="btn btn-danger btn-sm" onclick="window._deleteRecord('questions', '${row.id}', 'Question #${row.order}')">Del</button>
-        </div>
-      `}
+      { key: 'order', label: 'No', sortable: true, render: (val, row) => `<div class="text-center text-muted fw-700">${row ? (row.order ?? val) : val}</div>` },
+      { key: 'text', label: 'Question Text', sortable: true, render: (val, row) => {
+        const str = String((row ? row.text : val) || '');
+        return `<div class="fw-600">${escapeHtml(str.slice(0, 70))}${str.length > 70 ? '...' : ''}</div>`;
+      }},
+      { key: 'correctAnswer', label: 'Correct Answer', sortable: true, render: (val, row) => {
+        const str = String((row ? row.correctAnswer : val) || '');
+        return `<div class="text-sm" style="color:var(--clr-success,#4ade80);font-family:monospace;">${escapeHtml(str.slice(0, 40))}${str.length > 40 ? '...' : ''}</div>`;
+      }},
+      { key: 'type', label: 'Answer Type', sortable: true, render: (val, row) => `<div class="text-center"><span class="badge badge-info">${formatAnswerType((row ? row.type : val) || '')}</span></div>` },
+      { key: 'examDisplay', label: 'Exam Title', sortable: true, render: (val, row) => `<div class="text-muted text-sm">${escapeHtml(String((row ? row.examDisplay : val) || '—'))}</div>` },
+      { key: 'actions', label: 'Actions', sortable: false, render: (val, row) => {
+        const r = row || (typeof val === 'object' ? val : {}) || {};
+        return `
+          <div class="d-flex gap-2 justify-end">
+            <button class="btn btn-secondary btn-sm" onclick="window.openCrudModal('questions', window._qRecords['${r.id}'])">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="window._deleteRecord('questions', '${r.id}', 'Question #${r.order || ''}')">Del</button>
+          </div>
+        `;
+      }}
     ]
   });
 }
 
 export async function renderResults(area) {
   const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
-    adminFetchAll('attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), exams(exam_title, exam_type), attempt_answers(id, evaluation_result, score)'),
+    adminFetchAll('attempts', '*, students!student_id(name, gender, batch_id, batches!batch_id(name), program_id, programs!program_id(name, institution_id, institutions!institution_id(name))), exams!exam_id(exam_title, exam_type), attempt_answers(id, evaluation_result, score)'),
     adminFetchAll('institutions'),
     adminFetchAll('programs'),
     adminFetchAll('batches')
@@ -523,3 +569,4 @@ export async function renderResults(area) {
     ]
   });
 }
+

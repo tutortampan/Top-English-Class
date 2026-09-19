@@ -338,7 +338,7 @@ export async function renderAIAssessments(area) {
   try {
     let data = [];
     try {
-      data = await adminFetchAll('assessments', '*, modules(name)');
+      data = await adminFetchAll('assessments', '*');
     } catch (e) {
       // Graceful fallback to exams
       const fallbackExams = await adminFetchAll('exams', '*, subjects(name)');
@@ -394,6 +394,10 @@ export async function renderAIAssessments(area) {
 }
 
 export async function renderImportAIAssessments(area) {
+  if (!area) {
+    console.warn('Import AI Assessments container not found in DOM.');
+    return;
+  }
   area.innerHTML = `
     <div class="section-header d-flex justify-between align-center flex-wrap gap-3 mb-4">
       <div>
@@ -422,7 +426,7 @@ export async function renderImportAIAssessments(area) {
     </div>
   `;
 
-  const assessments = await adminFetchAll('assessments', '*, modules(name)');
+  const assessments = await adminFetchAll('assessments', '*');
   const select = document.getElementById('ai-import-target');
   select.innerHTML = '<option value="">- Select Assessment -</option>' + assessments.map(a => 
     `<option value="${a.id}">${a.name} (${a.modules?.name || 'Unknown'})</option>`

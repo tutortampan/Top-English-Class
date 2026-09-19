@@ -460,14 +460,14 @@
           </div>
         </div>
         <div class="completed-summary-card glass-card">
-          <div class="completed-summary-icon">⭐</div>
+          <div class="completed-summary-icon">⭐ </div>
           <div>
             <div class="completed-summary-val" id="bottom-stat-avg-score">0%</div>
             <div class="completed-summary-lbl">Average Score</div>
           </div>
         </div>
         <div class="completed-summary-card glass-card">
-          <div class="completed-summary-icon">ðŸ†</div>
+          <div class="completed-summary-icon">&#127942;</div>
           <div>
             <div class="completed-summary-val" id="bottom-stat-best-score">0%</div>
             <div class="completed-summary-lbl">Highest Score</div>
@@ -491,7 +491,7 @@
       <div class="modal-box" style="max-width:640px;">
         <div class="modal-header">
           <div>
-            <h3 id="profile-modal-title">👨â€🎓 Student Profile</h3>
+            <h3 id="profile-modal-title">&#127891; Student Profile</h3>
             <p class="text-muted text-sm">Manage profile photo, personal PIN & view history</p>
           </div>
           <button class="btn btn-ghost btn-icon" id="close-profile-modal" aria-label="Close">✕</button>
@@ -615,7 +615,7 @@
             </div>
           </div>
 
-          <p class="text-xs text-muted mb-6">ℹ️ You can change this anytime later from your Profile settings.</p>
+          <p class="text-xs text-muted mb-6">ℹ️  You can change this anytime later from your Profile settings.</p>
 
           <button class="btn btn-primary btn-block" id="btn-confirm-gender" disabled style="padding:var(--space-3) var(--space-6);font-size:1rem;font-weight:700;">
             Confirm &amp; Continue ←’
@@ -650,7 +650,7 @@
             <button type="button" class="btn btn-primary btn-sm" id="btn-snap-photo">📸 Capture Photo</button>
             <button type="button" class="btn btn-secondary btn-sm hidden" id="btn-retake-photo">🔄 Retake Photo</button>
             <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0;">
-              📈 Upload Image File
+              📈  Upload Image File
               <input type="file" id="onboard-photo-file" accept="image/*" class="hidden" />
             </label>
           </div>
@@ -659,7 +659,7 @@
           <div class="p-3 rounded text-left mb-4" id="mic-status-card" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);border-radius:var(--radius-md);">
             <div class="d-flex align-center justify-between">
               <div class="d-flex align-center gap-2">
-                <span id="mic-status-icon" style="font-size:1.3rem;">🎙️</span>
+                <span id="mic-status-icon" style="font-size:1.3rem;">🎙️ </span>
                 <div>
                   <div class="text-xs fw-700" id="mic-status-title">Checking microphone…</div>
                   <div class="text-xs text-muted" id="mic-status-desc">Verifying audio device permissions for speaking tests</div>
@@ -670,7 +670,7 @@
           </div>
 
           <button class="btn btn-primary btn-block" id="btn-confirm-photo-setup" style="padding:var(--space-3) var(--space-6);font-size:1rem;font-weight:700;">
-            âœ“ Save Photo &amp; Enter Dashboard
+            ✓ Save Photo &amp; Enter Dashboard
           </button>
           <button type="button" class="btn btn-ghost btn-block" id="btn-skip-photo-setup" style="margin-top:var(--space-2);font-size:0.85rem;color:var(--clr-text-3);">
             Skip for now &amp; Continue to Dashboard ←’
@@ -692,7 +692,7 @@
         <label style="display: block; font-size: 0.85rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">Date of Birth</label>
         <input type="date" id="onboard-birth-date" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;">
       </div>
-      <button id="btn-confirm-birthday-setup" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 8px;">âœ“ Save &amp; Continue</button>
+      <button id="btn-confirm-birthday-setup" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: 8px;">✓ Save &amp; Continue</button>
     </div>
   </div>
 
@@ -773,7 +773,7 @@
       window.location.href = 'index.html';
     });
 
-    // â”€â”€ Global Profile Photo Synchronization â”€â”€
+    // ── Global Profile Photo Synchronization ──
     function applyPhotoEverywhere(url) {
       if (!url) return;
       const photoImg = document.getElementById('prof-photo-img');
@@ -796,7 +796,7 @@
       document.getElementById('profile-modal')?.classList.remove('hidden');
     });
 
-    // â”€â”€ Microphone Capability Detection & Header Indicator â”€â”€
+    // ── Microphone Capability Detection & Header Indicator ──
     async function updateHeaderMicStatus(res) {
       const icon = document.getElementById('header-mic-icon');
       const text = document.getElementById('header-mic-text');
@@ -815,7 +815,7 @@
           ovMic.style.color = '#10b981';
         }
       } else {
-        if (icon) icon.textContent = '⚠️';
+        if (icon) icon.textContent = '⚠️ ';
         if (text) text.textContent = 'Mic Check';
         if (btn) {
           btn.style.borderColor = 'rgba(245, 158, 11, 0.5)';
@@ -823,7 +823,7 @@
           btn.title = res?.message || 'Click to test microphone capability';
         }
         if (ovMic) {
-          ovMic.textContent = 'Check ⚠️';
+          ovMic.textContent = 'Check ⚠️ ';
           ovMic.style.color = '#f59e0b';
         }
       }
@@ -838,7 +838,7 @@
         if (res.ok) {
           showToast('✅ Microphone is working properly! Ready for speaking tests.', 'success');
         } else {
-          showToast(`⚠️ ${res.message}`, 'warning', 6000);
+          showToast(`⚠️  ${res.message}`, 'warning', 6000);
         }
       } catch (err) {
         hideLoading();
@@ -846,7 +846,7 @@
       }
     });
 
-    // â”€â”€ Gender & Title Synchronization â”€â”€
+    // ── Gender & Title Synchronization ──
     function applyStudentGenderUI(g) {
       const cleanName = (session.student_name || '').replace(/^(mr\.?|miss\.?|mrs\.?|ms\.?)\s+/i, '').trim();
       const formattedName = formatStudentName(cleanName, g);
@@ -869,7 +869,7 @@
           badge.textContent = '👩 Female (Miss)';
         } else {
           badge.className = 'badge badge-neutral';
-          badge.textContent = 'â³ Unassigned';
+          badge.textContent = '⏳ Unassigned';
         }
       }
 
@@ -965,7 +965,7 @@
       });
     }
 
-    // â”€â”€ First-Entry Photo & Microphone Onboarding (Phase 12) â”€â”€
+    // ── First-Entry Photo & Microphone Onboarding (Phase 12) ──
     let webcamStream = null;
     let onboardPhotoData = null;
 
@@ -986,7 +986,7 @@
           if (overlay) overlay.classList.add('hidden');
           if (confirmBtn) {
             confirmBtn.disabled = false;
-            confirmBtn.textContent = 'âœ“ Save Photo & Enter Dashboard';
+            confirmBtn.textContent = '✓ Save Photo & Enter Dashboard';
           }
         } else {
           throw new Error('Webcam not supported.');
@@ -1032,7 +1032,7 @@
         } else {
           if (titleEl) titleEl.textContent = res.state === 'permission_denied' ? 'Microphone Permission Needed' : 'Microphone Check';
           if (descEl) descEl.textContent = res.message;
-          if (iconEl) iconEl.textContent = '⚠️';
+          if (iconEl) iconEl.textContent = '⚠️ ';
           if (cardEl) {
             cardEl.style.borderColor = 'rgba(245, 158, 11, 0.4)';
             cardEl.style.background = 'rgba(245, 158, 11, 0.08)';
@@ -1328,7 +1328,7 @@
       });
     }
 
-    // â”€â”€ Load Subjects & Dashboard â”€â”€
+    // ── Load Subjects & Dashboard ──
     async function loadDashboard() {
       try {
         hideLoading();
@@ -1387,7 +1387,7 @@
       // Strict alphabetical sorting (A to Z)
       const subjects = [...rawSubjects].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-      const subjectIcons = ['📈–', 'âœï¸', 'ðŸ—£ï¸', 'ðŸŽ§', '📈', 'ðŸŒ', '📚', 'ðŸ’¬'];
+      const subjectIcons = ['&#128218;', '&#9999;&#65039;', '&#128483;&#65039;', '&#127911;', '&#128200;', '&#127757;', '&#128214;', '&#128172;'];
       grid.innerHTML = '';
 
       subjects.forEach((subj, idx) => {
@@ -1419,7 +1419,7 @@
       });
     }
 
-    // â”€â”€ openSubjectModal: Opens the Level Modal for a Subject â”€â”€
+    // ── openSubjectModal: Opens the Level Modal for a Subject ──
     // Called when a student clicks a subject card on the dashboard.
     async function openSubjectModal(subj, progress) {
       const modal       = document.getElementById('level-modal');
@@ -1496,7 +1496,7 @@
             let actionBtn   = '';
             if (inProg) {
               statusBadge = `<span style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);
-                              padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">â³ In Progress</span>`;
+                              padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">&#9203; In Progress</span>`;
               actionBtn   = `<button onclick="location.href='exam.html?attempt_id=${inProg.id}'"
                               style="background:var(--clr-accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;
                               font-size:0.78rem;font-weight:700;cursor:pointer;">Resume ←’</button>`;
@@ -1505,7 +1505,7 @@
               const badgeClr= passed ? '#10b981' : '#f87171';
               statusBadge = `<span style="background:${badgeBg};color:${badgeClr};border:1px solid ${badgeClr}33;
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">
-                              ${passed ? 'âœ“ Passed' : 'âœ— Failed'} ${bestPct.toFixed(0)}%</span>`;
+                              ${passed ? '&#10003; Passed' : '&#10007; Failed'} ${bestPct.toFixed(0)}%</span>`;
               actionBtn   = `<button onclick="location.href='result.html?attempt_id=${best.id}'"
                               style="background:rgba(255,255,255,0.06);color:var(--clr-text-2);border:1px solid var(--clr-border);
                               padding:6px 14px;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;">View Result</button>`;
@@ -1560,7 +1560,12 @@
 
 
 
-    // â”€â”€ V1: Render Assigned Assessments Section â”€â”€
+    // --- V1: Render Assigned Assessments Section ---
+    // (Existing assessments logic)
+    // --- Render Completed Exams Section (Bottom of Dashboard) ---
+    // --- Profile Modal & History ---
+    // --- Level Modal close ---
+    // --- Gamification: Show Level Up Popup ---
     async function renderAssignedAssessments(assessments, allAttempts) {
       // Find or create the assigned-assessments section
       let section = document.getElementById('v1-assessments-section');
@@ -1817,7 +1822,7 @@
       renderCompletedExamsBottom(attempts);
     }
 
-    // â”€â”€ Render Completed Exams Section (Bottom of Dashboard) â”€â”€
+    // --- Render Completed Exams Section (Bottom of Dashboard) ---
     function renderCompletedExamsBottom(attempts) {
       const container = document.getElementById('completed-exams-container');
       const badgeEl = document.getElementById('bottom-completed-badge');
@@ -1912,10 +1917,10 @@
         }) : '—';
         const isPassed = parseFloat(pct) >= 60;
         const statusBadgeDesktop = isPassed
-          ? `<span class="badge badge-success" style="font-size:0.75rem;padding:3px 8px;">âœ“ Passed</span>`
+          ? `<span class="badge badge-success" style="font-size:0.75rem;padding:3px 8px;">✓ Passed</span>`
           : `<span class="badge badge-warning" style="font-size:0.75rem;padding:3px 8px;">⚠️ Retake Needed</span>`;
         const statusBadgeMobile = isPassed
-          ? `<span style="color:#10b981;font-weight:700;">âœ“ Passed</span>`
+          ? `<span style="color:#10b981;font-weight:700;">✓ Passed</span>`
           : `<span style="color:#f59e0b;font-weight:700;">⚠️ Retake</span>`;
 
         const attemptId = escapeHtml(a.id);
@@ -1984,7 +1989,7 @@
       }
     }
 
-    // â”€â”€ Profile Modal & History â”€â”€
+    // --- Profile Modal & History ---
     function setupProfileModal(attempts) {
       const modal = document.getElementById('profile-modal');
       const openBtn = document.getElementById('view-profile-btn');
@@ -2165,7 +2170,7 @@
       });
     }
 
-    // â”€â”€ Level Modal close â”€â”€
+    // --- Level Modal close ---
     document.getElementById('close-level-modal').addEventListener('click', () => {
       document.getElementById('level-modal').classList.add('hidden');
     });
@@ -2173,7 +2178,7 @@
       if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
     });
 
-    // â”€â”€ Gamification: Show Level Up Popup â”€â”€
+    // --- Gamification: Show Level Up Popup ---
     window.showLevelUpPopup = function(newLevel) {
       const overlay = document.getElementById('level-up-overlay');
       const badgeText = document.getElementById('lu-badge-text');
@@ -2201,6 +2206,7 @@
     loadDashboard();
   </script></body>
 </html>
+
 
 
 

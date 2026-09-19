@@ -1,0 +1,33 @@
+# TOPSCORE MASTER GOVERNANCE RULES (.antigravityrules)
+
+1. ABCD ARCHITECTURE:
+   - Primary 4-domain structure: [A] Admin, [B] Board, [C] Class, [D] Data.
+   - Use standard terminology: Admin, Board, Class, Data, Assessment, Question.
+   - NEVER use legacy terms: Affair, Blueprint, or Challenge.
+
+2. FRONTEND SHIELD:
+   - ALWAYS use Optional Chaining (`?.`) and fallback values (`||`, `??`) when mapping database rows, properties, prerequisites, or metadata to prevent undefined crashes.
+   - Wrap interactive modal handlers and DOM selectors in defensive existence checks.
+
+3. DATAGRID CELL SANITIZATION:
+   - Never render raw objects (`[object Object]`) into HTML table cells.
+   - Automatically resolve nested properties (dot notation keys) and extract string values (`.name`, `.title`, `.label`, or formatted JSON fallback).
+
+4. SECURITY & ANSWER KEY PROTECTION:
+   - Never leak `correct_answer_snapshot` or `accepted_answers_snapshot` to the student client during `IN_PROGRESS` attempts.
+   - Only return complete scoring snapshots once an attempt is in a verified finished status (`SUBMITTED`, `AUTO_SUBMITTED`, `COMPLETED`, `EXPIRED`).
+
+5. SUPABASE RELATIONSHIP DISAMBIGUATION:
+   - Disambiguate queries across tables with multiple foreign keys using explicit relationship hints (e.g., `institutions!institution_id(name)`, `classes!class_id(name)`).
+   - Maintain defensive in-memory fallback hydration for missing relational embeds.
+
+6. ERROR HANDLING & RESILIENCE:
+   - In `api.js`, gracefully catch Supabase 400/404 and connection errors. Return empty arrays `[]` or `{}` instead of crashing the app.
+   - Provide visual, actionable Error Boundaries with retry options instead of frozen black screens.
+
+7. STRICT UTF-8 ENCODING:
+   - Enforce strict UTF-8 encoding across HTML meta tags, API payloads, CSV/Excel parsers, and string sanitizers. Prevent mojibake characters.
+
+8. DATABASE INTEGRITY & SOFT-DELETE:
+   - Use Soft-Delete (`deleted_at IS NULL`) exclusively for business entities.
+   - Never execute raw hard-deletes (`DELETE FROM`) on historical results, attempts, or student records.

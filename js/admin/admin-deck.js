@@ -33,7 +33,7 @@ export async function renderDashboard(container) {
   container.innerHTML = `
     <div class="header-actions">
       <h2>Executive Dashboard</h2>
-      <button class="btn btn-primary" id="btn-export-cv">ðŸ“„ Export Executive CV (A4)</button>
+      <button class="btn btn-primary" id="btn-export-cv">📄 Export Executive CV (A4)</button>
     </div>
     
     <div style="display: flex; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap;">
@@ -59,7 +59,7 @@ export async function renderDashboard(container) {
 
         <!-- Attention Radar -->
         <div class="glass-card" style="padding: 1.5rem;">
-          <h3 style="margin-top:0;">ðŸ“¡ Attention Radar</h3>
+          <h3 style="margin-top:0;">&#128225; Attention Radar</h3>
           <p class="text-muted text-sm mb-3">Students requiring attention or recent alerts</p>
           <div class="table-wrap">
             <table>
@@ -104,7 +104,7 @@ export async function renderDashboard(container) {
 
         <!-- Live Timetable -->
         <div class="glass-card" style="padding: 1.5rem;">
-          <h3 style="margin-top:0;">ðŸ—“ï¸  Live Timetable</h3>
+          <h3 style="margin-top:0;">&#128197; Live Timetable</h3>
           <div style="display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1rem;">
             ${upcomingMeetings.length === 0 ? '<div class="text-muted text-sm">No scheduled meetings.</div>' : upcomingMeetings.map(m => 
               `<div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid var(--clr-border);">
@@ -128,14 +128,14 @@ export async function renderDashboard(container) {
     <div style="display: flex; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap;">
       <!-- Scratchpad -->
       <div class="glass-card" style="flex: 1; min-width: 250px; padding: 1.5rem;">
-        <h3 style="margin-top:0;">ðŸ“  Workspace Scratchpad</h3>
+        <h3 style="margin-top:0;">&#128201; Workspace Scratchpad</h3>
         <textarea style="width: 100%; height: 120px; background: rgba(0,0,0,0.1); border: 1px solid var(--clr-border); border-radius: 8px; padding: 0.8rem; color: var(--clr-text-1); font-family: inherit; resize: none;" placeholder="Jot down quick notes here..."></textarea>
       </div>
       
       <!-- Audit Logs Preview -->
       <div class="glass-card" style="flex: 1; min-width: 250px; padding: 1.5rem;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h3 style="margin:0;">ðŸ›¡ï¸  System Audit</h3>
+          <h3 style="margin:0;">&#128737;&#65039; System Audit</h3>
           <button class="btn btn-ghost btn-sm" onclick="window.loadSection('audit')">View All</button>
         </div>
         <div class="text-muted text-sm mt-3">Recent system events are logged securely. Monitor activity in the detailed Audit Log section.</div>
@@ -228,12 +228,31 @@ export async function renderAdminProfile(container) {
             </div>
           </div>
 
-          <div class="form-group mb-4">
-            <div style="display: flex; justify-content: space-between;">
-              <label class="form-label">Executive Biography (~350 characters for A4 CV)</label>
-              <span id="adm-bio-counter" class="text-xs text-muted">0 / 350</span>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Tahun Lahir</label>
+              <input type="number" class="form-control" id="adm-birth-year" value="${profile?.cv_data?.birth_year || ''}" placeholder="e.g. 1985" min="1900" max="2100" />
             </div>
-            <textarea class="form-control" id="adm-bio" rows="4" style="resize: vertical; font-family: inherit; line-height: 1.4;" placeholder="Brief summary of professional leadership, academic expertise, and teaching philosophies...">${profile?.bio || ''}</textarea>
+            <div class="form-group">
+              <label class="form-label">Pendidikan Terakhir</label>
+              <input type="text" class="form-control" id="adm-education" value="${profile?.cv_data?.education || ''}" placeholder="e.g. M.Ed. in TESOL" />
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="form-label">Riwayat Kerja (Opsional)</label>
+            <textarea class="form-control" id="adm-work-history" rows="2" placeholder="Brief summary of your professional experience...">${profile?.cv_data?.work_history || ''}</textarea>
+          </div>
+
+          <div class="form-group mb-4">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label class="form-label mb-0">Executive Biography (~350 characters for A4 CV)</label>
+              <div class="d-flex align-center gap-2">
+                <button type="button" class="btn btn-secondary btn-sm py-0" id="btn-auto-bio" style="font-size: 0.75rem; padding: 2px 8px;">✨ Auto-Generate Bio</button>
+                <span id="adm-bio-counter" class="text-xs text-muted">0 / 350</span>
+              </div>
+            </div>
+            <textarea class="form-control mt-2" id="adm-bio" rows="4" style="resize: vertical; font-family: inherit; line-height: 1.4;" placeholder="Brief summary of professional leadership, academic expertise, and teaching philosophies...">${profile?.bio || ''}</textarea>
           </div>
 
           <div style="display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid var(--clr-border); padding-top: 1rem;">
@@ -254,6 +273,29 @@ export async function renderAdminProfile(container) {
   };
   bioInput.addEventListener('input', updateBioCounter);
   updateBioCounter();
+
+  // Auto-Generate Bio
+  document.getElementById('btn-auto-bio').addEventListener('click', () => {
+    const fullName = document.getElementById('adm-full-name').value.trim() || 'Administrator';
+    const title = document.getElementById('adm-title').value.trim() || 'Education Professional';
+    const education = document.getElementById('adm-education').value.trim() || 'Higher Education';
+    const workHist = document.getElementById('adm-work-history').value.trim();
+
+    let autoBio = `${fullName} is an experienced ${title} with a strong background in ${education}. Leveraging expertise in academic leadership and curriculum design, they are dedicated to fostering excellence and innovation in educational environments.`;
+    
+    if (workHist) {
+      autoBio += ` Prior experience includes ${workHist}.`;
+    }
+
+    if (autoBio.length > 350) {
+      autoBio = autoBio.substring(0, 347) + '...';
+    }
+
+    bioInput.value = autoBio;
+    updateBioCounter();
+    window.isProfileDirty = true;
+    showToast('Auto-generated biography applied!', 'success');
+  });
 
   // Dirty State Monitoring
   const form = document.getElementById('admin-profile-form');
@@ -307,7 +349,13 @@ export async function renderAdminProfile(container) {
       title: document.getElementById('adm-title').value.trim(),
       contact_email: document.getElementById('adm-email').value.trim(),
       contact_phone: document.getElementById('adm-phone').value.trim(),
-      bio: document.getElementById('adm-bio').value.trim()
+      bio: document.getElementById('adm-bio').value.trim(),
+      cv_data: {
+        ...(profile?.cv_data || {}),
+        birth_year: document.getElementById('adm-birth-year').value.trim(),
+        education: document.getElementById('adm-education').value.trim(),
+        work_history: document.getElementById('adm-work-history').value.trim()
+      }
     };
 
     try {
@@ -662,3 +710,4 @@ export async function renderCVGenerator(container) {
     generateExecutiveCV(profile, pWork, pSkills);
   });
 }
+

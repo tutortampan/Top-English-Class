@@ -360,15 +360,15 @@ function evaluateReadAloudFallback(transcript: string, ctx: any): ReadAloudResul
   const expectedSet = new Set(expectedTokens);
   const heardSet = new Set(heardTokens);
 
-  expectedTokens.forEach(t => {
+  expectedTokens.forEach((t: string) => {
     if (!heardSet.has(t)) omissions.push(t);
   });
 
-  heardTokens.forEach(t => {
+  heardTokens.forEach((t: string) => {
     if (!expectedSet.has(t)) insertions.push(t);
   });
 
-  const matched = expectedTokens.filter(t => heardSet.has(t)).length;
+  const matched = expectedTokens.filter((t: string) => heardSet.has(t)).length;
   const score = expectedTokens.length > 0 ? Math.round((matched / expectedTokens.length) * 100) : 100;
   const wpm = Math.round(heardTokens.length * (60 / 30));
 

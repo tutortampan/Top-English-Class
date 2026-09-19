@@ -2,8 +2,8 @@ import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete,
   mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
   detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions
-} from '../api.js?v=4.1.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.1.0';
+} from '../api.js?v=4.4.1';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.4.1';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -25,8 +25,6 @@ let crudModal   = null;
 let crudForm    = null;
 let _currentSection = null;
 let _editId     = null;
-let openDuplicateStudentsModal = null;
-let openDuplicateQuestionsModal = null;
 
 const formFields = {
   user_professionals: [
@@ -52,6 +50,11 @@ const formFields = {
     { id: 'is_active', label: 'Active', type: 'checkbox' },
   ],
   subjects: [
+    { id: 'name', label: 'Class Name', type: 'text', required: true },
+    { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
+    { id: 'is_active', label: 'Active', type: 'checkbox' },
+  ],
+  classes: [
     { id: 'name', label: 'Class Name', type: 'text', required: true },
     { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
     { id: 'is_active', label: 'Active', type: 'checkbox' },
@@ -90,7 +93,7 @@ const formFields = {
     
     { id: 'name', label: 'Full Name', type: 'text', required: true },
     { id: 'gender', label: 'Gender', type: 'select', options: [
-      { value: '', label: 'â€” Unassigned (Student will choose) â€”' },
+      { value: '', label: '— Unassigned (Student will choose) —' },
       { value: 'male', label: 'Male (Mr.)' },
       { value: 'female', label: 'Female (Miss)' }
     ]},
@@ -154,7 +157,23 @@ async function openCrudModal(section, record) {
       _currentSection = section;
       _editId = record?.id || null;
       window.isProfileDirty = false;
-      document.getElementById('crud-modal-title').textContent = record ? `Edit ${sectionTitles[section]}` : `Add ${sectionTitles[section]}`;
+      const sectionTitles = {
+          programs: 'Program',
+          batches: 'Batch',
+          institutions: 'Institution',
+          classes: 'Class',
+          subjects: 'Subject',
+          levels: 'Level',
+          students: 'Student',
+          exams: 'Assessment',
+          class_instances: 'Class Instance',
+          class_meetings: 'Meeting',
+          topics: 'Topic',
+          word_types: 'Word Type',
+          questions: 'Question'
+      };
+      const titleName = sectionTitles[section] || section.charAt(0).toUpperCase() + section.slice(1);
+      document.getElementById('crud-modal-title').textContent = record ? `Edit ${titleName}` : `Add ${titleName}`;
 
       crudForm.innerHTML = '';
       const fields = formFields[section];
@@ -188,10 +207,10 @@ async function openCrudModal(section, record) {
             sel.innerHTML = `<option value="">None (Optional)</option>`;
             sel.disabled = false;
 
-            sel.innerHTML = `<option value="">â€” No Level / Optional â€”</option>`;
+            sel.innerHTML = `<option value="">— No Level / Optional —</option>`;
             sel.disabled = false;
           } else if (!f.dependsOn) {
-            sel.innerHTML = `<option value="">â€” Select â€”</option>`;
+            sel.innerHTML = `<option value="">— Select —</option>`;
             let opts = await adminFetchAll(f.source);
             opts = opts.filter(o => !o.deleted_at);
             
@@ -211,7 +230,7 @@ async function openCrudModal(section, record) {
               sel.appendChild(opt);
             });
           } else {
-            sel.innerHTML = `<option value="">â€” Select Previous First â€”</option>`;
+            sel.innerHTML = `<option value="">— Select Previous First —</option>`;
             sel.disabled = true;
           }
           group.appendChild(sel);
@@ -221,7 +240,7 @@ async function openCrudModal(section, record) {
           sel.id = `field-${f.id}`;
           sel.name = f.id;
           if (f.required) sel.required = true;
-          sel.innerHTML = `<option value="">â€” Select â€”</option>` + f.options.map(o => {
+          sel.innerHTML = `<option value="">— Select —</option>` + f.options.map(o => {
             const val = typeof o === 'object' ? o.value : o;
             const labelStr = typeof o === 'object' ? o.label : o;
             const isSelected = record?.[f.id] === val || (!record && val === 'sequential');
@@ -273,6 +292,11 @@ async function openCrudModal(section, record) {
       const classSelect = crudForm.querySelector('#field-program_id');
       const batchSelect = crudForm.querySelector('#field-batch_id');
       const subjectSelect = crudForm.querySelector('#field-class_id');
+      const prereqSelect = crudForm.querySelector('#field-prerequisite_assessment_id') || crudForm.querySelector('#field-prerequisite_exam_id');
+      const titleInput = crudForm.querySelector('#field-exam_title') || crudForm.querySelector('#field-name');
+      const levelSelect = crudForm.querySelector('#field-level_id');
+      const examTypeInput = crudForm.querySelector('#field-exam_type') || crudForm.querySelector('#field-challenge_type');
+      const orderSelect = crudForm.querySelector('#field-order_num') || crudForm.querySelector('#field-display_order');
 
       const updatePrereqRequirement = () => {
         if (!prereqSelect) return;
@@ -333,7 +357,7 @@ async function openCrudModal(section, record) {
 
       const populateLevelsForSection = async () => {
         if (!levelSelect) return;
-        levelSelect.innerHTML = `<option value="">â€” No Level / Optional â€”</option>`;
+        levelSelect.innerHTML = `<option value="">— No Level / Optional —</option>`;
         levelSelect.disabled = false;
 
         try {
@@ -374,10 +398,10 @@ async function openCrudModal(section, record) {
       if (progSelect && classSelect) {
         const populateBatchesForClass = async (selectedClassId) => {
           if (!batchSelect) return;
-          batchSelect.innerHTML = `<option value="">â€” Select Batch â€”</option>`;
+          batchSelect.innerHTML = `<option value="">— Select Batch —</option>`;
           if (!selectedClassId) {
             batchSelect.disabled = true;
-            batchSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
+            batchSelect.innerHTML = `<option value="">— Select Program First —</option>`;
             return;
           }
           batchSelect.disabled = false;
@@ -393,9 +417,9 @@ async function openCrudModal(section, record) {
         };
 
         const populateClassesForProgram = async (selectedProgId) => {
-          classSelect.innerHTML = `<option value="">${_currentSection === 'levels' ? 'â€” Select Program (Optional / All Programs) â€”' : 'â€” Select Program â€”'}</option>`;
+          classSelect.innerHTML = `<option value="">${_currentSection === 'levels' ? '— Select Program (Optional / All Programs) —' : '— Select Program —'}</option>`;
           if (batchSelect) {
-            batchSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
+            batchSelect.innerHTML = `<option value="">— Select Program First —</option>`;
             batchSelect.disabled = true;
           }
           if (!selectedProgId) {
@@ -432,7 +456,7 @@ async function openCrudModal(section, record) {
           }
         } else {
           classSelect.disabled = true;
-          classSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
+          classSelect.innerHTML = `<option value="">— Select Program First —</option>`;
         }
 
         progSelect.addEventListener('change', async (e) => {
@@ -450,7 +474,7 @@ async function openCrudModal(section, record) {
       // Program -> Subject -> Level cascading dependencies
       if (progSelect && subjectSelect) {
         const populateSubjectsForProgram = async (selectedProgId) => {
-          subjectSelect.innerHTML = `<option value="">â€” Select Subject â€”</option>`;
+          subjectSelect.innerHTML = `<option value="">— Select Subject —</option>`;
           if (!selectedProgId) {
             subjectSelect.disabled = true;
             return;
@@ -470,20 +494,24 @@ async function openCrudModal(section, record) {
         };
 
         const initialProgIdForSubject = record?.institution_id || (record?.classes?.institution_id) || progSelect?.value;
-        if (initialProgIdForSubject) {
-          await populateSubjectsForProgram(initialProgIdForSubject);
-        } else {
-          subjectSelect.disabled = true;
-          subjectSelect.innerHTML = `<option value="">â€” Select Program First â€”</option>`;
+        if (subjectSelect) {
+          if (initialProgIdForSubject) {
+            await populateSubjectsForProgram(initialProgIdForSubject);
+          } else {
+            subjectSelect.disabled = true;
+            subjectSelect.innerHTML = `<option value="">— Select Program First —</option>`;
+          }
+          subjectSelect.addEventListener('change', async () => {
+            await populateLevelsForSection();
+            triggerAutoTitle();
+          });
         }
 
-        progSelect.addEventListener('change', async (e) => {
-          await populateSubjectsForProgram(e.target.value);
-        });
-        subjectSelect.addEventListener('change', async () => {
-          await populateLevelsForSection();
-          triggerAutoTitle();
-        });
+        if (progSelect) {
+          progSelect.addEventListener('change', async (e) => {
+            await populateSubjectsForProgram(e.target.value);
+          });
+        }
       }
 
       if (levelSelect) {
@@ -507,9 +535,12 @@ async function openCrudModal(section, record) {
       crudModal.classList.remove('hidden');
     }
 
-// Wire up module-level event listeners (DOM must be ready)
-document.addEventListener('DOMContentLoaded', () => {
+let _crudModalsInitialized = false;
+function _initCrudModals() {
+  if (_crudModalsInitialized) return;
   _ensureDomRefs();
+  if (!crudForm) return; // DOM not ready yet
+  _crudModalsInitialized = true;
 
   crudForm.addEventListener('input', () => { window.isProfileDirty = true; });
   crudForm.addEventListener('change', () => { window.isProfileDirty = true; });
@@ -548,9 +579,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 payload[f.id] = JSON.parse(raw);
               } catch {
                 if (/[;/|]/.test(raw)) {
-                  payload[f.id] = raw.replace(/^[\[\]"']+|[\[\]"']+$/g, '').split(/[;/|]/).map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+                  payload[f.id] = (raw || '').replace(/^[\[\]"']+|[\[\]"']+$/g, '').split(/[;/|]/).map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
                 } else {
-                  payload[f.id] = raw.replace(/^[\[\]"']+|[\[\]"']+$/g, '').split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+                  payload[f.id] = (raw || '').replace(/^[\[\]"']+|[\[\]"']+$/g, '').split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
                 }
               }
             } else if (/[;/|]/.test(raw)) {
@@ -577,7 +608,13 @@ document.addEventListener('DOMContentLoaded', () => {
       // Never send display_name (Postgres GENERATED ALWAYS STORED column causes 428C9)
       delete payload.display_name;
 
-      const targetTable = _currentSection.replace('-', '_');
+      const targetTable = (_currentSection || '').replace('-', '_');
+      
+      // FIX: Handle schema ambiguity where 'programs' table expects 'program_id' instead of/along with 'institution_id'
+      if (_currentSection === 'programs' && payload.institution_id) {
+        payload.program_id = payload.institution_id;
+      }
+
       if (_currentSection === 'students' && payload.name) {
         payload.name = formatStudentName(payload.name, payload.gender);
       }
@@ -623,7 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
               await adminUpdate('students', existingMatch.id, { ...payload, updated_at: new Date().toISOString() });
               showToast('A student with this name already exists in the class. Data successfully merged/updated!', 'success');
               crudModal.classList.add('hidden');
-              loadSection('students');
+              if (typeof window.loadSection === 'function') window.loadSection('students');
               return;
             }
           }
@@ -660,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         window.isProfileDirty = false;
         crudModal.classList.add('hidden');
-        loadSection(_currentSection);
+        if (typeof window.loadSection === 'function') window.loadSection(_currentSection);
       } catch(e) {
         showToast('Save failed: ' + e.message, 'error');
       }
@@ -681,11 +718,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     document.getElementById('delete-confirm-btn').addEventListener('click', async () => {
+      if (!_deleteSection || !_deleteId) return; // Prevent duplicate/empty listener execution
       try {
         await adminSoftDelete(_deleteSection, _deleteId);
         showToast('Record deleted.', 'success');
         document.getElementById('delete-modal').classList.add('hidden');
-        loadSection(_currentSection);
+        if (typeof window.loadSection === 'function') window.loadSection(_currentSection);
+        _deleteSection = null; _deleteId = null; // Clear state
       } catch (err) {
         showToast('Delete failed: ' + err.message, 'error');
       }
@@ -701,298 +740,465 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
     ['delete-cancel-btn'].forEach(id => document.getElementById(id).addEventListener('click', () => document.getElementById('delete-modal').classList.add('hidden')));
 
-    // --- DUPLICATE STUDENTS MODAL LOGIC ---
-    const dupStudModal = document.getElementById('duplicate-students-modal');
-    const dupStudContent = document.getElementById('dup-students-content');
-    let currentDupStudScope = 'same_class';
-    let dupStudentGroups = [];
+} // end _initCrudModals
 
-    openDuplicateStudentsModal = async function() {
-      dupStudModal.classList.remove('hidden');
-      await loadDuplicateStudents(currentDupStudScope);
-    };
+// ============================================================
+// DUPLICATE STUDENTS & QUESTIONS MODAL CONTROLLERS
+// ============================================================
+let currentDupStudScope = 'same_class';
+let dupStudentGroups = [];
+let currentDupQTab = 'same_exam';
+let _dupModalsInitialized = false;
 
-    document.getElementById('close-dup-students-modal')?.addEventListener('click', () => {
-      dupStudModal.classList.add('hidden');
-      loadSection('students'); // Refresh list when closed
-    });
+function _initDuplicateModals() {
+  if (_dupModalsInitialized) return;
+  const dupStudModal = document.getElementById('duplicate-students-modal');
+  const dupQModal = document.getElementById('duplicate-questions-modal');
+  if (!dupStudModal && !dupQModal) return; // DOM not ready yet
+  _dupModalsInitialized = true;
 
-    document.querySelectorAll('.dup-stud-tab-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        document.querySelectorAll('.dup-stud-tab-btn').forEach(b => {
-          b.classList.remove('btn-primary');
-          b.classList.add('btn-secondary');
-        });
-        const target = e.currentTarget;
-        target.classList.remove('btn-secondary');
-        target.classList.add('btn-primary');
-        currentDupStudScope = target.dataset.scope;
-        await loadDuplicateStudents(currentDupStudScope);
+  // --- Student Duplicate Modal Events ---
+  document.getElementById('close-dup-students-modal')?.addEventListener('click', () => {
+    dupStudModal?.classList.add('hidden');
+    if (typeof window.loadSection === 'function') window.loadSection('students');
+  });
+
+  document.querySelectorAll('.dup-stud-tab-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      document.querySelectorAll('.dup-stud-tab-btn').forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-secondary');
       });
+      const target = e.currentTarget;
+      target.classList.remove('btn-secondary');
+      target.classList.add('btn-primary');
+      currentDupStudScope = target.dataset.scope || 'same_class';
+      await loadDuplicateStudents(currentDupStudScope);
     });
+  });
 
-    async function loadDuplicateStudents(scope) {
-      dupStudContent.innerHTML = '<div class="empty-state p-6 text-center"><div class="spinner"></div><p>Scanning for duplicates...</p></div>';
-      try {
-        const duplicateGroups = await detectDuplicateStudents(scope);
-        dupStudentGroups = duplicateGroups;
-        
-        // Update counters
-        const totalDups = duplicateGroups.reduce((acc, g) => acc + (g.candidates.length - 1), 0);
-        if (scope === 'same_class') document.getElementById('dup-stud-same-count').textContent = totalDups;
-        else document.getElementById('dup-stud-cross-count').textContent = totalDups;
-
-        if (dupStudentGroups.length === 0) {
-          dupStudContent.innerHTML = '<div class="empty-state p-6 text-center"><p>âœ… No duplicate students found.</p></div>';
-          return;
-        }
-
-        let html = '';
-        dupStudentGroups.forEach((group, gIdx) => {
-          html += `
-            <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-primary);">
-              <div class="fw-700 mb-2">Duplicate Group ${gIdx + 1} â€” Name: "${escapeHtml(group.name)}"</div>
-              <table class="table-sm w-100 mb-3 text-sm">
-                <thead>
-                  <tr>
-                    <th>Student Info</th>
-                    <th>Demographics</th>
-                    <th>Academic History</th>
-                    <th>Created At</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-          `;
-          group.candidates.forEach((student, sIdx) => {
-            html += `
-                  <tr style="${sIdx === 0 ? 'background:rgba(74, 222, 128, 0.1);' : ''}">
-                    <td>${student.id.substring(0,8)}...</td>
-                    <td>${escapeHtml(student.programs?.name || '-')}</td>
-                    <td>${escapeHtml(student.institutions?.name || '-')}</td>
-                    <td>${new Date(student.created_at).toLocaleString()}</td>
-                    <td>${sIdx === 0 ? '<span class="badge badge-success">Primary Target</span>' : `<button class="btn btn-warning btn-sm btn-merge-student" data-primary="${group.recommendedPrimaryId}" data-secondary="${student.id}">Merge to Primary</button>`}</td>
-                  </tr>
-            `;
-          });
-          html += `
-                </tbody>
-              </table>
-            </div>
-          `;
-        });
-        dupStudContent.innerHTML = html;
-
-        // Attach merge listeners
-        document.querySelectorAll('.btn-merge-student').forEach(btn => {
-          btn.addEventListener('click', async (e) => {
-            const primaryId = e.currentTarget.dataset.primary;
-            const secondaryId = e.currentTarget.dataset.secondary;
-            if(!confirm('Merge this student into the primary? All exam attempts and progress will be transferred, and this duplicate profile will be soft-deleted. This cannot be undone.')) return;
-            
-            e.currentTarget.disabled = true;
-            e.currentTarget.innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
-            try {
-              const res = await mergeStudentPair(primaryId, secondaryId);
-              showToast(`Successfully merged student! Transferred ${res.transferredAttempts || 0} attempts and ${res.transferredProgress || 0} progress records.`, 'success');
-              await loadDuplicateStudents(currentDupStudScope); // Refresh
-            } catch(err) {
-              showToast(`Merge failed: ${err.message}`, 'error');
-              e.currentTarget.disabled = false;
-              e.currentTarget.textContent = 'Merge to Primary';
-            }
-          });
-        });
-
-      } catch(err) {
-        dupStudContent.innerHTML = `<div class="empty-state p-6 text-center text-danger"><p>Error loading duplicates: ${err.message}</p></div>`;
-      }
+  document.getElementById('btn-merge-all-visible-students')?.addEventListener('click', async () => {
+    if (!dupStudentGroups || dupStudentGroups.length === 0) {
+      showToast('No duplicate student groups to merge.', 'info');
+      return;
     }
+    if (!confirm(`Are you sure you want to quick-merge ALL ${dupStudentGroups.length} visible groups into their respective primary profiles?`)) return;
 
-    document.getElementById('btn-merge-all-visible-students')?.addEventListener('click', async () => {
-      if (dupStudentGroups.length === 0) return;
-      if (!confirm(`Are you sure you want to quick-merge ALL ${dupStudentGroups.length} visible groups into their respective primary profiles?`)) return;
-      
-      showLoading('Batch merging duplicate students...');
-      try {
-        let successCount = 0;
-        for (const group of dupStudentGroups) {
-          const primaryId = group[0].id;
-          for (let i = 1; i < group.length; i++) {
-            await mergeStudentPair(primaryId, group[i].id);
+    showLoading('Batch merging duplicate students...');
+    try {
+      let successCount = 0;
+      for (const group of dupStudentGroups) {
+        const primaryId = group.recommendedPrimaryId || (group.candidates && group.candidates[0]?.id);
+        if (!primaryId || !group.candidates) continue;
+        for (const cand of group.candidates) {
+          if (cand.id !== primaryId) {
+            await mergeStudentPair(primaryId, cand.id);
             successCount++;
           }
         }
-        hideLoading();
-        showToast(`Successfully processed batch merge (${successCount} records merged).`, 'success');
-        await loadDuplicateStudents(currentDupStudScope);
-      } catch (err) {
-        hideLoading();
-        showToast(`Batch merge interrupted: ${err.message}`, 'error');
-        await loadDuplicateStudents(currentDupStudScope);
       }
+      hideLoading();
+      showToast(`Successfully processed batch merge (${successCount} records merged).`, 'success');
+      await loadDuplicateStudents(currentDupStudScope);
+    } catch (err) {
+      hideLoading();
+      showToast(`Batch merge interrupted: ${err.message}`, 'error');
+      await loadDuplicateStudents(currentDupStudScope);
+    }
+  });
+
+  // --- Question Duplicate Modal Events ---
+  document.getElementById('close-dup-questions-modal')?.addEventListener('click', () => {
+    dupQModal?.classList.add('hidden');
+  });
+
+  document.getElementById('dup-q-exam-select')?.addEventListener('change', () => loadDuplicateQuestions());
+
+  document.querySelectorAll('.dup-q-tab-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      document.querySelectorAll('.dup-q-tab-btn').forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-secondary');
+      });
+      const target = e.currentTarget;
+      target.classList.remove('btn-secondary');
+      target.classList.add('btn-primary');
+      currentDupQTab = target.dataset.qtab || 'same_exam';
+      await loadDuplicateQuestions();
     });
+  });
 
-    // --- DUPLICATE QUESTIONS MODAL LOGIC ---
-    const dupQModal = document.getElementById('duplicate-questions-modal');
-    const dupQContent = document.getElementById('dup-questions-content');
+  const batchCleanQuestionsHandler = async () => {
     const dupQExamSelect = document.getElementById('dup-q-exam-select');
+    const examId = dupQExamSelect?.value || null;
+    if (!examId) {
+      showToast('Please select a specific Exam from the filter above to perform Batch Auto-Resolve.', 'warning');
+      return;
+    }
+    if (!confirm('Are you sure you want to batch resolve ALL duplicate questions for this exam? This is irreversible.')) return;
 
-    openDuplicateQuestionsModal = async function() {
-      dupQModal.classList.remove('hidden');
-      
-      // Populate exam select
-      try {
-        const exams = await adminFetchAll('exams', 'id, exam_title, exam_status');
-        const sortedExams = exams.sort((a, b) => a.exam_title.localeCompare(b.exam_title));
-        dupQExamSelect.innerHTML = '<option value="">â€” All Exams (Global Search) â€”</option>' + 
-          sortedExams.map(e => `<option value="${e.id}">${escapeHtml(e.exam_title)} (${e.exam_status})</option>`).join('');
-      } catch(e) { console.error("Could not load exams for duplicate select:", e); }
-        
+    showLoading('Batch resolving duplicate questions...');
+    try {
+      const res = await batchResolveExamDuplicateQuestions(examId);
+      hideLoading();
+      showToast(`Successfully processed exam: repointed ${res.totalRepointedAnswers || 0} answers across ${res.groupsResolved || 0} duplicate groups.`, 'success');
+      await loadDuplicateQuestions();
+    } catch (err) {
+      hideLoading();
+      showToast(`Batch resolve failed: ${err.message}`, 'error');
       await loadDuplicateQuestions();
     }
+  };
 
-    document.getElementById('close-dup-questions-modal')?.addEventListener('click', () => {
-      dupQModal.classList.add('hidden');
-    });
+  document.getElementById('btn-batch-clean-exam-questions')?.addEventListener('click', batchCleanQuestionsHandler);
+  document.getElementById('btn-resolve-all-visible-questions')?.addEventListener('click', batchCleanQuestionsHandler);
+}
 
-    dupQExamSelect?.addEventListener('change', () => loadDuplicateQuestions());
+// --- STUDENT DUPLICATE LOADER ---
+async function loadDuplicateStudents(scope = 'same_class') {
+  const dupStudContent = document.getElementById('dup-students-content');
+  if (!dupStudContent) return;
+  dupStudContent.innerHTML = '<div class="empty-state p-6 text-center"><div class="spinner"></div><p>Scanning for duplicate students...</p></div>';
+  try {
+    const duplicateGroups = await detectDuplicateStudents(scope);
+    dupStudentGroups = duplicateGroups || [];
 
-    async function loadDuplicateQuestions() {
-      dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><div class="spinner"></div><p>Scanning for duplicate questions...</p></div>';
-      try {
-        const examId = dupQExamSelect.value || null;
-        const data = await detectDuplicateQuestions(examId);
-        
-        document.getElementById('dup-q-same-count').textContent = data.totalSameExamDupCount;
+    // Update counters
+    const totalDups = dupStudentGroups.reduce((acc, g) => acc + ((g.candidates?.length || 1) - 1), 0);
+    const sameCountEl = document.getElementById('dup-stud-same-count');
+    const crossCountEl = document.getElementById('dup-stud-cross-count');
+    if (scope === 'same_class' && sameCountEl) sameCountEl.textContent = totalDups;
+    if (scope === 'cross_class' && crossCountEl) crossCountEl.textContent = totalDups;
 
-        if (data.sameExamDuplicates.length === 0) {
-          dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>âœ… No duplicate questions found.</p></div>';
-          return;
-        }
-
-        let html = '';
-        data.sameExamDuplicates.forEach((group, gIdx) => {
-          // Group by exam
-          const examTitle = group.examTitle || 'Unknown Exam';
-          const primaryQ = group.candidates[0];
-          
-          let optsDisplay = '';
-          if (primaryQ.options_json) {
-            try {
-              const opts = typeof primaryQ.options_json === 'string' ? JSON.parse(primaryQ.options_json) : primaryQ.options_json;
-              optsDisplay = Array.isArray(opts) ? opts.join(' | ') : String(primaryQ.options_json);
-            } catch(e) {
-              optsDisplay = String(primaryQ.options_json);
-            }
-          }
-
-          html += `
-            <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-warning);">
-              <div class="d-flex justify-between align-center mb-2 flex-wrap gap-2">
-                <div class="fw-700">Duplicate Question in: ${escapeHtml(examTitle)}</div>
-                <button class="btn btn-warning btn-sm btn-resolve-q-group" data-primary="${primaryQ.id}">Auto-Resolve Group</button>
-              </div>
-              <div class="text-sm mb-3 px-3 py-2 rounded" style="background:var(--clr-surface-2); border:1px solid var(--clr-border);">
-                <div class="mb-2"><strong>Text:</strong> ${escapeHtml(primaryQ.question_text)}</div>
-                ${optsDisplay ? `<div class="mb-2 text-muted"><strong>Options:</strong> ${escapeHtml(optsDisplay)}</div>` : ''}
-                <div class="text-muted"><strong>Correct Answer:</strong> ${escapeHtml(primaryQ.correct_answer || '-')}</div>
-              </div>
-              <table class="table-sm w-100 text-xs">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Order</th>
-                    <th>Answer Type</th>
-                    <th>Answers Count</th>
-                    <th>Created At</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-          `;
-          group.candidates.forEach((q, qIdx) => {
-            html += `
-                  <tr style="${qIdx === 0 ? 'background:rgba(74, 222, 128, 0.1);' : 'background:rgba(239, 68, 68, 0.05);'}">
-                    <td>${q.id.substring(0,8)}...</td>
-                    <td>${q.question_order}</td>
-                    <td>${escapeHtml(q.answer_type)}</td>
-                    <td class="fw-700 text-primary">${q.answersCount || 0}</td>
-                    <td>${new Date(q.created_at).toLocaleString()}</td>
-                    <td>${qIdx === 0 ? '<span class="badge badge-success">Primary (Kept)</span>' : '<span class="badge badge-error">Duplicate (Will Remove)</span>'}</td>
-                  </tr>
-            `;
-          });
-          html += `
-                </tbody>
-              </table>
-            </div>
-          `;
-        });
-        dupQContent.innerHTML = html;
-
-        // Attach resolve listeners
-        document.querySelectorAll('.btn-resolve-q-group').forEach(btn => {
-          btn.addEventListener('click', async (e) => {
-            const primaryId = e.currentTarget.dataset.primary;
-            // Find the group based on primaryId
-            const group = data.sameExamDuplicates.find(g => g.recommendedPrimaryId === primaryId);
-            if(!group) return;
-            
-            if(!confirm('Resolve this duplicate question group? All student answers tied to the duplicates will be repointed to the primary question, and the duplicates will be hard-deleted. Finally, the exam questions will be re-sequenced.')) return;
-            
-            e.currentTarget.disabled = true;
-            e.currentTarget.innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
-            try {
-              let count = 0;
-              for (let i = 1; i < group.candidates.length; i++) {
-                await resolveDuplicateQuestionGroup(group.recommendedPrimaryId, group.candidates[i].id, false);
-                count++;
-              }
-              await resequenceExamQuestions(group.examId);
-              showToast(`Resolved! Repointed answers. ${count} duplicates removed.`, 'success');
-              await loadDuplicateQuestions(); // Refresh
-            } catch(err) {
-              showToast(`Resolve failed: ${err.message}`, 'error');
-              e.currentTarget.disabled = false;
-              e.currentTarget.textContent = 'Auto-Resolve Group';
-            }
-          });
-        });
-
-      } catch(err) {
-        dupQContent.innerHTML = `<div class="empty-state p-6 text-center text-danger"><p>Error loading duplicates: ${err.message}</p></div>`;
-      }
+    if (dupStudentGroups.length === 0) {
+      dupStudContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No duplicate students found.</p></div>';
+      return;
     }
 
-    document.getElementById('btn-resolve-all-visible-questions')?.addEventListener('click', async () => {
-      const examId = dupQExamSelect.value || null;
-      if (!examId) {
-        showToast('Please select a specific Exam from the filter to perform Batch Auto-Resolve.', 'warning');
-        return;
-      }
-      
-      if (!confirm(`Are you sure you want to batch resolve ALL duplicate questions for this exam? This is irreversible.`)) return;
-      
-      showLoading('Batch resolving duplicate questions...');
-      try {
-        const res = await batchResolveExamDuplicateQuestions(examId);
-        hideLoading();
-        showToast(`Successfully processed exam: repointed ${res.totalRepointedAnswers} answers across ${res.groupsResolved} duplicate groups.`, 'success');
-        await loadDuplicateQuestions();
-      } catch (err) {
-        hideLoading();
-        showToast(`Batch resolve failed: ${err.message}`, 'error');
-        await loadDuplicateQuestions();
-      }
+    let html = '';
+    dupStudentGroups.forEach((group, gIdx) => {
+      html += `
+        <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-primary); background:var(--clr-surface, #1e293b); border-radius:8px;">
+          <div class="fw-700 mb-2" style="color:var(--clr-text, #f8fafc); font-size:1rem;">
+            Duplicate Group ${gIdx + 1} — Name: "${escapeHtml(group.name)}"
+          </div>
+          <table class="table-sm w-100 mb-3 text-sm" style="border-collapse:collapse; width:100%;">
+            <thead>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.1); text-align:left;">
+                <th style="padding:8px 4px;">Student ID</th>
+                <th style="padding:8px 4px;">Program / Class</th>
+                <th style="padding:8px 4px;">Batch / Cohort</th>
+                <th style="padding:8px 4px;">Institution</th>
+                <th style="padding:8px 4px;">Attempts</th>
+                <th style="padding:8px 4px;">Created At</th>
+                <th style="padding:8px 4px; text-align:right;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      (group.candidates || []).forEach((student, sIdx) => {
+        const isPrimary = student.id === group.recommendedPrimaryId || sIdx === 0;
+        html += `
+              <tr style="${isPrimary ? 'background:rgba(16, 185, 129, 0.12);' : ''} border-bottom:1px solid rgba(255,255,255,0.05);">
+                <td style="padding:8px 4px; font-family:monospace; font-size:0.8rem;">${student.id.substring(0,8)}...</td>
+                <td style="padding:8px 4px;">${escapeHtml(student.programName || student.programs?.name || '—')}</td>
+                <td style="padding:8px 4px;">${escapeHtml(student.batchName || student.batches?.name || 'Unassigned')}</td>
+                <td style="padding:8px 4px;">${escapeHtml(student.institutionName || student.institutions?.name || '—')}</td>
+                <td style="padding:8px 4px;"><span class="badge" style="background:rgba(59,130,246,0.2); color:#60a5fa;">${student.attemptsCount || 0} attempts</span></td>
+                <td style="padding:8px 4px; font-size:0.8rem; color:#94a3b8;">${new Date(student.created_at).toLocaleDateString()}</td>
+                <td style="padding:8px 4px; text-align:right;">
+                  ${isPrimary ? '<span class="badge badge-success" style="background:#10b981; color:#fff; padding:3px 8px; border-radius:4px; font-size:0.75rem;">Primary Target</span>' : `<button class="btn btn-warning btn-sm btn-merge-student" data-primary="${group.recommendedPrimaryId}" data-secondary="${student.id}" style="font-size:0.75rem; padding:3px 8px;">Merge to Primary</button>`}
+                </td>
+              </tr>
+        `;
+      });
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+    });
+    dupStudContent.innerHTML = html;
+
+    // Attach individual merge listeners
+    dupStudContent.querySelectorAll('.btn-merge-student').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const primaryId = e.currentTarget.dataset.primary;
+        const secondaryId = e.currentTarget.dataset.secondary;
+        if (!confirm('Merge this student into the primary profile? All exam attempts and progress will be transferred, and this duplicate profile will be soft-deleted. This cannot be undone.')) return;
+
+        e.currentTarget.disabled = true;
+        e.currentTarget.innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
+        try {
+          const res = await mergeStudentPair(primaryId, secondaryId);
+          showToast(`Successfully merged student! Transferred ${res.transferredAttempts || 0} attempts and ${res.transferredProgress || 0} progress records.`, 'success');
+          await loadDuplicateStudents(currentDupStudScope);
+        } catch (err) {
+          showToast(`Merge failed: ${err.message}`, 'error');
+          e.currentTarget.disabled = false;
+          e.currentTarget.textContent = 'Merge to Primary';
+        }
+      });
     });
 
-    // Note: Sidebar toggle is already wired above (openSidebar/closeSidebar functions).
-    // Duplicate handler removed â€” single handler at initConsole() is authoritative.
-}); // end DOMContentLoaded
+  } catch (err) {
+    console.error('Error loading duplicate students:', err);
+    dupStudContent.innerHTML = `<div class="empty-state p-6 text-center text-danger"><p>Error loading duplicate students: ${escapeHtml(err.message)}</p></div>`;
+  }
+}
+
+// --- QUESTION DUPLICATE LOADER ---
+async function loadDuplicateQuestions() {
+  const dupQContent = document.getElementById('dup-questions-content');
+  const dupQExamSelect = document.getElementById('dup-q-exam-select');
+  if (!dupQContent) return;
+
+  dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><div class="spinner"></div><p>Scanning for duplicate questions...</p></div>';
+  try {
+    const examId = dupQExamSelect?.value || null;
+    const data = await detectDuplicateQuestions(examId);
+
+    // Update count badges
+    const sameCountEl = document.getElementById('dup-q-same-count');
+    if (sameCountEl) sameCountEl.textContent = data.totalSameExamDupCount || 0;
+    const orderCountEl = document.getElementById('dup-q-order-count');
+    if (orderCountEl) orderCountEl.textContent = (data.sameExamOrderConflicts || []).length;
+    const crossCountEl = document.getElementById('dup-q-cross-count');
+    if (crossCountEl) crossCountEl.textContent = (data.crossExamDuplicates || []).length;
+
+    // View tab 1: SAME EXAM DUPLICATES
+    if (currentDupQTab === 'same_exam') {
+      if (!data.sameExamDuplicates || data.sameExamDuplicates.length === 0) {
+        dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No duplicate questions found in this assessment scope.</p></div>';
+        return;
+      }
+
+      let html = '';
+      data.sameExamDuplicates.forEach((group) => {
+        const examTitle = group.examTitle || 'Unknown Assessment';
+        const primaryQ = group.candidates[0];
+
+        let optsDisplay = '';
+        if (primaryQ.options_json) {
+          try {
+            const opts = typeof primaryQ.options_json === 'string' ? JSON.parse(primaryQ.options_json) : primaryQ.options_json;
+            optsDisplay = Array.isArray(opts) ? opts.join(' | ') : String(primaryQ.options_json);
+          } catch {
+            optsDisplay = String(primaryQ.options_json);
+          }
+        }
+
+        html += `
+          <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-warning, #f59e0b); background:var(--clr-surface, #1e293b); border-radius:8px;">
+            <div class="d-flex justify-between align-center mb-2 flex-wrap gap-2">
+              <div class="fw-700" style="color:#f8fafc;">Duplicate Question in: ${escapeHtml(examTitle)}</div>
+              <button class="btn btn-warning btn-sm btn-resolve-q-group" data-primary="${primaryQ.id}" style="font-size:0.75rem;">Auto-Resolve Group</button>
+            </div>
+            <div class="text-sm mb-3 px-3 py-2 rounded" style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08);">
+              <div class="mb-2"><strong>Text:</strong> ${escapeHtml(primaryQ.question_text)}</div>
+              ${optsDisplay ? `<div class="mb-2 text-muted"><strong>Options:</strong> ${escapeHtml(optsDisplay)}</div>` : ''}
+              <div class="text-muted"><strong>Correct Answer:</strong> ${escapeHtml(primaryQ.correct_answer || '-')}</div>
+            </div>
+            <table class="table-sm w-100 text-xs" style="border-collapse:collapse; width:100%;">
+              <thead>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.1); text-align:left;">
+                  <th style="padding:6px 4px;">ID</th>
+                  <th style="padding:6px 4px;">Order</th>
+                  <th style="padding:6px 4px;">Answer Type</th>
+                  <th style="padding:6px 4px;">Logged Answers</th>
+                  <th style="padding:6px 4px;">Created At</th>
+                  <th style="padding:6px 4px; text-align:right;">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        group.candidates.forEach((q, qIdx) => {
+          html += `
+                <tr style="${qIdx === 0 ? 'background:rgba(16, 185, 129, 0.1);' : 'background:rgba(239, 68, 68, 0.05);'} border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:6px 4px; font-family:monospace;">${q.id.substring(0,8)}...</td>
+                  <td style="padding:6px 4px; font-weight:700;">#${q.question_order}</td>
+                  <td style="padding:6px 4px;">${escapeHtml(q.answer_type)}</td>
+                  <td style="padding:6px 4px;" class="fw-700 text-primary">${q.answersCount || 0}</td>
+                  <td style="padding:6px 4px; color:#94a3b8;">${new Date(q.created_at).toLocaleDateString()}</td>
+                  <td style="padding:6px 4px; text-align:right;">${qIdx === 0 ? '<span class="badge badge-success" style="background:#10b981; color:#fff; padding:2px 6px; border-radius:3px;">Primary (Keep)</span>' : '<span class="badge badge-error" style="background:#ef4444; color:#fff; padding:2px 6px; border-radius:3px;">Duplicate (Remove)</span>'}</td>
+                </tr>
+          `;
+        });
+        html += `
+              </tbody>
+            </table>
+          </div>
+        `;
+      });
+      dupQContent.innerHTML = html;
+
+      // Attach resolve listeners
+      dupQContent.querySelectorAll('.btn-resolve-q-group').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const primaryId = e.currentTarget.dataset.primary;
+          const group = data.sameExamDuplicates.find(g => g.recommendedPrimaryId === primaryId);
+          if (!group) return;
+
+          if (!confirm('Resolve this duplicate question group? All student answers tied to the duplicates will be repointed to the primary question, and the duplicates will be removed. Finally, questions will be re-sequenced.')) return;
+
+          e.currentTarget.disabled = true;
+          e.currentTarget.innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
+          try {
+            let count = 0;
+            for (let i = 1; i < group.candidates.length; i++) {
+              await resolveDuplicateQuestionGroup(group.recommendedPrimaryId, group.candidates[i].id, false);
+              count++;
+            }
+            await resequenceExamQuestions(group.examId);
+            showToast(`Resolved! Repointed answers. ${count} duplicates removed.`, 'success');
+            await loadDuplicateQuestions();
+          } catch (err) {
+            showToast(`Resolve failed: ${err.message}`, 'error');
+            e.currentTarget.disabled = false;
+            e.currentTarget.textContent = 'Auto-Resolve Group';
+          }
+        });
+      });
+      return;
+    }
+
+    // View tab 2: ORDER CONFLICTS
+    if (currentDupQTab === 'order_conflicts') {
+      if (!data.sameExamOrderConflicts || data.sameExamOrderConflicts.length === 0) {
+        dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No question order conflicts detected.</p></div>';
+        return;
+      }
+
+      let html = '';
+      data.sameExamOrderConflicts.forEach((group) => {
+        const examTitle = group.examTitle || 'Unknown Exam';
+        html += `
+          <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-info, #3b82f6); background:var(--clr-surface, #1e293b); border-radius:8px;">
+            <div class="d-flex justify-between align-center mb-2 flex-wrap gap-2">
+              <div class="fw-700" style="color:#f8fafc;">Order Conflict (#${group.order}) in: ${escapeHtml(examTitle)}</div>
+              <button class="btn btn-secondary btn-sm btn-resequence-exam" data-exam="${group.examId}" style="font-size:0.75rem;">Resequence Exam (1..N)</button>
+            </div>
+            <table class="table-sm w-100 text-xs" style="border-collapse:collapse; width:100%;">
+              <thead>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.1); text-align:left;">
+                  <th style="padding:6px 4px;">Order</th>
+                  <th style="padding:6px 4px;">Question Text</th>
+                  <th style="padding:6px 4px;">Answer Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${group.candidates.map(q => `
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:6px 4px; font-weight:700; color:#f59e0b;">#${q.question_order}</td>
+                    <td style="padding:6px 4px;">${escapeHtml(q.question_text || '')}</td>
+                    <td style="padding:6px 4px;">${escapeHtml(q.answer_type || '')}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      });
+      dupQContent.innerHTML = html;
+
+      dupQContent.querySelectorAll('.btn-resequence-exam').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const examId = e.currentTarget.dataset.exam;
+          e.currentTarget.disabled = true;
+          try {
+            await resequenceExamQuestions(examId);
+            showToast('Exam questions resequenced sequentially!', 'success');
+            await loadDuplicateQuestions();
+          } catch (err) {
+            showToast(`Resequence failed: ${err.message}`, 'error');
+            e.currentTarget.disabled = false;
+          }
+        });
+      });
+      return;
+    }
+
+    // View tab 3: CROSS EXAM DUPLICATES
+    if (currentDupQTab === 'cross_exam') {
+      if (!data.crossExamDuplicates || data.crossExamDuplicates.length === 0) {
+        dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No cross-exam duplicate questions found.</p></div>';
+        return;
+      }
+
+      let html = '';
+      data.crossExamDuplicates.forEach((group) => {
+        html += `
+          <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-primary, #6366f1); background:var(--clr-surface, #1e293b); border-radius:8px;">
+            <div class="fw-700 mb-2" style="color:#f8fafc;">Identical Text in ${group.examCount} assessments (${group.candidatesCount} instances)</div>
+            <div class="text-sm mb-2 px-3 py-2 rounded" style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08);">
+              ${escapeHtml(group.questionText)}
+            </div>
+            <div class="text-xs text-muted"><strong>Assessments:</strong> ${(group.exams || []).map(e => escapeHtml(e.title)).join(' • ')}</div>
+          </div>
+        `;
+      });
+      dupQContent.innerHTML = html;
+      return;
+    }
+
+  } catch (err) {
+    console.error('Error loading duplicate questions:', err);
+    dupQContent.innerHTML = `<div class="empty-state p-6 text-center text-danger"><p>Error loading duplicates: ${escapeHtml(err.message)}</p></div>`;
+  }
+}
+
+// --- POPULATE EXAM SELECT IN QUESTIONS MODAL ---
+async function initDuplicateQuestionsSelect() {
+  const dupQExamSelect = document.getElementById('dup-q-exam-select');
+  if (!dupQExamSelect) return;
+  try {
+    const exams = await adminFetchAll('exams', 'id, exam_title, exam_status');
+    const sortedExams = (exams || []).sort((a, b) => (a.exam_title || '').localeCompare(b.exam_title || ''));
+    dupQExamSelect.innerHTML = '<option value="">— All Exams (Global Search) —</option>' +
+      sortedExams.map(e => `<option value="${e.id}">${escapeHtml(e.exam_title)} (${e.exam_status || 'published'})</option>`).join('');
+  } catch (e) {
+    console.warn('Could not load exams for duplicate select:', e);
+  }
+}
+
+// --- TOP-LEVEL MODAL OPENERS ---
+async function openDuplicateStudentsModal() {
+  _ensureDomRefs();
+  _initDuplicateModals();
+  const dupStudModal = document.getElementById('duplicate-students-modal');
+  if (dupStudModal) dupStudModal.classList.remove('hidden');
+  await loadDuplicateStudents(currentDupStudScope);
+}
+
+async function openDuplicateQuestionsModal() {
+  _ensureDomRefs();
+  _initDuplicateModals();
+  const dupQModal = document.getElementById('duplicate-questions-modal');
+  if (dupQModal) dupQModal.classList.remove('hidden');
+  await initDuplicateQuestionsSelect();
+  await loadDuplicateQuestions();
+}
+
+// Ensure global accessibility across all views
+if (typeof window !== 'undefined') {
+  window.openDuplicateStudentsModal = openDuplicateStudentsModal;
+  window.openDuplicateQuestionsModal = openDuplicateQuestionsModal;
+}
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    _initCrudModals();
+    _initDuplicateModals();
+  });
+} else {
+  _initCrudModals();
+  _initDuplicateModals();
+}
 
 
 
 
 export { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin };
+
 

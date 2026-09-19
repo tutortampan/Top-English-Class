@@ -341,12 +341,43 @@ export class DataGrid {
           td.style.zIndex = '5';
         }
 
+        const getNestedVal = (obj, key) => {
+          if (!obj || !key) return undefined;
+          if (key in obj) return obj[key];
+          return key.split('.').reduce((acc, part) => (acc && acc[part] !== undefined ? acc[part] : undefined), obj);
+        };
+
         if (col.render) {
-          const content = col.render(row);
-          if (content instanceof HTMLElement) td.appendChild(content);
-          else td.innerHTML = content;
+          const val = col.key ? getNestedVal(row, col.key) : undefined;
+          let content = '';
+          try {
+            if (typeof col.render === 'function') {
+              if (col.render.length > 1) {
+                content = col.render(val !== undefined ? val : row, row);
+              } else {
+                content = col.render(row);
+              }
+            } else {
+              content = String(val ?? '');
+            }
+          } catch (renderErr) {
+            console.warn('[DataGrid] col.render error for key ' + (col.key || 'unknown') + ':', renderErr);
+            content = `<span class="badge badge-warning text-xs" title="${escapeHtml(renderErr.message)}">Render Error</span>`;
+          }
+          if (content instanceof HTMLElement) {
+            td.appendChild(content);
+          } else if (typeof content === 'object' && content !== null) {
+            td.innerHTML = escapeHtml(content.name || content.title || content.label || JSON.stringify(content));
+          } else {
+            td.innerHTML = content ?? '';
+          }
         } else if (col.key) {
-          td.textContent = row[col.key] ?? '';
+          const raw = getNestedVal(row, col.key);
+          if (typeof raw === 'object' && raw !== null) {
+            td.textContent = raw.name || raw.title || raw.label || JSON.stringify(raw);
+          } else {
+            td.textContent = raw ?? '';
+          }
         }
         tr.appendChild(td);
       });

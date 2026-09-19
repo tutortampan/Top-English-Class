@@ -15,9 +15,10 @@ import {
   adminHardDelete,
   clearAdminCache,
   testSupabaseConnection
-} from '../api.js?v=4.1.0';
-import { getSupabase } from '../supabase.js?v=4.1.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.1.0';
+} from '../api.js?v=4.4.1';
+import { getSupabase } from '../supabase.js?v=4.4.1';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.4.1';
+import { openDuplicateStudentsModal, openDuplicateQuestionsModal } from './crud-modals.js?v=4.4.1';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -645,13 +646,17 @@ export async function renderDataHealth(container) {
 
   // Attach Diagnostic Scanners
   document.getElementById('btn-health-scan-students')?.addEventListener('click', () => {
-    if (typeof window.openDuplicateStudentsModal === 'function') {
+    if (typeof openDuplicateStudentsModal === 'function') {
+      openDuplicateStudentsModal();
+    } else if (typeof window.openDuplicateStudentsModal === 'function') {
       window.openDuplicateStudentsModal();
     }
   });
 
   document.getElementById('btn-health-scan-questions')?.addEventListener('click', () => {
-    if (typeof window.openDuplicateQuestionsModal === 'function') {
+    if (typeof openDuplicateQuestionsModal === 'function') {
+      openDuplicateQuestionsModal();
+    } else if (typeof window.openDuplicateQuestionsModal === 'function') {
       window.openDuplicateQuestionsModal();
     }
   });
@@ -665,7 +670,7 @@ export async function renderDataHealth(container) {
         adminFetchAll('attempts', 'id, student_id, exam_id, status, created_at'),
         adminFetchAll('questions', 'id, exam_id, question_text'),
         adminFetchAll('attempt_answers', 'id, attempt_id'),
-        adminFetchAll('progress', 'id, student_id, class_id')
+        adminFetchAll('progress', 'id, student_id').catch(() => [])
       ]);
 
       const studentIdSet = new Set((students || []).map(s => s.id));

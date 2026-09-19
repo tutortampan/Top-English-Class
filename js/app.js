@@ -147,3 +147,13 @@ export function debounce(fn, ms = 300) {
 export function scrollTop(el) {
   if (el) el.scrollTop = 0;
 }
+
+
+window.addEventListener('unhandledrejection', function(event) {
+  console.error('Unhandled Promise Rejection:', event.reason);
+  if (typeof hideLoading === 'function') hideLoading();
+  if (typeof showToast === 'function') {
+    showToast('A background process failed. Your data is safe. Please refresh if the screen is stuck.', 'warning', 5000);
+  }
+});
+

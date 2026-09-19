@@ -17,7 +17,7 @@ const HEADER_ALIASES = {
   pin: ['pin', 'password', 'pass', 'kodesandi'],
   title: ['title', 'exam_title', 'examtitle', 'judul', 'nama_ujian'],
   topic: ['topic', 'topik', 'topic_name', 'nama_topik', 'tema', 'theme', 'kategori', 'category'],
-  question_type: ['question_type', 'wordtype', 'part_of_speech', 'pos', 'type', 'tipe', 'jenis_kata', 'tipe_kata', 'tipekata', 'jenis', 'kategori_kata', 'pos_tag'],
+  question_type: ['question_type', 'word_type', 'wordtype', 'part_of_speech', 'pos', 'type', 'tipe', 'jenis_kata', 'tipe_kata', 'tipekata', 'jenis', 'kategori_kata', 'pos_tag', 'category'],
   week: ['week', 'minggu', 'wk'],
   day: ['day', 'hari'],
   type: ['type', 'tipe', 'question_type', 'wordtype', 'part_of_speech', 'partofspeech'],

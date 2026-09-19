@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Result â€” TOPS CORE</title>
+  <title>Result — TOPS CORE</title>
   <meta name="description" content="View your exam results and answer breakdown on TOPS CORE." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -32,19 +32,19 @@
 
   <!-- Header -->
   <header class="dashboard-header" style="justify-content: center;">
-    <div class="dashboard-header-brand">ðŸŽ“ TOPS CORE</div>
+    <div class="dashboard-header-brand">&#127891; TOPS CORE</div>
   </header>
 
   <div id="result-loading" class="empty-state" style="padding:var(--space-16);">
     <div class="spinner"></div>
-    <p>Loading your resultsâ€¦</p>
+    <p>Loading your results...</p>
   </div>
 
   <div id="result-content" class="hidden">
 
     <!-- Result Hero -->
     <section class="result-hero">
-      <div class="result-grade-display grade-S" id="result-grade-badge">â€”</div>
+      <div class="result-grade-display grade-S" id="result-grade-badge">—</div>
       <div class="result-percentage" id="result-percentage">0%</div>
       <h1 class="text-gradient mb-2" id="result-headline">Assessment Complete!</h1>
       <p class="text-muted" id="result-exam-name"></p>
@@ -70,7 +70,7 @@
         <a href="dashboard.html" class="btn btn-primary">Back to Dashboard</a>
         <button class="btn btn-primary" id="try-again-btn" style="background:var(--clr-success);border-color:var(--clr-success);">Try Again</button>
         <button class="btn btn-secondary" id="toggle-answers-btn">View Answer Breakdown</button>
-        <button class="btn btn-secondary" id="print-result-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;">ðŸ–¨ï¸ Print / Save Report</button>
+        <button class="btn btn-secondary" id="print-result-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;">&#128424;&#65039; Print / Save Report</button>
       </div>
     </section>
 
@@ -126,7 +126,7 @@
         animateCount(pctEl, pct);
 
         // Headline
-        const headlines = { S: 'ðŸ† Perfect Score!', A: 'ðŸŒŸ Outstanding!', B: 'ðŸ‘ Great Work!', C: 'âœ… Good Effort!', D: 'ðŸ“š Keep Practicing!', E: 'ðŸ’ª Keep Going!', F: 'ðŸ”„ Try Again' };
+        const headlines = { S: '&#127942; Perfect Score!', A: '&#127775; Outstanding!', B: '&#128077; Great Work!', C: '&#9989; Good Effort!', D: '&#128218; Keep Practicing!', E: '&#128170; Keep Going!', F: '&#128259; Try Again' };
         document.getElementById('result-headline').textContent = headlines[grade] || 'Assessment Complete!';
 
         // V1: title from assessments or legacy exams join
@@ -136,7 +136,7 @@
         const lvl  = asmData?.levels?.name ? `Level ${asmData.levels.name}` : '';
         const typ  = asmData?.assessment_type || asmData?.exam_type || '';
         const nameParts = [subj, lvl, typ, asmTitle].filter(Boolean);
-        document.getElementById('result-exam-name').textContent = nameParts.join(' Â· ');
+        document.getElementById('result-exam-name').textContent = nameParts.join(' &bull; ');
 
         // V1: Best score badge
         const assessmentId = attempt.assessment_id || attempt.exam_id;
@@ -146,7 +146,7 @@
         const scoreBadgeEl = document.getElementById('result-best-score-badge');
         if (scoreBadgeEl) {
           if (isBest) {
-            scoreBadgeEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;font-weight:700;color:#10b981;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:3px 10px;">â­ Best Score</span>`;
+            scoreBadgeEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;font-weight:700;color:#10b981;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:3px 10px;">&#11088; Best Score</span>`;
           } else {
             scoreBadgeEl.innerHTML = `<span style="font-size:0.75rem;color:var(--clr-text-3);">Not your best score</span>`;
           }
@@ -159,6 +159,21 @@
         document.getElementById('res-correct').textContent = correct;
         document.getElementById('res-partial').textContent = partial;
         document.getElementById('res-wrong').textContent   = wrong;
+
+        // AI Narrative Report Injection
+        if (attempt.narrative_report) {
+          const escapeHtml = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+          const heroSection = document.querySelector('.result-hero');
+          if (heroSection && !document.getElementById('ai-narrative-card')) {
+            const narrativeHtml = `
+              <div id="ai-narrative-card" class="glass-card p-5 mt-4 mb-5" style="max-width:680px; margin:0 auto; border-top:3px solid var(--clr-primary);">
+                <h3 class="fw-700 text-sm mb-2" style="color:var(--clr-text-1);">✨ Teacher's Evaluation Notes</h3>
+                <p class="text-muted" style="line-height:1.6; font-size:0.95rem;">${escapeHtml(attempt.narrative_report).replace(/\\n/g, '<br>')}</p>
+              </div>
+            `;
+            heroSection.insertAdjacentHTML('afterend', narrativeHtml);
+          }
+        }
 
         // Render answer breakdown
         renderAnswers(answers);
@@ -196,7 +211,7 @@
       } catch(e) {
         showToast('Failed to load results: ' + e.message, 'error');
         document.getElementById('result-loading').innerHTML = `
-          <div class="empty-state__icon">âŒ</div>
+          <div class="empty-state__icon">&#10060;</div>
           <h3>Could not load results</h3>
           <p class="text-muted">${escapeHtml(e.message)}</p>
           <a href="dashboard.html" class="btn btn-primary mt-4">Back to Dashboard</a>
@@ -222,7 +237,7 @@
         const ag   = a.grade || getGrade(parseFloat(apct));
         const isThis = a.id === currentAttemptId;
         const isBestRow = a.is_best_score;
-        const dateStr = a.submitted_at ? new Date(a.submitted_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'â€”';
+        const dateStr = a.submitted_at ? new Date(a.submitted_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
         return `
           <tr style="${isThis ? 'background:rgba(56,189,248,0.07);' : ''}">
             <td style="padding:8px 12px;font-size:0.82rem;color:var(--clr-text-3);">${escapeHtml(dateStr)}</td>
@@ -231,8 +246,8 @@
               <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;font-weight:800;font-size:0.78rem;border:2px solid ${gradeColors[ag] || '#64748b'};color:${gradeColors[ag] || '#64748b'};">${ag}</span>
             </td>
             <td style="padding:8px 12px;">
-              ${isBestRow ? '<span style="font-size:0.72rem;font-weight:700;color:#10b981;">â­ Best</span>' : ''}
-              ${isThis ? '<span style="font-size:0.72rem;color:#38bdf8;">â† This attempt</span>' : `<a href="result.html?attempt_id=${escapeHtml(a.id)}" style="font-size:0.72rem;color:var(--clr-text-3);text-decoration:underline;">View</a>`}
+              ${isBestRow ? '<span style="font-size:0.72rem;font-weight:700;color:#10b981;">&#11088; Best</span>' : ''}
+              ${isThis ? '<span style="font-size:0.72rem;color:#38bdf8;">&larr; This attempt</span>' : `<a href="result.html?attempt_id=${escapeHtml(a.id)}" style="font-size:0.72rem;color:var(--clr-text-3);text-decoration:underline;">View</a>`}
             </td>
           </tr>
         `;
@@ -240,7 +255,7 @@
 
       histSection.innerHTML = `
         <div style="background:var(--clr-card,rgba(30,41,59,0.8));border:1px solid var(--clr-border,rgba(255,255,255,0.08));border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;">
-          <h3 style="font-size:0.9rem;font-weight:700;color:var(--clr-text-1);margin:0 0 1rem;">ðŸ“‹ Attempt History</h3>
+          <h3 style="font-size:0.9rem;font-weight:700;color:var(--clr-text-1);margin:0 0 1rem;">&#128203; Attempt History</h3>
           <div class="table-responsive">
             <table style="width:100%;border-collapse:collapse;">
               <thead>
@@ -285,7 +300,7 @@
         const isPartial = a.evaluation_result === 'minor_spelling_error';
         const isWrong   = a.evaluation_result === 'incorrect';
 
-        const resultIcon  = isCorrect ? 'âœ…' : isPartial ? 'âš ï¸' : 'âŒ';
+        const resultIcon  = isCorrect ? '&#9989;' : isPartial ? '&#9888;&#65039;' : '&#10060;';
         const resultText  = isCorrect ? 'Correct' : isPartial ? 'Minor Spelling Error' : 'Incorrect';
         const resultColor = isCorrect ? 'success' : isPartial ? 'warning' : 'danger';
         const wordType    = snap.question_type || snap.metadata?.type || snap.type || '';
@@ -338,6 +353,7 @@
   </script>
 </body>
 </html>
+
 
 
 

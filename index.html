@@ -1,16 +1,16 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TOPS CORE â€” Student Login</title>
+  <title>TOPS CORE — Student Login</title>
   <meta name="description" content="Login to TOPS CORE to access your English assessments, track your progress, and complete exams." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css?v=3.0" />
   <style>
-    /* â”€â”€ One-Page Cascading Login Styles â”€â”€ */
+    /* --- One-Page Cascading Login Styles --- */
     .login-page {
       min-height: 100vh;
       display: flex;
@@ -152,7 +152,7 @@
     .clear-session-link:hover { color: #f87171; }
     .clear-session-link.visible { display: block; }
 
-    /* â”€â”€ Cascading Section â”€â”€ */
+    /* --- Cascading Section --- */
     .cascade-section {
       position: relative;
       overflow: hidden;
@@ -340,7 +340,7 @@
       padding: 1.5rem;
     }
 
-    /* â”€â”€ PIN Section â”€â”€ */
+    /* --- PIN Section --- */
     .pin-section {
       padding: 1.25rem;
     }
@@ -481,22 +481,19 @@
   <div class="orb orb-2"></div>
   <div class="orb orb-3"></div>
 
-  <!-- Toast container -->
-  <div id="toast-container"></div>
-
-  <!-- â”€â”€ ONE-PAGE LOGIN â”€â”€ -->
+   <!-- --- ONE-PAGE LOGIN --- -->
   <div class="login-page">
     <div class="login-wrapper" role="main">
       <!-- Switch to Admin Console Button -->
       <div style="display:flex; justify-content:flex-end; margin-bottom:0.75rem;">
         <a href="admin.html" id="top-admin-link" style="font-size:0.8rem; font-weight:700; color:#a78bfa; text-decoration:none; padding:6px 14px; border-radius:20px; background:rgba(167, 139, 250, 0.12); border:1px solid rgba(167, 139, 250, 0.3); display:inline-flex; align-items:center; gap:6px; transition:background 0.2s;">
-          <span>ðŸ›¡ï¸ Top Office (ABCD System)</span> â†’
+          <span>&#128737;&#65039; Top Office (ABCD System)</span> &rarr;
         </a>
       </div>
 
       <!-- Brand -->
       <div class="login-brand">
-        <span class="brand-icon" aria-hidden="true">ðŸŽ“</span>
+        <span class="brand-icon" aria-hidden="true">&#127891;</span>
         <h1>TOPS CORE</h1>
         <p>Sign in to continue your learning journey</p>
       </div>
@@ -504,7 +501,7 @@
       <!-- Remember Me Banner -->
       <div class="remember-me-banner" id="remember-me-banner" role="button" tabindex="0" aria-label="Toggle remember login">
         <div class="rmb-left">
-          <span class="rmb-icon">ðŸ’¾</span>
+          <span class="rmb-icon">&#128190;</span>
           <div class="rmb-text">
             <strong>Remember me on this device</strong>
             <span>Save your login selection locally</span>
@@ -514,10 +511,10 @@
       </div>
 
       <div class="clear-session-link" id="clear-session-link" tabindex="0" role="button" aria-label="Clear saved login">
-        ðŸ—‘ Clear saved login info
+        &#128465;&#65039; Clear saved login info
       </div>
 
-      <!-- â”€â”€ SECTION 1: Program â”€â”€ -->
+      <!-- --- SECTION 1: Program --- -->
       <div class="cascade-section unlocked" id="sec-program">
         <div class="cascade-inner">
           <div class="cascade-header">
@@ -530,8 +527,8 @@
           </div>
           <div class="cascade-body" id="body-program">
             <div class="cascade-search">
-              <span class="search-icon">ðŸ”</span>
-              <input type="text" id="search-program" placeholder="Search programâ€¦" autocomplete="off" />
+              <span class="search-icon">&#128269;</span>
+              <input type="text" id="search-program" placeholder="Search program..." autocomplete="off" />
             </div>
             <div class="options-grid" id="list-program" role="list" aria-label="Institutions">
               <div class="opts-spinner"><div class="spinner"></div></div>
@@ -540,7 +537,7 @@
         </div>
       </div>
 
-      <!-- â”€â”€ SECTION 2: Class â”€â”€ -->
+      <!-- --- SECTION 2: Class --- -->
       <div class="cascade-section" id="sec-class">
         <div class="cascade-inner">
           <div class="cascade-header">
@@ -553,8 +550,8 @@
           </div>
           <div class="cascade-body" id="body-class">
             <div class="cascade-search">
-              <span class="search-icon">ðŸ”</span>
-              <input type="text" id="search-class" placeholder="Search classâ€¦" autocomplete="off" />
+              <span class="search-icon">&#128269;</span>
+              <input type="text" id="search-class" placeholder="Search class..." autocomplete="off" />
             </div>
             <div class="options-grid" id="list-class" role="list" aria-label="Programs">
               <div class="opts-empty">Select an institution first</div>
@@ -563,7 +560,7 @@
         </div>
       </div>
 
-      <!-- â”€â”€ SECTION 3: Batch â”€â”€ -->
+      <!-- --- SECTION 3: Batch --- -->
       <div class="cascade-section" id="sec-batch">
         <div class="cascade-inner">
           <div class="cascade-header">
@@ -576,8 +573,8 @@
           </div>
           <div class="cascade-body" id="body-batch">
             <div class="cascade-search">
-              <span class="search-icon">ðŸ”</span>
-              <input type="text" id="search-batch" placeholder="Search batchâ€¦" autocomplete="off" />
+              <span class="search-icon">&#128269;</span>
+              <input type="text" id="search-batch" placeholder="Search batch..." autocomplete="off" />
             </div>
             <div class="options-grid" id="list-batch" role="list" aria-label="Batches">
               <div class="opts-empty">Select a program first</div>
@@ -586,7 +583,7 @@
         </div>
       </div>
 
-      <!-- â”€â”€ SECTION 4: Student Name â”€â”€ -->
+      <!-- --- SECTION 4: Student Name --- -->
       <div class="cascade-section" id="sec-student">
         <div class="cascade-inner">
           <div class="cascade-header">
@@ -599,8 +596,8 @@
           </div>
           <div class="cascade-body" id="body-student">
             <div class="cascade-search">
-              <span class="search-icon">ðŸ”</span>
-              <input type="text" id="search-student" placeholder="Search your nameâ€¦" autocomplete="off" />
+              <span class="search-icon">&#128269;</span>
+              <input type="text" id="search-student" placeholder="Search your name..." autocomplete="off" />
             </div>
             <div class="options-grid" id="list-student" role="list" aria-label="Students">
               <div class="opts-empty">Select a batch first</div>
@@ -609,7 +606,7 @@
         </div>
       </div>
 
-      <!-- â”€â”€ SECTION 5: PIN Entry â”€â”€ -->
+      <!-- --- SECTION 5: PIN Entry --- -->
       <div class="cascade-section" id="sec-pin">
         <div class="cascade-inner">
           <div class="cascade-header">
@@ -638,7 +635,7 @@
 
       <!-- Footer -->
       <div class="login-footer">
-        <a href="admin.html" id="admin-portal-link">Top Office â†’</a>
+        <a href="admin.html" id="admin-portal-link">Top Office →</a>
       </div>
 
     </div>
@@ -757,7 +754,7 @@
       const searchInput = document.getElementById(searchInputId);
 
       if (!items.length) {
-        container.innerHTML = `<div class="opts-empty">ðŸ“­ No options found</div>`;
+        container.innerHTML = `<div class="opts-empty">&#128269; No options found</div>`;
         return;
       }
 
@@ -775,9 +772,9 @@
           btn.setAttribute('role', 'listitem');
           btn.dataset.id = item.id;
           btn.innerHTML = `
-            <span class="opt-card-icon">ðŸ”·</span>
+            <span class="opt-card-icon">&#9679;</span>
             <span class="opt-card-name">${escHtml(item.name)}</span>
-            <span class="opt-card-check">âœ“</span>
+            <span class="opt-card-check">&#10003;</span>
           `;
           btn.addEventListener('click', () => {
             container.querySelectorAll('.opt-card').forEach(c => c.classList.remove('active'));
@@ -1009,8 +1006,8 @@
       if (pin.length !== 4) return;
 
       loginBtn.disabled = true;
-      document.getElementById('login-btn-text').textContent = 'Signing inâ€¦';
-      showLoading('Verifying credentialsâ€¦');
+      document.getElementById('login-btn-text').textContent = 'Signing in...';
+      showLoading('Verifying credentials...');
 
       try {
         const result = await verifyStudentLogin({
@@ -1046,7 +1043,7 @@
       }
     });
 
-    // â”€â”€ Restore saved login (Remember Me) â”€â”€
+    // --- Restore saved login (Remember Me) ---
     async function restoreSavedLogin() {
       const saved = getSavedLogin();
       if (!saved || !rememberEnabled) {
@@ -1054,7 +1051,7 @@
         return;
       }
 
-      showToast('Restoring your saved loginâ€¦', 'info');
+      showToast('Restoring your saved login...', 'info');
 
       // Step 1: Load institutions and auto-collapse to saved program
       await loadPrograms(saved.institutionId);
@@ -1103,6 +1100,7 @@
   </script>
 </body>
 </html>
+
 
 
 

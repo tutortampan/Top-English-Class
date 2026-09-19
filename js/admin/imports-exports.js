@@ -1,8 +1,10 @@
-import { adminFetchAll, adminInsert, adminUpdate } from '../api.js?v=4.0.5';
-import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.0.5';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.0.5';
-import { callEdgeFunction, getSupabase } from '../supabase.js?v=4.0.5';
+import { adminFetchAll, adminInsert, adminUpdate } from '../api.js?v=4.4.3';
+import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.4.3';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.4.3';
+import { callEdgeFunction, getSupabase } from '../supabase.js?v=4.4.3';
 import { downloadAITemplate, AI_MODULES } from './panel-c-builder.js';
+
+const toLevelLetter = (level) => { return String.fromCharCode(64 + parseInt(level || 1)) || 'A'; };
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -21,18 +23,40 @@ async function hashPin(pin) {
 
     async function renderImportStudents(area) {
       showLoading('Loading institutions & programs…');
-      const [allProgs, allCls, allBatches, allLevels] = await Promise.all([
-        adminFetchAll('institutions'),
-        adminFetchAll('programs', '*, institutions(name)'),
-        adminFetchAll('batches'),
-        adminFetchAll('levels')
-      ]);
-      hideLoading();
+      let allProgs = [];
+      let allCls = [];
+      let allBatches = [];
+      let allLevels = [];
 
-      const sortedPrograms = allProgs.filter(p => !p.deleted_at && p.is_active).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      const sortedClasses = allCls.filter(c => !c.deleted_at && c.is_active).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      const sortedBatches = allBatches.filter(b => !b.deleted_at && b.is_active).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      const sortedLevels = allLevels.filter(l => !l.deleted_at && l.is_active).sort((a, b) => (a.level_number || 0) - (b.level_number || 0));
+      try {
+        const results = await Promise.allSettled([
+          adminFetchAll('institutions'),
+          adminFetchAll('programs'),
+          adminFetchAll('batches'),
+          adminFetchAll('levels')
+        ]);
+        allProgs = (results[0].status === 'fulfilled' && Array.isArray(results[0].value)) ? results[0].value : [];
+        allCls = (results[1].status === 'fulfilled' && Array.isArray(results[1].value)) ? results[1].value : [];
+        allBatches = (results[2].status === 'fulfilled' && Array.isArray(results[2].value)) ? results[2].value : [];
+        allLevels = (results[3].status === 'fulfilled' && Array.isArray(results[3].value)) ? results[3].value : [];
+      } catch (err) {
+        console.warn('[renderImportStudents] Error during data fetch:', err);
+        showToast('Notice: Could not load full relational data. Fallback mode active.', 'warning');
+      } finally {
+        hideLoading();
+      }
+
+      // In-memory institution name resolution for classes/programs
+      const instMap = new Map(allProgs.map(i => [i?.id, i?.name || 'Program']));
+      const safeClasses = allCls.map(c => ({
+        ...c,
+        institutions: c?.institutions || (c?.institution_id ? { name: instMap.get(c.institution_id) || 'Program' } : { name: 'Program' })
+      }));
+
+      const sortedPrograms = allProgs.filter(p => p && !p.deleted_at && p.is_active !== false).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const sortedClasses = safeClasses.filter(c => c && !c.deleted_at && c.is_active !== false).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const sortedBatches = allBatches.filter(b => b && !b.deleted_at && b.is_active !== false).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const sortedLevels = allLevels.filter(l => l && !l.deleted_at && l.is_active !== false).sort((a, b) => (a.level_number || 0) - (b.level_number || 0));
 
       area.innerHTML = `
         <div style="height: calc(100vh - 80px); display: flex; flex-direction: column; overflow: hidden; margin: -40px; padding: 40px;">
@@ -43,7 +67,7 @@ async function hashPin(pin) {
             </div>
             <div class="d-flex gap-2">
               <button class="btn btn-secondary btn-sm" id="btn-back-to-students">Back to Students</button>
-              <button class="btn btn-primary btn-sm" id="btn-dl-student-template">ðŸ“¥ Download Student Template (.xlsx)</button>
+              <button class="btn btn-primary btn-sm" id="btn-dl-student-template">📥 Download Student Template (.xlsx)</button>
             </div>
           </div>
 
@@ -100,11 +124,11 @@ async function hashPin(pin) {
                   <span class="badge badge-info" style="font-size:0.75rem;">Supports English Columns</span>
                 </div>
                 <div class="text-xs text-muted d-flex flex-column gap-1">
-                  <div>â€¢ <b>Name:</b> Column <code>NAME</code>, <code>Student Name</code> (Required).</div>
-                  <div>â€¢ <b>Gender (Optional):</b> Column <code>GENDER</code>. <em>If left blank, students will select their own gender (Mr. / Miss) upon first login.</em></div>
-                  <div>â€¢ <b>Birth Date / Age:</b> Column <code>BIRTH_DATE</code> or <code>AGE</code> (Format: YYYY-MM-DD or age number).</div>
-                  <div>â€¢ <b>PIN:</b> Column <code>PIN</code> or <code>Password</code> (Defaults to <code>1234</code> if left blank).</div>
-                  <div>â€¢ <b>Program &amp; Class &amp; Batch:</b> If left blank in the Excel file, the Target Program, Class, and Batch selected above will be used.</div>
+                  <div>&bull; <b>Name:</b> Column <code>NAME</code>, <code>Student Name</code> (Required).</div>
+                  <div>&bull; <b>Gender (Optional):</b> Column <code>GENDER</code>. <em>If left blank, students will select their own gender (Mr. / Miss) upon first login.</em></div>
+                  <div>&bull; <b>Birth Date / Age:</b> Column <code>BIRTH_DATE</code> or <code>AGE</code> (Format: YYYY-MM-DD or age number).</div>
+                  <div>&bull; <b>PIN:</b> Column <code>PIN</code> or <code>Password</code> (Defaults to <code>1234</code> if left blank).</div>
+                  <div>&bull; <b>Program &amp; Class &amp; Batch:</b> If left blank in the Excel file, the Target Program, Class, and Batch selected above will be used.</div>
                 </div>
               </div>
             </div>
@@ -119,7 +143,7 @@ async function hashPin(pin) {
                   </div>
                   <div class="d-flex align-center gap-3">
                     <button class="btn btn-secondary btn-sm" id="btn-cancel-students-import">Cancel</button>
-                    <button class="btn btn-primary btn-sm" id="btn-confirm-students-import">âœ“ Confirm &amp; Save Students</button>
+                    <button class="btn btn-primary btn-sm" id="btn-confirm-students-import">✓ Confirm &amp; Save Students</button>
                   </div>
                 </div>
 
@@ -270,7 +294,7 @@ async function hashPin(pin) {
         reader.onload = async (evt) => {
           try {
             const data = new Uint8Array(evt.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
+            const workbook = XLSX.read(data, { type: 'array', codepage: 65001 });
             const firstSheet = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheet];
             const jsonRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
@@ -282,13 +306,19 @@ async function hashPin(pin) {
             }
 
             // Fetch existing students to detect and merge duplicate names in the same class
-            const existingStudents = await adminFetchAll('students');
+            let existingStudents = [];
+            try {
+              existingStudents = await adminFetchAll('students');
+            } catch (err) {
+              console.warn('Could not fetch existing students for deduplication:', err);
+            }
             const existingStudentsMap = new Map();
-            existingStudents.forEach(s => {
-              if (s.deleted_at) return;
-              const key = `${(s.name || '').toLowerCase().trim()}::${s.program_id}`;
-              if (!existingStudentsMap.has(key)) {
-                existingStudentsMap.set(key, s);
+            (existingStudents || []).forEach(s => {
+              if (s && !s.deleted_at) {
+                const key = `${(s.name || '').toLowerCase().trim()}::${s.program_id}`;
+                if (!existingStudentsMap.has(key)) {
+                  existingStudentsMap.set(key, s);
+                }
               }
             });
 
@@ -438,7 +468,7 @@ async function hashPin(pin) {
               // Check if student already in database
               const existingDbStudent = existingStudentsMap.get(batchKey);
               let status = 'valid';
-              let statusMsg = 'âœ¨ New Student';
+              let statusMsg = '&#10024; New Student';
               let isExisting = false;
               let existingId = null;
 
@@ -447,7 +477,7 @@ async function hashPin(pin) {
                 statusMsg = 'No Class Assigned';
               } else if (existingDbStudent) {
                 status = 'merge';
-                statusMsg = 'ðŸ”„ Merge Existing';
+                statusMsg = '🔄 Merge Existing';
                 isExisting = true;
                 existingId = existingDbStudent.id;
               }
@@ -530,22 +560,22 @@ async function hashPin(pin) {
             const tr = document.createElement('tr');
             let badgeHtml = '';
             if (s.status === 'valid') {
-              badgeHtml = `<span class="badge badge-success">âœ¨ New Student</span>`;
+              badgeHtml = `<span class="badge badge-success">&#10024; New Student</span>`;
             } else if (s.status === 'merge') {
-              badgeHtml = `<span class="badge badge-info">ðŸ”„ Merge / Update</span>`;
+              badgeHtml = `<span class="badge badge-info">🔄 Merge / Update</span>`;
             } else {
               badgeHtml = `<span class="badge badge-danger">Error</span>`;
             }
 
             if (s.duplicateInFile) {
-              badgeHtml += ` <span class="badge badge-warning ml-1" title="Dimerge dari baris kembar dalam spreadsheet">âš¡ Dimerge dari File</span>`;
+              badgeHtml += ` <span class="badge badge-warning ml-1" title="Dimerge dari baris kembar dalam spreadsheet">⚡ Dimerge dari File</span>`;
             }
 
             const genderBadge = s.gender === 'male'
-              ? '<span class="badge badge-primary">ðŸ‘¨ Male</span>'
+              ? '<span class="badge badge-primary">👨 Male</span>'
               : s.gender === 'female'
-              ? '<span class="badge badge-accent">ðŸ‘© Female</span>'
-              : '<span class="badge badge-neutral" style="font-size:0.7rem;" title="Student will select gender upon first login">â³ Unassigned</span>';
+              ? '<span class="badge badge-accent">👩 Female</span>'
+              : '<span class="badge badge-neutral" style="font-size:0.7rem;" title="Student will select gender upon first login">&#9203; Unassigned</span>';
 
             tr.innerHTML = `
               <td class="text-center text-muted fw-700">${i + 1}</td>
@@ -555,7 +585,7 @@ async function hashPin(pin) {
               <td class="text-muted text-sm">${escapeHtml(s.institutionName)}</td>
               <td class="fw-600 text-sm">${escapeHtml(s.programName)}</td>
               <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(s.batchName || '—')}</td>
-              <td class="text-center text-sm" style="font-family:monospace;letter-spacing:2px;">â€¢â€¢â€¢â€¢ <span class="text-muted text-xs" title="PIN: ${escapeHtml(s.pin)}">(${escapeHtml(s.pin)})</span></td>
+              <td class="text-center text-sm" style="font-family:monospace;letter-spacing:2px;">&bull;&bull;&bull;&bull; <span class="text-muted text-xs" title="PIN: ${escapeHtml(s.pin)}">(${escapeHtml(s.pin)})</span></td>
               <td class="text-center">${badgeHtml}</td>
             `;
             tbody.appendChild(tr);
@@ -568,8 +598,8 @@ async function hashPin(pin) {
 
         document.getElementById('students-preview-summary').textContent = `${parsedStudentsState.length} students ready to be processed (${newCount} new records, ${mergeCount} existing records merged).`;
         document.getElementById('chip-total-students').textContent = `Total: ${parsedStudentsState.length}`;
-        document.getElementById('chip-valid-students').textContent = `âœ¨ Baru: ${newCount}`;
-        document.getElementById('chip-warn-students').textContent = `ðŸ”„ Merge: ${mergeCount}`;
+        document.getElementById('chip-valid-students').textContent = `&#10024; Baru: ${newCount}`;
+        document.getElementById('chip-warn-students').textContent = `🔄 Merge: ${mergeCount}`;
 
         const saveBtn = document.getElementById('btn-confirm-students-import');
         if (saveBtn) {
@@ -645,7 +675,7 @@ async function hashPin(pin) {
               <div class="d-flex flex-column gap-4 mb-4">
                 <div class="form-group w-100">
                   <label class="form-label">1. Select Target Exam</label>
-                  <select class="form-control" id="import-exam-select"><option value="">Loading examsÃ¢â‚¬Â¦</option></select>
+                  <select class="form-control" id="import-exam-select"><option value="">Loading exams...</option></select>
                 </div>
                 <div class="form-group w-100">
                   <label class="form-label">2. Exam Type (Answer Method)</label>
@@ -666,7 +696,7 @@ async function hashPin(pin) {
               <div class="p-4 rounded mb-4" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);">
                 <div class="d-flex align-center justify-between flex-wrap gap-3 mb-2">
                   <span class="text-xs fw-700 text-gradient" id="format-title-badge">WRITTEN EXCEL FORMAT</span>
-                  <button class="btn btn-primary btn-sm w-100 mt-2" id="download-template-btn">ðŸ“¥ Download Template</button>
+                  <button class="btn btn-primary btn-sm w-100 mt-2" id="download-template-btn">📥 Download Template</button>
                 </div>
                 <p class="text-xs text-muted mb-2" id="format-desc-label">First row header arrangement:</p>
                 <div class="p-2 rounded text-xs mb-3" style="background:rgba(0,0,0,0.3);border:1px dashed var(--clr-border);font-family:monospace;overflow-x:auto;white-space:nowrap;" id="format-columns-code">
@@ -678,18 +708,18 @@ async function hashPin(pin) {
               <div class="p-4 rounded mt-auto" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);">
                 <div class="text-xs fw-700 text-muted uppercase mb-3">Other Templates:</div>
                 <div class="d-flex flex-column gap-2">
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-written">ðŸ“„ Written (Type)</button>
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-speech">ðŸŽ™ï¸  Speech to Text</button>
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-mc">ðŸ”˜ Multiple Choice</button>
-                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-dropdown">â–¼ Drop-down</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-written">📄 Written (Type)</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-speech">🎙️ Speech to Text</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-mc">🔘 Multiple Choice</button>
+                  <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-dropdown">&#9660; Drop-down</button>
                   <div class="text-xs fw-700 text-primary uppercase mt-3 mb-1">TopsCore AI Assessments:</div>
-                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="VISUAL_PRONOUNS">âš¡ Visual Pronouns</button>
-                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="NARRATIVE_TENSE">âš¡ Narrative Tense</button>
-                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="CONVERSATIONAL">âš¡ Conversational</button>
-                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="READ_ALOUD">âš¡ Read Aloud</button>
-                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="TURN_BASED_ROLEPLAY">âš¡ Turn-Based Roleplay</button>
-                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="SPEAKING_MONOLOGUE">âš¡ Speaking Performance</button>
-                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="VOCAB_MASTERY">âš¡ Vocab Mastery</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="VISUAL_PRONOUNS">⚡ Visual Pronouns</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="NARRATIVE_TENSE">⚡ Narrative Tense</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="CONVERSATIONAL">⚡ Conversational</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="READ_ALOUD">⚡ Read Aloud</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="TURN_BASED_ROLEPLAY">⚡ Turn-Based Roleplay</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="SPEAKING_MONOLOGUE">⚡ Speaking Performance</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="VOCAB_MASTERY">⚡ Vocab Mastery</button>
                 </div>
               </div>
             </div>
@@ -724,7 +754,7 @@ async function hashPin(pin) {
                   <span class="text-muted text-sm" id="preview-count-label">0 questions siap di-import.</span>
                   <div class="d-flex gap-2">
                     <button class="btn btn-secondary" id="cancel-import-btn">Cancel</button>
-                    <button class="btn btn-primary" id="confirm-save-import-btn">ðŸ’¾ Save Questions</button>
+                    <button class="btn btn-primary" id="confirm-save-import-btn">💾 Save Questions</button>
                   </div>
                 </div>
               </div>
@@ -799,15 +829,21 @@ async function hashPin(pin) {
       }
 
       adminFetchAll('exams').then(exams => {
-        fetchedExamsList = exams;
-        const sortedExams = [...exams].sort((a, b) => {
-          const nameA = `${a.exam_type ? a.exam_type + ' - ' : ''}${a.exam_title}`;
-          const nameB = `${b.exam_type ? b.exam_type + ' - ' : ''}${b.exam_title}`;
+        fetchedExamsList = Array.isArray(exams) ? exams : [];
+        const sortedExams = [...fetchedExamsList].sort((a, b) => {
+          const nameA = `${a?.exam_type ? a.exam_type + ' - ' : ''}${a?.exam_title || ''}`;
+          const nameB = `${b?.exam_type ? b.exam_type + ' - ' : ''}${b?.exam_title || ''}`;
           return nameA.localeCompare(nameB);
         });
         const sel = document.getElementById('import-exam-select');
-        sel.innerHTML = '<option value="">— Select Target Exam —</option>' +
-          sortedExams.map(e => `<option value="${e.id}">${escapeHtml(formatExamDisplayName(e))} (${formatAnswerType(e.answer_type)})</option>`).join('');
+        if (sel) {
+          sel.innerHTML = '<option value="">— Select Target Exam —</option>' +
+            sortedExams.map(e => `<option value="${e.id}">${escapeHtml(formatExamDisplayName(e))} (${formatAnswerType(e.answer_type)})</option>`).join('');
+        }
+      }).catch(err => {
+        console.warn('Failed to load exams for import questions:', err);
+        const sel = document.getElementById('import-exam-select');
+        if (sel) sel.innerHTML = '<option value="">(No exams available or failed to load)</option>';
       });
 
       document.getElementById('import-exam-select').addEventListener('change', (e) => {
@@ -863,7 +899,7 @@ async function hashPin(pin) {
         reader.onload = (evt) => {
           try {
             const data = new Uint8Array(evt.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
+            const workbook = XLSX.read(data, { type: 'array', codepage: 65001 });
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
             const jsonRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
@@ -910,24 +946,38 @@ async function hashPin(pin) {
             let defaultAnswerType = selectedExam?.answer_type || 'written';
 
             parsedQuestionsState = [];
-            jsonRows.forEach((row, i) => {
-              const questionText = getRowVal(row, ['question', 'questions', 'pertanyaan', 'indonesia', 'text', 'prompt']);
-              const correctAnswer = getRowVal(row, ['answer', 'jawaban', 'kunci', 'kuncijawaban', 'english', 'correctanswer', 'solution']);
-              const rawNo = getRowVal(row, ['no', 'nomor', 'number', 'order', 'urutan']);
-              const qNo = parseInt(rawNo || (i + 1), 10);
-              const classItem = getRowVal(row, ['subject', 'matapelajaran', 'mapel', 'class']);
-              const title = getRowVal(row, ['title', 'examtitle', 'judul']);
-              const week = getRowVal(row, ['week', 'minggu']);
-              const day = getRowVal(row, ['day', 'hari']);
-              const type = getRowVal(row, ['type', 'examtype', 'tipe', 'jenisquestions']);
+            jsonRows.forEach((rawRow, i) => {
+              // Normalize row keys based on "includes"
+              const row = {};
+              let hasAnyValue = false;
+              for (const [k, v] of Object.entries(rawRow)) {
+                if (v !== undefined && String(v).trim() !== '') hasAnyValue = true;
+                const key = String(k).toLowerCase().replace(/[\s\-_]+/g, '');
+                if (key.includes('question') || key.includes('pertanyaan') || key.includes('prompt')) row.question_text = v;
+                else if (key.includes('answer') || key.includes('key') || key.includes('jawaban') || key.includes('kunci')) row.correct_answer = v;
+                else if (key.includes('topic') || key.includes('topik')) row.topic = v;
+                else if (key.includes('type') || key.includes('tipe') || key.includes('word') || key.includes('category')) row.question_type = v;
+                else if (key.includes('no') || key.includes('order')) row.no = v;
+                else row[key] = v; // keep original mapping fallback
+              }
+              if (!hasAnyValue) return;
 
-              if (!questionText || !correctAnswer) return;
+              const questionText = row.question_text || getRowVal(rawRow, ['question', 'questions', 'pertanyaan', 'indonesia', 'text', 'prompt']);
+              const correctAnswer = row.correct_answer || getRowVal(rawRow, ['answer', 'jawaban', 'kunci', 'kuncijawaban', 'english', 'correctanswer', 'solution', 'key']);
+              const rawNo = row.no || getRowVal(rawRow, ['no', 'nomor', 'number', 'order', 'urutan']);
+              const qNo = parseInt(rawNo || (i + 1), 10);
+              const classItem = getRowVal(rawRow, ['subject', 'matapelajaran', 'mapel', 'class']);
+              const title = getRowVal(rawRow, ['title', 'examtitle', 'judul']);
+              const week = getRowVal(rawRow, ['week', 'minggu']);
+              const day = getRowVal(rawRow, ['day', 'hari']);
+              const type = row.question_type || getRowVal(rawRow, ['type', 'wordtype', 'word_type', 'category', 'examtype', 'tipe', 'jenisquestions']);
+              const topic = row.topic || getRowVal(rawRow, ['topic', 'topik', 'kategori']);
 
               // Extract options: Check separate OPTION A..J or OPTION 1..10 (2 to 10 options)
               let extractedOptions = [];
               const optionKeysLetter = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
               optionKeysLetter.forEach(ltr => {
-                const val = getRowVal(row, ['option ' + ltr.toLowerCase(), 'option' + ltr.toLowerCase(), 'opsi ' + ltr.toLowerCase(), 'opsi' + ltr.toLowerCase(), 'pilihan ' + ltr.toLowerCase(), 'pilihan' + ltr.toLowerCase(), ltr.toLowerCase()]);
+                const val = getRowVal(rawRow, ['option ' + ltr.toLowerCase(), 'option' + ltr.toLowerCase(), 'opsi ' + ltr.toLowerCase(), 'opsi' + ltr.toLowerCase(), 'pilihan ' + ltr.toLowerCase(), 'pilihan' + ltr.toLowerCase(), ltr.toLowerCase()]);
                 if (val !== undefined && String(val).trim() !== '') {
                   extractedOptions.push(String(val).trim());
                 }
@@ -935,7 +985,7 @@ async function hashPin(pin) {
 
               if (extractedOptions.length === 0) {
                 for (let num = 1; num <= 10; num++) {
-                  const val = getRowVal(row, ['option ' + num, 'option' + num, 'opsi ' + num, 'opsi' + num, 'pilihan ' + num, 'pilihan' + num]);
+                  const val = getRowVal(rawRow, ['option ' + num, 'option' + num, 'opsi ' + num, 'opsi' + num, 'pilihan ' + num, 'pilihan' + num]);
                   if (val !== undefined && String(val).trim() !== '') {
                     extractedOptions.push(String(val).trim());
                   }
@@ -946,7 +996,7 @@ async function hashPin(pin) {
               if (extractedOptions.length > 0) {
                 optionsJson = extractedOptions;
               } else {
-                const rawOptions = getRowVal(row, ['options', 'opsi', 'pilihan', 'pilihanganda']);
+                const rawOptions = getRowVal(rawRow, ['options', 'opsi', 'pilihan', 'pilihanganda']);
                 if (rawOptions) {
                   if (typeof rawOptions === 'string' && rawOptions.startsWith('[')) {
                     try { optionsJson = JSON.parse(rawOptions); } catch { optionsJson = rawOptions.split(',').map(s => s.trim()).filter(Boolean); }
@@ -956,17 +1006,25 @@ async function hashPin(pin) {
                 }
               }
 
-              const program = getRowVal(row, ['program', 'programname', 'namaprogram']) || selectedExam?.institutions?.name || 'CEC';
-              const programName = getRowVal(row, ['class', 'classname', 'kelas', 'namakelas']) || 'Camp';
-              const level = getRowVal(row, ['level', 'tingkat', 'levelnumber']) || selectedExam?.levels?.name || '3rd Step';
+              const program = getRowVal(rawRow, ['program', 'programname', 'namaprogram']) || selectedExam?.institutions?.name || 'CEC';
+              const programName = getRowVal(rawRow, ['class', 'classname', 'kelas', 'namakelas']) || 'Camp';
+              const level = getRowVal(rawRow, ['level', 'tingkat', 'levelnumber']) || selectedExam?.levels?.name || '3rd Step';
+
+              // Validation Badge Logic
+              let statusBadge = 'ready';
+              if (!questionText || !correctAnswer) {
+                statusBadge = 'invalid';
+              } else if (!topic || !type) {
+                statusBadge = 'warning';
+              }
 
               parsedQuestionsState.push({
                 order: isNaN(qNo) ? (i + 1) : qNo,
-                questionText: String(questionText).trim(),
-                correctAnswer: String(correctAnswer).trim(),
+                questionText: String(questionText || '').trim(),
+                correctAnswer: String(correctAnswer || '').trim(),
                 answerType: defaultAnswerType,
                 optionsJson: optionsJson,
-                program, programName, classItem, level, title, week, day, type
+                program, programName, classItem, level, title, week, day, type, topic, statusBadge
               });
             });
 
@@ -990,21 +1048,22 @@ async function hashPin(pin) {
       function renderPreviewTable() {
         const tbody = document.getElementById('tbl-import-preview');
 
-        // Build simple <thead> focusing only on NO, QUESTION, ANSWER
+        // Build simple <thead> focusing only on NO, QUESTION, ANSWER, STATUS
         const theadContainer = document.querySelector('#import-preview-container table thead');
         if (theadContainer) {
           theadContainer.innerHTML = `
             <tr>
               <th style="width:10%;" class="text-center">NO</th>
-              <th style="width:60%;">QUESTION</th>
+              <th style="width:40%;">QUESTION</th>
               <th style="width:30%;">ANSWER</th>
+              <th style="width:20%;" class="text-center">STATUS</th>
             </tr>
           `;
         }
 
         const tableElem = document.querySelector('#import-preview-container table');
         if (tableElem) {
-          tableElem.style.minWidth = '500px';
+          tableElem.style.minWidth = '600px';
           tableElem.style.width = '100%';
         }
 
@@ -1013,21 +1072,31 @@ async function hashPin(pin) {
         const LIMIT = 50;
         parsedQuestionsState.forEach((item, idx) => {
           if (idx < LIMIT) {
+            let badgeHtml = '';
+            if (item.statusBadge === 'invalid') {
+              badgeHtml = '<span class="badge bg-danger">Invalid (Missing Text/Ans)</span>';
+            } else if (item.statusBadge === 'warning') {
+              badgeHtml = '<span class="badge bg-warning text-dark">Warning (No Topic/Type)</span>';
+            } else {
+              badgeHtml = '<span class="badge bg-success">Ready</span>';
+            }
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td class="text-muted fw-700 text-center" style="font-size:0.8rem;">${item.order}</td>
-              <td class="fw-600" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:0.8rem; max-width:200px;" title="${escapeHtml(item.questionText)}">${escapeHtml(item.questionText)}</td>
-              <td class="text-success fw-700" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:0.8rem; max-width:100px;" title="${escapeHtml(item.correctAnswer)}">${escapeHtml(item.correctAnswer)}</td>
+              <td class="fw-600" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:0.8rem; max-width:200px;" title="${escapeHtml(item.questionText)}">${escapeHtml(item.questionText || '(Empty)')}</td>
+              <td class="fw-700" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:0.8rem; max-width:100px; color:${item.correctAnswer ? 'var(--bs-success)' : 'var(--bs-danger)'};" title="${escapeHtml(item.correctAnswer)}">${escapeHtml(item.correctAnswer || '(Empty)')}</td>
+              <td class="text-center">${badgeHtml}</td>
             `;
             tbody.appendChild(tr);
           } else if (idx === LIMIT) {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td colspan="3" class="text-center text-muted fw-600 py-3" style="font-size: 0.85rem;">... and ${parsedQuestionsState.length - LIMIT} more rows.</td>`;
+            tr.innerHTML = `<td colspan="4" class="text-center text-muted fw-600 py-3" style="font-size: 0.85rem;">... and ${parsedQuestionsState.length - LIMIT} more rows.</td>`;
             tbody.appendChild(tr);
           }
         });
 
-        document.getElementById('preview-count-label').textContent = `${parsedQuestionsState.length} questions siap di-import.`;
+        document.getElementById('preview-count-label').textContent = `${parsedQuestionsState.length} questions mapped from Excel.`;
       }
 
       // Batch apply global answer type
@@ -1101,7 +1170,15 @@ async function hashPin(pin) {
 
 
     async function renderExportQuestions(area) {
-      const exams = await adminFetchAll('exams', '*, institutions(name), classes(name), levels(name)');
+      showLoading('Loading exams for export…');
+      let exams = [];
+      try {
+        exams = await adminFetchAll('exams');
+      } catch (err) {
+        console.warn('Export exams fetch warning:', err);
+      } finally {
+        hideLoading();
+      }
       area.innerHTML = `
         <div class="section-header"><div><h2 class="section-title">Export Questions (Excel)</h2></div></div>
         <div class="glass-card p-8" style="max-width:640px;">
@@ -1119,7 +1196,7 @@ async function hashPin(pin) {
               }).map(e => `<option value="${e.id}">${e.exam_type ? e.exam_type + ' - ' : ''}${e.exam_title}</option>`).join('')}
             </select>
           </div>
-          <button class="btn btn-primary mt-2" id="export-questions-btn">ðŸ“¤ Download Excel (.xlsx)</button>
+          <button class="btn btn-primary mt-2" id="export-questions-btn">📤 Download Excel (.xlsx)</button>
         </div>
       `;
 
@@ -1198,3 +1275,4 @@ async function hashPin(pin) {
 
 
 export { renderImportStudents, renderImportQuestions, renderExportQuestions };
+

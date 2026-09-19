@@ -5,11 +5,11 @@ import {
   fetchClasses,
   fetchTopics,
   fetchCentralQuestions,
-  fetchChallengeDefinitions,
-  createChallengeDefinition,
-  updateChallengeDefinition,
-  publishChallengeDefinition,
-  createChallengeInstance,
+  fetchAssessmentDefinitions,
+  createAssessmentDefinition,
+  updateAssessmentDefinition,
+  publishAssessmentDefinition,
+  createAssessmentInstance,
   fetchBatches,
   fetchClassInstances,
   createTopic,
@@ -312,7 +312,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
       fetchClasses(),
       fetchTopics(),
       fetchCentralQuestions({ status: 'active' }),
-      fetchChallengeDefinitions(),
+      fetchAssessmentDefinitions(),
       fetchBatches(),
       adminFetchAll('students'),
       fetchClassInstances()
@@ -673,7 +673,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
       try {
         let asmId = createdAssessmentId;
         if (!asmId) {
-          const newAsm = await createChallengeDefinitionWithTopics({
+          const newAsm = await createAssessmentDefinitionWithTopics({
             class_id: subjectId,
             challenge_type: typeVal,
             title,
@@ -739,4 +739,5 @@ export async function openAssessmentBuilder(assessmentId = null) {
     hideLoading();
   }
 }
+
 
