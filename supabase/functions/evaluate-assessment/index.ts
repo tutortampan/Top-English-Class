@@ -1,6 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { serve } from "std/http/server.ts";
+import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,8 +13,8 @@ const corsHeaders = {
 // ==========================================
 
 export type ModuleType =
-  | "VISUAL_PRONOUNS"
-  | "NARRATIVE_TENSE"
+  | "POINT_AND_SPEAK"
+  | "STORYTELLING"
   | "CONVERSATIONAL"
   | "MULTIPLE_CHOICE"
   | "READ_ALOUD"
@@ -531,10 +531,10 @@ async function routeEvaluation(payload: StudentSubmissionPayload): Promise<Evalu
   if (payload.moduleType !== "TURN_BASED_ROLEPLAY") {
     const preflight = runPreflightChecks(transcript);
     if (!preflight.passed) {
-      if (payload.moduleType === "VISUAL_PRONOUNS") {
+      if (payload.moduleType === "POINT_AND_SPEAK") {
         return VisualPronounsSchema.parse({ final_score: 0, sentence_count: 0, relevance: "Low", grammar_hits: {}, errors: [preflight.fallback.feedback], transcript });
       }
-      if (payload.moduleType === "NARRATIVE_TENSE") {
+      if (payload.moduleType === "STORYTELLING") {
         return NarrativeTenseSchema.parse({ final_score: 0, duration_seconds: duration, tense_accuracy_percentage: 0, tense_violations: [preflight.fallback.feedback], transcript });
       }
       if (payload.moduleType === "CONVERSATIONAL") {
@@ -555,7 +555,7 @@ async function routeEvaluation(payload: StudentSubmissionPayload): Promise<Evalu
   // Handle LLM Calls per Module with Zod validation
   try {
     switch (payload.moduleType) {
-      case "VISUAL_PRONOUNS": {
+      case "POINT_AND_SPEAK": {
         const schema = `{ "final_score": number, "sentence_count": number, "relevance": "High"|"Medium"|"Low", "grammar_hits": { "this": number }, "errors": string[], "transcript": string }`;
         const prompt = `Context: ${ctx.imageDescriptionContext || "An English ESL visual description task."}
 Target Grammar: ${(ctx.targetGrammar || ["this", "that", "these", "those"]).join(", ")}
@@ -563,7 +563,7 @@ Min Sentences: ${ctx.minSentences || 2}
 Student Transcript: "${transcript}"
 Task: Count sentences. Verify occurrences of the target grammar. Evaluate relevance to the image.`;
 
-        const ai = await callLLM("VISUAL_PRONOUNS", prompt, schema);
+        const ai = await callLLM("POINT_AND_SPEAK", prompt, schema);
         if (ai && typeof ai.final_score === "number") {
           const parsed = VisualPronounsSchema.safeParse({
             final_score: Math.min(100, Math.max(0, Math.round(ai.final_score))),
@@ -578,7 +578,7 @@ Task: Count sentences. Verify occurrences of the target grammar. Evaluate releva
         return VisualPronounsSchema.parse(evaluateVisualPronounsFallback(transcript, ctx));
       }
 
-      case "NARRATIVE_TENSE": {
+      case "STORYTELLING": {
         const schema = `{ "final_score": number, "duration_seconds": number, "tense_accuracy_percentage": number, "tense_violations": string[], "transcript": string }`;
         const prompt = `Topic: ${ctx.promptTopic || "A past or personal story"}
 Target Tense: ${ctx.targetTense || "Past Simple"}
@@ -586,7 +586,7 @@ Duration: ${duration} seconds
 Student Transcript: "${transcript}"
 Task: Evaluate narrative consistency. Penalize any tense violations strictly (e.g., using past tense when Target_Tense is Simple Present).`;
 
-        const ai = await callLLM("NARRATIVE_TENSE", prompt, schema);
+        const ai = await callLLM("STORYTELLING", prompt, schema);
         if (ai && typeof ai.final_score === "number") {
           const parsed = NarrativeTenseSchema.safeParse({
             final_score: Math.min(100, Math.max(0, Math.round(ai.final_score))),
@@ -717,8 +717,8 @@ Task (Oral Mode): Verify if the spoken STT string accurately matches the Target_
   } catch (err: any) {
     console.warn(`Fallback triggered for ${payload.moduleType} due to:`, err.message);
     switch (payload.moduleType) {
-      case "VISUAL_PRONOUNS": return VisualPronounsSchema.parse(evaluateVisualPronounsFallback(transcript, ctx));
-      case "NARRATIVE_TENSE": return NarrativeTenseSchema.parse(evaluateNarrativeTenseFallback(transcript, ctx, duration));
+      case "POINT_AND_SPEAK": return VisualPronounsSchema.parse(evaluateVisualPronounsFallback(transcript, ctx));
+      case "STORYTELLING": return NarrativeTenseSchema.parse(evaluateNarrativeTenseFallback(transcript, ctx, duration));
       case "CONVERSATIONAL": return ConversationalSchema.parse(evaluateConversationalFallback(transcript, ctx));
       case "READ_ALOUD": return ReadAloudSchema.parse(evaluateReadAloudFallback(transcript, ctx));
       case "TURN_BASED_ROLEPLAY": return RoleplaySchema.parse(evaluateRoleplayFallback(payload.chatLog || [], ctx));

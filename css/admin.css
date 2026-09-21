@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    TOP ENGLISH CLASS — ADMIN CONSOLE
    Football Manager-Inspired Matte Management Workstation
    Tactile, High-Density, Professional Academy Interface
@@ -1228,7 +1228,7 @@ input[type="checkbox"], input[type="radio"] {
    13. EXAM HERO / SECTION HERO PANEL
    ============================================================ */
 
-.exam-hero {
+.assessment-hero {
   background: var(--fm-bg-panel);
   border: 1px solid var(--fm-border-subtle);
   border-radius: var(--fm-radius-md);
@@ -1236,7 +1236,7 @@ input[type="checkbox"], input[type="radio"] {
   margin-bottom: 1.25rem;
 }
 
-.exam-hero .section-title {
+.assessment-hero .section-title {
   font-size: 1.35rem !important;
   font-weight: 800 !important;
 }
@@ -1567,7 +1567,7 @@ textarea.form-control {
    22. EXAM STATUS INDICATORS (Tactical)
    ============================================================ */
 
-.exam-status {
+.assessment-status {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1579,10 +1579,10 @@ textarea.form-control {
   letter-spacing: 0.04em;
 }
 
-.exam-status.published  { background: rgba(16, 185, 129, 0.12); color: var(--fm-accent-pitch);    border: 1px solid rgba(16, 185, 129, 0.3); }
-.exam-status.draft      { background: rgba(245, 158, 11, 0.12); color: var(--fm-accent-amber);    border: 1px solid rgba(245, 158, 11, 0.3); }
-.exam-status.unpublished{ background: rgba(100, 116, 139, 0.1); color: var(--fm-text-muted);      border: 1px solid rgba(100, 116, 139, 0.2); }
-.exam-status.archived   { background: rgba(239, 68, 68, 0.1);   color: var(--fm-accent-crimson);  border: 1px solid rgba(239, 68, 68, 0.2); }
+.assessment-status.published  { background: rgba(16, 185, 129, 0.12); color: var(--fm-accent-pitch);    border: 1px solid rgba(16, 185, 129, 0.3); }
+.assessment-status.draft      { background: rgba(245, 158, 11, 0.12); color: var(--fm-accent-amber);    border: 1px solid rgba(245, 158, 11, 0.3); }
+.assessment-status.unpublished{ background: rgba(100, 116, 139, 0.1); color: var(--fm-text-muted);      border: 1px solid rgba(100, 116, 139, 0.2); }
+.assessment-status.archived   { background: rgba(239, 68, 68, 0.1);   color: var(--fm-accent-crimson);  border: 1px solid rgba(239, 68, 68, 0.2); }
 
 /* ============================================================
    23. IMPORT / UPLOAD ZONES

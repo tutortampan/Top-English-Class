@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 
 // 1. Patch js/api.js short-circuits
@@ -6,7 +6,7 @@ const fApi = path.join(__dirname, 'js', 'api.js');
 let apiContent = fs.readFileSync(fApi, 'utf8');
 
 const shortCircuit = `
-  if (['user_professionals', 'topics', 'question_types', 'class_meetings', 'work_records', 'professional_skills', 'challenge_attempts', 'challenge_instances', 'challenge_definitions', 'challenge_attempt_answers'].includes(normTable)) {
+  if (['user_professionals', 'topics', 'question_types', 'class_meetings', 'work_records', 'professional_skills', 'attempts', 'assessment_instances', 'assessments', 'attempt_answers'].includes(normTable)) {
     return JSON.parse(JSON.stringify(MOCK_ADMIN_STORE[normTable] || []));
   }
 `;

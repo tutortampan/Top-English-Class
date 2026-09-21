@@ -1,4 +1,4 @@
-// TOPS CORE — Centralized Excel Parser & Normalizer
+﻿// TOPS CORE — Centralized Excel Parser & Normalizer
 // Phases 5, 6, 7
 
 /**
@@ -9,13 +9,13 @@ const HEADER_ALIASES = {
   class: ['class', 'class_name', 'classname', 'kelas', 'nama_kelas', 'namakelas'],
   batch: ['batch', 'batch_name', 'batchname', 'angkatan', 'gelombang', 'nama_batch'],
   level: ['level', 'level_name', 'levelname', 'lvl', 'tingkat'],
-  subject: ['subject', 'subject_name', 'subjectname', 'mapel', 'matapelajaran', 'mata_pelajaran'],
+  Class: ['Class', 'Class_name', 'Classname', 'mapel', 'matapelajaran', 'mata_pelajaran'],
   name: ['name', 'student_name', 'studentname', 'nama', 'namasiswa', 'nama_siswa', 'fullname', 'pesertadidik', 'peserta_didik'],
   gender: ['gender', 'jeniskelamin', 'jenis_kelamin', 'jk', 'sex', 'lp'],
   birth_date: ['birth_date', 'birthdate', 'dob', 'tanggallahir', 'tanggal_lahir', 'tgllahir', 'tgl'],
   age: ['age', 'usia', 'umur'],
   pin: ['pin', 'password', 'pass', 'kodesandi'],
-  title: ['title', 'exam_title', 'examtitle', 'judul', 'nama_ujian'],
+  title: ['title', 'Assessment_title', 'Assessmenttitle', 'judul', 'nama_ujian'],
   topic: ['topic', 'topik', 'topic_name', 'nama_topik', 'tema', 'theme', 'kategori', 'category'],
   question_type: ['question_type', 'word_type', 'wordtype', 'part_of_speech', 'pos', 'type', 'tipe', 'jenis_kata', 'tipe_kata', 'tipekata', 'jenis', 'kategori_kata', 'pos_tag', 'category'],
   week: ['week', 'minggu', 'wk'],
@@ -152,9 +152,9 @@ export function processStudentImportRows(normalizedRows, defaultContext = {}) {
       }
     }
 
-    // Academic hierarchy: Program, Class, Batch (Level is optional & managed manually)
-    const programName = String(row.program || defaultContext.programName || '').trim();
-    const className = String(row.class || defaultContext.className || '').trim();
+    // Academic hierarchy: Institution, Program, Batch (Level is optional & managed manually)
+    const programName = String(row.institute || row.institution || defaultContext.programName || '').trim();
+    const className = String(row.program || defaultContext.className || '').trim();
     const batchName = String(row.batch || defaultContext.batchName || '').trim();
     const pin = String(row.pin || '1234').trim();
 

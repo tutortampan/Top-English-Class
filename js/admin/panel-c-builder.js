@@ -1,4 +1,4 @@
-/**
+﻿/**
  * panel-c-builder.js
  * Panel C (Class & Assessment Management) Dashboard
  * Handles Smart Auto-Naming, Assessment Duplication, Prerequisite Engine, and AI Module Templates
@@ -9,15 +9,29 @@ import { showToast } from "../app.js?v=4.1.0";
 
 // AI Module Definitions
 export const AI_MODULES = {
-  VISUAL_PRONOUNS: {
-    name: "Tell Me What You See (Visual Pronouns)",
-    columns: ["IMAGE_URL", "PROMPT_TEXT", "MIN_SENTENCES", "TARGET_PRONOUNS"],
-    sample: { IMAGE_URL: "https://example.com/img.jpg", PROMPT_TEXT: "Describe this room.", MIN_SENTENCES: 20, TARGET_PRONOUNS: "this,that,these,those" }
+  POINT_AND_SPEAK: {
+    name: "Point & Speak!",
+    label: "Point & Speak!",
+    description: "Student takes a live photo and speaks a description using correct demonstrative pronoun, to-be, article, adjectives, and noun.",
+    columns: ["NO", "INSTRUCTION", "TARGET_PRONOUNS", "MIN_ADJECTIVES"],
+    sample: [
+      ...Array.from({length: 5}, (_, i) => ({ NO: i + 1, INSTRUCTION: "Take a picture of 1 object close to you.", TARGET_PRONOUNS: "This", MIN_ADJECTIVES: 2 })),
+      ...Array.from({length: 5}, (_, i) => ({ NO: i + 6, INSTRUCTION: "Take a picture of 1 object far from you.", TARGET_PRONOUNS: "That", MIN_ADJECTIVES: 2 })),
+      ...Array.from({length: 5}, (_, i) => ({ NO: i + 11, INSTRUCTION: "Take a picture of 2+ objects close to you.", TARGET_PRONOUNS: "These", MIN_ADJECTIVES: 2 })),
+      ...Array.from({length: 5}, (_, i) => ({ NO: i + 16, INSTRUCTION: "Take a picture of 2+ objects far from you.", TARGET_PRONOUNS: "Those", MIN_ADJECTIVES: 2 }))
+    ]
   },
-  NARRATIVE_TENSE: {
-    name: "Let me tell you something (Narrative Tense)",
-    columns: ["PROMPT_TEXT", "MIN_DURATION_SEC", "TARGET_TENSE"],
-    sample: { PROMPT_TEXT: "Tell a story about a memorable holiday.", MIN_DURATION_SEC: 60, TARGET_TENSE: "Past Tense" }
+  STORYTELLING: {
+    name: "Storytelling",
+    columns: ["TOPIC_PROMPT", "MIN_SENTENCES", "TARGET_TENSE", "MIN_DURATION_SEC", "MAX_DURATION_SEC", "ELEMENTS_TO_ASSESS"],
+    sample: { 
+      TOPIC_PROMPT: "Tell a story about your pet.", 
+      MIN_SENTENCES: 20, 
+      TARGET_TENSE: "Past Tense",
+      MIN_DURATION_SEC: 60,
+      MAX_DURATION_SEC: 3600,
+      ELEMENTS_TO_ASSESS: "Grammar, Vocabulary, Fluency"
+    }
   },
   CONVERSATIONAL: {
     name: "Conversation-based",
@@ -54,57 +68,41 @@ export const AI_MODULES = {
 export async function downloadAITemplate(moduleType) {
   const mod = AI_MODULES[moduleType];
   if (!mod) return;
-  const ws = XLSX.utils.json_to_sheet([mod.sample]);
+  const data = Array.isArray(mod.sample) ? mod.sample : [mod.sample];
+  const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Template");
   XLSX.writeFile(wb, `Template_${moduleType}.xlsx`);
   showToast(`Template ${mod.name} downloaded!`, "success");
 }
 
-export function generateSmartName(className, topicName, moduleName, type) {
+export function generateSmartName(className, type, topicName, moduleName) {
   const c = (className || "Class").trim();
+  const tp = (type || "Type").trim();
   const t = (topicName || "Topic").trim();
   const m = (moduleName || "Module").trim();
-  const tp = (type || "Exam").trim();
-  return `${c} - ${t} - ${m} - ${tp}`;
+  return `${c} - ${tp} - ${t} - ${m}`;
 }
 
 export async function duplicateAssessment(assessmentId) {
   try {
     const sb = await getSupabase();
-    let original = null;
-    
-    // Try assessments table first
     const { data: asm, error: fetchErr } = await sb.from("assessments").select("*").eq("id", assessmentId).single();
-    if (!fetchErr && asm) {
-      original = asm;
-      const clonedData = {
-        ...original,
-        id: undefined,
-        created_at: undefined,
-        updated_at: undefined,
-        name: `${original.name || original.title || 'Assessment'} (Clone)`
-      };
-      const { data: clone, error: insertErr } = await sb.from("assessments").insert(clonedData).select().single();
-      if (insertErr) throw insertErr;
-      showToast("Assessment cloned successfully!", "success");
-      return clone;
-    } else {
-      // Fallback to exams table
-      const { data: ex, error: exErr } = await sb.from("exams").select("*").eq("id", assessmentId).single();
-      if (exErr) throw exErr;
-      const clonedExam = {
-        ...ex,
-        id: undefined,
-        created_at: undefined,
-        updated_at: undefined,
-        exam_title: `${ex.exam_title || 'Exam'} (Clone)`
-      };
-      const { data: clone, error: insertExamErr } = await sb.from("exams").insert(clonedExam).select().single();
-      if (insertExamErr) throw insertExamErr;
-      showToast("Assessment cloned successfully!", "success");
-      return clone;
-    }
+    if (fetchErr) throw fetchErr;
+
+    const clonedData = {
+      ...asm,
+      id: undefined,
+      created_at: undefined,
+      updated_at: undefined,
+      name: `${asm.name || asm.title || 'Assessment'} (Clone)`
+    };
+    
+    const { data: clone, error: insertErr } = await sb.from("assessments").insert(clonedData).select().single();
+    if (insertErr) throw insertErr;
+    
+    showToast("Assessment cloned successfully!", "success");
+    return clone;
   } catch (err) {
     showToast("Failed to clone assessment: " + err.message, "error");
     return null;
@@ -125,7 +123,7 @@ export async function duplicateTopic(topicId, targetClassId = null) {
       name: `${originalTopic.name || 'Topic'} (Clone)`
     };
     if (targetClassId) {
-      clonedTopic.subject_id = targetClassId;
+      clonedTopic.Class_id = targetClassId;
       clonedTopic.class_id = targetClassId;
     }
 
@@ -149,10 +147,15 @@ export function buildPrerequisiteJSON(prereqList, aggregateThreshold = 60) {
 }
 
 export async function renderAIAssessments(area) {
-  const [classes, topics] = await Promise.all([
+  const [classes, topics, modules] = await Promise.all([
     adminFetchAll('classes').catch(() => []),
-    adminFetchAll('topics').catch(() => [])
+    adminFetchAll('topics').catch(() => []),
+    adminFetchAll('modules').catch(() => [])
   ]);
+  // Build lookup maps for O(1) access in row rendering
+  const classMap = Object.fromEntries(classes.map(c => [c.id, c]));
+  const topicMap = Object.fromEntries(topics.map(t => [t.id, t]));
+  const moduleMap = Object.fromEntries(modules.map(m => [m.id, m]));
 
   area.innerHTML = `
     <div class="section-header d-flex justify-between align-center flex-wrap gap-3 mb-4">
@@ -189,29 +192,7 @@ export async function renderAIAssessments(area) {
           <label class="form-label">Level 1: Class *</label>
           <select class="form-control" id="sn-class">
             <option value="">-- Select Class --</option>
-            ${classes.map(c => `<option value="${c.name}">${c.name}</option>`).join('')}
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Level 2: Topic *</label>
-          <select class="form-control" id="sn-topic">
-            <option value="">-- Select Topic --</option>
-            ${topics.map(t => `<option value="${t.name}">${t.name}</option>`).join('')}
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Level 3: AI Module *</label>
-          <select class="form-control" id="sn-module">
-            <option value="Visual Pronouns">Tell Me What You See</option>
-            <option value="Narrative Tense">Let Me Tell You Something</option>
-            <option value="Conversation">Conversation-based</option>
-            <option value="Multiple Choice">Multiple Choice</option>
-            <option value="Read Aloud">Read Aloud / Pronunciation</option>
-            <option value="Roleplay">Turn-based Roleplay</option>
-            <option value="Speaking Monologue">Speaking Performance</option>
-            <option value="Vocabulary">Vocabulary Mastery</option>
+            ${classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
           </select>
         </div>
 
@@ -220,8 +201,23 @@ export async function renderAIAssessments(area) {
           <select class="form-control" id="sn-type">
             <option value="Task">Task</option>
             <option value="Quiz">Quiz</option>
-            <option value="Exam">Exam</option>
-            <option value="Milestone">Milestone</option>
+            <option value="Assessment">Assessment</option>
+            <option value="Final">Final</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Level 2: Topic *</label>
+          <select class="form-control" id="sn-topic">
+            <option value="">-- Select Topic --</option>
+            ${topics.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Level 3: AI Module *</label>
+          <select class="form-control" id="sn-module">
+            ${Object.keys(AI_MODULES).map(key => `<option value="${key}">${AI_MODULES[key].name}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -235,7 +231,7 @@ export async function renderAIAssessments(area) {
           </label>
         </div>
         <input type="text" class="form-control" id="sn-result-name" readonly style="background: rgba(0,0,0,0.2); font-weight: 700; color: #38bdf8;" />
-        <div class="text-xs text-muted mt-1">Formula: <code>[Class Name] - [Topic Name] - [Module Name] - [Type]</code></div>
+        <div class="text-xs text-muted mt-1">Formula: <code>[Class Name] - [Type] - [Topic Name] - [Module Name]</code></div>
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
@@ -289,7 +285,13 @@ export async function renderAIAssessments(area) {
 
   const updateGeneratedName = () => {
     if (!snToggle.checked) {
-      snResult.value = generateSmartName(snClass.value, snTopic.value, snModule.value, snType.value);
+      const moduleText = AI_MODULES[snModule.value]?.name || snModule.value;
+      snResult.value = generateSmartName(
+        snClass.options[snClass.selectedIndex]?.text || snClass.value, 
+        snType.value,
+        snTopic.options[snTopic.selectedIndex]?.text || snTopic.value, 
+        moduleText
+      );
     }
   };
 
@@ -310,26 +312,66 @@ export async function renderAIAssessments(area) {
     }
     try {
       const sb = await getSupabase();
-      const payload = {
-        name: finalName,
-        assessment_type: snType.value,
-        payload: { items: [], module: snModule.value }
+      const selectedMod = AI_MODULES[snModule.value];
+      let autoItems = [];
+      if (selectedMod && Array.isArray(selectedMod.sample)) {
+        autoItems = selectedMod.sample;
+      } else if (selectedMod && selectedMod.sample) {
+        autoItems = [selectedMod.sample];
+      }
+
+      // We must fetch the actual UUID for this module from the database
+      const { data: moduleData, error: modErr } = await sb.from('modules').select('id').eq('module_type', snModule.value).single();
+      if (modErr || !moduleData) {
+        throw new Error("Could not find the Module definition in the database. Ensure modules are seeded.");
+      }
+
+      // Base payload - uses only columns confirmed to exist in the live DB
+      const baseInsert = {
+        name: snToggle.checked ? finalName : null,
+        auto_name_override: snToggle.checked,
+        module_id: moduleData.id,
+        payload: { 
+          items: autoItems, 
+          module: snModule.value,        // module_type key
+          type: snType.value,            // assessment_type fallback
+          _class_id: snClass.value || null,  // class_id fallback
+          _topic_id: snTopic.value || null   // topic_id fallback
+        }
       };
       
-      // Insert into assessments or exams
-      const { error: aErr } = await sb.from('assessments').insert(payload);
+      // Full insert with optional columns that may or may not exist after migration
+      const fullInsert = { 
+        ...baseInsert, 
+        assessment_type: snType.value,
+        class_id: snClass.value || null, 
+        topic_id: snTopic.value || null 
+      };
+      
+      let { error: aErr } = await sb.from('assessments').insert(fullInsert);
+      // Catch both PostgreSQL 42703 and Supabase schema cache errors
+      // ("Could not find the 'X' column of 'assessments' in the schema cache")
+      const isMissingColumnErr = aErr && (
+        aErr.code === '42703' ||
+        aErr.message?.includes('does not exist') ||
+        aErr.message?.includes('schema cache') ||
+        aErr.message?.includes('Could not find')
+      );
+      if (isMissingColumnErr) {
+        // Columns don't exist yet in the live DB — fall back to base insert (no optional cols)
+        console.warn('[Assessment] Column missing, falling back to base insert. Run migration!', aErr.message);
+        const retry = await sb.from('assessments').insert(baseInsert);
+        aErr = retry.error;
+      }
       if (aErr) {
-        // Fallback to exams
-        await sb.from('exams').insert({
-          exam_title: finalName,
-          exam_type: snType.value,
-          exam_status: 'draft'
-        });
+        console.error("Supabase Assessments Insert Error:", aErr);
+        throw new Error("Assessments error: " + aErr.message);
       }
       showToast('Assessment created successfully!', 'success');
       creator.style.display = 'none';
       renderAIAssessments(area);
     } catch (err) {
+      console.error(err);
       showToast('Error creating assessment: ' + err.message, 'error');
     }
   });
@@ -337,19 +379,9 @@ export async function renderAIAssessments(area) {
   // Fetch and display assessments
   try {
     let data = [];
-    try {
-      data = await adminFetchAll('assessments', '*');
-    } catch (e) {
-      // Graceful fallback to exams
-      const fallbackExams = await adminFetchAll('exams', '*, subjects(name)');
-      data = fallbackExams.map(ex => ({
-        id: ex.id,
-        name: ex.exam_title || ex.title,
-        assessment_type: ex.exam_type || 'Exam',
-        modules: { name: ex.subjects?.name || 'Central Exam' },
-        payload: { items: [] }
-      }));
-    }
+    data = await adminFetchAll('assessments', '*', {}, true);
+    // Sort newest first
+    data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     const tbody = document.getElementById('assessments-table').querySelector('tbody');
     if (!data || data.length === 0) {
@@ -359,17 +391,56 @@ export async function renderAIAssessments(area) {
 
     tbody.innerHTML = data.map(r => {
       const itemsCount = (r.payload && Array.isArray(r.payload.items)) ? r.payload.items.length : 0;
+      // Look up related data by ID from the pre-fetched maps
+      // Fall back to IDs stored in payload if DB columns don't exist yet
+      const classId = r.class_id || r.payload?._class_id;
+      const topicId = r.topic_id || r.payload?._topic_id;
+      const relClass = classMap[classId];
+      const relTopic = topicMap[topicId];
+      const relModule = moduleMap[r.module_id];
+      // Get module type from payload as fallback
+      const moduleTypeFromPayload = r.payload?.module || '';
+      
+      // assessment_type column may not exist yet — fall back to payload.type
+      const assessmentType = r.assessment_type || r.payload?.type || 'Assessment';
+      
+      let displayName = r.name || 'Untitled';
+      if (!r.auto_name_override) {
+        displayName = generateSmartName(
+          relClass?.name || 'Global',
+          assessmentType,
+          relTopic?.name || 'No Topic',
+          relModule?.name || moduleTypeFromPayload || 'Custom Module'
+        );
+      }
+      
+      let editContentBtn = '';
+      if (relModule?.module_type === 'LEGACY_Assessment') {
+        editContentBtn = `<button class="btn btn-outline-primary btn-sm" onclick="import('./assessment-builder.js').then(m => m.openAssessmentBuilder('${r.id}'))">Questions</button>`;
+      }
+
+      const className = relClass?.name || '—';
+      const topicName = relTopic?.name || '—';
+      const moduleName = relModule?.name || moduleTypeFromPayload || 'Custom';
+
       return `
         <tr>
-          <td class="fw-700" style="color: var(--clr-text-1);">${r.name || 'Untitled'}</td>
-          <td class="text-muted text-sm">${r.modules?.name || 'Class / Core'}</td>
-          <td><span class="badge badge-neutral">${r.assessment_type || 'Assessment'}</span></td>
-          <td><span class="badge badge-info">${itemsCount} Items</span></td>
+          <td class="fw-700" style="color: var(--clr-text-1);">${displayName}</td>
+          <td class="text-muted text-sm" style="font-size: 0.8rem;">
+            <span style="color: var(--clr-primary);">${className}</span>
+            ${topicName !== '—' ? `<span style="color: var(--clr-text-3);"> → ${topicName}</span>` : ''}
+          </td>
+          <td><span class="badge badge-neutral">${assessmentType}</span></td>
+          <td>
+            <span class="badge badge-info">${itemsCount} Items</span>
+            <span class="badge badge-neutral" style="font-size: 0.7rem; margin-left: 4px;">${moduleName}</span>
+          </td>
           <td style="text-align: right;">
             <div class="d-flex gap-2 justify-end">
-              <button class="btn btn-secondary btn-sm" onclick="window.openAssessmentBuilder ? window.openAssessmentBuilder('${r.id}') : alert('Builder loading...')">Edit</button>
-              <button class="btn btn-outline-primary btn-sm btn-clone-asm" data-id="${r.id}" data-name="${r.name}">⚡ Clone</button>
-              <button class="btn btn-danger btn-sm" onclick="window._deleteRecord ? window._deleteRecord('assessments', '${r.id}', '${r.name}') : alert('Delete')">Del</button>
+              ${editContentBtn}
+              <button class="btn btn-secondary btn-sm" onclick="window.openAIAssessmentEditor('${r.id}')">Edit</button>
+              <button class="btn btn-outline-primary btn-sm btn-clone-asm" data-id="${r.id}" data-name="${displayName}">⚡ Clone</button>
+              <button class="btn btn-danger btn-sm" onclick="window._deleteRecord ? window._deleteRecord('assessments', '${r.id}', '${displayName}') : alert('Delete')">Del</button>
             </div>
           </td>
         </tr>
@@ -392,6 +463,97 @@ export async function renderAIAssessments(area) {
     console.error('Error rendering AI assessments:', err);
   }
 }
+
+window.openAIAssessmentEditor = async (assessmentId) => {
+  const sb = await getSupabase();
+  const { data: asm, error } = await sb.from('assessments').select('*, classes(id, name), topics(id, name)').eq('id', assessmentId).single();
+  if (error || !asm) {
+    showToast("Error loading assessment", "error");
+    return;
+  }
+  
+  const [classes, topics] = await Promise.all([
+    adminFetchAll('classes').catch(() => []),
+    adminFetchAll('topics').catch(() => [])
+  ]);
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header d-flex justify-between align-center p-3">
+        <h2 class="modal-title" style="font-size: 1.2rem;">Edit Assessment</h2>
+        <button class="btn btn-ghost" onclick="this.closest('.modal-backdrop').remove()">&times;</button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="form-group mb-3">
+          <label class="form-label">Class</label>
+          <select class="form-control" id="edit-asm-class">
+            <option value="">-- None --</option>
+            ${classes.map(c => `<option value="${c.id}" ${asm.class_id === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Topic</label>
+          <select class="form-control" id="edit-asm-topic">
+            <option value="">-- None --</option>
+            ${topics.map(t => `<option value="${t.id}" ${asm.topic_id === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Assessment Type</label>
+          <select class="form-control" id="edit-asm-type">
+            <option value="Task" ${asm.assessment_type === 'Task' ? 'selected' : ''}>Task</option>
+            <option value="Quiz" ${asm.assessment_type === 'Quiz' ? 'selected' : ''}>Quiz</option>
+            <option value="Assessment" ${asm.assessment_type === 'Assessment' ? 'selected' : ''}>Assessment</option>
+            <option value="Final" ${asm.assessment_type === 'Final' ? 'selected' : ''}>Final</option>
+          </select>
+        </div>
+        <div class="form-group mb-3">
+          <label style="display: flex; gap: 0.5rem; align-items: center; cursor: pointer;">
+            <input type="checkbox" id="edit-asm-override" ${asm.auto_name_override ? 'checked' : ''} />
+            <strong>Manual Name Override</strong>
+          </label>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Manual Name</label>
+          <input type="text" class="form-control" id="edit-asm-name" value="${escapeHtml(asm.name || '')}" ${asm.auto_name_override ? '' : 'disabled style="background: rgba(0,0,0,0.1);"'} />
+        </div>
+      </div>
+      <div class="modal-footer d-flex justify-end p-3 gap-2">
+        <button class="btn btn-ghost" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-asm-edit">Save Changes</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const overrideToggle = modal.querySelector('#edit-asm-override');
+  const nameInput = modal.querySelector('#edit-asm-name');
+  overrideToggle.addEventListener('change', (e) => {
+    nameInput.disabled = !e.target.checked;
+    nameInput.style.background = e.target.checked ? 'var(--clr-surface-1)' : 'rgba(0,0,0,0.1)';
+  });
+
+  modal.querySelector('#btn-save-asm-edit').addEventListener('click', async () => {
+    const payload = {
+      class_id: modal.querySelector('#edit-asm-class').value || null,
+      topic_id: modal.querySelector('#edit-asm-topic').value || null,
+      assessment_type: modal.querySelector('#edit-asm-type').value,
+      auto_name_override: overrideToggle.checked,
+      name: overrideToggle.checked ? nameInput.value.trim() : null
+    };
+
+    const { error: updErr } = await sb.from('assessments').update(payload).eq('id', assessmentId);
+    if (updErr) {
+      showToast('Error updating assessment: ' + updErr.message, 'error');
+    } else {
+      showToast('Assessment updated!', 'success');
+      modal.remove();
+      if (window.loadSection) window.loadSection('assessments');
+    }
+  });
+};
 
 export async function renderImportAIAssessments(area) {
   if (!area) {

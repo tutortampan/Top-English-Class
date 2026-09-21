@@ -1,4 +1,4 @@
-import { adminFetchAll, adminInsert, adminUpdate } from '../api.js?v=4.4.3';
+﻿import { adminFetchAll, adminInsert, adminUpdate, formatStudentName, cleanStudentName } from '../api.js?v=4.4.3';
 import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.4.3';
 import { showToast, showLoading, hideLoading } from '../app.js?v=4.4.3';
 import { callEdgeFunction, getSupabase } from '../supabase.js?v=4.4.3';
@@ -19,6 +19,36 @@ function escapeHtml(str) {
 async function hashPin(pin) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function getRowVal(row, possibleKeys) {
+  if (!row || typeof row !== 'object') return '';
+  const rowKeys = Object.keys(row);
+  for (const k of possibleKeys) {
+    const targetNorm = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const rk of rowKeys) {
+      if (rk.toLowerCase().replace(/[^a-z0-9]/g, '') === targetNorm) {
+        const v = row[rk];
+        if (v !== undefined && v !== null && String(v).trim() !== '') {
+          return String(v).trim();
+        }
+      }
+    }
+  }
+  return '';
+}
+
+function calculateAgeFromBirthDate(birthDateStr) {
+  if (!birthDateStr) return '—';
+  const birthDate = new Date(birthDateStr);
+  if (isNaN(birthDate.getTime())) return '—';
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age >= 0 ? `${age} yrs` : '—';
 }
 
     async function renderImportStudents(area) {
@@ -77,21 +107,21 @@ async function hashPin(pin) {
             <div class="glass-card p-6" style="flex: 1; min-width: 300px; max-width: calc(50% - 12px); height: 100%; overflow-y: auto; display: flex; flex-direction: column;">
               <div class="d-flex flex-column gap-4 mb-4">
                 <div class="form-group w-100">
-                  <label class="form-label">1. Target Program (Default / Override)</label>
+                  <label class="form-label">1. Target Institution (Default / Override)</label>
                   <select class="form-control" id="import-student-program">
-                    <option value="">- Use Program from Excel File -</option>
+                    <option value="">- Use Institution from Excel File -</option>
                     ${sortedPrograms.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
                   </select>
-                  <span class="text-muted text-xs mt-1">Select to assign all students in the file to this Program.</span>
+                  <span class="text-muted text-xs mt-1">Select to assign all students in the file to this Institution.</span>
                 </div>
 
                 <div class="form-group w-100">
-                  <label class="form-label">2. Target Class (Default / Override)</label>
+                  <label class="form-label">2. Target Program (Default / Override)</label>
                   <select class="form-control" id="import-student-class">
-                    <option value="">- Use Class from Excel File -</option>
-                    ${sortedClasses.map(c => `<option value="${c.id}" data-prog="${c.institution_id}">[${escapeHtml(c.institutions?.name || 'Program')}] ${escapeHtml(c.name)}</option>`).join('')}
+                    <option value="">- Use Program from Excel File -</option>
+                    ${sortedClasses.map(c => `<option value="${c.id}" data-prog="${c.institution_id}">[${escapeHtml(c.institutions?.name || 'Institution')}] ${escapeHtml(c.name)}</option>`).join('')}
                   </select>
-                  <span class="text-muted text-xs mt-1">Select to assign all students in the file to this Class.</span>
+                  <span class="text-muted text-xs mt-1">Select to assign all students in the file to this Program.</span>
                 </div>
 
                 <div class="form-group w-100">
@@ -128,7 +158,7 @@ async function hashPin(pin) {
                   <div>&bull; <b>Gender (Optional):</b> Column <code>GENDER</code>. <em>If left blank, students will select their own gender (Mr. / Miss) upon first login.</em></div>
                   <div>&bull; <b>Birth Date / Age:</b> Column <code>BIRTH_DATE</code> or <code>AGE</code> (Format: YYYY-MM-DD or age number).</div>
                   <div>&bull; <b>PIN:</b> Column <code>PIN</code> or <code>Password</code> (Defaults to <code>1234</code> if left blank).</div>
-                  <div>&bull; <b>Program &amp; Class &amp; Batch:</b> If left blank in the Excel file, the Target Program, Class, and Batch selected above will be used.</div>
+                  <div>&bull; <b>Institution &amp; Program &amp; Batch:</b> If left blank in the Excel file, the Target Institution, Program, and Batch selected above will be used.</div>
                 </div>
               </div>
             </div>
@@ -155,18 +185,15 @@ async function hashPin(pin) {
                 </div>
 
                 <div class="table-wrap table-compact mb-2" style="flex: 1; overflow-y: auto; overflow-x: auto; max-height: none;">
-                  <table style="width: 100%; table-layout: fixed; min-width: 700px;">
+                  <table style="width: 100%; table-layout: fixed; min-width: 500px;">
                     <thead>
                       <tr>
                         <th class="text-center" style="width:5%;">#</th>
-                        <th class="text-left" style="width:25%;">Student Name</th>
-                        <th class="text-center" style="width:8%;">Gender</th>
-                        <th class="text-center" style="width:12%;">Birth Date/Age</th>
-                        <th class="text-left" style="width:12%;">Program</th>
-                        <th class="text-left" style="width:12%;">Class</th>
-                        <th class="text-left" style="width:10%;">Batch</th>
-                        <th class="text-center" style="width:8%;">PIN</th>
-                        <th class="text-center" style="width:8%;">Status</th>
+                        <th class="text-left" style="width:30%;">Student Name</th>
+                        <th class="text-left" style="width:18%;">Institution</th>
+                        <th class="text-left" style="width:18%;">Program</th>
+                        <th class="text-left" style="width:15%;">Batch</th>
+                        <th class="text-center" style="width:14%;">Status</th>
                       </tr>
                     </thead>
                     <tbody id="tbl-preview-students"></tbody>
@@ -188,31 +215,22 @@ async function hashPin(pin) {
           {
             'NO': 1,
             'NAME': 'Alexander Wright',
-            'GENDER': 'male',
-            'BIRTH_DATE': '2010-05-14',
-            'PIN': '1234',
-            'PROGRAM': sortedPrograms[0]?.name || 'General English Program',
-            'CLASS': sortedClasses[0]?.name || 'Class A',
+            'INSTITUTION': sortedPrograms[0]?.name || 'CEC',
+            'PROGRAM': sortedClasses[0]?.name || 'Camp',
             'BATCH': 'Batch 2026-A'
           },
           {
             'NO': 2,
             'NAME': 'Beatrix Potter',
-            'GENDER': 'female',
-            'BIRTH_DATE': '2011-09-22',
-            'PIN': '1234',
-            'PROGRAM': sortedPrograms[0]?.name || 'General English Program',
-            'CLASS': sortedClasses[0]?.name || 'Class A',
+            'INSTITUTION': sortedPrograms[0]?.name || 'CEC',
+            'PROGRAM': sortedClasses[0]?.name || 'Camp',
             'BATCH': 'Batch 2026-A'
           },
           {
             'NO': 3,
             'NAME': 'Christopher Nolan',
-            'GENDER': '', // Optional: leave blank if students will choose their own gender upon first login
-            'BIRTH_DATE': '2010-11-03',
-            'PIN': '5678',
-            'PROGRAM': sortedPrograms[0]?.name || 'General English Program',
-            'CLASS': sortedClasses[1]?.name || sortedClasses[0]?.name || 'Class B',
+            'INSTITUTION': sortedPrograms[0]?.name || 'CEC',
+            'PROGRAM': sortedClasses[1]?.name || sortedClasses[0]?.name || 'Camp',
             'BATCH': 'Batch 2026-B'
           }
         ];
@@ -384,10 +402,9 @@ async function hashPin(pin) {
               if (!pin) pin = '1234';
 
               // Program & Class
-              const rowProgName = getRowVal(row, ['program', 'programname', 'namaprogram']);
-              const rowClassName = getRowVal(row, ['class', 'classname', 'kelas', 'namakelas']);
+              const rowProgName = getRowVal(row, ['institute', 'institution', 'programname', 'namaprogram']);
+              const rowClassName = getRowVal(row, ['program', 'class', 'classname', 'kelas', 'namakelas']);
               const rowBatchName = getRowVal(row, ['batch', 'batchname', 'namabatch', 'angkatan', 'gelombang']);
-
               let finalProgId = selectedProgId;
               let finalProgName = selectedProg?.name || '';
               if (!finalProgId && rowProgName) {
@@ -580,18 +597,15 @@ async function hashPin(pin) {
             tr.innerHTML = `
               <td class="text-center text-muted fw-700">${i + 1}</td>
               <td class="fw-600">${escapeHtml(s.name)}</td>
-              <td class="text-center">${genderBadge}</td>
-              <td class="text-center text-muted text-sm">${escapeHtml(s.birthDate || '—')} <span class="badge badge-info ml-1" style="font-size:0.7rem;">${escapeHtml(s.ageDisplay)}</span></td>
               <td class="text-muted text-sm">${escapeHtml(s.institutionName)}</td>
               <td class="fw-600 text-sm">${escapeHtml(s.programName)}</td>
               <td class="text-sm fw-600" style="color:var(--clr-accent-1);">${escapeHtml(s.batchName || '—')}</td>
-              <td class="text-center text-sm" style="font-family:monospace;letter-spacing:2px;">&bull;&bull;&bull;&bull; <span class="text-muted text-xs" title="PIN: ${escapeHtml(s.pin)}">(${escapeHtml(s.pin)})</span></td>
               <td class="text-center">${badgeHtml}</td>
             `;
             tbody.appendChild(tr);
           } else if (i === LIMIT) {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td colspan="9" class="text-center text-muted fw-600 py-3" style="font-size: 0.85rem;">... and ${parsedStudentsState.length - LIMIT} more rows.</td>`;
+            tr.innerHTML = `<td colspan="6" class="text-center text-muted fw-600 py-3" style="font-size: 0.85rem;">... and ${parsedStudentsState.length - LIMIT} more rows.</td>`;
             tbody.appendChild(tr);
           }
         });
@@ -622,34 +636,83 @@ async function hashPin(pin) {
           return;
         }
 
-        showLoading(`Processing ${readyStudents.length} students (saving new & merging existing) via Server...`);
+        showLoading(`Processing ${readyStudents.length} students...`);
         try {
-          const payload = readyStudents.map(s => ({
-            name: s.name,
-            gender: s.gender,
-            birthDate: s.birthDate,
-            pin: s.pin,
-            institutionId: s.institutionId,
-            programId: s.programId,
-            batchId: s.batchId,
-            batchName: s.batchName,
-            isExisting: s.isExisting,
-            existingId: s.existingId
-          }));
+          const sb = await getSupabase();
+          let insertedCount = 0;
+          let updatedCount = 0;
+          const batchCreateCache = {}; // "programId::batchName" -> batchId
 
-          const response = await callEdgeFunction('import-students', { students: payload });
-          
-          hideLoading();
-          
-          if (response.error) {
-             showToast('Import error: ' + (response.error.message || response.error), 'error');
-          } else {
-             const resData = response.data || {};
-             showToast(`Done! ${resData.insertedCount || 0} new students added, ${resData.mergedCount || 0} updated/merged!`, 'success');
-             document.getElementById('import-students-preview-wrap').classList.add('hidden');
-             document.getElementById('import-students-file').value = '';
-             parsedStudentsState = [];
+          for (const s of readyStudents) {
+            // 1. Auto-create batch if needed
+            let resolvedBatchId = s.batchId || null;
+            if (!resolvedBatchId && s.batchName && s.batchName !== '—' && s.programId) {
+              const cacheKey = `${s.programId}::${s.batchName.toLowerCase().trim()}`;
+              if (batchCreateCache[cacheKey]) {
+                resolvedBatchId = batchCreateCache[cacheKey];
+              } else {
+                // Check DB first
+                const { data: existingBatch } = await sb.from('batches')
+                  .select('id').eq('program_id', s.programId)
+                  .ilike('name', s.batchName.trim()).maybeSingle();
+                if (existingBatch) {
+                  resolvedBatchId = existingBatch.id;
+                } else {
+                  // Create new batch
+                  const { data: newBatch } = await sb.from('batches').insert({
+                    program_id: s.programId,
+                    name: s.batchName.trim(),
+                    is_active: true
+                  }).select('id').single();
+                  if (newBatch) resolvedBatchId = newBatch.id;
+                }
+                if (resolvedBatchId) batchCreateCache[cacheKey] = resolvedBatchId;
+              }
+            }
+
+            // 2. Hash PIN
+            const pinHash = await hashPin(s.pin || '1234');
+
+            // 3. Clean name (no title — title shown only on student dashboard)
+            const formattedName = cleanStudentName(s.name);
+
+            if (s.isExisting && s.existingId) {
+              // Update existing student
+              await sb.from('students').update({
+                institution_id: s.institutionId || null,
+                program_id: s.programId || null,
+                batch_id: resolvedBatchId,
+                gender: s.gender || null,
+                birth_date: s.birthDate || null,
+                name: formattedName,
+                pin_hash: pinHash,
+                is_active: true,
+                deleted_at: null,
+                updated_at: new Date().toISOString()
+              }).eq('id', s.existingId);
+              updatedCount++;
+            } else {
+              // Insert new student
+              await sb.from('students').insert({
+                name: formattedName,
+                institution_id: s.institutionId || null,
+                program_id: s.programId || null,
+                batch_id: resolvedBatchId,
+                gender: s.gender || null,
+                birth_date: s.birthDate || null,
+                pin_hash: pinHash,
+                is_active: true
+              });
+              insertedCount++;
+            }
           }
+
+          hideLoading();
+          showToast(`Done! ${insertedCount} new students added, ${updatedCount} updated/merged!`, 'success');
+          document.getElementById('import-students-preview-wrap').classList.add('hidden');
+          document.getElementById('import-students-file').value = '';
+          parsedStudentsState = [];
+
         } catch(err) {
           hideLoading();
           showToast('Import error: ' + err.message, 'error');
@@ -664,7 +727,7 @@ async function hashPin(pin) {
           <div class="section-header" style="flex-shrink: 0;">
             <div>
               <h2 class="section-title">Import Questions (Excel)</h2>
-              <p class="section-subtitle">Select Exam & Exam Type first to view the correct Excel template format before uploading a file.</p>
+              <p class="section-subtitle">Select Assessment & Assessment Type first to view the correct Excel template format before uploading a file.</p>
             </div>
           </div>
 
@@ -674,12 +737,12 @@ async function hashPin(pin) {
             <div class="glass-card p-6" style="flex: 1; min-width: 300px; max-width: calc(50% - 12px); height: 100%; overflow-y: auto; display: flex; flex-direction: column;">
               <div class="d-flex flex-column gap-4 mb-4">
                 <div class="form-group w-100">
-                  <label class="form-label">1. Select Target Exam</label>
-                  <select class="form-control" id="import-exam-select"><option value="">Loading exams...</option></select>
+                  <label class="form-label">1. Select Target Assessment</label>
+                  <select class="form-control" id="import-Assessment-select"><option value="">Loading assessments...</option></select>
                 </div>
                 <div class="form-group w-100">
-                  <label class="form-label">2. Exam Type (Answer Method)</label>
-                  <select class="form-control" id="import-exam-type-select">
+                  <label class="form-label">2. Assessment Type (Answer Method)</label>
+                  <select class="form-control" id="import-Assessment-type-select">
                     <option value="written">Written (Type)</option>
                     <option value="speech_to_text">Speech to Text (Suara)</option>
                     <option value="multiple_choice">Multiple Choice</option>
@@ -704,7 +767,7 @@ async function hashPin(pin) {
                 </div>
               </div>
 
-              <!-- Quick Template Download Bar for All 4 Exam Types -->
+              <!-- Quick Template Download Bar for All 4 Assessment Types -->
               <div class="p-4 rounded mt-auto" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);">
                 <div class="text-xs fw-700 text-muted uppercase mb-3">Other Templates:</div>
                 <div class="d-flex flex-column gap-2">
@@ -712,9 +775,9 @@ async function hashPin(pin) {
                   <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-speech">🎙️ Speech to Text</button>
                   <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-mc">🔘 Multiple Choice</button>
                   <button class="btn btn-secondary btn-sm text-left" id="dl-tmpl-dropdown">&#9660; Drop-down</button>
-                  <div class="text-xs fw-700 text-primary uppercase mt-3 mb-1">TopsCore AI Assessments:</div>
-                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="VISUAL_PRONOUNS">⚡ Visual Pronouns</button>
-                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="NARRATIVE_TENSE">⚡ Narrative Tense</button>
+                  <div class="text-xs fw-700 text-primary uppercase mt-3 mb-1">TopsCore AI assessments:</div>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="POINT_AND_SPEAK">⚡ Point & Speak!</button>
+                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="STORYTELLING">⚡ Storytelling</button>
                   <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="CONVERSATIONAL">⚡ Conversational</button>
                   <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="READ_ALOUD">⚡ Read Aloud</button>
                   <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="TURN_BASED_ROLEPLAY">⚡ Turn-Based Roleplay</button>
@@ -733,7 +796,7 @@ async function hashPin(pin) {
                     <p class="text-muted text-sm mt-1">Review questions data before saving.</p>
                   </div>
                   <div>
-                    <span class="badge badge-primary p-2" id="preview-exam-type-badge" style="font-size:0.85rem;">Exam Type: WRITTEN</span>
+                    <span class="badge badge-primary p-2" id="preview-assessment-type-badge" style="font-size:0.85rem;">Assessment Type: WRITTEN</span>
                   </div>
                 </div>
 
@@ -765,51 +828,51 @@ async function hashPin(pin) {
       `;
 
       let parsedQuestionsState = [];
-      let fetchedExamsList = [];
+      let fetchedAssessmentsList = [];
 
       const formatInfos = {
         written: {
           title: 'FORMAT KOLOM EXCEL WRITTEN (KETIK TULISAN)',
           desc: 'Students answer by typing the translation/word. Requires 11 standard columns:',
-          columns: 'PROGRAM | CLASS | SUBJECT | LEVEL | TITLE | WEEK | DAY | TYPE | NO | QUESTION | ANSWER',
+          columns: 'PROGRAM | CLASS | Class | LEVEL | TITLE | WEEK | DAY | TYPE | NO | QUESTION | ANSWER',
           sample: [
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 1, QUESTION: 'MENCAPAI', ANSWER: 'ACHIEVE' },
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 2, QUESTION: 'MENYELESAIKAN DENGAN SUKSES', ANSWER: 'ACCOMPLISH' },
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 3, QUESTION: 'MENGEMBANGKAN', ANSWER: 'DEVELOP' },
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 4, QUESTION: 'MENINGKATKAN', ANSWER: 'IMPROVE' },
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 5, QUESTION: 'BERSPESIALISASI', ANSWER: 'SPECIALISE' },
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 6, QUESTION: 'MEMENUHI KUALIFIKASI', ANSWER: 'QUALIFY' },
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 1, QUESTION: 'MENCAPAI', ANSWER: 'ACHIEVE' },
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 2, QUESTION: 'MENYELESAIKAN DENGAN SUKSES', ANSWER: 'ACCOMPLISH' },
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 3, QUESTION: 'MENGEMBANGKAN', ANSWER: 'DEVELOP' },
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 4, QUESTION: 'MENINGKATKAN', ANSWER: 'IMPROVE' },
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 5, QUESTION: 'BERSPESIALISASI', ANSWER: 'SPECIALISE' },
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 6, QUESTION: 'MEMENUHI KUALIFIKASI', ANSWER: 'QUALIFY' },
             { PROGRAM: 'CEC', CLASS: 'Camp', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 7, QUESTION: 'BERKONTRIBUSI', ANSWER: 'CONTRIBUTE' },
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 8, QUESTION: 'MENUNJUKKAN', ANSWER: 'DEMONSTRATE' }
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 8, QUESTION: 'MENUNJUKKAN', ANSWER: 'DEMONSTRATE' }
           ]
         },
         speech_to_text: {
           title: 'FORMAT KOLOM EXCEL SPEECH TO TEXT (SUARA US/UK)',
           desc: 'Students answer by speaking a sentence via microphone. Requires 11 standard columns:',
-          columns: 'PROGRAM | CLASS | SUBJECT | LEVEL | TITLE | WEEK | DAY | TYPE | NO | QUESTION | ANSWER',
+          columns: 'PROGRAM | CLASS | Class | LEVEL | TITLE | WEEK | DAY | TYPE | NO | QUESTION | ANSWER',
           sample: [
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 1, QUESTION: 'MENCAPAI', ANSWER: 'ACHIEVE' },
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 2, QUESTION: 'MENYELESAIKAN DENGAN SUKSES', ANSWER: 'ACCOMPLISH' },
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 3, QUESTION: 'MENGEMBANGKAN', ANSWER: 'DEVELOP' },
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 4, QUESTION: 'MENINGKATKAN', ANSWER: 'IMPROVE' }
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 1, QUESTION: 'MENCAPAI', ANSWER: 'ACHIEVE' },
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 2, QUESTION: 'MENYELESAIKAN DENGAN SUKSES', ANSWER: 'ACCOMPLISH' },
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 3, QUESTION: 'MENGEMBANGKAN', ANSWER: 'DEVELOP' },
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 4, QUESTION: 'MENINGKATKAN', ANSWER: 'IMPROVE' }
           ]
         },
         multiple_choice: {
           title: 'FORMAT KOLOM EXCEL MULTIPLE CHOICE (PILIHAN GANDA)',
           desc: 'Students select one answer from multiple choices (A, B, C, D). Requires 4 separate option columns:',
-          columns: 'PROGRAM | CLASS | SUBJECT | LEVEL | TITLE | WEEK | DAY | TYPE | NO | QUESTION | ANSWER | OPTION A | OPTION B | OPTION C | OPTION D',
+          columns: 'PROGRAM | CLASS | Class | LEVEL | TITLE | WEEK | DAY | TYPE | NO | QUESTION | ANSWER | OPTION A | OPTION B | OPTION C | OPTION D',
           sample: [
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 1, QUESTION: 'She ___ to school every day.', ANSWER: 'walks', 'OPTION A': 'walks', 'OPTION B': 'walk', 'OPTION C': 'walking', 'OPTION D': 'walked' },
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 2, QUESTION: 'They ___ playing football now.', ANSWER: 'are', 'OPTION A': 'are', 'OPTION B': 'is', 'OPTION C': 'am', 'OPTION D': 'was' }
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 1, QUESTION: 'She ___ to school every day.', ANSWER: 'walks', 'OPTION A': 'walks', 'OPTION B': 'walk', 'OPTION C': 'walking', 'OPTION D': 'walked' },
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 2, QUESTION: 'They ___ playing football now.', ANSWER: 'are', 'OPTION A': 'are', 'OPTION B': 'is', 'OPTION C': 'am', 'OPTION D': 'was' }
           ]
         },
         dropdown: {
           title: 'FORMAT KOLOM EXCEL DROP-DOWN (MENU TARIK)',
           desc: 'Students select an answer from a dropdown menu (Mendukung 2 s/d 10 opsi: OPTION A, B, C, D, E, F, G, H, I, J atau OPTION 1 s/d 10).',
-          columns: 'PROGRAM | CLASS | SUBJECT | LEVEL | TITLE | WEEK | DAY | TYPE | NO | QUESTION | ANSWER | OPTION A | OPTION B | ... | OPTION J (hingga 10 opsi)',
+          columns: 'PROGRAM | CLASS | Class | LEVEL | TITLE | WEEK | DAY | TYPE | NO | QUESTION | ANSWER | OPTION A | OPTION B | ... | OPTION J (hingga 10 opsi)',
           sample: [
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 1, QUESTION: 'Select the correct pronoun for a group including yourself.', ANSWER: 'We', 'OPTION A': 'They', 'OPTION B': 'We', 'OPTION C': 'He', 'OPTION D': 'You', 'OPTION E': 'It' },
-            { PROGRAM: 'CEC', CLASS: 'Camp', SUBJECT: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 2, QUESTION: 'Choose past tense of go:', ANSWER: 'went', 'OPTION A': 'go', 'OPTION B': 'went', 'OPTION C': 'gone', 'OPTION D': 'going' }
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 1, QUESTION: 'Select the correct pronoun for a group including yourself.', ANSWER: 'We', 'OPTION A': 'They', 'OPTION B': 'We', 'OPTION C': 'He', 'OPTION D': 'You', 'OPTION E': 'It' },
+            { PROGRAM: 'CEC', CLASS: 'Camp', Class: 'Vocab', LEVEL: '3rd Step', TITLE: 'Practice 1', WEEK: '1', DAY: '1', TYPE: '1 - VERB', NO: 2, QUESTION: 'Choose past tense of go:', ANSWER: 'went', 'OPTION A': 'go', 'OPTION B': 'went', 'OPTION C': 'gone', 'OPTION D': 'going' }
           ]
         }
       };
@@ -819,8 +882,8 @@ async function hashPin(pin) {
         document.getElementById('format-title-badge').textContent = info.title;
         document.getElementById('format-desc-label').textContent = info.desc;
         document.getElementById('format-columns-code').textContent = info.columns;
-        const previewBadge = document.getElementById('preview-exam-type-badge');
-        if (previewBadge) previewBadge.textContent = `Exam Type: ${typeKey.replace('_',' ').toUpperCase()}`;
+        const previewBadge = document.getElementById('preview-assessment-type-badge');
+        if (previewBadge) previewBadge.textContent = `Assessment Type: ${typeKey.replace('_',' ').toUpperCase()}`;
 
         if (parsedQuestionsState.length) {
           parsedQuestionsState.forEach(q => { q.answerType = typeKey; });
@@ -828,35 +891,35 @@ async function hashPin(pin) {
         }
       }
 
-      adminFetchAll('exams').then(exams => {
-        fetchedExamsList = Array.isArray(exams) ? exams : [];
-        const sortedExams = [...fetchedExamsList].sort((a, b) => {
-          const nameA = `${a?.exam_type ? a.exam_type + ' - ' : ''}${a?.exam_title || ''}`;
-          const nameB = `${b?.exam_type ? b.exam_type + ' - ' : ''}${b?.exam_title || ''}`;
+      adminFetchAll('assessments').then(assessments => {
+        fetchedAssessmentsList = Array.isArray(assessments) ? assessments : [];
+        const sortedAssessments = [...fetchedAssessmentsList].sort((a, b) => {
+          const nameA = `${a?.Assessment_type ? a.Assessment_type + ' - ' : ''}${a?.Assessment_title || ''}`;
+          const nameB = `${b?.Assessment_type ? b.Assessment_type + ' - ' : ''}${b?.Assessment_title || ''}`;
           return nameA.localeCompare(nameB);
         });
-        const sel = document.getElementById('import-exam-select');
+        const sel = document.getElementById('import-Assessment-select');
         if (sel) {
-          sel.innerHTML = '<option value="">— Select Target Exam —</option>' +
-            sortedExams.map(e => `<option value="${e.id}">${escapeHtml(formatExamDisplayName(e))} (${formatAnswerType(e.answer_type)})</option>`).join('');
+          sel.innerHTML = '<option value="">— Select Target Assessment —</option>' +
+            sortedAssessments.map(e => `<option value="${e.id}">${escapeHtml(formatAssessmentDisplayName(e))} (${formatAnswerType(e.answer_type)})</option>`).join('');
         }
       }).catch(err => {
-        console.warn('Failed to load exams for import questions:', err);
-        const sel = document.getElementById('import-exam-select');
-        if (sel) sel.innerHTML = '<option value="">(No exams available or failed to load)</option>';
+        console.warn('Failed to load assessments for import questions:', err);
+        const sel = document.getElementById('import-Assessment-select');
+        if (sel) sel.innerHTML = '<option value="">(No assessments available or failed to load)</option>';
       });
 
-      document.getElementById('import-exam-select').addEventListener('change', (e) => {
-        const examId = e.target.value;
-        const selectedExam = fetchedExamsList.find(x => x.id === examId);
-        if (selectedExam) {
-          const atype = selectedExam.answer_type || 'written';
-          document.getElementById('import-exam-type-select').value = atype;
+      document.getElementById('import-Assessment-select').addEventListener('change', (e) => {
+        const AssessmentId = e.target.value;
+        const selectedAssessment = fetchedAssessmentsList.find(x => x.id === AssessmentId);
+        if (selectedAssessment) {
+          const atype = selectedAssessment.answer_type || 'written';
+          document.getElementById('import-Assessment-type-select').value = atype;
           updateFormatDisplay(atype);
         }
       });
 
-      document.getElementById('import-exam-type-select').addEventListener('change', (e) => {
+      document.getElementById('import-Assessment-type-select').addEventListener('change', (e) => {
         updateFormatDisplay(e.target.value);
       });
 
@@ -866,13 +929,13 @@ async function hashPin(pin) {
         const ws = XLSX.utils.json_to_sheet(info.sample);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, `Template_${typeKey}_Exam.xlsx`);
+        XLSX.writeFile(wb, `Template_${typeKey}_Assessment.xlsx`);
         showToast(`Template ${typeKey.replace('_',' ')} downloaded successfully.`, 'success');
       }
 
       // Download template for selected format
       document.getElementById('download-template-btn').addEventListener('click', () => {
-        const currentType = document.getElementById('import-exam-type-select').value || 'written';
+        const currentType = document.getElementById('import-Assessment-type-select').value || 'written';
         downloadTemplateForType(currentType);
       });
 
@@ -922,28 +985,42 @@ async function hashPin(pin) {
 
             if (detectedAIModule) {
               hideLoading();
-              // Store it in a global or state variable for AI assessments
-              window._parsedAIAssessment = { moduleType: detectedAIModule, rows: jsonRows };
-              document.getElementById('preview-summary-title').innerHTML = `Preview AI Module: <b>` + AI_MODULES[detectedAIModule].name + `</b>`;
-              document.getElementById('preview-count-label').textContent = jsonRows.length + ` items ready for upload.`;
+              document.getElementById('preview-summary-title').innerHTML = `⚠️ This is an AI Assessment Module (<b>` + AI_MODULES[detectedAIModule].name + `</b>)`;
+              document.getElementById('preview-count-label').innerHTML = `<span class="text-danger">AI Modules cannot be saved here. Please go to <b>Panel C (Class & Assessment Management) -> Import Payload</b> to upload this file.</span>`;
               
               // Render basic preview
-              const tbody = document.getElementById('import-preview-tbody');
-              tbody.innerHTML = '';
-              jsonRows.slice(0, 10).forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td colspan="100%" class="text-sm">` + escapeHtml(JSON.stringify(row).substring(0, 150)) + `...</td>`;
-                tbody.appendChild(tr);
-              });
+              const tbody = document.getElementById('tbl-import-preview');
+              if (tbody) {
+                tbody.innerHTML = '';
+                jsonRows.slice(0, 5).forEach(row => {
+                  const tr = document.createElement('tr');
+                  tr.innerHTML = `<td colspan="100%" class="text-sm text-muted">` + escapeHtml(JSON.stringify(row).substring(0, 100)) + `...</td>`;
+                  tbody.appendChild(tr);
+                });
+              }
+              
+              // Hide save/cancel buttons since it can't be saved here
+              const saveBtn = document.getElementById('confirm-save-import-btn');
+              const cancelBtn = document.getElementById('cancel-import-btn');
+              if (saveBtn) saveBtn.style.display = 'none';
+              if (cancelBtn) cancelBtn.textContent = 'Close';
+
               document.getElementById('import-preview-container').classList.remove('hidden');
-              showToast(`Detected AI Module: ` + AI_MODULES[detectedAIModule].name, 'success');
+              showToast(`Please upload AI Modules in Panel C.`, 'warning');
               return;
             }
 
-            // Get target exam answer_type from selected Exam
-            const examId = document.getElementById('import-exam-select').value;
-            const selectedExam = fetchedExamsList.find(x => x.id === examId);
-            let defaultAnswerType = selectedExam?.answer_type || 'written';
+            // Restore buttons for standard imports
+            const saveBtn = document.getElementById('confirm-save-import-btn');
+            const cancelBtn = document.getElementById('cancel-import-btn');
+            if (saveBtn) saveBtn.style.display = 'inline-block';
+            if (cancelBtn) cancelBtn.textContent = 'Cancel';
+
+
+            // Get target Assessment answer_type from selected Assessment
+            const AssessmentId = document.getElementById('import-Assessment-select').value;
+            const selectedAssessment = fetchedAssessmentsList.find(x => x.id === AssessmentId);
+            let defaultAnswerType = selectedAssessment?.answer_type || 'written';
 
             parsedQuestionsState = [];
             jsonRows.forEach((rawRow, i) => {
@@ -966,11 +1043,11 @@ async function hashPin(pin) {
               const correctAnswer = row.correct_answer || getRowVal(rawRow, ['answer', 'jawaban', 'kunci', 'kuncijawaban', 'english', 'correctanswer', 'solution', 'key']);
               const rawNo = row.no || getRowVal(rawRow, ['no', 'nomor', 'number', 'order', 'urutan']);
               const qNo = parseInt(rawNo || (i + 1), 10);
-              const classItem = getRowVal(rawRow, ['subject', 'matapelajaran', 'mapel', 'class']);
-              const title = getRowVal(rawRow, ['title', 'examtitle', 'judul']);
+              const classItem = getRowVal(rawRow, ['Class', 'matapelajaran', 'mapel', 'class']);
+              const title = getRowVal(rawRow, ['title', 'Assessmenttitle', 'judul']);
               const week = getRowVal(rawRow, ['week', 'minggu']);
               const day = getRowVal(rawRow, ['day', 'hari']);
-              const type = row.question_type || getRowVal(rawRow, ['type', 'wordtype', 'word_type', 'category', 'examtype', 'tipe', 'jenisquestions']);
+              const type = row.question_type || getRowVal(rawRow, ['type', 'wordtype', 'word_type', 'category', 'Assessmenttype', 'tipe', 'jenisquestions']);
               const topic = row.topic || getRowVal(rawRow, ['topic', 'topik', 'kategori']);
 
               // Extract options: Check separate OPTION A..J or OPTION 1..10 (2 to 10 options)
@@ -1006,9 +1083,9 @@ async function hashPin(pin) {
                 }
               }
 
-              const program = getRowVal(rawRow, ['program', 'programname', 'namaprogram']) || selectedExam?.institutions?.name || 'CEC';
+              const program = getRowVal(rawRow, ['program', 'programname', 'namaprogram']) || selectedAssessment?.institutions?.name || 'CEC';
               const programName = getRowVal(rawRow, ['class', 'classname', 'kelas', 'namakelas']) || 'Camp';
-              const level = getRowVal(rawRow, ['level', 'tingkat', 'levelnumber']) || selectedExam?.levels?.name || '3rd Step';
+              const level = getRowVal(rawRow, ['level', 'tingkat', 'levelnumber']) || selectedAssessment?.levels?.name || '3rd Step';
 
               // Validation Badge Logic
               let statusBadge = 'ready';
@@ -1114,53 +1191,74 @@ async function hashPin(pin) {
       });
 
       document.getElementById('confirm-save-import-btn')?.addEventListener('click', async () => {
-        const examId = document.getElementById('import-exam-select').value;
-        if (!examId) { showToast('Please select a target exam before saving.', 'warning'); return; }
+        const AssessmentId = document.getElementById('import-Assessment-select').value;
+        if (!AssessmentId) { showToast('Please select a target Assessment before saving.', 'warning'); return; }
         if (!parsedQuestionsState.length) { showToast('No questions to save.', 'warning'); return; }
 
         showLoading('Saving & merging questions to database via Server...');
         try {
+          // Filter out invalid rows (missing question text or answer) before sending
+          const validQuestions = parsedQuestionsState.filter(q =>
+            q.questionText && String(q.questionText).trim() !== '' &&
+            q.correctAnswer && String(q.correctAnswer).trim() !== ''
+          );
+
+          if (!validQuestions.length) {
+            hideLoading();
+            showToast('No valid questions to save — all rows are missing question text or answer.', 'warning');
+            return;
+          }
+
           // Resolve duplicate 'order' numbers within the uploaded batch (common copy-paste error)
-          const batchMap = new Map();
-          const batchUsedOrders = new Set();
-          
-          parsedQuestionsState.forEach(q => {
+          // Use a Set to track used orders; reassign colliding orders sequentially.
+          const usedOrders = new Set();
+          const questionsPayload = validQuestions.map(q => {
             let safeOrder = q.order != null ? Number(q.order) : 1;
-            while (batchUsedOrders.has(safeOrder)) {
-              safeOrder++;
-            }
-            batchUsedOrders.add(safeOrder);
-            q.order = safeOrder;
-            
-            const key = `order::${q.order}`;
-            batchMap.set(key, q);
+            if (isNaN(safeOrder) || safeOrder < 1) safeOrder = 1;
+            while (usedOrders.has(safeOrder)) safeOrder++;
+            usedOrders.add(safeOrder);
+
+            return {
+              order:         safeOrder,
+              questionText:  q.questionText,
+              correctAnswer: q.correctAnswer,
+              answerType:    q.answerType,
+              optionsJson:   q.optionsJson,
+              metadata: {
+                classItem: q.classItem,
+                Class:   q.classItem,
+                title:     q.title,
+                week:      q.week,
+                day:       q.day,
+                type:      q.type
+              }
+            };
           });
 
-          const questionsPayload = Array.from(batchMap.values()).map(q => ({
-            examId: examId,
-            order: q.order,
-            questionText: q.questionText,
-            correctAnswer: q.correctAnswer,
-            answerType: q.answerType,
-            optionsJson: q.optionsJson,
-            metadata: { classItem: q.classItem, subject: q.classItem, title: q.title, week: q.week, day: q.day, type: q.type }
-          }));
-
-          const response = await callEdgeFunction('import-questions', { questions: questionsPayload, examId: examId });
-          
+          // callEdgeFunction throws on error — no need to check response.error
+          const response = await callEdgeFunction('import-questions', { questions: questionsPayload, AssessmentId });
           hideLoading();
-          
-          if (response.error) {
-             showToast('Save error: ' + (response.error.message || response.error), 'error');
-          } else {
-             const resData = response.data || {};
-             showToast(`Successfully saved ${resData.insertedCount + resData.mergedCount} questions (${resData.insertedCount} new, ${resData.mergedCount} merged/updated)!`, 'success');
-             
-             // Reset view but stay on the page as requested
-             document.getElementById('import-preview-container').classList.add('hidden');
-             document.getElementById('import-questions-file').value = '';
-             parsedQuestionsState = [];
+
+          const insertedCount = response?.insertedCount ?? 0;
+          const updatedCount  = response?.updatedCount  ?? 0;
+          const totalSaved = insertedCount + updatedCount;
+          showToast(
+            `Successfully saved ${totalSaved} questions (${insertedCount} new, ${updatedCount} updated)!`,
+            'success'
+          );
+
+          // Warn if some rows failed on the server side
+          if (response?.warnings && response.warnings.length > 0) {
+            setTimeout(() => {
+              showToast(`⚠️ ${response.warnings.length} question(s) failed to save. Check console for details.`, 'warning');
+              console.warn('[import-questions] Server warnings:', response.warnings);
+            }, 1500);
           }
+
+          // Reset view but stay on the import page
+          document.getElementById('import-preview-container').classList.add('hidden');
+          document.getElementById('import-questions-file').value = '';
+          parsedQuestionsState = [];
         } catch(err) {
           hideLoading();
           showToast(`Save error: ${err.message}`, 'error');
@@ -1170,30 +1268,30 @@ async function hashPin(pin) {
 
 
     async function renderExportQuestions(area) {
-      showLoading('Loading exams for export…');
-      let exams = [];
+      showLoading('Loading assessments for export…');
+      let assessments = [];
       try {
-        exams = await adminFetchAll('exams');
+        assessments = await adminFetchAll('assessments');
       } catch (err) {
-        console.warn('Export exams fetch warning:', err);
+        console.warn('Export assessments fetch warning:', err);
       } finally {
         hideLoading();
       }
       area.innerHTML = `
         <div class="section-header"><div><h2 class="section-title">Export Questions (Excel)</h2></div></div>
         <div class="glass-card p-8" style="max-width:640px;">
-          <p class="text-muted mb-4">Export questions from an exam into an Excel workbook formatted with standard columns:</p>
+          <p class="text-muted mb-4">Export questions from an Assessment into an Excel workbook formatted with standard columns:</p>
           <div class="mb-5 p-3 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--clr-border);font-size:0.75rem;font-family:monospace;">
-            PROGRAM | CLASS | SUBJECT | LEVEL | TITLE | WEEK | DAY | TYPE | NO | QUESTION | ANSWER
+            PROGRAM | CLASS | Class | LEVEL | TITLE | WEEK | DAY | TYPE | NO | QUESTION | ANSWER
           </div>
-          <div class="form-group"><label class="form-label">Select Exam to Export</label>
-            <select class="form-control" id="export-exam-select">
-              <option value="">— Select Exam —</option>
-              ${[...exams].sort((a, b) => {
-                const labelA = `${a.exam_type ? a.exam_type + ' - ' : ''}${a.exam_title}`;
-                const labelB = `${b.exam_type ? b.exam_type + ' - ' : ''}${b.exam_title}`;
+          <div class="form-group"><label class="form-label">Select Assessment to Export</label>
+            <select class="form-control" id="export-assessment-select">
+              <option value="">— Select Assessment —</option>
+              ${[...assessments].sort((a, b) => {
+                const labelA = `${a.Assessment_type ? a.Assessment_type + ' - ' : ''}${a.Assessment_title}`;
+                const labelB = `${b.Assessment_type ? b.Assessment_type + ' - ' : ''}${b.Assessment_title}`;
                 return labelA.localeCompare(labelB);
-              }).map(e => `<option value="${e.id}">${e.exam_type ? e.exam_type + ' - ' : ''}${e.exam_title}</option>`).join('')}
+              }).map(e => `<option value="${e.id}">${e.Assessment_type ? e.Assessment_type + ' - ' : ''}${e.Assessment_title}</option>`).join('')}
             </select>
           </div>
           <button class="btn btn-primary mt-2" id="export-questions-btn">📤 Download Excel (.xlsx)</button>
@@ -1201,23 +1299,23 @@ async function hashPin(pin) {
       `;
 
       document.getElementById('export-questions-btn').addEventListener('click', async () => {
-        const examId = document.getElementById('export-exam-select').value;
-        if (!examId) { showToast('Please select an exam to export.', 'warning'); return; }
+        const AssessmentId = document.getElementById('export-assessment-select').value;
+        if (!AssessmentId) { showToast('Please select an Assessment to export.', 'warning'); return; }
 
-        const selectedExam = exams.find(e => e.id === examId);
+        const selectedAssessment = assessments.find(e => e.id === AssessmentId);
         showLoading('Preparing Excel export…');
 
         try {
           const sb = await getSupabase();
           let questions = [];
-          const [directQRes, examClasses] = await Promise.all([
-            sb.from('questions').select('*').eq('exam_id', examId).is('deleted_at', null),
-            sb.from('exam_programs').select('programs(name)').eq('exam_id', examId)
+          const [directQRes, AssessmentClasses] = await Promise.all([
+            sb.from('questions').select('*').eq('Assessment_id', AssessmentId).is('deleted_at', null),
+            sb.from('Assessment_programs').select('programs(name)').eq('Assessment_id', AssessmentId)
           ]);
           questions = directQRes?.data || [];
           if (!questions.length) {
             try {
-              const { data: sections } = await sb.from('exam_sections').select('id').eq('exam_id', examId);
+              const { data: sections } = await sb.from('Assessment_sections').select('id').eq('Assessment_id', AssessmentId);
               const sectionIds = (sections || []).map(s => s.id);
               if (sectionIds.length > 0) {
                 const { data: secQ } = await sb.from('questions').select('*').in('section_id', sectionIds).is('deleted_at', null);
@@ -1227,17 +1325,17 @@ async function hashPin(pin) {
           }
 
           const sortedQuestions = questions.sort((a,b) => (a.question_order || 0) - (b.question_order || 0));
-          const programName = examClasses?.data?.[0]?.programs?.name || 'Camp';
+          const programName = AssessmentClasses?.data?.[0]?.programs?.name || 'Camp';
 
           const excelData = sortedQuestions.map((q, idx) => ({
-            'PROGRAM': selectedExam?.institutions?.name || 'CEC',
+            'PROGRAM': selectedAssessment?.institutions?.name || 'CEC',
             'CLASS': programName,
-            'SUBJECT': q.metadata?.classItem || q.metadata?.subject || selectedExam?.classes?.name || 'Vocab',
-            'LEVEL': selectedExam?.levels?.name || '3rd Step',
-            'TITLE': q.metadata?.title || selectedExam?.exam_title || 'Practice 1',
+            'Class': q.metadata?.classItem || q.metadata?.Class || selectedAssessment?.classes?.name || 'Vocab',
+            'LEVEL': selectedAssessment?.levels?.name || '3rd Step',
+            'TITLE': q.metadata?.title || selectedAssessment?.Assessment_title || 'Practice 1',
             'WEEK': q.metadata?.week || '1',
             'DAY': q.metadata?.day || '1',
-            'TYPE': q.metadata?.type || selectedExam?.exam_type || '1 - VERB',
+            'TYPE': q.metadata?.type || selectedAssessment?.Assessment_type || '1 - VERB',
             'NO': q.question_order || (idx + 1),
             'QUESTION': q.question_text || '',
             'ANSWER': q.correct_answer || ''
@@ -1245,12 +1343,12 @@ async function hashPin(pin) {
 
           if (!excelData.length) {
             hideLoading();
-            showToast('No questions found for this exam.', 'warning');
+            showToast('No questions found for this Assessment.', 'warning');
             return;
           }
 
           const worksheet = XLSX.utils.json_to_sheet(excelData, {
-            header: ['PROGRAM', 'CLASS', 'SUBJECT', 'LEVEL', 'TITLE', 'WEEK', 'DAY', 'TYPE', 'NO', 'QUESTION', 'ANSWER']
+            header: ['PROGRAM', 'CLASS', 'Class', 'LEVEL', 'TITLE', 'WEEK', 'DAY', 'TYPE', 'NO', 'QUESTION', 'ANSWER']
           });
 
           // Set column widths
@@ -1261,7 +1359,7 @@ async function hashPin(pin) {
           const workbook = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(workbook, worksheet, 'Questions');
 
-          const fileName = `${(selectedExam?.exam_title || 'Exam').replace(/\s+/g, '_')}_Questions.xlsx`;
+          const fileName = `${(selectedAssessment?.Assessment_title || 'Assessment').replace(/\s+/g, '_')}_Questions.xlsx`;
           XLSX.writeFile(workbook, fileName);
 
           hideLoading();

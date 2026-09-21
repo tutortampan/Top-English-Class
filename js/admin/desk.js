@@ -1,4 +1,4 @@
-/**
+﻿/**
  * js/admin/desk.js
  * PILAR [D] DATA — SYSTEM ADMINISTRATION, SECURITY & HEALTH
  * Modules:
@@ -51,7 +51,7 @@ export async function renderRecycleBin(container) {
       <button class="btn btn-primary btn-xs recycle-tab-btn" data-type="all">All Entities</button>
       <button class="btn btn-secondary btn-xs recycle-tab-btn" data-type="students">Students</button>
       <button class="btn btn-secondary btn-xs recycle-tab-btn" data-type="programs">Classes (Programs)</button>
-      <button class="btn btn-secondary btn-xs recycle-tab-btn" data-type="exams">Assessments (Exams)</button>
+      <button class="btn btn-secondary btn-xs recycle-tab-btn" data-type="Assessments">Assessments (Assessments)</button>
       <button class="btn btn-secondary btn-xs recycle-tab-btn" data-type="questions">Questions</button>
     </div>
 
@@ -75,17 +75,17 @@ export async function renderRecycleBin(container) {
     if (wrap) wrap.innerHTML = '<div class="p-5 text-center text-muted"><div class="spinner"></div> Scanning Recycle Bin...</div>';
 
     try {
-      const [stds, progs, exams, quests] = await Promise.all([
+      const [stds, progs, Assessments, quests] = await Promise.all([
         adminFetchDeleted('students').catch(() => []),
         adminFetchDeleted('programs').catch(() => []),
-        adminFetchDeleted('exams').catch(() => []),
+        adminFetchDeleted('Assessments').catch(() => []),
         adminFetchDeleted('questions').catch(() => [])
       ]);
 
       const items = [
         ...stds.map(r => ({ ...r, _table: 'students', _entityType: 'Student', _name: r.name || 'Unnamed Student' })),
         ...progs.map(r => ({ ...r, _table: 'programs', _entityType: 'Class', _name: r.name || 'Unnamed Class' })),
-        ...exams.map(r => ({ ...r, _table: 'exams', _entityType: 'Assessment', _name: r.exam_title || r.title || 'Unnamed Assessment' })),
+        ...Assessments.map(r => ({ ...r, _table: 'Assessments', _entityType: 'Assessment', _name: r.Assessment_title || r.title || 'Unnamed Assessment' })),
         ...quests.map(r => ({ ...r, _table: 'questions', _entityType: 'Question', _name: r.question_text || 'Unnamed Question' }))
       ];
 
@@ -510,8 +510,8 @@ export async function renderDataHealth(container) {
 
       <div class="antigravity-card p-4">
         <div class="text-xs text-muted text-uppercase fw-700 mb-2">Assessments &amp; Attempts</div>
-        <div style="font-size:1.75rem;font-weight:700;color:#f8fafc;" id="metric-exams">&mdash;</div>
-        <div class="text-xs text-muted mt-1" id="metric-attempts-desc">Exam attempts logged</div>
+        <div style="font-size:1.75rem;font-weight:700;color:#f8fafc;" id="metric-Assessments">&mdash;</div>
+        <div class="text-xs text-muted mt-1" id="metric-attempts-desc">Assessment attempts logged</div>
       </div>
     </div>
 
@@ -567,7 +567,7 @@ export async function renderDataHealth(container) {
             </div>
           </div>
           <p style="font-size:0.85rem;color:var(--clr-text-2);line-height:1.5;margin:0 0 1.25rem 0;">
-            Audit foreign key integrity. Identify unlinked attempt answers, progress records missing students, and exams with dangling references.
+            Audit foreign key integrity. Identify unlinked attempt answers, progress records missing students, and Assessments with dangling references.
           </p>
         </div>
         <button class="btn btn-success" id="btn-health-scan-orphans" style="width:100%;font-weight:600;background:linear-gradient(135deg, #10b981, #059669);color:#fff;">
@@ -617,21 +617,21 @@ export async function renderDataHealth(container) {
   // Load Database Counts
   const loadEntityCounts = async () => {
     try {
-      const [students, exams, attempts] = await Promise.all([
+      const [students, Assessments, attempts] = await Promise.all([
         adminFetchAll('students').catch(() => []),
-        adminFetchAll('exams').catch(() => []),
+        adminFetchAll('assessments').catch(() => []),
         adminFetchAll('attempts').catch(() => [])
       ]);
 
       const activeStds = (students || []).filter(s => !s.deleted_at).length;
-      const activeExams = (exams || []).filter(e => !e.deleted_at).length;
+      const activeAssessments = (Assessments || []).filter(e => !e.deleted_at).length;
       const totalAttempts = (attempts || []).length;
 
       const sEl = document.getElementById('metric-students');
       if (sEl) sEl.textContent = activeStds;
 
-      const eEl = document.getElementById('metric-exams');
-      if (eEl) eEl.textContent = activeExams;
+      const eEl = document.getElementById('metric-Assessments');
+      if (eEl) eEl.textContent = activeAssessments;
 
       const aEl = document.getElementById('metric-attempts-desc');
       if (aEl) aEl.textContent = `${totalAttempts} attempts logged`;
@@ -664,26 +664,26 @@ export async function renderDataHealth(container) {
   document.getElementById('btn-health-scan-orphans')?.addEventListener('click', async () => {
     showLoading('Auditing relational database integrity...');
     try {
-      const [students, exams, attempts, questions, attemptAnswers, progress] = await Promise.all([
+      const [students, Assessments, attempts, questions, attemptAnswers, progress] = await Promise.all([
         adminFetchAll('students', 'id, name, deleted_at'),
-        adminFetchAll('exams', 'id, exam_title, deleted_at'),
-        adminFetchAll('attempts', 'id, student_id, exam_id, status, created_at'),
-        adminFetchAll('questions', 'id, exam_id, question_text'),
+        adminFetchAll('Assessments', 'id, Assessment_title, deleted_at'),
+        adminFetchAll('attempts', 'id, student_id, Assessment_id, status, created_at'),
+        adminFetchAll('questions', 'id, Assessment_id, question_text'),
         adminFetchAll('attempt_answers', 'id, attempt_id'),
         adminFetchAll('progress', 'id, student_id').catch(() => [])
       ]);
 
       const studentIdSet = new Set((students || []).map(s => s.id));
-      const examIdSet = new Set((exams || []).map(e => e.id));
+      const AssessmentIdSet = new Set((Assessments || []).map(e => e.id));
       const attemptIdSet = new Set((attempts || []).map(a => a.id));
 
       const orphanedAttempts = (attempts || []).filter(a => 
         (a.student_id && !studentIdSet.has(a.student_id)) || 
-        (a.exam_id && !examIdSet.has(a.exam_id))
+        (a.Assessment_id && !AssessmentIdSet.has(a.Assessment_id))
       );
 
       const orphanedQuestions = (questions || []).filter(q => 
-        q.exam_id && !examIdSet.has(q.exam_id)
+        q.Assessment_id && !AssessmentIdSet.has(q.Assessment_id)
       );
 
       const orphanedAnswers = (attemptAnswers || []).filter(ans => 
@@ -704,7 +704,7 @@ export async function renderDataHealth(container) {
               ${totalIssues === 0 ? 'All Relational Constraints Healthy' : `${totalIssues} Integrity Issue(s) Detected`}
             </h3>
             <p class="text-xs text-muted" style="margin:0;">
-              ${totalIssues === 0 ? 'All exam attempts, questions, answers, and progress records have valid relational parents.' : 'Some records reference missing or unlinked entities.'}
+              ${totalIssues === 0 ? 'All Assessment attempts, questions, answers, and progress records have valid relational parents.' : 'Some records reference missing or unlinked entities.'}
             </p>
           </div>
 
@@ -785,7 +785,7 @@ export async function renderSettings(area) {
           </div>
         </div>
         <p class="text-xs text-muted mb-3" style="line-height:1.4;">
-          Strict safety throttles to eliminate infinite looping and runaway LLM token bills. Configured values are broadcast globally to all student examination sessions.
+          Strict safety throttles to eliminate infinite looping and runaway LLM token bills. Configured values are broadcast globally to all student Assessmentination sessions.
         </p>
 
         <div class="form-group mb-3">

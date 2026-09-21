@@ -1,10 +1,10 @@
-const CACHE_NAME = 'abcd-core-v4.3.0';
+﻿const CACHE_NAME = 'abcd-core-v4.3.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './admin.html',
   './dashboard.html',
-  './exam.html',
+  './assessment.html',
   './result.html',
   './css/style.css?v=4.0',
   './css/admin.css?v=4.0',

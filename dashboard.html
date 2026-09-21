@@ -1,16 +1,16 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — TOPS CORE</title>
-  <meta name="description" content="Your TOPS CORE learning dashboard — track progress, view subjects, and start exams." />
+  <meta name="description" content="Your TOPS CORE learning dashboard — track progress, view Classes, and start Assessments." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=4.1.0" />
-  <link rel="stylesheet" href="css/dashboard.css?v=4.1.0" />
-  <link rel="stylesheet" href="css/components/avatars.css?v=4.1.0" />
+  <link rel="stylesheet" href="css/style.css?v=4.1.4" />
+  <link rel="stylesheet" href="css/dashboard.css?v=4.1.4" />
+  <link rel="stylesheet" href="css/components/avatars.css?v=4.1.4" />
   <style>
     /* ============================================================
        COMPACT MOBILE-FIRST STUDENT DASHBOARD STYLES
@@ -146,8 +146,8 @@
       color: var(--clr-accent-1, #a78bfa);
     }
 
-    /* Completed Exams Section (Bottom of Dashboard) */
-    .completed-exams-section {
+    /* Completed Assessments Section (Bottom of Dashboard) */
+    .completed-Assessments-section {
       margin-top: var(--space-6);
       margin-bottom: var(--space-8);
     }
@@ -208,12 +208,12 @@
     }
 
     /* Desktop Table Styling */
-    .completed-exams-table {
+    .completed-Assessments-table {
       width: 100%;
       border-collapse: collapse;
       text-align: left;
     }
-    .completed-exams-table th {
+    .completed-Assessments-table th {
       padding: 10px 14px;
       font-size: 0.7rem;
       text-transform: uppercase;
@@ -224,31 +224,31 @@
       font-weight: 700;
       white-space: nowrap;
     }
-    .completed-exams-table td {
+    .completed-Assessments-table td {
       padding: 10px 14px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       font-size: 0.85rem;
       vertical-align: middle;
     }
-    .completed-exams-table tbody tr:last-child td {
+    .completed-Assessments-table tbody tr:last-child td {
       border-bottom: none;
     }
-    .completed-exams-table tbody tr {
+    .completed-Assessments-table tbody tr {
       transition: background var(--transition-fast);
       cursor: pointer;
     }
-    .completed-exams-table tbody tr:hover {
+    .completed-Assessments-table tbody tr:hover {
       background: rgba(99, 102, 241, 0.07);
     }
 
-    /* Mobile Cards View for Completed Exams */
-    .completed-exams-mobile-list {
+    /* Mobile Cards View for Completed Assessments */
+    .completed-Assessments-mobile-list {
       display: none;
       flex-direction: column;
       gap: 8px;
       padding: 8px;
     }
-    .completed-exam-mobile-card {
+    .completed-Assessment-mobile-card {
       background: rgba(255, 255, 255, 0.025);
       border: 1px solid var(--clr-border);
       border-radius: var(--radius-md);
@@ -261,32 +261,32 @@
       text-decoration: none;
       color: inherit;
     }
-    .completed-exam-mobile-card:hover,
-    .completed-exam-mobile-card:active {
+    .completed-Assessment-mobile-card:hover,
+    .completed-Assessment-mobile-card:active {
       background: rgba(99, 102, 241, 0.08);
       border-color: rgba(99, 102, 241, 0.4);
       transform: translateY(-1px);
     }
-    .exam-card-header {
+    .Assessment-card-header {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       gap: 8px;
     }
-    .exam-card-title {
+    .Assessment-card-title {
       font-size: 0.88rem;
       font-weight: 700;
       color: var(--clr-text-1);
       line-height: 1.25;
     }
-    .exam-card-badges {
+    .Assessment-card-badges {
       display: flex;
       align-items: center;
       gap: 6px;
       flex-wrap: wrap;
       margin-top: 2px;
     }
-    .exam-card-footer {
+    .Assessment-card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -346,10 +346,10 @@
       .completed-summary-lbl {
         font-size: 0.58rem;
       }
-      .completed-exams-table {
+      .completed-Assessments-table {
         display: none !important;
       }
-      .completed-exams-mobile-list {
+      .completed-Assessments-mobile-list {
         display: flex !important;
       }
     }
@@ -398,9 +398,9 @@
         <div class="hero-greeting-box">
           <div class="d-flex align-center gap-2 mb-1">
             <span class="badge badge-success session-pill">● Active</span>
-            <span class="text-xs text-muted hidden" id="stat-exams-done">0</span>
-            <span id="overview-exams-count" class="hidden">0</span>
-            <span id="overview-subjects-count" class="hidden">0</span>
+            <span class="text-xs text-muted hidden" id="stat-Assessments-done">0</span>
+            <span id="overview-Assessments-count" class="hidden">0</span>
+            <span id="overview-classes-count" class="hidden">0</span>
             <span id="overview-mic-status" class="hidden">Ready</span>
           </div>
           <h1 class="welcome-name" id="welcome-heading">Hello, <span id="welcome-name" class="text-gradient">Student</span>! 👋</h1>
@@ -421,42 +421,42 @@
       </div>
     </section>
 
-    <!-- Subjects Section (Right Under the Welcome Banner) -->
-    <section class="subjects-section" aria-labelledby="subjects-heading">
+    <!-- Classes Section (Right Under the Welcome Banner) -->
+    <section class="classes-section" aria-labelledby="classes-heading">
       <div class="section-header">
         <div>
-          <h2 class="section-title" id="subjects-heading">📚 My Classes</h2>
-          <p class="section-subtitle">Choose a class to view levels and available exams</p>
+          <h2 class="section-title" id="classes-heading">📚 My Classes</h2>
+          <p class="section-subtitle">Choose a class to view levels and available Assessments</p>
         </div>
       </div>
 
-      <div class="subjects-grid" id="subjects-grid">
+      <div class="classes-grid" id="classes-grid">
         <div class="empty-state">
           <div class="spinner"></div>
-          <p>Loading subjects…</p>
+          <p>Loading Classes…</p>
         </div>
       </div>
     </section>
 
-    <!-- Completed Exams Section (Bottom of Dashboard) -->
-    <section class="completed-exams-section" aria-labelledby="completed-exams-heading">
+    <!-- Completed Assessments Section (Bottom of Dashboard) -->
+    <section class="completed-Assessments-section" aria-labelledby="completed-Assessments-heading">
       <div class="section-header d-flex align-center justify-between flex-wrap gap-3">
         <div>
-          <h2 class="section-title d-flex align-center gap-2" id="completed-exams-heading" style="margin-bottom:var(--space-1);">
-            <span>📋</span> My Completed Exams
+          <h2 class="section-title d-flex align-center gap-2" id="completed-Assessments-heading" style="margin-bottom:var(--space-1);">
+            <span>📋</span> My Completed Assessments
           </h2>
           <p class="section-subtitle">Review your past test performance, scores, and grade achievements</p>
         </div>
-        <span class="badge badge-primary" id="bottom-completed-badge" style="font-size:0.8rem;padding:6px 12px;">0 Exams Completed</span>
+        <span class="badge badge-primary" id="bottom-completed-badge" style="font-size:0.8rem;padding:6px 12px;">0 Assessments Completed</span>
       </div>
 
-      <!-- Completed Exams Summary Bar -->
+      <!-- Completed Assessments Summary Bar -->
       <div class="completed-summary-bar">
         <div class="completed-summary-card glass-card">
           <div class="completed-summary-icon">📈</div>
           <div>
-            <div class="completed-summary-val" id="bottom-stat-total-exams">0</div>
-            <div class="completed-summary-lbl">Completed Exams</div>
+            <div class="completed-summary-val" id="bottom-stat-total-Assessments">0</div>
+            <div class="completed-summary-lbl">Completed Assessments</div>
           </div>
         </div>
         <div class="completed-summary-card glass-card">
@@ -475,12 +475,12 @@
         </div>
       </div>
 
-      <!-- Completed Exams Table Container -->
+      <!-- Completed Assessments Table Container -->
       <div class="glass-card completed-table-card mt-4">
-        <div class="table-responsive" id="completed-exams-container">
+        <div class="table-responsive" id="completed-Assessments-container">
           <div class="empty-state p-6">
             <div class="spinner"></div>
-            <p>Loading your exam history…</p>
+            <p>Loading your Assessment history…</p>
           </div>
         </div>
       </div>
@@ -522,7 +522,7 @@
             <div class="d-flex justify-between align-center mb-2" style="flex-wrap:wrap;gap:var(--space-2);">
               <div>
                 <h4 class="fw-700 text-sm d-flex align-center gap-2">👤 Gender &amp; Honorific Title</h4>
-                <p class="text-xs text-muted">Your title appears as <strong>Mr.</strong> or <strong>Miss</strong> across exams, reports, and rankings.</p>
+                <p class="text-xs text-muted">Your title appears as <strong>Mr.</strong> or <strong>Miss</strong> across Assessments, reports, and rankings.</p>
               </div>
               <span id="prof-gender-badge" class="badge badge-neutral">—</span>
             </div>
@@ -554,14 +554,14 @@
             </form>
           </div>
 
-          <!-- Exam History -->
+          <!-- Assessment History -->
           <div class="glass-card p-5">
-            <h4 class="fw-700 text-sm" style="margin-bottom:var(--space-4);">📋 Recent Exam Attempts &amp; Scores</h4>
+            <h4 class="fw-700 text-sm" style="margin-bottom:var(--space-4);">📋 Recent Assessment Attempts &amp; Scores</h4>
             <div class="table-wrap" style="max-height:220px;overflow-y:auto;">
               <table>
                 <thead>
                   <tr>
-                    <th>Exam Title</th>
+                    <th>Assessment Title</th>
                     <th>Score</th>
                     <th>Grade</th>
                     <th>Date</th>
@@ -582,8 +582,8 @@
       <div class="modal-box" style="max-width:680px;">
         <div class="modal-header">
           <div>
-            <h3 id="level-modal-title">Subject Levels</h3>
-            <p class="text-muted text-sm" id="level-modal-subject"></p>
+            <h3 id="level-modal-title">Class Levels</h3>
+            <p class="text-muted text-sm" id="level-modal-class"></p>
           </div>
           <button class="btn btn-ghost btn-icon" id="close-level-modal" aria-label="Close">✕</button>
         </div>
@@ -732,10 +732,10 @@
   </div>
 
   <script type="module">
-    import { fetchStudentSubjects, fetchStudentProgress, fetchExamsForStudentSubject, fetchStudentAttemptsForExam, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, updateStudentEducation, formatStudentName, fetchAssignments, fetchAssessments } from './js/api.js?v=4.1.0';
-    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.1.0';
-    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.1.0';
-    import { testMicrophoneCapability } from './js/speech.js?v=4.1.0';
+    import { fetchStudentClasses, fetchStudentProgress, fetchAssessmentsForStudentClass, fetchStudentAttemptsForAssessment, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, updateStudentEducation, formatStudentName, fetchAssignments, fetchAssessments } from './js/api.js?v=4.1.4';
+    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.1.4';
+    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.1.4';
+    import { testMicrophoneCapability } from './js/speech.js?v=4.1.4';
 
 
     function escapeHtml(str) {
@@ -763,7 +763,7 @@
     if (bannerInitialEl) bannerInitialEl.textContent = firstInitial;
 
     window.isProfileDirty = false;
-    document.getElementById('logout-btn').addEventListener('click', () => {
+    document.getElementById('logout-btn')?.addEventListener('click', () => {
       if (window.isProfileDirty) {
         if (!confirm('You have unsaved changes in your profile. Are you sure you want to logout?')) {
           return;
@@ -1174,7 +1174,7 @@
 
       if (photoUrl) {
         applyPhotoEverywhere(photoUrl);
-        // Test mic upfront on entry so browser permission is established before exams
+        // Test mic upfront on entry so browser permission is established before Assessments
         checkMicrophoneOnEntry();
         return;
       }
@@ -1264,7 +1264,7 @@
           }
           if (hasEducation && !session.education) {
              session.education = st.education;
-             const { setStudentSession } = await import('./js/session.js?v=4.1.0');
+             const { setStudentSession } = await import('./js/session.js?v=4.1.4');
              setStudentSession(session);
           }
         }
@@ -1314,7 +1314,7 @@
           try {
             await updateStudentEducation(session.student_id, eduList);
             session.education = eduList;
-            const { setStudentSession } = await import('./js/session.js?v=4.1.0');
+            const { setStudentSession } = await import('./js/session.js?v=4.1.4');
             setStudentSession(session);
             showToast('Academic background verified!', 'success');
             doResolve();
@@ -1328,7 +1328,7 @@
       });
     }
 
-    // ── Load Subjects & Dashboard ──
+    // ── Load Classes & Dashboard ──
     async function loadDashboard() {
       try {
         hideLoading();
@@ -1340,9 +1340,9 @@
         showLoading('Loading your dashboard…');
 
         // Fetch legacy data + V1 assignments concurrently
-        const [subjects, progress, attempts, assignmentsRaw, assessmentsRaw] = await withTimeout(
+        const [Classes, progress, attempts, assignmentsRaw, assessmentsRaw] = await withTimeout(
           Promise.all([
-            fetchStudentSubjects(session.program_id, session.institution_id),
+            fetchStudentClasses(session.program_id, session.institution_id),
             fetchStudentProgress(session.student_id),
             fetchAllStudentAttempts(session.student_id),
             // V1: fetch assignments for this student's batch + individual
@@ -1354,7 +1354,7 @@
         );
 
         hideLoading();
-        renderSubjects(subjects, progress);
+        renderClasses(Classes, progress);
 
         // V1: assessments are directly assigned to program or batch, so no need to cross-check with instances
         const v1Assessments = assessmentsRaw || [];
@@ -1370,39 +1370,39 @@
       }
     }
 
-    function renderSubjects(rawSubjects, progress) {
-      const subjCountEl = document.getElementById('overview-subjects-count');
-      if (subjCountEl) subjCountEl.textContent = rawSubjects.length;
+    function renderClasses(rawClasses, progress) {
+      const subjCountEl = document.getElementById('overview-classes-count');
+      if (subjCountEl) subjCountEl.textContent = rawClasses.length;
 
-      const grid = document.getElementById('subjects-grid');
-      if (!rawSubjects.length) {
+      const grid = document.getElementById('classes-grid');
+      if (!rawClasses.length) {
         grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
           <div class="empty-state__icon">📚</div>
-          <h3>No subjects assigned</h3>
-          <p>Your class doesn't have any subjects assigned yet. Please contact your teacher.</p>
+          <h3>No Classes assigned</h3>
+          <p>Your class doesn't have any Classes assigned yet. Please contact your teacher.</p>
         </div>`;
         return;
       }
 
       // Strict alphabetical sorting (A to Z)
-      const subjects = [...rawSubjects].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const Classes = [...rawClasses].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-      const subjectIcons = ['&#128218;', '&#9999;&#65039;', '&#128483;&#65039;', '&#127911;', '&#128200;', '&#127757;', '&#128214;', '&#128172;'];
+      const classIcons = ['&#128218;', '&#9999;&#65039;', '&#128483;&#65039;', '&#127911;', '&#128200;', '&#127757;', '&#128214;', '&#128172;'];
       grid.innerHTML = '';
 
-      subjects.forEach((subj, idx) => {
-        const subjProgress = progress.filter(p => p.subject_id === subj.id);
+      Classes.forEach((subj, idx) => {
+        const subjProgress = progress.filter(p => p.Class_id === subj.id);
         const isCompleted = subjProgress.some(p => p.is_completed);
         const pct = isCompleted ? 100 : 0;
 
         const card = document.createElement('div');
-        card.className = 'subject-card';
+        card.className = 'class-card';
         card.setAttribute('role', 'button');
         card.setAttribute('tabindex', '0');
-        card.setAttribute('aria-label', `Subject: ${subj.name}`);
+        card.setAttribute('aria-label', `Class: ${subj.name}`);
         card.innerHTML = `
-          <div class="subject-icon">${subjectIcons[idx % subjectIcons.length]}</div>
-          <div class="subject-name">${subj.name}</div>
+          <div class="class-icon">${classIcons[idx % classIcons.length]}</div>
+          <div class="class-name">${subj.name}</div>
           <div class="text-sm text-muted mb-3">${isCompleted ? "Completed" : "In Progress"}</div>
           <div class="score-bar-wrap">
             <div class="score-bar" style="width:${pct}%"></div>
@@ -1410,8 +1410,8 @@
           
         `;
 
-        card.addEventListener('click', () => openSubjectModal(subj, progress));
-        card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openSubjectModal(subj, progress); });
+        card.addEventListener('click', () => openClassModal(subj, progress));
+        card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openClassModal(subj, progress); });
         grid.appendChild(card);
 
         // Render level dots
@@ -1419,43 +1419,43 @@
       });
     }
 
-    // ── openSubjectModal: Opens the Level Modal for a Subject ──
-    // Called when a student clicks a subject card on the dashboard.
-    async function openSubjectModal(subj, progress) {
+    // ── openClassModal: Opens the Level Modal for a Class ──
+    // Called when a student clicks a Class card on the dashboard.
+    async function openClassModal(subj, progress) {
       const modal       = document.getElementById('level-modal');
       const titleEl     = document.getElementById('level-modal-title');
-      const subjectEl   = document.getElementById('level-modal-subject');
+      const classEl   = document.getElementById('level-modal-class');
       const container   = document.getElementById('levels-container');
       if (!modal || !container) return;
 
       // Open modal immediately with a loading state
-      titleEl.textContent  = subj.name || 'Subject';
-      subjectEl.textContent = '';
+      titleEl.textContent  = subj.name || 'Class';
+      classEl.textContent = '';
       container.innerHTML  = `<div style="padding:2rem;text-align:center;color:var(--clr-text-3);">
         <div class="spinner" style="margin:0 auto 1rem;"></div>
-        <p>Loading exams…</p></div>`;
+        <p>Loading Assessments…</p></div>`;
       modal.classList.remove('hidden');
 
       try {
-        const exams = await fetchExamsForStudentSubject(
+        const Assessments = await fetchAssessmentsForStudentClass(
           session.program_id, subj.id, session.institution_id
         );
 
-        if (!exams || exams.length === 0) {
+        if (!Assessments || Assessments.length === 0) {
           container.innerHTML = `<div style="padding:2.5rem 1.5rem;text-align:center;color:var(--clr-text-3);">
             <div style="font-size:2.5rem;margin-bottom:0.75rem;">📈­</div>
-            <p style="font-size:0.9rem;">No published exams for this subject yet.</p></div>`;
+            <p style="font-size:0.9rem;">No published Assessments for this Class yet.</p></div>`;
           return;
         }
 
-        // Group exams by level (level_id or level name)
+        // Group Assessments by level (level_id or level name)
         const levelMap = new Map();
-        for (const exam of exams) {
-          const lvlId   = exam.level_id || '_default';
-          const lvlName = exam.levels?.name || exam.level_name || (lvlId === '_default' ? 'General' : `Level ${lvlId}`);
-          const lvlOrder = exam.levels?.level_number ?? exam.level_order ?? 99;
-          if (!levelMap.has(lvlId)) levelMap.set(lvlId, { name: lvlName, order: lvlOrder, exams: [] });
-          levelMap.get(lvlId).exams.push(exam);
+        for (const Assessment of Assessments) {
+          const lvlId   = Assessment.level_id || '_default';
+          const lvlName = Assessment.levels?.name || Assessment.level_name || (lvlId === '_default' ? 'General' : `Level ${lvlId}`);
+          const lvlOrder = Assessment.levels?.level_number ?? Assessment.level_order ?? 99;
+          if (!levelMap.has(lvlId)) levelMap.set(lvlId, { name: lvlName, order: lvlOrder, Assessments: [] });
+          levelMap.get(lvlId).Assessments.push(Assessment);
         }
 
         // Sort levels by order
@@ -1463,16 +1463,16 @@
 
         // Build attempts quick-lookup for this student
         const attemptsRaw = await fetchAllStudentAttempts(session.student_id).catch(() => []);
-        const bestByExam = {};
-        const inProgByExam = {};
+        const bestByAssessment = {};
+        const inProgByAssessment = {};
         for (const att of attemptsRaw) {
-          const eid = att.assessment_id || att.exam_id;
+          const eid = att.assessment_id || att.Assessment_id;
           if (!eid) continue;
           const pct = parseFloat(att.percentage || 0);
           const st  = (att.status || '').toLowerCase();
-          if (st === 'in_progress') { inProgByExam[eid] = att; continue; }
-          if (!bestByExam[eid] || (att.is_best_score) || pct > parseFloat(bestByExam[eid].percentage || 0)) {
-            if (!bestByExam[eid]?.is_best_score) bestByExam[eid] = att;
+          if (st === 'in_progress') { inProgByAssessment[eid] = att; continue; }
+          if (!bestByAssessment[eid] || (att.is_best_score) || pct > parseFloat(bestByAssessment[eid].percentage || 0)) {
+            if (!bestByAssessment[eid]?.is_best_score) bestByAssessment[eid] = att;
           }
         }
 
@@ -1483,11 +1483,11 @@
             <div style="font-size:0.75rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;
                         color:var(--clr-text-3);padding:0.4rem 0;border-bottom:1px solid var(--clr-border);
                         margin-bottom:0.75rem;">${lvl.name}</div>`;
-          for (const exam of lvl.exams) {
-            const best      = bestByExam[exam.id];
-            const inProg    = inProgByExam[exam.id];
+          for (const Assessment of lvl.Assessments) {
+            const best      = bestByAssessment[Assessment.id];
+            const inProg    = inProgByAssessment[Assessment.id];
             const bestPct   = best ? parseFloat(best.percentage || 0) : null;
-            const passed    = bestPct !== null && bestPct >= (exam.pass_threshold || 60);
+            const passed    = bestPct !== null && bestPct >= (Assessment.pass_threshold || 60);
             const grade     = bestPct !== null ? getGrade(bestPct) : null;
             const gradeColors = { S:'#f59e0b',A:'#10b981',B:'#3b82f6',C:'#f59e0b',D:'#ea580c',E:'#ef4444',F:'#94a3b8' };
             const gradeColor  = grade ? (gradeColors[grade] || '#94a3b8') : null;
@@ -1497,7 +1497,7 @@
             if (inProg) {
               statusBadge = `<span style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">&#9203; In Progress</span>`;
-              actionBtn   = `<button onclick="location.href='exam.html?attempt_id=${inProg.id}'"
+              actionBtn   = `<button onclick="location.href='assessment.html?attempt_id=${inProg.id}'"
                               style="background:var(--clr-accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;
                               font-size:0.78rem;font-weight:700;cursor:pointer;">Resume ←’</button>`;
             } else if (best) {
@@ -1512,9 +1512,9 @@
             } else {
               statusBadge = `<span style="background:rgba(99,102,241,0.12);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">Not Started</span>`;
-              actionBtn   = `<button onclick="location.href='exam.html?exam_id=${exam.id}'"
+              actionBtn   = `<button onclick="location.href='assessment.html?Assessment_id=${Assessment.id}'"
                               style="background:var(--clr-accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;
-                              font-size:0.78rem;font-weight:700;cursor:pointer;">Start Exam ←’</button>`;
+                              font-size:0.78rem;font-weight:700;cursor:pointer;">Start Assessment ←’</button>`;
             }
 
             const gradeChip = grade ? `<span style="background:${gradeColor}22;color:${gradeColor};border:1px solid ${gradeColor}44;
@@ -1528,8 +1528,8 @@
                       onmouseout="this.style.background='rgba(255,255,255,0.025)'">
               <div style="flex:1;min-width:0;">
                 <div style="font-size:0.85rem;font-weight:600;color:var(--clr-text-1);white-space:nowrap;
-                            overflow:hidden;text-overflow:ellipsis;">${exam.exam_title || exam.title || 'Exam'}</div>
-                <div style="font-size:0.72rem;color:var(--clr-text-3);margin-top:2px;">${formatAnswerType(exam.answer_type)} · ${exam.time_limit_minutes || 0} min</div>
+                            overflow:hidden;text-overflow:ellipsis;">${Assessment.Assessment_title || Assessment.title || 'Assessment'}</div>
+                <div style="font-size:0.72rem;color:var(--clr-text-3);margin-top:2px;">${formatAnswerType(Assessment.answer_type)} · ${Assessment.time_limit_minutes || 0} min</div>
               </div>
               <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
                 ${gradeChip}
@@ -1545,7 +1545,7 @@
       } catch(err) {
         container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--clr-text-3);">
           <div style="font-size:1.5rem;margin-bottom:0.5rem;">⚠️</div>
-          <p style="font-size:0.85rem;">Could not load exams: ${err.message}</p></div>`;
+          <p style="font-size:0.85rem;">Could not load Assessments: ${err.message}</p></div>`;
       }
     }
 
@@ -1562,7 +1562,7 @@
 
     // --- V1: Render Assigned Assessments Section ---
     // (Existing assessments logic)
-    // --- Render Completed Exams Section (Bottom of Dashboard) ---
+    // --- Render Completed Assessments Section (Bottom of Dashboard) ---
     // --- Profile Modal & History ---
     // --- Level Modal close ---
     // --- Gamification: Show Level Up Popup ---
@@ -1570,9 +1570,9 @@
       // Find or create the assigned-assessments section
       let section = document.getElementById('v1-assessments-section');
       if (!section) {
-        // Insert before the completed-exams area
-        const completedSection = document.getElementById('completed-exams-container')?.closest('section') ||
-          document.getElementById('completed-exams-container')?.parentElement;
+        // Insert before the completed-Assessments area
+        const completedSection = document.getElementById('completed-Assessments-container')?.closest('section') ||
+          document.getElementById('completed-Assessments-container')?.parentElement;
         section = document.createElement('section');
         section.id = 'v1-assessments-section';
         section.style.cssText = 'margin: 0 0 2rem 0;';
@@ -1587,7 +1587,7 @@
       const bestByAssessment = {};
       const inProgressByAssessment = {};
       allAttempts.forEach(att => {
-        const aid = att.assessment_id || att.exam_id;
+        const aid = att.assessment_id || att.Assessment_id;
         if (!aid) return;
         const pct = parseFloat(att.percentage || 0);
         if (att.status === 'IN_PROGRESS') {
@@ -1640,14 +1640,14 @@
               prereqTitle = `Aggregate Avg Required: ${asm.prerequisites.aggregate_avg_threshold}% (Current: ${Math.round(avg)}%)`;
             }
           }
-        } else if (asm.prerequisite_assessment_id || asm.prerequisite_exam_id) {
-          const pid = asm.prerequisite_assessment_id || asm.prerequisite_exam_id;
+        } else if (asm.prerequisite_assessment_id || asm.prerequisite_Assessment_id) {
+          const pid = asm.prerequisite_assessment_id || asm.prerequisite_Assessment_id;
           const prereqBest = bestByAssessment[pid];
           const prereqPct = prereqBest ? parseFloat(prereqBest.percentage || 0) : null;
           prereqMet = prereqPct !== null && prereqPct >= (asm.prerequisite_min_score || 60);
           
           const pObj = assessments.find(a => a.id === pid);
-          prereqTitle = pObj ? (pObj.title || pObj.exam_title || 'Prerequisite') : 'Prerequisite Assessment';
+          prereqTitle = pObj ? (pObj.title || pObj.Assessment_title || 'Prerequisite') : 'Prerequisite Assessment';
         }
 
         // Availability window
@@ -1671,7 +1671,7 @@
           statusBadge = `<span class="badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);">\u25BA In Progress</span>`;
           actionBtn = `<button class="btn btn-warning btn-sm" data-aid="${asm.id}">Resume</button>`;
         } else if (isCompleted) {
-          const retakesAllowed = asm.max_attempts == null || (asm.max_attempts > (allAttempts.filter(a => (a.assessment_id || a.exam_id) === asm.id && a.status !== 'IN_PROGRESS').length));
+          const retakesAllowed = asm.max_attempts == null || (asm.max_attempts > (allAttempts.filter(a => (a.assessment_id || a.Assessment_id) === asm.id && a.status !== 'IN_PROGRESS').length));
           statusBadge = passed
             ? `<span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);">\u2713 Passed</span>`
             : `<span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);">Needs Improvement</span>`;
@@ -1685,9 +1685,9 @@
 
         const duration = asm.working_duration_minutes || asm.time_limit_minutes || 60;
         const qCount = asm.question_count || '—';
-        const asmType = asm.assessment_type || asm.exam_type || 'Assessment';
-        const asmTitle = asm.title || asm.exam_title || 'Assessment';
-        const subjectName = asm.subjects?.name || '';
+        const asmType = asm.assessment_type || asm.Assessment_type || 'Assessment';
+        const asmTitle = asm.title || asm.Assessment_title || 'Assessment';
+        const className = asm.classes?.name || '';
 
         cards += `
           <div class="v1-assessment-card" data-assessment-id="${asm.id}" style="
@@ -1706,7 +1706,7 @@
             <div style="flex:1;min-width:200px;">
               <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.4rem;">
                 <span style="font-weight:700;font-size:0.95rem;color:var(--clr-text-1);">${escapeHtml(asmTitle)}</span>
-                ${subjectName ? `<span class="badge badge-neutral" style="font-size:0.7rem;">${escapeHtml(subjectName)}</span>` : ''}
+                ${className ? `<span class="badge badge-neutral" style="font-size:0.7rem;">${escapeHtml(className)}</span>` : ''}
                 <span class="badge" style="font-size:0.68rem;background:rgba(255,255,255,0.06);color:var(--clr-text-3);border:1px solid var(--clr-border);">${escapeHtml(asmType)}</span>
               </div>
               <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
@@ -1740,8 +1740,8 @@
       // Wire up buttons
       section.querySelectorAll('[data-aid]').forEach(btn => {
         btn.addEventListener('click', () => {
-          sessionStorage.setItem('tec_exam_id', btn.dataset.aid);
-          window.location.href = 'exam.html';
+          sessionStorage.setItem('tec_assessment_id', btn.dataset.aid);
+          window.location.href = 'assessment.html';
         });
       });
       section.querySelectorAll('[data-aid-result]').forEach(btn => {
@@ -1753,12 +1753,12 @@
 
     // ── Overall Stats Calculation (AGENTS.md §2.8 & §2.10) ──
     async function computeOverallStats(attempts, assessments = []) {
-      // Rule 2.8: Overall score is average of all takeable exams for student.
+      // Rule 2.8: Overall score is average of all takeable Assessments for student.
       // Rule 2.7: Global average strictly counts unopened/unattempted available modules as 0.
       // Best score per assessment is preserved across attempts.
       const bestMap = {};
       attempts.forEach(att => {
-        const uniqueKey = att.challenge_instance_id || att.assessment_id || att.exam_id;
+        const uniqueKey = att.assessment_instance_id || att.assessment_id || att.Assessment_id;
         if (!uniqueKey) return;
         const pct = parseFloat(att.percentage || 0);
         if (att.is_best_score) {
@@ -1793,15 +1793,15 @@
       }
 
       const completedCount = Object.keys(bestMap).filter(k => !k.endsWith('_locked')).length;
-      const examsCountEl = document.getElementById('stat-exams-done');
-      if (examsCountEl) examsCountEl.textContent = completedCount;
-      const ovCountEl = document.getElementById('overview-exams-count');
+      const AssessmentsCountEl = document.getElementById('stat-Assessments-done');
+      if (AssessmentsCountEl) AssessmentsCountEl.textContent = completedCount;
+      const ovCountEl = document.getElementById('overview-Assessments-count');
       if (ovCountEl) ovCountEl.textContent = completedCount;
 
       if (!scores.length) {
         document.getElementById('stat-overall-score').textContent = '0%';
         document.getElementById('stat-overall-grade-badge').textContent = '—';
-        renderCompletedExamsBottom(attempts);
+        renderCompletedAssessmentsBottom(attempts);
         return;
       }
 
@@ -1819,19 +1819,19 @@
       const gradeColors = { S: '#f59e0b', A: '#10b981', B: '#3b82f6', C: '#f59e0b', D: '#ea580c', E: '#ef4444', F: '#94a3b8' };
       gradeBadge.style.color = gradeColors[overallGrade] || 'var(--clr-text-1)';
 
-      renderCompletedExamsBottom(attempts);
+      renderCompletedAssessmentsBottom(attempts);
     }
 
-    // --- Render Completed Exams Section (Bottom of Dashboard) ---
-    function renderCompletedExamsBottom(attempts) {
-      const container = document.getElementById('completed-exams-container');
+    // --- Render Completed Assessments Section (Bottom of Dashboard) ---
+    function renderCompletedAssessmentsBottom(attempts) {
+      const container = document.getElementById('completed-Assessments-container');
       const badgeEl = document.getElementById('bottom-completed-badge');
-      const statTotalEl = document.getElementById('bottom-stat-total-exams');
+      const statTotalEl = document.getElementById('bottom-stat-total-Assessments');
       const statAvgEl = document.getElementById('bottom-stat-avg-score');
       const statBestEl = document.getElementById('bottom-stat-best-score');
 
       if (!attempts || !attempts.length) {
-        if (badgeEl) badgeEl.textContent = '0 Exams Completed';
+        if (badgeEl) badgeEl.textContent = '0 Assessments Completed';
         if (statTotalEl) statTotalEl.textContent = '0';
         if (statAvgEl) statAvgEl.textContent = '0%';
         if (statBestEl) statBestEl.textContent = '0%';
@@ -1839,9 +1839,9 @@
           container.innerHTML = `
             <div class="empty-state p-8 text-center" style="padding: 40px 20px;">
               <div class="empty-state__icon" style="font-size:2.5rem;margin-bottom:12px;">📈</div>
-              <h3 class="fw-700 text-base mb-1" style="color:var(--clr-text-1);">No completed exams yet</h3>
+              <h3 class="fw-700 text-base mb-1" style="color:var(--clr-text-1);">No Completed Assessments yet</h3>
               <p class="text-sm text-muted" style="max-width:440px;margin:0 auto;">
-                Pick a subject above to start taking your assigned English assessments. Your scores, grades, and completion records will appear here.
+                Pick a Class above to start taking your assigned English assessments. Your scores, grades, and completion records will appear here.
               </p>
             </div>
           `;
@@ -1856,18 +1856,18 @@
       attempts.forEach(att => {
         const pct = parseFloat(att.percentage || 0);
         if (pct > highestPct) highestPct = pct;
-        if (!bestAttemptsMap[att.exam_id] || pct > bestAttemptsMap[att.exam_id]) {
-          bestAttemptsMap[att.exam_id] = pct;
+        if (!bestAttemptsMap[att.Assessment_id] || pct > bestAttemptsMap[att.Assessment_id]) {
+          bestAttemptsMap[att.Assessment_id] = pct;
         }
       });
 
-      const uniqueExamsCount = Object.keys(bestAttemptsMap).length;
+      const uniqueAssessmentsCount = Object.keys(bestAttemptsMap).length;
       let totalPctSum = 0;
       Object.values(bestAttemptsMap).forEach(pct => totalPctSum += pct);
-      const avgScore = uniqueExamsCount > 0 ? (totalPctSum / uniqueExamsCount).toFixed(1) : '0.0';
+      const avgScore = uniqueAssessmentsCount > 0 ? (totalPctSum / uniqueAssessmentsCount).toFixed(1) : '0.0';
 
-      if (badgeEl) badgeEl.textContent = `${uniqueExamsCount} Exam${uniqueExamsCount === 1 ? '' : 's'} Completed`;
-      if (statTotalEl) statTotalEl.textContent = uniqueExamsCount;
+      if (badgeEl) badgeEl.textContent = `${uniqueAssessmentsCount} Assessment${uniqueAssessmentsCount === 1 ? '' : 's'} Completed`;
+      if (statTotalEl) statTotalEl.textContent = uniqueAssessmentsCount;
       if (statAvgEl) statAvgEl.textContent = `${avgScore}%`;
       if (statBestEl) statBestEl.textContent = `${highestPct.toFixed(1)}%`;
 
@@ -1883,11 +1883,11 @@
       // Desktop Table
       let tableHtml = `
         <div class="table-responsive">
-          <table class="completed-exams-table">
+          <table class="completed-Assessments-table">
             <thead>
               <tr>
-                <th>Exam Title</th>
-                <th>Subject</th>
+                <th>Assessment Title</th>
+                <th>Class</th>
                 <th>Score</th>
                 <th>Grade</th>
                 <th>Date Completed</th>
@@ -1899,14 +1899,14 @@
 
       // Mobile List
       let mobileListHtml = `
-        <div class="completed-exams-mobile-list">
+        <div class="completed-Assessments-mobile-list">
       `;
 
       sortedAttempts.forEach(a => {
-        const examObj = a.exams || {};
-        const examTitle = examObj.exam_title || 'English Assessment';
-        const examType = examObj.exam_type || '';
-        const subjectName = examObj.subjects?.name || 'General English';
+        const AssessmentObj = a.Assessments || {};
+        const AssessmentTitle = AssessmentObj.Assessment_title || 'English Assessment';
+        const AssessmentType = AssessmentObj.Assessment_type || '';
+        const className = AssessmentObj.classes?.name || 'General English';
         const pct = parseFloat(a.percentage || 0).toFixed(1);
         const grade = a.grade || getGrade(pct);
         const gradeColor = gradeColors[grade] || 'var(--clr-text-1)';
@@ -1930,11 +1930,11 @@
         tableHtml += `
           <tr onclick="${navLink}">
             <td>
-              <div class="fw-700" style="color:var(--clr-text-1);">${escapeHtml(examTitle)}</div>
-              ${examType ? `<div class="text-xs text-muted mt-1" style="font-size:0.75rem;">${escapeHtml(examType)}</div>` : ''}
+              <div class="fw-700" style="color:var(--clr-text-1);">${escapeHtml(AssessmentTitle)}</div>
+              ${AssessmentType ? `<div class="text-xs text-muted mt-1" style="font-size:0.75rem;">${escapeHtml(AssessmentType)}</div>` : ''}
             </td>
             <td>
-              <span class="badge badge-neutral" style="font-size:0.75rem;">${escapeHtml(subjectName)}</span>
+              <span class="badge badge-neutral" style="font-size:0.75rem;">${escapeHtml(className)}</span>
             </td>
             <td>
               <span class="fw-700 text-grade-${grade}" style="font-size:1rem;">${pct}%</span>
@@ -1953,16 +1953,16 @@
 
         // Mobile Card
         mobileListHtml += `
-          <div class="completed-exam-mobile-card" onclick="${navLink}">
-            <div class="exam-card-header">
-              <div class="exam-card-title">${escapeHtml(examTitle)}</div>
+          <div class="completed-Assessment-mobile-card" onclick="${navLink}">
+            <div class="Assessment-card-header">
+              <div class="Assessment-card-title">${escapeHtml(AssessmentTitle)}</div>
               <span class="grade-badge grade-${grade}" style="width:26px;height:26px;font-size:0.75rem;display:inline-flex;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.2);color:${gradeColor};border:1.5px solid ${gradeColor};flex-shrink:0;">${grade}</span>
             </div>
-            <div class="exam-card-badges">
-              <span class="badge badge-neutral" style="font-size:0.65rem;padding:2px 6px;">${escapeHtml(subjectName)}</span>
-              ${examType ? `<span class="badge badge-neutral" style="font-size:0.65rem;padding:2px 6px;background:rgba(255,255,255,0.02);">${escapeHtml(examType)}</span>` : ''}
+            <div class="Assessment-card-badges">
+              <span class="badge badge-neutral" style="font-size:0.65rem;padding:2px 6px;">${escapeHtml(className)}</span>
+              ${AssessmentType ? `<span class="badge badge-neutral" style="font-size:0.65rem;padding:2px 6px;background:rgba(255,255,255,0.02);">${escapeHtml(AssessmentType)}</span>` : ''}
             </div>
-            <div class="exam-card-footer">
+            <div class="Assessment-card-footer">
               <div style="display:flex;align-items:center;gap:8px;">
                 <span style="color:var(--clr-text-3);">Score: <strong style="color:var(--clr-text-1);">${pct}%</strong></span>
                 <span style="color:var(--clr-text-3);">&bull;</span>
@@ -2021,11 +2021,11 @@
       if (tbody) tbody.innerHTML = '';
 
       if (!attempts.length) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">No completed exams yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">No Completed Assessments yet.</td></tr>';
       } else {
         attempts.forEach(a => {
           const tr = document.createElement('tr');
-          const title = a.exams ? `${a.exams.exam_type || ''} — ${a.exams.exam_title || 'Exam'}` : 'Exam';
+          const title = a.Assessments ? `${a.Assessments.Assessment_type || ''} — ${a.Assessments.Assessment_title || 'Assessment'}` : 'Assessment';
           const pct = parseFloat(a.percentage || 0).toFixed(1);
           const grade = a.grade || getGrade(pct);
 
@@ -2162,7 +2162,7 @@
       });
 
       // Header avatar also opens profile modal
-      document.getElementById('header-avatar').addEventListener('click', () => {
+      document.getElementById('header-avatar')?.addEventListener('click', () => {
         applyStudentGenderUI(session.gender);
         window.isProfileDirty = false;
         if(changePinForm) changePinForm.reset();
@@ -2171,10 +2171,10 @@
     }
 
     // --- Level Modal close ---
-    document.getElementById('close-level-modal').addEventListener('click', () => {
+    document.getElementById('close-level-modal')?.addEventListener('click', () => {
       document.getElementById('level-modal').classList.add('hidden');
     });
-    document.getElementById('level-modal').addEventListener('click', (e) => {
+    document.getElementById('level-modal')?.addEventListener('click', (e) => {
       if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
     });
 
@@ -2199,7 +2199,7 @@
     };
 
     // Close Gamification Popup
-    document.getElementById('close-levelup-btn').addEventListener('click', () => {
+    document.getElementById('close-levelup-btn')?.addEventListener('click', () => {
       document.getElementById('level-up-overlay').classList.remove('active');
     });
 

@@ -48,19 +48,20 @@ Online English assessment/testing platform.
 
 ```text
 INSTITUTION
-  â”œâ”€â”€ PROGRAM
-  â”‚     â””â”€â”€ STUDENT
-  â”‚
-  â””â”€â”€ SUBJECT
-        â””â”€â”€ EXAM
-              â””â”€â”€ QUESTION
+  └── PROGRAM
+        ├── BATCHES
+        │     └── STUDENTS (Grouped by Batch)
+        │
+        └── CLASSES (Formerly 'Subjects')
+              └── ASSESSMENTS (Formerly 'Exams')
+                    └── MODULES (AI Evaluation Engines)
 
-STUDENT + EXAM
-  â””â”€â”€ ATTEMPT
-        â””â”€â”€ ATTEMPT ANSWER
+STUDENT + ASSESSMENT
+  └── ATTEMPT
+        └── ATTEMPT ANSWER
 
-STUDENT + SUBJECT
-  â””â”€â”€ PROGRESS
+STUDENT + CLASS
+  └── PROGRESS
 ```
 
 ## 1.4 Roles
@@ -70,15 +71,15 @@ STUDENT + SUBJECT
 Can manage:
 - Institutions
 - Programs
-- Subjects
+- Classes
 - Levels
 - Students
-- Student imports
-- Exams
-- Exam/PROGRAM assignment
+- Student imports (into Batches)
+- Assessments
+- Assessment assignments (to Batches or Students)
 - Questions
 - Question imports/exports
-- Exam publishing/unpublishing
+- Assessment publishing/unpublishing
 - Results and attempt inspection
 - Website settings/background
 - Admin security
@@ -89,9 +90,9 @@ Can manage:
 Can:
 - log in using INSTITUTION + PROGRAM + Name + personal PIN
 - complete first-login photo setup when required
-- select assigned Subjects
+- select assigned Classes
 - view unlocked Levels
-- start eligible published Exams
+- start eligible published Assessments
 - answer questions
 - resume an interrupted Attempt
 - submit an Attempt
@@ -114,7 +115,7 @@ Exactly four primary product tabs:
 1. `DATABASE`
 2. `PROGRAM`
 3. `STUDENT`
-4. `EXAM`
+4. `ASSESSMENT`
 
 Do not merge PROGRAM and STUDENT into one primary tab.
 
@@ -155,53 +156,46 @@ Server MUST verify that:
 Never store plaintext PINs.
 Never put plaintext PINs in logs or audit records.
 
-## 2.4 Subject assignment
+## 2.4 Class assignment
 
-Admin assigns Subjects to Programs.
+Admin assigns Classes to Programs.
 
-A Student inherits the Subjects assigned to their PROGRAM unless a future explicitly approved rule says otherwise.
+A Student inherits the Classes assigned to their PROGRAM.
 
-## 2.5 Exam reuse across Programs
+## 2.5 Assessment Assignment
 
-An Exam may be assigned to **many Programs within the same INSTITUTION**.
-
-Use a separate many-to-many relation such as:
-
-```text
-exam_classes
-  exam_id
-  class_id
-```
-
-Do NOT encode exam availability in a single `class_id` column on Exam.
+Assessments belong to a **Class**. 
+Assessments are assigned to Students via two methods:
+1. **By Batch:** An Assessment is assigned to an entire Batch, meaning all Students in that Batch inherit it.
+2. **By Student:** An Assessment is assigned individually to a specific Student.
 
 ### Important naming note
 
 The approved display-name formula includes PROGRAM:
 
 ```text
-INSTITUTION + PROGRAM + SUBJECT + LEVEL + EXAM TYPE + EXAM TITLE
+INSTITUTION + PROGRAM + CLASS + LEVEL + ASSESSMENT TYPE + ASSESSMENT TITLE
 ```
 
-Because a single Exam can be available to multiple Programs, the PROGRAM text in the name is a **display/name component**, not the authorization mechanism. The many-to-many `exam_classes` relation is authoritative for availability.
+Because a single Assessment can be assigned to multiple Batches/Students, the PROGRAM text in the name is a **display/name component**, not the authorization mechanism. 
 
 Do not silently redesign this naming decision. If the product owner later changes it, update this file + decision log + tests.
 
-## 2.6 Exam name
+## 2.6 Assessment name
 
 Approved formula:
 
 ```text
-INSTITUTION + PROGRAM + SUBJECT + LEVEL + EXAM TYPE + EXAM TITLE
+INSTITUTION + PROGRAM + CLASS + LEVEL + ASSESSMENT TYPE + ASSESSMENT TITLE
 ```
 
 Rules:
 - `INSTITUTION` comes from INSTITUTION data.
 - `PROGRAM` is the approved display/name component described above.
-- `SUBJECT` comes from Subject data.
+- `CLASS` comes from Class data.
 - `LEVEL` comes from Level data.
-- `EXAM TYPE` is imported/provided from the approved Excel workflow.
-- `EXAM TITLE` is determined by Admin.
+- `ASSESSMENT TYPE` is imported/provided from the approved Excel workflow or AI Engine.
+- `ASSESSMENT TITLE` is determined by Admin.
 
 The application SHOULD store structured fields separately and generate/display the name from those components. Do not use one concatenated string as the sole source of truth.
 
@@ -212,18 +206,18 @@ Dynamic multi-level prerequisites supporting 0 to N parent modules.
 - Aggregate average score thresholds may apply.
 - Unlimited retakes bounded by availability windows (start/end date-time) and per-attempt countdown timers.
 - The main report card stores HIGHEST score. 
-- All attempts are recorded in exam history.
+- All attempts are recorded in assessment history.
 - Global average strictly counts unopened/unattempted available modules as 0.
 
 ## 2.8 Overall score
 
-Overall score is the average of all Exams that are:
+Overall score is the average of all Assessments that are:
 - available/takeable for the Student under the current rules; and
 - completed by the Student.
 
-An unavailable/unassigned/unpublished exam that cannot currently be taken MUST NOT enter the calculation merely because it exists in the database.
+An unavailable/unassigned/unpublished assessment that cannot currently be taken MUST NOT enter the calculation merely because it exists in the database.
 
-A previously completed Exam remains part of the Student's historical completed score even if that Exam is later unpublished.
+A previously completed Assessment remains part of the Student's historical completed score even if that Assessment is later unpublished.
 
 The exact calculation must be centralized in one authoritative service/function and covered by tests.
 
@@ -252,8 +246,8 @@ No frontend page may independently implement a competing grading algorithm.
 ## 2.11 The 8 Assessment Modules
 
 The system uses 8 specific AI-evaluated modules:
-1. Tell Me What You See (Visual Pronouns)
-2. Let me tell you something (Narrative Tense)
+1. Point & Speak! (Visual Pronouns)
+2. Storytelling (Narrative Tense)
 3. Conversation-based
 4. Multiple Choice
 5. Read Aloud / Pronunciation
@@ -292,9 +286,9 @@ Default tolerance:
 
 The tolerance engine must be deterministic, tested, and server-authoritative.
 
-## 2.14 Exam lifecycle
+## 2.14 Assessment lifecycle
 
-Only `PUBLISHED` exams can be taken.
+Only `PUBLISHED` assessments can be taken.
 
 Recommended status enum:
 
@@ -347,20 +341,20 @@ At/after deadline:
 - server determines whether the attempt is on-time/expired;
 - client cannot extend the timer by manipulating JavaScript or system time.
 
-## 2.17 Historical snapshot without Exam Versions
+## 2.17 Historical snapshot without Assessment Versions
 
-The application MUST NOT implement Exam Version entities.
+The application MUST NOT implement Assessment Version entities.
 
 Do NOT create:
-- `ExamVersion`
-- `exam_version_id` on Attempt
+- `AssessmentVersion`
+- `assessment_version_id` on Attempt
 - a version-management UI
 
-Instead, when an Attempt starts, create immutable snapshot data sufficient to preserve historical meaning even if current Exam or Question records later change.
+Instead, when an Attempt starts, create immutable snapshot data sufficient to preserve historical meaning even if current Assessment or Question records later change.
 
 At minimum, attempt answer records should retain the relevant question and answer-option/correct-answer snapshot needed to evaluate/display the historical result.
 
-Historical results MUST NOT be recalculated by rereading today's Question/Exam records.
+Historical results MUST NOT be recalculated by rereading today's Question/Assessment records.
 
 ## 2.18 Soft delete
 
@@ -405,12 +399,12 @@ Never store plaintext passwords or PINs in audit logs.
 
 Audit examples:
 - create/update/delete/restore student
-- create/update/delete/restore exam
-- publish/unpublish exam
+- create/update/delete/restore assessment
+- publish/unpublish assessment
 - import questions
 - import students
-- assign exam to PROGRAM
-- modify PROGRAM/subject/level
+- assign assessment to BATCH or STUDENT
+- modify PROGRAM/CLASS/level
 - security changes
 - admin authentication events where appropriate
 
@@ -492,79 +486,78 @@ TOP-ENGLISH-PROGRAM/
 â”œâ”€â”€ assets/
 â”‚   â”œâ”€â”€ images/
 â”‚   â””â”€â”€ icons/
-â”‚
-â”œâ”€â”€ css/
-â”‚   â”œâ”€â”€ style.css
-â”‚   â”œâ”€â”€ auth.css
-â”‚   â”œâ”€â”€ admin.css
-â”‚   â”œâ”€â”€ dashboard.css
-â”‚   â”œâ”€â”€ exam.css
-â”‚   â””â”€â”€ result.css
-â”‚
-â”œâ”€â”€ js/
-â”‚   â”œâ”€â”€ app.js
-â”‚   â”œâ”€â”€ api.js
-â”‚   â”œâ”€â”€ auth.js
-â”‚   â”œâ”€â”€ session.js
-â”‚   â”œâ”€â”€ validation.js
-â”‚   â”œâ”€â”€ storage.js
-â”‚   â”œâ”€â”€ timer.js
-â”‚   â”œâ”€â”€ speech.js
-â”‚   â”œâ”€â”€ scoring.js
-â”‚   â”œâ”€â”€ progress.js
-â”‚   â”œâ”€â”€ result.js
-â”‚   â”‚
-â”‚   â””â”€â”€ admin/
-â”‚       â”œâ”€â”€ dashboard.js
-â”‚       â”œâ”€â”€ database.js
-â”‚       â”œâ”€â”€ PROGRAM-management.js
-â”‚       â”œâ”€â”€ student-management.js
-â”‚       â”œâ”€â”€ exam-management.js
-â”‚       â””â”€â”€ imports.js
-â”‚
-â”œâ”€â”€ supabase/
-â”‚   â”œâ”€â”€ functions/
-â”‚   â”‚   â”œâ”€â”€ admin-auth-check/
-â”‚   â”‚   â”‚   â””â”€â”€ index.ts
-â”‚   â”‚   â”œâ”€â”€ start-exam/
-â”‚   â”‚   â”‚   â””â”€â”€ index.ts
-â”‚   â”‚   â”œâ”€â”€ save-answer/
-â”‚   â”‚   â”‚   â””â”€â”€ index.ts
-â”‚   â”‚   â”œâ”€â”€ submit-exam/
-â”‚   â”‚   â”‚   â””â”€â”€ index.ts
-â”‚   â”‚   â”œâ”€â”€ calculate-result/
-â”‚   â”‚   â”‚   â””â”€â”€ index.ts
-â”‚   â”‚   â”œâ”€â”€ import-students/
-â”‚   â”‚   â”‚   â””â”€â”€ index.ts
-â”‚   â”‚   â”œâ”€â”€ import-questions/
-â”‚   â”‚   â”‚   â””â”€â”€ index.ts
-â”‚   â”‚   â””â”€â”€ ...
-â”‚   â”‚
-â”‚   â”œâ”€â”€ migrations/
-â”‚   â””â”€â”€ config.toml
-â”‚
-â”œâ”€â”€ docs/
-â”‚   â”œâ”€â”€ PRODUCT_SPEC.md
-â”‚   â”œâ”€â”€ ARCHITECTURE.md
-â”‚   â”œâ”€â”€ DATABASE.md
-â”‚   â”œâ”€â”€ API.md
-â”‚   â”œâ”€â”€ SECURITY.md
-â”‚   â”œâ”€â”€ TESTING.md
-â”‚   â”œâ”€â”€ DEPLOYMENT.md
-â”‚   â”œâ”€â”€ CHANGELOG.md
-â”‚   â”œâ”€â”€ DECISIONS.md
-â”‚   â”œâ”€â”€ SESSION_LOG.md
-â”‚   â”œâ”€â”€ CURRENT_STATE.md
-â”‚   â”œâ”€â”€ TODO.md
-â”‚   â””â”€â”€ BLOCKERS.md
-â”‚
-â”œâ”€â”€ admin.html
-â”œâ”€â”€ dashboard.html
-â”œâ”€â”€ exam.html
-â”œâ”€â”€ result.html
-â”œâ”€â”€ PROGRAM-management.html
-â”œâ”€â”€ student-management.html
-â”œâ”€â”€ exam-management.html
+│   ├── css/
+│   │   ├── style.css
+│   │   ├── auth.css
+│   │   ├── admin.css
+│   │   ├── dashboard.css
+│   │   ├── assessment.css (formerly exam.css)
+│   │   └── result.css
+│   │
+│   ├── js/
+│   │   ├── app.js
+│   │   ├── api.js
+│   │   ├── auth.js
+│   │   ├── session.js
+│   │   ├── validation.js
+│   │   ├── storage.js
+│   │   ├── timer.js
+│   │   ├── speech.js
+│   │   ├── scoring.js
+│   │   ├── progress.js
+│   │   ├── result.js
+│   │   │
+│   │   └── admin/
+│   │       ├── dashboard.js
+│   │       ├── database.js
+│   │       ├── program-management.js
+│   │       ├── student-management.js
+│   │       ├── assessment-management.js (formerly exam-management.js)
+│   │       └── imports.js
+│   │
+│   ├── supabase/
+│   │   ├── functions/
+│   │   │   ├── admin-auth-check/
+│   │   │   │   └── index.ts
+│   │   │   ├── start-assessment/ (formerly start-exam)
+│   │   │   │   └── index.ts
+│   │   │   ├── save-answer/
+│   │   │   │   └── index.ts
+│   │   │   ├── submit-assessment/ (formerly submit-exam)
+│   │   │   │   └── index.ts
+│   │   │   ├── calculate-result/
+│   │   │   │   └── index.ts
+│   │   │   ├── import-students/
+│   │   │   │   └── index.ts
+│   │   │   ├── import-questions/
+│   │   │   │   └── index.ts
+│   │   │   └── ...
+│   │   │
+│   │   ├── migrations/
+│   │   └── config.toml
+│   │
+│   ├── docs/
+│   │   ├── PRODUCT_SPEC.md
+│   │   ├── ARCHITECTURE.md
+│   │   ├── DATABASE.md
+│   │   ├── API.md
+│   │   ├── SECURITY.md
+│   │   ├── TESTING.md
+│   │   ├── DEPLOYMENT.md
+│   │   ├── CHANGELOG.md
+│   │   ├── DECISIONS.md
+│   │   ├── SESSION_LOG.md
+│   │   ├── CURRENT_STATE.md
+│   │   ├── TODO.md
+│   │   └── BLOCKERS.md
+│   │
+│   ├── admin.html
+│   ├── dashboard.html
+│   ├── assessment.html (formerly exam.html)
+│   ├── result.html
+│   ├── program-management.html
+│   ├── student-management.html
+│   ├── assessment-management.html (formerly exam-management.html)
 â”œâ”€â”€ management.html
 â”œâ”€â”€ index.html
 â”‚

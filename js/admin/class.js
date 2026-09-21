@@ -1,4 +1,4 @@
-// TOPS CORE Centralized Assessment System V1 Admin UI
+﻿// TOPS CORE Centralized Assessment System V1 Admin UI
 import {
   fetchGlobalClasses,
   fetchWordTypes,
@@ -12,9 +12,9 @@ import {
   createCentralQuestion,
   updateCentralQuestion,
   deleteCentralQuestion,
-  fetchChallengeDefinitions,
+  fetchAssessmentDefinitions,
   publishChallengeDefinition,
-  fetchChallengeInstances,
+  fetchAssessmentInstances,
   createChallengeInstance,
   adminFetchAll,
   adminSoftDelete,
@@ -22,15 +22,15 @@ import {
   fetchClasses,
   fetchClassInstances,
   adminUpdate,
-  previewRecalibrateExam,
-  applyRecalibrateExam,
+  previewRecalibrateAssessment,
+  applyRecalibrateAssessment,
   isPassing,
   calculatePercentage,
   formatStudentName,
   fetchClassInstanceRoster,
   addAdditionalMember
 } from '../api.js';
-import { openAssessmentBuilder } from './exam-builder.js';
+import { openAssessmentBuilder } from '\-builder.js';
 import { showToast, showLoading, hideLoading, getGrade } from '../app.js';
 import { parseExcelWorkbook, processCentralBankQuestionImport } from '../excel-parser.js';
 import { openStudentProfile } from './student-management.js';
@@ -50,7 +50,7 @@ function escapeHtml(str) {
 export async function renderTopics(area) {
   showLoading();
   try {
-    const [topics, subjects] = await Promise.all([
+    const [topics, Classes] = await Promise.all([
       fetchTopics(),
       fetchGlobalClasses()
     ]);
@@ -67,19 +67,19 @@ export async function renderTopics(area) {
         </div>
       </div>
 
-      ${window._filterSubjectId ? `
+      ${window._filterClassId ? `
         <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
-          <span>&#128209; Filtered by Subject: <strong>${escapeHtml(window._filterSubjectName || 'Selected Subject')}</strong></span>
-          <button class="btn btn-ghost btn-xs" id="clear-subj-filter-btn" style="text-decoration:underline;color:#93c5fd;">Show All Subjects</button>
+          <span>&#128209; Filtered by Class: <strong>${escapeHtml(window._filterClassName || 'Selected Class')}</strong></span>
+          <button class="btn btn-ghost btn-xs" id="clear-subj-filter-btn" style="text-decoration:underline;color:#93c5fd;">Show All Classes</button>
         </div>
       ` : ''}
 
       <div class="card p-3 mb-4" style="background:rgba(255,255,255,0.02);border:1px solid var(--clr-border);">
         <div class="d-flex align-center gap-3 flex-wrap">
-          <label class="form-label mb-0" style="font-size:0.85rem;">Filter by Subject:</label>
-          <select class="form-control" id="topic-subject-filter" style="max-width:260px;">
-            <option value="">All Subjects (${subjects.length})</option>
-            ${subjects.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+          <label class="form-label mb-0" style="font-size:0.85rem;">Filter by Class:</label>
+          <select class="form-control" id="topic-Class-filter" style="max-width:260px;">
+            <option value="">All Classes (${Classes.length})</option>
+            ${Classes.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
           </select>
           <span class="text-muted" style="font-size:0.85rem;margin-left:auto;">Total Topics: <strong id="topics-count">${topics.length}</strong></span>
         </div>
@@ -91,7 +91,7 @@ export async function renderTopics(area) {
             <tr>
               <th>Topic Name</th>
               <th>Code</th>
-              <th>Subject</th>
+              <th>Class</th>
               <th>Status</th>
               <th>Created</th>
               <th style="text-align:right;">Actions</th>
@@ -105,7 +105,7 @@ export async function renderTopics(area) {
     `;
 
     // Filter event
-    const filterEl = document.getElementById('topic-subject-filter');
+    const filterEl = document.getElementById('topic-Class-filter');
     const updateFilteredTopics = () => {
       const val = filterEl.value;
       const filtered = val ? topics.filter(t => t.class_id === val) : topics;
@@ -114,19 +114,19 @@ export async function renderTopics(area) {
     };
     filterEl.addEventListener('change', updateFilteredTopics);
 
-    if (window._filterSubjectId) {
-      filterEl.value = window._filterSubjectId;
+    if (window._filterClassId) {
+      filterEl.value = window._filterClassId;
       updateFilteredTopics();
       document.getElementById('clear-subj-filter-btn')?.addEventListener('click', () => {
-        window._filterSubjectId = null;
-        window._filterSubjectName = null;
+        window._filterClassId = null;
+        window._filterClassName = null;
         renderTopics(area);
       });
     }
 
     // Add Topic Button
     document.getElementById('btn-add-topic').addEventListener('click', () => {
-      openTopicModal(null, subjects, async () => {
+      openTopicModal(null, Classes, async () => {
         await renderTopics(area);
       });
     });
@@ -148,7 +148,7 @@ export async function renderTopics(area) {
         const id = editBtn.dataset.id;
         const topic = topics.find(t => t.id === id);
         if (topic) {
-          openTopicModal(topic, subjects, async () => {
+          openTopicModal(topic, Classes, async () => {
             await renderTopics(area);
           });
         }
@@ -201,7 +201,7 @@ function renderTopicRows(topicsList) {
   `).join('');
 }
 
-function openTopicModal(topic, subjects, onSaved) {
+function openTopicModal(topic, Classes, onSaved) {
   const isEdit = !!topic;
   const modal = document.createElement('div');
   modal.className = 'modal-backdrop';
@@ -213,9 +213,9 @@ function openTopicModal(topic, subjects, onSaved) {
       </div>
       <div class="modal-body p-4">
         <div class="form-group mb-3">
-          <label class="form-label">Subject *</label>
-          <select class="form-control" id="modal-topic-subject">
-            ${subjects.map(s => `
+          <label class="form-label">Class *</label>
+          <select class="form-control" id="modal-topic-Class">
+            ${Classes.map(s => `
               <option value="${s.id}" ${topic?.class_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>
             `).join('')}
           </select>
@@ -250,7 +250,7 @@ function openTopicModal(topic, subjects, onSaved) {
   modal.querySelector('#cancel-topic-btn').onclick = close;
 
   modal.querySelector('#save-topic-btn').onclick = async () => {
-    const subjectId = modal.querySelector('#modal-topic-subject').value;
+    const ClassId = modal.querySelector('#modal-topic-Class').value;
     const name = modal.querySelector('#modal-topic-name').value.trim();
     const code = modal.querySelector('#modal-topic-code').value.trim();
     const status = modal.querySelector('#modal-topic-status').value;
@@ -263,10 +263,10 @@ function openTopicModal(topic, subjects, onSaved) {
     try {
       showLoading();
       if (isEdit) {
-        await updateTopic(topic.id, { class_id: subjectId, name, code, status });
+        await updateTopic(topic.id, { class_id: ClassId, name, code, status });
         showToast('Topic updated.', 'success');
       } else {
-        await createTopic({ class_id: subjectId, name, code, status });
+        await createTopic({ class_id: ClassId, name, code, status });
         showToast('Topic created.', 'success');
       }
       close();
@@ -312,13 +312,13 @@ export async function renderWordTypes(area) {
           <label class="form-label" style="font-size:0.8rem;color:var(--clr-text-muted);">Quick Suggestions (Click to add):</label>
           <div class="d-flex gap-2 flex-wrap">
             ${systemTypes.map(st => {
-              const exists = wordTypes.some(wt => wt.name.toLowerCase() === st.toLowerCase());
-              return `
+      const exists = wordTypes.some(wt => wt.name.toLowerCase() === st.toLowerCase());
+      return `
                 <button class="btn btn-sm ${exists ? 'btn-ghost' : 'btn-outline-primary'} btn-suggest-wt" data-name="${st}" ${exists ? 'disabled title="Already added"' : ''}>
                   ${st} ${exists ? '&#10003;' : '+'}
                 </button>
               `;
-            }).join('')}
+    }).join('')}
           </div>
         </div>
       </div>
@@ -414,7 +414,7 @@ export async function renderWordTypes(area) {
 export async function renderCentralQuestionBank(area) {
   showLoading();
   try {
-    const [questions, topics, subjects, wordTypes] = await Promise.all([
+    const [questions, topics, Classes, wordTypes] = await Promise.all([
       fetchCentralQuestions(),
       fetchTopics(),
       fetchGlobalClasses(),
@@ -526,7 +526,7 @@ export async function renderCentralQuestionBank(area) {
 
     // Add Question
     document.getElementById('btn-add-question').onclick = () => {
-      openQuestionModal(null, { topics, subjects, wordTypes }, async () => {
+      openQuestionModal(null, { topics, Classes, wordTypes }, async () => {
         await renderCentralQuestionBank(area);
       });
     };
@@ -540,7 +540,7 @@ export async function renderCentralQuestionBank(area) {
         const qId = editBtn.dataset.id;
         const q = questions.find(item => item.id === qId);
         if (q) {
-          openQuestionModal(q, { topics, subjects, wordTypes }, async () => {
+          openQuestionModal(q, { topics, Classes, wordTypes }, async () => {
             await renderCentralQuestionBank(area);
           });
         }
@@ -605,7 +605,7 @@ function renderQuestionRows(list) {
   }).join('');
 }
 
-function openQuestionModal(question, { topics, subjects, wordTypes }, onSaved) {
+function openQuestionModal(question, { topics, Classes, wordTypes }, onSaved) {
   const isEdit = !!question;
   const modal = document.createElement('div');
   modal.className = 'modal-backdrop';
@@ -622,9 +622,9 @@ function openQuestionModal(question, { topics, subjects, wordTypes }, onSaved) {
       </div>
       <div class="modal-body p-4">
         <div class="form-group mb-3">
-          <label class="form-label">Subject *</label>
-          <select class="form-control" id="modal-q-subject">
-            ${subjects.map(s => `
+          <label class="form-label">Class *</label>
+          <select class="form-control" id="modal-q-Class">
+            ${Classes.map(s => `
               <option value="${s.id}" ${question?.class_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>
             `).join('')}
           </select>
@@ -675,7 +675,7 @@ function openQuestionModal(question, { topics, subjects, wordTypes }, onSaved) {
   modal.querySelector('#cancel-q-btn').onclick = close;
 
   modal.querySelector('#save-q-btn').onclick = async () => {
-    const subjectId = modal.querySelector('#modal-q-subject').value;
+    const ClassId = modal.querySelector('#modal-q-Class').value;
     const topicId = modal.querySelector('#modal-q-topic').value;
     const wordType = modal.querySelector('#modal-q-wordtype').value.trim();
     const questionText = modal.querySelector('#modal-q-text').value.trim();
@@ -693,7 +693,7 @@ function openQuestionModal(question, { topics, subjects, wordTypes }, onSaved) {
       showLoading();
       if (isEdit) {
         await updateCentralQuestion(question.id, {
-          class_id: subjectId,
+          class_id: ClassId,
           topic_id: topicId,
           question_type: wordType || null,
           question_text: questionText,
@@ -703,7 +703,7 @@ function openQuestionModal(question, { topics, subjects, wordTypes }, onSaved) {
         showToast('Question updated.', 'success');
       } else {
         await createCentralQuestion({
-          class_id: subjectId,
+          class_id: ClassId,
           topic_id: topicId,
           question_type: wordType || null,
           question_text: questionText,
@@ -729,8 +729,8 @@ export async function renderAssignments(area) {
   showLoading();
   try {
     const [instances, definitions, batches, classInsts, classes] = await Promise.all([
-      fetchChallengeInstances(),
-      fetchChallengeDefinitions(),
+      fetchAssessmentInstances(),
+      fetchAssessmentDefinitions(),
       adminFetchAll('batches'),
       fetchClassInstances(),
       fetchClasses()
@@ -780,7 +780,7 @@ export async function renderAssignments(area) {
         if (confirm('Revoke this assessment assignment?')) {
           showLoading();
           try {
-            await adminSoftDelete('challenge_instances', id);
+            await adminSoftDelete('assessment_instances', id);
             showToast('Assignment revoked.', 'success');
             await renderAssignments(area);
           } catch (err) {
@@ -803,7 +803,7 @@ function renderAssignmentRows(list) {
     return `<tr><td colspan="6" class="text-center p-4 text-muted">No active assignments. Click "+ New Assignment" to assign an assessment.</td></tr>`;
   }
   return list.map(a => {
-    const targetName = a.class_instances?.batches?.name 
+    const targetName = a.class_instances?.batches?.name
       ? `&#128101; Batch: ${escapeHtml(a.class_instances.batches.name)} (${escapeHtml(a.class_instances.classes?.name || 'Class')})`
       : `&#128101; Unknown Target`;
 
@@ -813,8 +813,8 @@ function renderAssignmentRows(list) {
 
     return `
       <tr>
-        <td><strong>${escapeHtml(a.title_override || a.challenge_definitions?.title || 'Assessment')}</strong></td>
-        <td><span class="badge badge-info">${escapeHtml(a.challenge_definitions?.challenge_type || 'EVALUATION')}</span></td>
+        <td><strong>${escapeHtml(a.title_override || a.assessments?.title || 'Assessment')}</strong></td>
+        <td><span class="badge badge-info">${escapeHtml(a.assessments?.category || 'EVALUATION')}</span></td>
         <td>${targetName}</td>
         <td><small>${windowText}</small></td>
         <td><span class="badge badge-success">${escapeHtml(a.status || 'DRAFT')}</span></td>
@@ -839,7 +839,7 @@ function openAssignmentModal({ definitions, batches, classInsts, classes }, onSa
         <div class="form-group mb-3">
           <label class="form-label">Select Assessment *</label>
           <select class="form-control" id="asgn-assessment-id">
-            ${definitions.map(a => `<option value="${a.id}" data-class="${a.class_id}">${escapeHtml(a.title)} (${escapeHtml(a.challenge_type)})</option>`).join('')}
+            ${definitions.map(a => `<option value="${a.id}" data-class="${a.class_id}">${escapeHtml(a.title)} (${escapeHtml(a.category)})</option>`).join('')}
           </select>
         </div>
         <div class="form-group mb-3">
@@ -895,7 +895,7 @@ function openAssignmentModal({ definitions, batches, classInsts, classes }, onSa
     try {
       await createChallengeInstance({
         class_instance_id: ci.id,
-        challenge_definition_id: definitionId,
+        assessment_id: definitionId,
         availability_start: startVal ? new Date(startVal).toISOString() : null,
         availability_end: endVal ? new Date(endVal).toISOString() : null,
         status: 'READY'
@@ -917,7 +917,7 @@ function openAssignmentModal({ definitions, batches, classInsts, classes }, onSa
 export async function renderCentralQuestionImport(area) {
   showLoading('Loading import environment...');
   try {
-    const [subjects, existingQuestions, validWordTypes, existingTopics] = await Promise.all([
+    const [Classes, existingQuestions, validWordTypes, existingTopics] = await Promise.all([
       fetchGlobalClasses(),
       fetchCentralQuestions(),
       fetchWordTypes(),
@@ -940,9 +940,9 @@ export async function renderCentralQuestionImport(area) {
       <div class="card p-4 mb-4" id="import-upload-card" style="background:rgba(255,255,255,0.02);border:1px solid var(--clr-border);">
         <div class="form-grid mb-3">
           <div class="form-group mb-3">
-            <label class="form-label">Target Subject *</label>
-            <select class="form-control" id="import-target-subject" style="max-width:360px;">
-              ${subjects.map(s => `<option value="${s.id}">${escapeHtml(s.name)}${s.institutions?.name ? ` (${escapeHtml(s.institutions.name)})` : ''}</option>`).join('')}
+            <label class="form-label">Target Class *</label>
+            <select class="form-control" id="import-target-Class" style="max-width:360px;">
+              ${Classes.map(s => `<option value="${s.id}">${escapeHtml(s.name)}${s.institutions?.name ? ` (${escapeHtml(s.institutions.name)})` : ''}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -1193,7 +1193,7 @@ export async function renderCentralQuestionImport(area) {
     document.getElementById('btn-confirm-commit-import').onclick = async () => {
       if (!currentParsedResult || !currentParsedResult.rows.length) return;
 
-      const targetSubjectId = document.getElementById('import-target-subject').value;
+      const targetClassId = document.getElementById('import-target-Class').value;
       const rows = currentParsedResult.rows;
 
       const confirmMsg = `Are you sure you want to commit this import?
@@ -1207,22 +1207,26 @@ Existing historical attempt records will NOT be modified.`;
       try {
         const sb = await (await import('../supabase.js')).getSupabase();
 
-        // PHASE 2: SAFE TOPIC BINDING (BYPASS RLS 401)
-        // 1. Stop trying to auto-create topics.
-        const topicMap = new Map();
-        existingTopics.filter(t => t.class_id === targetSubjectId).forEach(t => {
-          topicMap.set(t.name.toLowerCase().trim(), t.id);
-        });
+        // PHASE 1: ROBUST TOPIC PRE-FETCHING & NORMALIZATION
+        const { data: dbTopics } = await sb.from('topics').select('id, name');
+        const topicDictionary = {};
+        if (dbTopics) {
+            dbTopics.forEach(t => {
+                // Normalize: lowercase and remove leading/trailing spaces
+                const normalizedDBName = t.name.trim().toLowerCase();
+                topicDictionary[normalizedDBName] = t.id;
+            });
+        }
 
         // 2. Auto-register any new custom Word Types
         const customWordTypesToRegister = Array.from(new Set(
           rows.filter(r => r.wordType && !validWordTypes.some(v => (v.name || v).toLowerCase() === r.wordType.toLowerCase()))
-              .map(r => r.wordType.trim())
+            .map(r => r.wordType.trim())
         ));
         for (const cwt of customWordTypesToRegister) {
           try {
             await sb.from('question_types').insert({ name: cwt, is_system: false, is_active: true });
-          } catch (_) {}
+          } catch (_) { }
         }
 
         // 3. Commit Question Updates and Inserts
@@ -1231,34 +1235,86 @@ Existing historical attempt records will NOT be modified.`;
         let skippedCount = 0;
 
         const questionsToInsert = [];
-        
+
         // Grab the active topic_id from UI context
         const activeUiTopicId = document.getElementById('q-topic-filter')?.value || window._filterTopicId;
         const baseOrder = Math.floor(Math.random() * 999999);
+        const isValidUUID = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+        
+        let safeClassId = window.currentClassId || targetClassId || null;
+        if (safeClassId && !isValidUUID(safeClassId)) safeClassId = null;
 
-        for (const [idx, r] of rows.entries()) {
-          if (r.actionChoice === 'SKIP') {
+        for (const [idx, row] of rows.entries()) {
+          if (row.actionChoice === 'SKIP') {
             skippedCount++;
             continue;
           }
 
-          let topicId = topicMap.get((r.topicName || '').toLowerCase().trim());
-          if (!topicId) {
-            topicId = activeUiTopicId || existingTopics[0]?.id || null;
+          // 1. Extract and Normalize Topic
+          const rawTopic = row.Topic || row.TOPIC || row.topic || row['Topic Name'] || row.topicName || '';
+          const normalizedExcelTopic = rawTopic.trim().toLowerCase();
+          let finalTopicId = null; 
+          
+          if (normalizedExcelTopic !== '') {
+              if (topicDictionary[normalizedExcelTopic]) {
+                  finalTopicId = topicDictionary[normalizedExcelTopic];
+              } else {
+                  // Topic doesn't exist, AUTO-CREATE IT!
+                  try {
+                      const { data: newTopic, error: createErr } = await sb
+                          .from('topics')
+                          .insert([{ 
+                              name: rawTopic.trim(),
+                              class_id: targetClassId,
+                              status: 'active'
+                          }])
+                          .select('id')
+                          .single();
+          
+                      if (newTopic) {
+                          finalTopicId = newTopic.id;
+                          topicDictionary[normalizedExcelTopic] = newTopic.id; // Cache it so we don't duplicate
+                          console.log(`Auto-created missing topic: "${rawTopic.trim()}"`);
+                      } else if (createErr) {
+                          console.warn(`Failed to auto-create topic "${rawTopic.trim()}":`, createErr.message);
+                      }
+                  } catch (e) {
+                      console.error("Topic creation exception:", e);
+                  }
+              }
           }
 
-          if (r.duplicateStatus === 'EXACT_DUPLICATE' && r.actionChoice === 'USE_EXISTING') {
-            if (r.answerKeyChanged && r.duplicateOfId) {
+          // 2. Extract Word Type
+          const finalWordType = row['Word Type'] || row.WordType || row.WORD_TYPE || row.word_type || row.question_type || row.wordType || '-';
+
+          // 3. Extract Question Text
+          const finalQuestionText = row.Question || row.QUESTION || row.question_text || row.question || 'Empty Question';
+
+          // 4. Extract and Format Answers to JSONB Array
+          const rawAnswer = row['Accepted Answers'] || row.ACCEPTED_ANSWERS || row.accepted_answers || row.Answers || row.correct_answer || row.answer || '';
+          let finalAnswerArray = [];
+          if (typeof rawAnswer === 'string') {
+              finalAnswerArray = rawAnswer.split(/[;/|]/).map(a => a.trim()).filter(a => a !== '');
+          } else if (Array.isArray(rawAnswer)) {
+              finalAnswerArray = rawAnswer;
+          }
+          
+          const safeAnswer = finalAnswerArray.length > 0 ? JSON.stringify(finalAnswerArray) : '[]';
+
+          if (row.duplicateStatus === 'EXACT_DUPLICATE' && row.actionChoice === 'USE_EXISTING') {
+            if (row.answerKeyChanged && row.duplicateOfId) {
               try {
-                // Update central question correct_answer (map to accepted_answers array)
-                const fArray = Array.isArray(r.accepted_answers) ? r.accepted_answers : (r.accepted_answers ? String(r.accepted_answers).split(/[;/]/).map(a => a.trim()).filter(Boolean) : []);
+                // FOR UPDATES (Existing Questions PATCH)
+                const updatePayload = {
+                    question_type: finalWordType,
+                    accepted_answers: finalAnswerArray,
+                    topic_id: finalTopicId,
+                    correct_answer: safeAnswer
+                };
+                
                 const { error: updErr } = await sb.from('questions')
-                  .update({ 
-                    question_text: r.question_text.trim(),
-                    accepted_answers: fArray,
-                    updated_at: new Date().toISOString() 
-                  })
-                  .eq('id', r.duplicateOfId);
+                  .update(updatePayload)
+                  .eq('id', row.duplicateOfId);
                 if (updErr) throw updErr;
                 updatedCount++;
               } catch (updCatch) {
@@ -1267,26 +1323,22 @@ Existing historical attempt records will NOT be modified.`;
             } else {
               skippedCount++;
             }
-          } else if (r.duplicateStatus === 'POSSIBLE_DUPLICATE' && r.actionChoice === 'USE_EXISTING') {
+          } else if (row.duplicateStatus === 'POSSIBLE_DUPLICATE' && row.actionChoice === 'USE_EXISTING') {
             skippedCount++;
           } else {
-            let fArray = [];
-            if (Array.isArray(r.accepted_answers)) {
-              fArray = r.accepted_answers;
-            } else if (typeof r.accepted_answers === 'string') {
-              fArray = String(r.accepted_answers).split(/[;/]/).map(a => a.trim()).filter(Boolean);
-            }
-
-            // RESTORED FULL PAYLOAD
-            questionsToInsert.push({
-              question_text: r.question_text.trim() || r.Question || r.QUESTION || '',
-              question_type: r.wordType || r.question_type || 'General',
-              accepted_answers: fArray, // MUST BE ARRAY FOR JSONB
-              status: 'ACTIVE',
-              topic_id: topicId,
-              class_id: classId,
-              question_order: baseOrder + idx
-            });
+            // FOR INSERTS (New Questions)
+            const insertPayload = {
+                question_order: baseOrder + idx,
+                question_text: finalQuestionText,
+                question_type: finalWordType, 
+                answer_type: row.answer_type || 'written', // Keep constraint fallback
+                accepted_answers: finalAnswerArray, 
+                correct_answer: safeAnswer,
+                topic_id: finalTopicId,
+                class_id: safeClassId,
+                status: 'ACTIVE'
+            };
+            questionsToInsert.push(insertPayload);
           }
         }
 
@@ -1347,42 +1399,42 @@ function toLevelLetter(num) {
   return result;
 }
 
-    export async function renderResults(area) {
-      const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
-        adminFetchAll('challenge_attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), challenge_instances(challenge_definitions(id, title, challenge_type)), challenge_attempt_answers(id, evaluation_result, score)'),
-        adminFetchAll('institutions'),
-        adminFetchAll('programs'),
-        adminFetchAll('batches')
-      ]);
+export async function renderResults(area) {
+  const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
+    adminFetchAll('attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), assessment_instances(assessments(id, title, category)), attempt_answers(id, evaluation_result, score)'),
+    adminFetchAll('institutions'),
+    adminFetchAll('programs'),
+    adminFetchAll('batches')
+  ]);
 
-      // Precalculate student best scores per assessment for prerequisite checking and highest score logic
-      const studentBestScoreMap = new Map();
-      rawData.forEach(r => {
-        if (!['submitted', 'auto_submitted'].includes(r.status)) return;
-        const defId = r.challenge_instances?.challenge_definitions?.id;
-        if (!r.student_id || !defId) return;
-        const key = `${r.student_id}_${defId}`;
-        const pct = parseFloat(r.percentage || 0);
-        const cur = studentBestScoreMap.get(key) ?? -1;
-        if (pct > cur) {
-          studentBestScoreMap.set(key, pct);
-        }
-      });
+  // Precalculate student best scores per assessment for prerequisite checking and highest score logic
+  const studentBestScoreMap = new Map();
+  rawData.forEach(r => {
+    if (!['submitted', 'auto_submitted'].includes(r.status)) return;
+    const defId = r.assessment_instances?.assessments?.id;
+    if (!r.student_id || !defId) return;
+    const key = `${r.student_id}_${defId}`;
+    const pct = parseFloat(r.percentage || 0);
+    const cur = studentBestScoreMap.get(key) ?? -1;
+    if (pct > cur) {
+      studentBestScoreMap.set(key, pct);
+    }
+  });
 
-      const submittedOnly = rawData.filter(r => ['submitted', 'auto_submitted'].includes(r.status));
-      // Default: sort alphabetically by Student Name (A-Z)
-      let allData = [...submittedOnly].sort((a, b) => (a.students?.name || '').localeCompare(b.students?.name || ''));
-      if (window._filterExamResults) {
-        allData = allData.filter(r => r.challenge_instances?.challenge_definitions?.id === window._filterExamResults);
-      }
+  const submittedOnly = rawData.filter(r => ['submitted', 'auto_submitted'].includes(r.status));
+  // Default: sort alphabetically by Student Name (A-Z)
+  let allData = [...submittedOnly].sort((a, b) => (a.students?.name || '').localeCompare(b.students?.name || ''));
+  if (window._filterAssessmentResults) {
+    allData = allData.filter(r => r.assessment_instances?.assessments?.id === window._filterAssessmentResults);
+  }
 
-      let selectedProg = '';
-      let selectedClass = '';
-      let selectedBatch = '';
-      let searchQuery = '';
-      let currentDeduplicatedResults = [];
+  let selectedProg = '';
+  let selectedClass = '';
+  let selectedBatch = '';
+  let searchQuery = '';
+  let currentDeduplicatedResults = [];
 
-      area.innerHTML = `
+  area.innerHTML = `
         <div class="section-header d-flex justify-between align-center flex-wrap gap-2">
           <div>
             <h2 class="section-title">Assessment Results <span class="count-chip" id="res-count-chip">${allData.length} Total</span></h2>
@@ -1395,10 +1447,10 @@ function toLevelLetter(num) {
           </div>
         </div>
 
-        ${window._filterExamResults ? `
+        ${window._filterAssessmentResults ? `
           <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
             <span>&#9889; Filtered Results for Selected Assessment (${allData.length} attempts)</span>
-            <button class="btn btn-ghost btn-xs" id="clear-exam-results-btn" style="text-decoration:underline;color:#93c5fd;">Show All Assessment Results</button>
+            <button class="btn btn-ghost btn-xs" id="clear-Assessment-results-btn" style="text-decoration:underline;color:#93c5fd;">Show All Assessment Results</button>
           </div>
         ` : ''}
 
@@ -1408,7 +1460,7 @@ function toLevelLetter(num) {
             <label class="text-xs text-muted d-block mb-1">Filter Program</label>
             <select id="res-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
               <option value="">&mdash; All Institutions &mdash;</option>
-              ${(allPrograms || []).filter(p => !p.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
+              ${(allPrograms || []).filter(p => !p.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
             </select>
           </div>
 
@@ -1416,7 +1468,7 @@ function toLevelLetter(num) {
             <label class="text-xs text-muted d-block mb-1">Filter Class</label>
             <select id="res-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
               <option value="">&mdash; All Programs &mdash;</option>
-              ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
+              ${(allClasses || []).filter(c => !c.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
             </select>
           </div>
 
@@ -1424,7 +1476,7 @@ function toLevelLetter(num) {
             <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
             <select id="res-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
               <option value="">&mdash; All Batches &mdash;</option>
-              ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
+              ${(allBatches || []).filter(b => !b.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
             </select>
           </div>
 
@@ -1441,232 +1493,240 @@ function toLevelLetter(num) {
         <div id="results-grid-container" class="mt-4"></div>
       `;
 
-      const progSelect  = document.getElementById('res-filter-prog');
-      const classSelect = document.getElementById('res-filter-class');
-      const batchSelect = document.getElementById('res-filter-batch');
-      const searchInput = document.getElementById('res-filter-search');
-      const countChip   = document.getElementById('res-count-chip');
+  const progSelect = document.getElementById('res-filter-prog');
+  const classSelect = document.getElementById('res-filter-class');
+  const batchSelect = document.getElementById('res-filter-batch');
+  const searchInput = document.getElementById('res-filter-search');
+  const countChip = document.getElementById('res-count-chip');
 
-      const updateClassOptions = () => {
-        const pId = progSelect.value;
-        Array.from(classSelect.options).forEach((opt, idx) => {
-          if (idx === 0) return;
-          const match = !pId || opt.getAttribute('data-prog') === pId;
-          opt.style.display = match ? '' : 'none';
-        });
-        if (pId && classSelect.selectedOptions[0]?.style.display === 'none') {
-          classSelect.value = '';
+  const updateClassOptions = () => {
+    const pId = progSelect.value;
+    Array.from(classSelect.options).forEach((opt, idx) => {
+      if (idx === 0) return;
+      const match = !pId || opt.getAttribute('data-prog') === pId;
+      opt.style.display = match ? '' : 'none';
+    });
+    if (pId && classSelect.selectedOptions[0]?.style.display === 'none') {
+      classSelect.value = '';
+    }
+    updateBatchOptions();
+  };
+
+  const updateBatchOptions = () => {
+    const cId = classSelect.value;
+    Array.from(batchSelect.options).forEach((opt, idx) => {
+      if (idx === 0) return;
+      const match = !cId || opt.getAttribute('data-class') === cId;
+      opt.style.display = match ? '' : 'none';
+    });
+    if (cId && batchSelect.selectedOptions[0]?.style.display === 'none') {
+      batchSelect.value = '';
+    }
+  };
+
+  const renderTable = () => {
+    const pId = progSelect.value;
+    const cId = classSelect.value;
+    const bId = batchSelect.value;
+    const q = searchInput.value.toLowerCase().trim();
+
+    const filtered = allData.filter(r => {
+      const studentProgId = r.student?.programs?.institutions?.id || r.student?.programs?.institution_id;
+      if (pId && studentProgId !== pId) return false;
+      if (cId && r.students?.program_id !== cId) return false;
+      if (bId && r.students?.batch_id !== bId) return false;
+      if (q) {
+        const sName = (r.students?.name || '').toLowerCase();
+        const eTitle = (r.assessment_instances?.assessments?.title || '').toLowerCase();
+        const eType = (r.assessment_instances?.assessments?.category || '').toLowerCase();
+        if (!sName.includes(q) && !eTitle.includes(q) && !eType.includes(q)) return false;
+      }
+      return true;
+    });
+
+    // Deduplicate by Student + Assessment, keeping highest score only
+    const mergedResults = new Map();
+    filtered.forEach(r => {
+      const key = `${r.student_id}_${r.assessment_instances?.assessments?.id}`;
+      const existing = mergedResults.get(key);
+      if (!existing) {
+        mergedResults.set(key, r);
+      } else {
+        const existingScore = parseFloat(existing.percentage || 0);
+        const currentScore = parseFloat(r.percentage || 0);
+        // If current score is higher, or if same score but newer submission, take the new one
+        if (currentScore > existingScore || (currentScore === existingScore && new Date(r.submitted_at) > new Date(existing.submitted_at))) {
+          mergedResults.set(key, r);
         }
-        updateBatchOptions();
-      };
+      }
+    });
+    const deduplicated = Array.from(mergedResults.values());
+    currentDeduplicatedResults = deduplicated;
 
-      const updateBatchOptions = () => {
-        const cId = classSelect.value;
-        Array.from(batchSelect.options).forEach((opt, idx) => {
-          if (idx === 0) return;
-          const match = !cId || opt.getAttribute('data-class') === cId;
-          opt.style.display = match ? '' : 'none';
-        });
-        if (cId && batchSelect.selectedOptions[0]?.style.display === 'none') {
-          batchSelect.value = '';
-        }
-      };
+    countChip.textContent = `${deduplicated.length} Records (Highest Score)`;
 
-      const renderTable = () => {
-        const pId = progSelect.value;
-        const cId = classSelect.value;
-        const bId = batchSelect.value;
-        const q = searchInput.value.toLowerCase().trim();
+    document.getElementById('results-grid-container').innerHTML = '';
+    if (!deduplicated.length) {
+      document.getElementById('results-grid-container').innerHTML = '<div class="text-center text-muted p-5">No submitted results match the selected filters.</div>';
+      return;
+    }
 
-        const filtered = allData.filter(r => {
-          const studentProgId = r.student?.programs?.institutions?.id || r.student?.programs?.institution_id;
-          if (pId && studentProgId !== pId) return false;
-          if (cId && r.students?.program_id !== cId) return false;
-          if (bId && r.students?.batch_id !== bId) return false;
-          if (q) {
-            const sName = (r.students?.name || '').toLowerCase();
-            const eTitle = (r.challenge_instances?.challenge_definitions?.title || '').toLowerCase();
-            const eType = (r.challenge_instances?.challenge_definitions?.challenge_type || '').toLowerCase();
-            if (!sName.includes(q) && !eTitle.includes(q) && !eType.includes(q)) return false;
+    new window.DataGrid({
+      container: 'results-grid-container',
+      data: deduplicated,
+      pageSize: 20,
+      searchKeys: ['students.name', 'assessment_instances.assessments.title', 'assessment_instances.assessments.category', 'students.programs.name', 'students.programs.institutions.name'],
+      columns: [
+        { key: 'students.name', label: 'Student Name', sortable: true, render: (v, r) => `<span class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || '&mdash;'}</span>` },
+        { key: 'students.programs.institutions.name', label: 'Program', sortable: true, render: (v, r) => `<span class="text-muted text-sm">${escapeHtml(r.students?.programs?.institutions?.name || '&mdash;')}</span>` },
+        { key: 'students.programs.name', label: 'Class', sortable: true, render: (v, r) => `<span class="text-muted text-sm">${escapeHtml(r.students?.programs?.name || '&mdash;')}</span>` },
+        { key: 'students.batches.name', label: 'Batch', sortable: true, render: (v, r) => `<span class="badge ${r.students?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.students?.batches?.name || 'Unassigned')}</span>` },
+        {
+          key: 'assessment_instances.assessments.title', label: 'Assessment Title', sortable: true, render: (v, r) => {
+            const def = r.assessment_instances?.assessments || {};
+            return `<span class="text-sm fw-600">${def.category ? escapeHtml(def.category) + ' &mdash; ' : ''}${escapeHtml(def.title || '&mdash;')}</span>`;
           }
-          return true;
-        });
-
-        // Deduplicate by Student + Assessment, keeping highest score only
-        const mergedResults = new Map();
-        filtered.forEach(r => {
-          const key = `${r.student_id}_${r.challenge_instances?.challenge_definitions?.id}`;
-          const existing = mergedResults.get(key);
-          if (!existing) {
-            mergedResults.set(key, r);
-          } else {
-            const existingScore = parseFloat(existing.percentage || 0);
-            const currentScore = parseFloat(r.percentage || 0);
-            // If current score is higher, or if same score but newer submission, take the new one
-            if (currentScore > existingScore || (currentScore === existingScore && new Date(r.submitted_at) > new Date(existing.submitted_at))) {
-              mergedResults.set(key, r);
-            }
-          }
-        });
-        const deduplicated = Array.from(mergedResults.values());
-        currentDeduplicatedResults = deduplicated;
-
-        countChip.textContent = `${deduplicated.length} Records (Highest Score)`;
-
-        document.getElementById('results-grid-container').innerHTML = '';
-        if (!deduplicated.length) {
-          document.getElementById('results-grid-container').innerHTML = '<div class="text-center text-muted p-5">No submitted results match the selected filters.</div>';
-          return;
-        }
-
-        new window.DataGrid({
-          container: 'results-grid-container',
-          data: deduplicated,
-          pageSize: 20,
-          searchKeys: ['students.name', 'challenge_instances.challenge_definitions.title', 'challenge_instances.challenge_definitions.challenge_type', 'students.programs.name', 'students.programs.institutions.name'],
-          columns: [
-            { key: 'students.name', label: 'Student Name', sortable: true, render: (v, r) => `<span class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || '&mdash;'}</span>` },
-            { key: 'students.programs.institutions.name', label: 'Program', sortable: true, render: (v, r) => `<span class="text-muted text-sm">${escapeHtml(r.students?.programs?.institutions?.name || '&mdash;')}</span>` },
-            { key: 'students.programs.name', label: 'Class', sortable: true, render: (v, r) => `<span class="text-muted text-sm">${escapeHtml(r.students?.programs?.name || '&mdash;')}</span>` },
-            { key: 'students.batches.name', label: 'Batch', sortable: true, render: (v, r) => `<span class="badge ${r.students?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.students?.batches?.name || 'Unassigned')}</span>` },
-            { key: 'challenge_instances.challenge_definitions.title', label: 'Assessment Title', sortable: true, render: (v, r) => {
-              const def = r.challenge_instances?.challenge_definitions || {};
-              return `<span class="text-sm fw-600">${def.challenge_type ? escapeHtml(def.challenge_type) + ' &mdash; ' : ''}${escapeHtml(def.title || '&mdash;')}</span>`;
-            }},
-            { key: 'percentage', label: 'Score', sortable: true, render: (v, r) => `
+        },
+        {
+          key: 'percentage', label: 'Score', sortable: true, render: (v, r) => `
               <div class="text-center fw-700 text-grade-${r.grade || 'F'}" style="display:flex;align-items:center;justify-content:center;gap:4px;">
                 <span>${parseFloat(r.percentage || 0).toFixed(1)}%</span>
                 <span class="badge badge-success text-xs" style="font-size:0.65rem;padding:1px 5px;" title="Highest score recorded across attempts">Highest</span>
               </div>
             ` },
-            { key: 'grade', label: 'Grade', sortable: true, render: (v, r) => `<div class="text-center"><span class="grade-badge grade-${r.grade || 'F'}" style="width:30px;height:30px;font-size:0.85rem;">${r.grade || '&mdash;'}</span></div>` },
-            { key: 'prereq', label: 'Prerequisite', sortable: false, render: (v, r) => {
-              const def = r.challenge_instances?.challenge_definitions || {};
-              const prereqId = def.prerequisite_assessment_id;
-              const minScore = Number(def.prerequisite_min_score) || 60;
-              if (!prereqId) return '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
-              const studentPrereqBest = studentBestScoreMap.get(`${r.student_id}_${prereqId}`);
-              if (studentPrereqBest != null && studentPrereqBest >= minScore) {
-                return `<div class="text-center"><span class="badge badge-success text-xs" style="font-size:0.75rem;padding:2px 6px;" title="Prerequisite completed (${studentPrereqBest.toFixed(1)}% &ge; ${minScore}%)">Unlocked &#9989;</span></div>`;
-              }
-              return `<div class="text-center"><span class="badge badge-danger" style="font-size:0.75rem;padding:2px 7px;font-weight:600;display:inline-flex;align-items:center;gap:3px;" title="Prerequisite requirement not completed (Required &ge; ${minScore}%)">Locked &#128274;</span></div>`;
-            }},
-            { key: 'correct', label: '&#9989; Correct', sortable: false, render: (v, r) => {
-                const answers = r.challenge_attempt_answers || [];
-                let attCorrect = 0;
-                answers.forEach(a => {
-                  const res = (a.evaluation_result || '').toLowerCase();
-                  const sc  = parseFloat(a.score || 0);
-                  if (res === 'correct' || sc >= 1) attCorrect++;
-                });
-                return answers.length > 0 ? `<div class="text-center"><span class="badge badge-success" style="font-size:0.75rem;">${attCorrect}</span></div>` : '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
-              }
-            },
-            { key: 'half', label: '&#9888;&#65039; Half', sortable: false, render: (v, r) => {
-                const answers = r.challenge_attempt_answers || [];
-                let attMinor = 0;
-                answers.forEach(a => {
-                  const res = (a.evaluation_result || '').toLowerCase();
-                  const sc  = parseFloat(a.score || 0);
-                  if (res.includes('minor') || (sc > 0 && sc < 1)) attMinor++;
-                });
-                return answers.length > 0 ? `<div class="text-center"><span class="badge badge-warning" style="font-size:0.75rem;">${attMinor}</span></div>` : '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
-              }
-            },
-            { key: 'wrong', label: '&#10060; Incorrect', sortable: false, render: (v, r) => {
-                const answers = r.challenge_attempt_answers || [];
-                let attWrong = 0;
-                answers.forEach(a => {
-                  const res = (a.evaluation_result || '').toLowerCase();
-                  const sc  = parseFloat(a.score || 0);
-                  if (res !== 'correct' && sc < 1 && !res.includes('minor') && !(sc > 0 && sc < 1)) attWrong++;
-                });
-                return answers.length > 0 ? `<div class="text-center"><span class="badge badge-danger" style="font-size:0.75rem;">${attWrong}</span></div>` : '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
-              }
-            },
-            { key: 'submitted_at', label: 'Submitted At', sortable: true, render: (v, r) => `<div class="text-center text-muted text-xs">${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '&mdash;'}</div>` },
-            { key: 'actions', label: 'Profile', sortable: false, render: (v, r) => `<div class="text-center"><button class="btn btn-ghost btn-sm results-view-profile-btn" data-sid="${r.student_id}" style="font-size:0.75rem; padding:3px 10px; display:inline-flex; align-items:center; gap:4px;" title="View full student profile">&#128100; Profile</button></div>` }
-          ]
-        });
-      };
+        { key: 'grade', label: 'Grade', sortable: true, render: (v, r) => `<div class="text-center"><span class="grade-badge grade-${r.grade || 'F'}" style="width:30px;height:30px;font-size:0.85rem;">${r.grade || '&mdash;'}</span></div>` },
+        {
+          key: 'prereq', label: 'Prerequisite', sortable: false, render: (v, r) => {
+            const def = r.assessment_instances?.assessments || {};
+            const prereqId = def.prerequisite_assessment_id;
+            const minScore = Number(def.prerequisite_min_score) || 60;
+            if (!prereqId) return '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
+            const studentPrereqBest = studentBestScoreMap.get(`${r.student_id}_${prereqId}`);
+            if (studentPrereqBest != null && studentPrereqBest >= minScore) {
+              return `<div class="text-center"><span class="badge badge-success text-xs" style="font-size:0.75rem;padding:2px 6px;" title="Prerequisite completed (${studentPrereqBest.toFixed(1)}% &ge; ${minScore}%)">Unlocked &#9989;</span></div>`;
+            }
+            return `<div class="text-center"><span class="badge badge-danger" style="font-size:0.75rem;padding:2px 7px;font-weight:600;display:inline-flex;align-items:center;gap:3px;" title="Prerequisite requirement not completed (Required &ge; ${minScore}%)">Locked &#128274;</span></div>`;
+          }
+        },
+        {
+          key: 'correct', label: '&#9989; Correct', sortable: false, render: (v, r) => {
+            const answers = r.attempt_answers || [];
+            let attCorrect = 0;
+            answers.forEach(a => {
+              const res = (a.evaluation_result || '').toLowerCase();
+              const sc = parseFloat(a.score || 0);
+              if (res === 'correct' || sc >= 1) attCorrect++;
+            });
+            return answers.length > 0 ? `<div class="text-center"><span class="badge badge-success" style="font-size:0.75rem;">${attCorrect}</span></div>` : '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
+          }
+        },
+        {
+          key: 'half', label: '&#9888;&#65039; Half', sortable: false, render: (v, r) => {
+            const answers = r.attempt_answers || [];
+            let attMinor = 0;
+            answers.forEach(a => {
+              const res = (a.evaluation_result || '').toLowerCase();
+              const sc = parseFloat(a.score || 0);
+              if (res.includes('minor') || (sc > 0 && sc < 1)) attMinor++;
+            });
+            return answers.length > 0 ? `<div class="text-center"><span class="badge badge-warning" style="font-size:0.75rem;">${attMinor}</span></div>` : '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
+          }
+        },
+        {
+          key: 'wrong', label: '&#10060; Incorrect', sortable: false, render: (v, r) => {
+            const answers = r.attempt_answers || [];
+            let attWrong = 0;
+            answers.forEach(a => {
+              const res = (a.evaluation_result || '').toLowerCase();
+              const sc = parseFloat(a.score || 0);
+              if (res !== 'correct' && sc < 1 && !res.includes('minor') && !(sc > 0 && sc < 1)) attWrong++;
+            });
+            return answers.length > 0 ? `<div class="text-center"><span class="badge badge-danger" style="font-size:0.75rem;">${attWrong}</span></div>` : '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
+          }
+        },
+        { key: 'submitted_at', label: 'Submitted At', sortable: true, render: (v, r) => `<div class="text-center text-muted text-xs">${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '&mdash;'}</div>` },
+        { key: 'actions', label: 'Profile', sortable: false, render: (v, r) => `<div class="text-center"><button class="btn btn-ghost btn-sm results-view-profile-btn" data-sid="${r.student_id}" style="font-size:0.75rem; padding:3px 10px; display:inline-flex; align-items:center; gap:4px;" title="View full student profile">&#128100; Profile</button></div>` }
+      ]
+    });
+  };
 
-      progSelect.addEventListener('change', () => { updateClassOptions(); renderTable(); });
-      classSelect.addEventListener('change', () => { updateBatchOptions(); renderTable(); });
-      batchSelect.addEventListener('change', renderTable);
-      searchInput.addEventListener('input', renderTable);
+  progSelect.addEventListener('change', () => { updateClassOptions(); renderTable(); });
+  classSelect.addEventListener('change', () => { updateBatchOptions(); renderTable(); });
+  batchSelect.addEventListener('change', renderTable);
+  searchInput.addEventListener('input', renderTable);
 
-      document.getElementById('res-btn-reset')?.addEventListener('click', () => {
-        window._filterExamResults = null;
-        progSelect.value = '';
-        classSelect.value = '';
-        batchSelect.value = '';
-        searchInput.value = '';
-        updateClassOptions();
-        loadSection('results');
-      });
+  document.getElementById('res-btn-reset')?.addEventListener('click', () => {
+    window._filterAssessmentResults = null;
+    progSelect.value = '';
+    classSelect.value = '';
+    batchSelect.value = '';
+    searchInput.value = '';
+    updateClassOptions();
+    loadSection('results');
+  });
 
-      document.getElementById('clear-exam-results-btn')?.addEventListener('click', () => {
-        window._filterExamResults = null;
-        loadSection('results');
-      });
+  document.getElementById('clear-Assessment-results-btn')?.addEventListener('click', () => {
+    window._filterAssessmentResults = null;
+    loadSection('results');
+  });
 
-      renderTable();
+  renderTable();
 
-      // Export Gradebook (.xlsx) handler
-      document.getElementById('export-gradebook-btn')?.addEventListener('click', () => {
-        if (typeof XLSX === 'undefined') {
-          showToast('SheetJS library (XLSX) is not loaded.', 'error');
-          return;
-        }
-        const rowsToExport = currentDeduplicatedResults && currentDeduplicatedResults.length > 0 ? currentDeduplicatedResults : allData;
-        if (!rowsToExport.length) {
-          showToast('No results to export.', 'warning');
-          return;
-        }
-        const exportData = rowsToExport.map(r => {
-          const def = r.challenge_instances?.challenge_definitions || {};
-          return {
-            'Student Name': r.students?.name || '—',
-            'Gender': r.students?.gender ? (r.students.gender === 'female' ? 'Female' : 'Male') : '—',
-            'Institution': r.students?.programs?.institutions?.name || '—',
-            'Program': r.students?.programs?.name || '—',
-            'Batch': r.students?.batches?.name || '—',
-            'Assessment Title': def.title || '—',
-            'Assessment Type': def.challenge_type || '—',
-            'Score': r.score != null ? r.score : '—',
-            'Percentage (%)': r.percentage != null ? `${r.percentage}%` : '—',
-            'Grade': r.grade || (r.percentage != null ? getGrade(r.percentage) : '—'),
-            'Submitted At': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '—',
-            'Status': r.status || '—'
-          };
-        });
-
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Gradebook');
-        const filename = `Gradebook_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
-        XLSX.writeFile(wb, filename);
-        showToast(`Exported ${exportData.length} records to ${filename}`, 'success');
-      });
-
-      document.getElementById('results-grid-container').addEventListener('click', e => {
-        const btn = e.target.closest('.results-view-profile-btn');
-        if (!btn) return;
-        const sid = btn.getAttribute('data-sid');
-        if (!sid) return;
-        
-        // Collect all currently visible student IDs for batch nav
-        const allSids = currentDeduplicatedResults.map(r => r.student_id);
-        openStudentProfile(sid, allSids);
-      });
+  // Export Gradebook (.xlsx) handler
+  document.getElementById('export-gradebook-btn')?.addEventListener('click', () => {
+    if (typeof XLSX === 'undefined') {
+      showToast('SheetJS library (XLSX) is not loaded.', 'error');
+      return;
     }
+    const rowsToExport = currentDeduplicatedResults && currentDeduplicatedResults.length > 0 ? currentDeduplicatedResults : allData;
+    if (!rowsToExport.length) {
+      showToast('No results to export.', 'warning');
+      return;
+    }
+    const exportData = rowsToExport.map(r => {
+      const def = r.assessment_instances?.assessments || {};
+      return {
+        'Student Name': r.students?.name || '—',
+        'Gender': r.students?.gender ? (r.students.gender === 'female' ? 'Female' : 'Male') : '—',
+        'Institution': r.students?.programs?.institutions?.name || '—',
+        'Program': r.students?.programs?.name || '—',
+        'Batch': r.students?.batches?.name || '—',
+        'Assessment Title': def.title || '—',
+        'Assessment Type': def.category || '—',
+        'Score': r.score != null ? r.score : '—',
+        'Percentage (%)': r.percentage != null ? `${r.percentage}%` : '—',
+        'Grade': r.grade || (r.percentage != null ? getGrade(r.percentage) : '—'),
+        'Submitted At': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '—',
+        'Status': r.status || '—'
+      };
+    });
 
-    // ============================================================
-    // STUDENT PROGRESS (Level Progression with Batch Grouping)
-    // ============================================================
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Gradebook');
+    const filename = `Gradebook_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    showToast(`Exported ${exportData.length} records to ${filename}`, 'success');
+  });
 
-    export async function renderProgressView(area) {
-      area.innerHTML = `
+  document.getElementById('results-grid-container').addEventListener('click', e => {
+    const btn = e.target.closest('.results-view-profile-btn');
+    if (!btn) return;
+    const sid = btn.getAttribute('data-sid');
+    if (!sid) return;
+
+    // Collect all currently visible student IDs for batch nav
+    const allSids = currentDeduplicatedResults.map(r => r.student_id);
+    openStudentProfile(sid, allSids);
+  });
+}
+
+// ============================================================
+// STUDENT PROGRESS (Level Progression with Batch Grouping)
+// ============================================================
+
+export async function renderProgressView(area) {
+  area.innerHTML = `
         <div class="section-header">
           <div>
             <h2 class="section-title">Student Progress <span class="count-chip" id="prog-count-chip">Loading...</span></h2>
@@ -1676,53 +1736,53 @@ function toLevelLetter(num) {
         <div class="p-5 text-center text-muted"><span class="loader"></span> Loading progression data...</div>
       `;
 
-      try {
-        const [allStudents, allPrograms, allClasses, allBatches, allAssignments, allAssessments, allAttempts] = await Promise.all([
-          adminFetchAll('students', '*, batches!batch_id(name), programs!program_id(name, institution_id, institutions!institution_id(name))'),
-          adminFetchAll('institutions'),
-          adminFetchAll('programs'),
-          adminFetchAll('batches'),
-          adminFetchAll('challenge_instances', 'student_id, batch_id, challenge_definition_id'),
-          adminFetchAll('challenge_definitions', 'id, title, level_id, levels(name, level_number)'),
-          adminFetchAll('challenge_attempts', '*, students!student_id(name, gender, batch_id, batches!batch_id(name), program_id, programs!program_id(name, institution_id, institutions!institution_id(name))), challenge_instances(challenge_definitions(title, challenge_type)), challenge_attempt_answers(id, evaluation_result, score)')
-        ]);
+  try {
+    const [allStudents, allPrograms, allClasses, allBatches, allAssignments, allAssessments, allAttempts] = await Promise.all([
+      adminFetchAll('students', '*, batches!batch_id(name), programs!program_id(name, institution_id, institutions!institution_id(name))'),
+      adminFetchAll('institutions'),
+      adminFetchAll('programs'),
+      adminFetchAll('batches'),
+      adminFetchAll('assessment_instances', 'student_id, batch_id, assessment_id'),
+      adminFetchAll('assessments', 'id, title, level_id, levels(name, level_number)'),
+      adminFetchAll('attempts', '*, students!student_id(name, gender, batch_id, batches!batch_id(name), program_id, programs!program_id(name, institution_id, institutions!institution_id(name))), assessment_instances(assessments(title, category)), attempt_answers(id, evaluation_result, score)')
+    ]);
 
-        const allData = [];
+    const allData = [];
 
-        // Map V1 Data
-        const assessmentsMap = new Map((allAssessments || []).map(a => [a.id, a]));
-        
-        (allStudents || []).filter(s => !s.deleted_at).forEach(student => {
-          const sAssignments = (allAssignments || []).filter(a => 
-            a.student_id === student.id || (a.batch_id && a.batch_id === student.batch_id)
-          );
-          
-          // To avoid duplicates if both student and batch assigned
-          const assignedAssesIds = new Set(sAssignments.map(a => a.challenge_definition_id));
+    // Map V1 Data
+    const assessmentsMap = new Map((allAssessments || []).map(a => [a.id, a]));
 
-          assignedAssesIds.forEach(assessmentId => {
-            const assessment = assessmentsMap.get(assessmentId);
-            if (!assessment) return;
+    (allStudents || []).filter(s => !s.deleted_at).forEach(student => {
+      const sAssignments = (allAssignments || []).filter(a =>
+        a.student_id === student.id || (a.batch_id && a.batch_id === student.batch_id)
+      );
 
-            const studentAttempts = (allAttempts || []).filter(att => att.student_id === student.id && att.challenge_definition_id === assessmentId);
-            const isCompleted = studentAttempts.some(att => att.status === 'SUBMITTED' || att.status === 'AUTO_SUBMITTED');
-            const isInProgress = studentAttempts.some(att => att.status === 'IN_PROGRESS');
+      // To avoid duplicates if both student and batch assigned
+      const assignedAssesIds = new Set(sAssignments.map(a => a.assessment_id));
 
-            allData.push({
-              student: student,
-              assessmentTitle: assessment.title,
-              levelNumber: assessment.levels?.level_number || 1,
-              levelName: assessment.levels?.name || 'Unknown',
-              is_completed: isCompleted,
-              is_in_progress: isInProgress
-            });
-          });
+      assignedAssesIds.forEach(assessmentId => {
+        const assessment = assessmentsMap.get(assessmentId);
+        if (!assessment) return;
+
+        const studentAttempts = (allAttempts || []).filter(att => att.student_id === student.id && att.assessment_id === assessmentId);
+        const isCompleted = studentAttempts.some(att => att.status === 'SUBMITTED' || att.status === 'AUTO_SUBMITTED');
+        const isInProgress = studentAttempts.some(att => att.status === 'IN_PROGRESS');
+
+        allData.push({
+          student: student,
+          assessmentTitle: assessment.title,
+          levelNumber: assessment.levels?.level_number || 1,
+          levelName: assessment.levels?.name || 'Unknown',
+          is_completed: isCompleted,
+          is_in_progress: isInProgress
         });
+      });
+    });
 
-        // Default: sort alphabetically by Student Name (A-Z)
-        allData.sort((a, b) => (a.student.name || '').localeCompare(b.student.name || ''));
+    // Default: sort alphabetically by Student Name (A-Z)
+    allData.sort((a, b) => (a.student.name || '').localeCompare(b.student.name || ''));
 
-        area.innerHTML = `
+    area.innerHTML = `
           <div class="section-header">
             <div>
               <h2 class="section-title">Student Progress <span class="count-chip" id="prog-count-chip">${allData.length} Records</span></h2>
@@ -1735,7 +1795,7 @@ function toLevelLetter(num) {
               <label class="text-xs text-muted d-block mb-1">Filter Class</label>
               <select id="prog-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
                 <option value="">&mdash; All Programs &mdash;</option>
-                ${(allClasses || []).filter(c => !c.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
+                ${(allClasses || []).filter(c => !c.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
               </select>
             </div>
 
@@ -1743,7 +1803,7 @@ function toLevelLetter(num) {
               <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
               <select id="prog-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
                 <option value="">&mdash; All Batches &mdash;</option>
-                ${(allBatches || []).filter(b => !b.deleted_at).sort((a,b) => (a.name||'').localeCompare(b.name||'')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
+                ${(allBatches || []).filter(b => !b.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
               </select>
             </div>
 
@@ -1776,66 +1836,66 @@ function toLevelLetter(num) {
           </div>
         `;
 
-        const progSelect  = document.getElementById('prog-filter-prog');
-        const classSelect = document.getElementById('prog-filter-class');
-        const batchSelect = document.getElementById('prog-filter-batch');
-        const searchInput = document.getElementById('prog-filter-search');
-        const tbody       = document.getElementById('tbl-progress-body');
-        const countChip   = document.getElementById('prog-count-chip');
+    const progSelect = document.getElementById('prog-filter-prog');
+    const classSelect = document.getElementById('prog-filter-class');
+    const batchSelect = document.getElementById('prog-filter-batch');
+    const searchInput = document.getElementById('prog-filter-search');
+    const tbody = document.getElementById('tbl-progress-body');
+    const countChip = document.getElementById('prog-count-chip');
 
-        const updateClassOptions = () => {
-          const pId = progSelect?.value;
-          if (!pId) return;
-          Array.from(classSelect.options).forEach((opt, idx) => {
-            if (idx === 0) return;
-            const match = !pId || opt.getAttribute('data-prog') === pId;
-            opt.style.display = match ? '' : 'none';
-          });
-          if (pId && classSelect.selectedOptions[0]?.style.display === 'none') {
-            classSelect.value = '';
-          }
-          updateBatchOptions();
-        };
+    const updateClassOptions = () => {
+      const pId = progSelect?.value;
+      if (!pId) return;
+      Array.from(classSelect.options).forEach((opt, idx) => {
+        if (idx === 0) return;
+        const match = !pId || opt.getAttribute('data-prog') === pId;
+        opt.style.display = match ? '' : 'none';
+      });
+      if (pId && classSelect.selectedOptions[0]?.style.display === 'none') {
+        classSelect.value = '';
+      }
+      updateBatchOptions();
+    };
 
-        const updateBatchOptions = () => {
-          const cId = classSelect.value;
-          Array.from(batchSelect.options).forEach((opt, idx) => {
-            if (idx === 0) return;
-            const match = !cId || opt.getAttribute('data-class') === cId;
-            opt.style.display = match ? '' : 'none';
-          });
-          if (cId && batchSelect.selectedOptions[0]?.style.display === 'none') {
-            batchSelect.value = '';
-          }
-        };
+    const updateBatchOptions = () => {
+      const cId = classSelect.value;
+      Array.from(batchSelect.options).forEach((opt, idx) => {
+        if (idx === 0) return;
+        const match = !cId || opt.getAttribute('data-class') === cId;
+        opt.style.display = match ? '' : 'none';
+      });
+      if (cId && batchSelect.selectedOptions[0]?.style.display === 'none') {
+        batchSelect.value = '';
+      }
+    };
 
-        const renderTable = () => {
-          const pId = progSelect ? progSelect.value : '';
-          const cId = classSelect.value;
-          const bId = batchSelect.value;
-          const q = searchInput.value.toLowerCase().trim();
+    const renderTable = () => {
+      const pId = progSelect ? progSelect.value : '';
+      const cId = classSelect.value;
+      const bId = batchSelect.value;
+      const q = searchInput.value.toLowerCase().trim();
 
-          const filtered = allData.filter(r => {
-            const studentProgId = r.student?.programs?.institutions?.id || r.student?.programs?.institution_id;
-            if (pId && studentProgId !== pId) return false;
-            if (cId && r.student?.program_id !== cId) return false;
-            if (bId && r.student?.batch_id !== bId) return false;
-            if (q) {
-              const sName = (r.student?.name || '').toLowerCase();
-              const sSubj = (r.assessmentTitle || '').toLowerCase();
-              if (!sName.includes(q) && !sSubj.includes(q)) return false;
-            }
-            return true;
-          });
+      const filtered = allData.filter(r => {
+        const studentProgId = r.student?.programs?.institutions?.id || r.student?.programs?.institution_id;
+        if (pId && studentProgId !== pId) return false;
+        if (cId && r.student?.program_id !== cId) return false;
+        if (bId && r.student?.batch_id !== bId) return false;
+        if (q) {
+          const sName = (r.student?.name || '').toLowerCase();
+          const sSubj = (r.assessmentTitle || '').toLowerCase();
+          if (!sName.includes(q) && !sSubj.includes(q)) return false;
+        }
+        return true;
+      });
 
-          countChip.textContent = `${filtered.length} of ${allData.length}`;
+      countChip.textContent = `${filtered.length} of ${allData.length}`;
 
-          if (!filtered.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted p-5">No progression records match the selected filters.</td></tr>';
-            return;
-          }
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted p-5">No progression records match the selected filters.</td></tr>';
+        return;
+      }
 
-          tbody.innerHTML = filtered.map(r => `
+      tbody.innerHTML = filtered.map(r => `
             <tr>
               <td class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.student?.name, r.student?.gender) || '—'}</td>
               <td class="text-muted text-sm">${escapeHtml(r.student?.programs?.institutions?.name || '—')}</td>
@@ -1855,38 +1915,38 @@ function toLevelLetter(num) {
               </td>
             </tr>
           `).join('');
-        };
+    };
 
-        progSelect?.addEventListener('change', () => { updateClassOptions(); renderTable(); });
-        classSelect.addEventListener('change', () => { updateBatchOptions(); renderTable(); });
-        batchSelect.addEventListener('change', renderTable);
-        searchInput.addEventListener('input', renderTable);
-        document.getElementById('prog-btn-reset')?.addEventListener('click', () => {
-          if (progSelect) progSelect.value = '';
-          classSelect.value = '';
-          batchSelect.value = '';
-          searchInput.value = '';
-          updateClassOptions();
-          renderTable();
-        });
+    progSelect?.addEventListener('change', () => { updateClassOptions(); renderTable(); });
+    classSelect.addEventListener('change', () => { updateBatchOptions(); renderTable(); });
+    batchSelect.addEventListener('change', renderTable);
+    searchInput.addEventListener('input', renderTable);
+    document.getElementById('prog-btn-reset')?.addEventListener('click', () => {
+      if (progSelect) progSelect.value = '';
+      classSelect.value = '';
+      batchSelect.value = '';
+      searchInput.value = '';
+      updateClassOptions();
+      renderTable();
+    });
 
-        renderTable();
+    renderTable();
 
-      } catch (err) {
-        console.error('Failed to load progress', err);
-        area.innerHTML = `<div class="p-5 text-center text-error">Failed to load progression data: ${err.message}</div>`;
-      }
+  } catch (err) {
+    console.error('Failed to load progress', err);
+    area.innerHTML = `<div class="p-5 text-center text-error">Failed to load progression data: ${err.message}</div>`;
+  }
 }
 
-window.viewClassInstanceRoster = async function(classInstanceId) {
+window.viewClassInstanceRoster = async function (classInstanceId) {
   const modal = document.getElementById('roster-modal');
   const tbody = document.getElementById('roster-modal-tbody');
   const select = document.getElementById('roster-add-student-select');
   const addBtn = document.getElementById('roster-add-student-btn');
-  
+
   modal.classList.remove('hidden');
   tbody.innerHTML = '<tr><td colspan="2" class="text-center">Loading roster...</td></tr>';
-  
+
   try {
     const roster = await fetchClassInstanceRoster(classInstanceId);
     if (roster.length === 0) {
@@ -1901,13 +1961,13 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
         </tr>
       `).join('');
     }
-    
+
     // Populate dropdown with all students (excluding those already in the roster)
     const allStudents = window._adminStore?.students || [];
     const rosterIds = new Set(roster.map(s => s.id));
-    select.innerHTML = '<option value="">Select student to manually enroll...</option>' + 
+    select.innerHTML = '<option value="">Select student to manually enroll...</option>' +
       allStudents.filter(s => !rosterIds.has(s.id)).map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
-      
+
     addBtn.onclick = async () => {
       const studentId = select.value;
       if (!studentId) return;
@@ -1928,20 +1988,20 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
   }
 };
 
-    // ============================================================
-    // EXAM RECALIBRATOR
-    // ============================================================
+// ============================================================
+// Assessment RECALIBRATOR
+// ============================================================
 
-    export async function renderRecalibrator(area) {
-      showLoading('Loading exams for recalibration&hellip;');
-      const allExams = await adminFetchAll('exams');
-      hideLoading();
-      const activeExams = allExams.filter(e => !e.deleted_at).sort((a, b) => (a.exam_title || '').localeCompare(b.exam_title || ''));
+export async function renderRecalibrator(area) {
+  showLoading('Loading Assessments for recalibration&hellip;');
+  const allAssessments = await adminFetchAll('assessments');
+  hideLoading();
+  const activeAssessments = allAssessments.filter(e => !e.deleted_at).sort((a, b) => (a.Assessment_title || '').localeCompare(b.Assessment_title || ''));
 
-      area.innerHTML = `
+  area.innerHTML = `
         <div class="section-header">
           <div>
-            <h2 class="section-title text-gradient" style="font-size:1.6rem;">&#9889; Exam Recalibrator</h2>
+            <h2 class="section-title text-gradient" style="font-size:1.6rem;">&#9889; Assessment Recalibrator</h2>
             <p class="section-subtitle">
               Recalculate historical submitted student attempts after updating questions, adding multiple correct answers (separated by <code>;</code> or <code>|</code>), or enabling hyphen tolerance.
             </p>
@@ -1951,10 +2011,10 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
         <div class="glass-card p-6 mb-6">
           <div class="d-flex align-center gap-4 flex-wrap">
             <div style="flex: 1; min-width: 280px;">
-              <label class="form-label">Select Target Exam</label>
-              <select class="form-control" id="recalibrator-exam-select">
-                <option value="">&mdash; Choose an Exam to Recalibrate &mdash;</option>
-                ${activeExams.map(e => `<option value="${e.id}">[${escapeHtml(e.exam_type || 'Exam')}] ${escapeHtml(e.exam_title || e.display_name || e.id)}</option>`).join('')}
+              <label class="form-label">Select Target Assessment</label>
+              <select class="form-control" id="recalibrator-Assessment-select">
+                <option value="">&mdash; Choose an Assessment to Recalibrate &mdash;</option>
+                ${activeAssessments.map(e => `<option value="${e.id}">[${escapeHtml(e.Assessment_type || 'Assessment')}] ${escapeHtml(e.Assessment_title || e.display_name || e.id)}</option>`).join('')}
               </select>
             </div>
             <div style="display: flex; gap: 12px; align-items: flex-end; padding-top: 20px;">
@@ -2037,7 +2097,7 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
         <div class="modal-backdrop hidden" id="recal-confirm-modal" role="dialog" aria-modal="true">
           <div class="modal-box" style="max-width: 480px; text-align: center;">
             <div style="font-size: 2.8rem; margin-bottom: 1rem;">&#9889;</div>
-            <h3 class="mb-2">Confirm Exam Recalibration?</h3>
+            <h3 class="mb-2">Confirm Assessment Recalibration?</h3>
             <p class="text-muted text-sm mb-4" id="recal-modal-desc">
               This will safely update historical submitted scores, percentages, grades, and student progression using the authoritative grading engine.
             </p>
@@ -2054,63 +2114,63 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
         </div>
       `;
 
-      let currentPreviewData = null;
-      const examSelect = document.getElementById('recalibrator-exam-select');
-      const btnPreview = document.getElementById('btn-preview-recal');
-      const btnApply = document.getElementById('btn-apply-recal');
-      const metricsPanel = document.getElementById('recal-metrics-panel');
-      const resultsWrap = document.getElementById('recal-results-wrap');
-      const tableBody = document.getElementById('recal-table-body');
-      const filterSelect = document.getElementById('recal-filter-view');
-      const confirmModal = document.getElementById('recal-confirm-modal');
+  let currentPreviewData = null;
+  const Assessmentselect = document.getElementById('recalibrator-Assessment-select');
+  const btnPreview = document.getElementById('btn-preview-recal');
+  const btnApply = document.getElementById('btn-apply-recal');
+  const metricsPanel = document.getElementById('recal-metrics-panel');
+  const resultsWrap = document.getElementById('recal-results-wrap');
+  const tableBody = document.getElementById('recal-table-body');
+  const filterSelect = document.getElementById('recal-filter-view');
+  const confirmModal = document.getElementById('recal-confirm-modal');
 
-      examSelect.addEventListener('change', () => {
-        const val = examSelect.value;
-        btnPreview.disabled = !val;
-        btnApply.disabled = true;
-        metricsPanel.classList.add('hidden');
-        resultsWrap.classList.add('hidden');
-        currentPreviewData = null;
-      });
+  Assessmentselect.addEventListener('change', () => {
+    const val = Assessmentselect.value;
+    btnPreview.disabled = !val;
+    btnApply.disabled = true;
+    metricsPanel.classList.add('hidden');
+    resultsWrap.classList.add('hidden');
+    currentPreviewData = null;
+  });
 
-      if (window._filterRecalibrateExam) {
-        examSelect.value = window._filterRecalibrateExam;
-        window._filterRecalibrateExam = null;
-        btnPreview.disabled = !examSelect.value;
+  if (window._filterRecalibrateAssessment) {
+    Assessmentselect.value = window._filterRecalibrateAssessment;
+    window._filterRecalibrateAssessment = null;
+    btnPreview.disabled = !Assessmentselect.value;
+  }
+
+  const renderPreviewRows = () => {
+    if (!currentPreviewData) return;
+    const mode = filterSelect.value;
+    const list = mode === 'affected'
+      ? currentPreviewData.attemptsDiff.filter(a => a.isAffected)
+      : currentPreviewData.attemptsDiff;
+
+    tableBody.innerHTML = '';
+    if (!list.length) {
+      tableBody.innerHTML = `<tr><td colspan="10" class="text-center text-muted p-4">No ${mode === 'affected' ? 'affected ' : ''}student attempts found.</td></tr>`;
+      return;
+    }
+
+    list.forEach(item => {
+      const isScoreUp = item.newPercentage > item.oldPercentage;
+      const isScoreDown = item.newPercentage < item.oldPercentage;
+      const isStatusPass = item.oldStatus === 'FAIL' && item.newStatus === 'PASS';
+      const isStatusFail = item.oldStatus === 'PASS' && item.newStatus === 'FAIL';
+
+      let statusBadge = '<span class="badge badge-neutral">No Change</span>';
+      if (isStatusPass) {
+        statusBadge = '<span class="badge badge-success fw-700">FAIL &rarr; PASS &#10024;</span>';
+      } else if (isStatusFail) {
+        statusBadge = '<span class="badge badge-danger fw-700">PASS &rarr; FAIL &#9888;&#65039;</span>';
+      } else if (item.isAffected) {
+        statusBadge = isScoreUp ? '<span class="badge badge-info">+ Score Up</span>' : '<span class="badge badge-warning">- Score Down</span>';
       }
 
-      const renderPreviewRows = () => {
-        if (!currentPreviewData) return;
-        const mode = filterSelect.value;
-        const list = mode === 'affected'
-          ? currentPreviewData.attemptsDiff.filter(a => a.isAffected)
-          : currentPreviewData.attemptsDiff;
+      const changedAnswersCount = item.questions.filter(q => q.isAffected).length;
 
-        tableBody.innerHTML = '';
-        if (!list.length) {
-          tableBody.innerHTML = `<tr><td colspan="10" class="text-center text-muted p-4">No ${mode === 'affected' ? 'affected ' : ''}student attempts found.</td></tr>`;
-          return;
-        }
-
-        list.forEach(item => {
-          const isScoreUp = item.newPercentage > item.oldPercentage;
-          const isScoreDown = item.newPercentage < item.oldPercentage;
-          const isStatusPass = item.oldStatus === 'FAIL' && item.newStatus === 'PASS';
-          const isStatusFail = item.oldStatus === 'PASS' && item.newStatus === 'FAIL';
-
-          let statusBadge = '<span class="badge badge-neutral">No Change</span>';
-          if (isStatusPass) {
-            statusBadge = '<span class="badge badge-success fw-700">FAIL &rarr; PASS &#10024;</span>';
-          } else if (isStatusFail) {
-            statusBadge = '<span class="badge badge-danger fw-700">PASS &rarr; FAIL &#9888;&#65039;</span>';
-          } else if (item.isAffected) {
-            statusBadge = isScoreUp ? '<span class="badge badge-info">+ Score Up</span>' : '<span class="badge badge-warning">- Score Down</span>';
-          }
-
-          const changedAnswersCount = item.questions.filter(q => q.isAffected).length;
-
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
             <td class="fw-600">${escapeHtml(item.studentName)}</td>
             <td class="text-muted text-sm">${escapeHtml(item.programName)}</td>
             <td class="text-center text-muted">${item.oldScore}</td>
@@ -2122,94 +2182,94 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
             <td class="text-center">${statusBadge}</td>
             <td class="text-center"><span class="badge ${changedAnswersCount > 0 ? 'badge-primary' : 'badge-neutral'}">${changedAnswersCount} q</span></td>
           `;
-          tableBody.appendChild(tr);
-        });
-      };
+      tableBody.appendChild(tr);
+    });
+  };
 
-      filterSelect.addEventListener('change', renderPreviewRows);
+  filterSelect.addEventListener('change', renderPreviewRows);
 
-      btnPreview.addEventListener('click', async () => {
-        const examId = examSelect.value;
-        if (!examId) return;
+  btnPreview.addEventListener('click', async () => {
+    const AssessmentId = Assessmentselect.value;
+    if (!AssessmentId) return;
 
-        showLoading('Calculating recalibration preview across all attempts...');
-        try {
-          currentPreviewData = await previewRecalibrateExam(examId);
-          hideLoading();
+    showLoading('Calculating recalibration preview across all attempts...');
+    try {
+      currentPreviewData = await previewRecalibrateAssessment(AssessmentId);
+      hideLoading();
 
-          // Update metrics
-          document.getElementById('recal-metric-questions').textContent = currentPreviewData.totalQuestions;
-          document.getElementById('recal-metric-attempts').textContent = currentPreviewData.totalAttempts;
-          document.getElementById('recal-metric-affected').textContent = currentPreviewData.affectedAttemptsCount;
-          document.getElementById('recal-metric-fail-pass').textContent = currentPreviewData.failToPassCount;
-          document.getElementById('recal-metric-pass-fail').textContent = currentPreviewData.passToFailCount;
-          document.getElementById('recal-metric-increases').textContent = currentPreviewData.scoreIncreaseCount;
+      // Update metrics
+      document.getElementById('recal-metric-questions').textContent = currentPreviewData.totalQuestions;
+      document.getElementById('recal-metric-attempts').textContent = currentPreviewData.totalAttempts;
+      document.getElementById('recal-metric-affected').textContent = currentPreviewData.affectedAttemptsCount;
+      document.getElementById('recal-metric-fail-pass').textContent = currentPreviewData.failToPassCount;
+      document.getElementById('recal-metric-pass-fail').textContent = currentPreviewData.passToFailCount;
+      document.getElementById('recal-metric-increases').textContent = currentPreviewData.scoreIncreaseCount;
 
-          metricsPanel.classList.remove('hidden');
-          resultsWrap.classList.remove('hidden');
-          renderPreviewRows();
+      metricsPanel.classList.remove('hidden');
+      resultsWrap.classList.remove('hidden');
+      renderPreviewRows();
 
-          if (currentPreviewData.affectedAttemptsCount > 0) {
-            btnApply.disabled = false;
-            showToast(`Found ${currentPreviewData.affectedAttemptsCount} attempts that can be recalibrated.`, 'info');
-          } else {
-            btnApply.disabled = true;
-            showToast('All attempts already match the latest question definitions and grading engine.', 'success');
-          }
-        } catch (err) {
-          hideLoading();
-          showToast('Preview error: ' + err.message, 'error');
-        }
-      });
-
-      btnApply.addEventListener('click', () => {
-        if (!currentPreviewData || currentPreviewData.affectedAttemptsCount === 0) return;
-        document.getElementById('modal-affected-count').textContent = currentPreviewData.affectedAttemptsCount;
-        document.getElementById('modal-status-changes').textContent = (currentPreviewData.failToPassCount + currentPreviewData.passToFailCount);
-        confirmModal.classList.remove('hidden');
-      });
-
-      document.getElementById('btn-recal-cancel')?.addEventListener('click', () => {
-        confirmModal.classList.add('hidden');
-      });
-
-      document.getElementById('btn-recal-confirm-run')?.addEventListener('click', async () => {
-        confirmModal.classList.add('hidden');
-        const examId = examSelect.value;
-        if (!examId) return;
-
-        showLoading('Applying recalibration to historical student results...');
-        try {
-          const res = await applyRecalibrateExam(examId);
-          hideLoading();
-          showToast(`Successfully recalibrated ${res.updatedAttemptsCount} attempts!`, 'success');
-          btnApply.disabled = true;
-          // Refresh preview
-          btnPreview.click();
-        } catch (err) {
-          hideLoading();
-          showToast('Failed to apply recalibration: ' + err.message, 'error');
-        }
-      });
+      if (currentPreviewData.affectedAttemptsCount > 0) {
+        btnApply.disabled = false;
+        showToast(`Found ${currentPreviewData.affectedAttemptsCount} attempts that can be recalibrated.`, 'info');
+      } else {
+        btnApply.disabled = true;
+        showToast('All attempts already match the latest question definitions and grading engine.', 'success');
+      }
+    } catch (err) {
+      hideLoading();
+      showToast('Preview error: ' + err.message, 'error');
     }
+  });
 
-    // ============================================================
-    // CLASS INSTANCES UI
-    // ============================================================
-    export async function renderClassInstances(area) {
-      const [rawData, batches, classes] = await Promise.all([
-        adminFetchAll('class_instances', '*, batches!batch_id(name, programs!program_id(name, institutions!institution_id(name)))'),
-        adminFetchAll('batches', 'id, name'),
-        adminFetchAll('classes', 'id, name, institution_id')
-      ]);
+  btnApply.addEventListener('click', () => {
+    if (!currentPreviewData || currentPreviewData.affectedAttemptsCount === 0) return;
+    document.getElementById('modal-affected-count').textContent = currentPreviewData.affectedAttemptsCount;
+    document.getElementById('modal-status-changes').textContent = (currentPreviewData.failToPassCount + currentPreviewData.passToFailCount);
+    confirmModal.classList.remove('hidden');
+  });
 
-      const data = [...rawData].sort((a, b) => {
-        const pA = a.batches?.programs?.name || '';
-        const pB = b.batches?.programs?.name || '';
-        return pA.localeCompare(pB) || (a.batches?.name || '').localeCompare(b.batches?.name || '');
-      });
+  document.getElementById('btn-recal-cancel')?.addEventListener('click', () => {
+    confirmModal.classList.add('hidden');
+  });
 
-      area.innerHTML = `
+  document.getElementById('btn-recal-confirm-run')?.addEventListener('click', async () => {
+    confirmModal.classList.add('hidden');
+    const AssessmentId = Assessmentselect.value;
+    if (!AssessmentId) return;
+
+    showLoading('Applying recalibration to historical student results...');
+    try {
+      const res = await applyRecalibrateAssessment(AssessmentId);
+      hideLoading();
+      showToast(`Successfully recalibrated ${res.updatedAttemptsCount} attempts!`, 'success');
+      btnApply.disabled = true;
+      // Refresh preview
+      btnPreview.click();
+    } catch (err) {
+      hideLoading();
+      showToast('Failed to apply recalibration: ' + err.message, 'error');
+    }
+  });
+}
+
+// ============================================================
+// CLASS INSTANCES UI
+// ============================================================
+export async function renderClassInstances(area) {
+  const [rawData, batches, classes] = await Promise.all([
+    adminFetchAll('class_instances', '*, batches!batch_id(name, programs!program_id(name, institutions!institution_id(name)))'),
+    adminFetchAll('batches', 'id, name'),
+    adminFetchAll('classes', 'id, name, institution_id')
+  ]);
+
+  const data = [...rawData].sort((a, b) => {
+    const pA = a.batches?.programs?.name || '';
+    const pB = b.batches?.programs?.name || '';
+    return pA.localeCompare(pB) || (a.batches?.name || '').localeCompare(b.batches?.name || '');
+  });
+
+  area.innerHTML = `
         <div class="section-header d-flex justify-between align-center flex-wrap gap-2">
           <div>
             <h2 class="section-title">Class Instances <span class="count-chip">${data.length} Total</span></h2>
@@ -2236,18 +2296,18 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
             </thead>
             <tbody>
               ${data.length === 0 ? '<tr><td colspan="8" class="text-center text-muted">No class instances yet.</td></tr>' : (() => {
-                window._ciRecords = {};
-                return data.map(row => {
-                  window._ciRecords[row.id] = row;
-                  let scheduleText = '—';
-                  if (row.recurring_schedule) {
-                    try {
-                      const parsed = typeof row.recurring_schedule === 'string' ? JSON.parse(row.recurring_schedule) : row.recurring_schedule;
-                      if (Array.isArray(parsed)) scheduleText = parsed.join(', ');
-                      else scheduleText = JSON.stringify(parsed);
-                    } catch { scheduleText = String(row.recurring_schedule); }
-                  }
-                  return `
+      window._ciRecords = {};
+      return data.map(row => {
+        window._ciRecords[row.id] = row;
+        let scheduleText = '—';
+        if (row.recurring_schedule) {
+          try {
+            const parsed = typeof row.recurring_schedule === 'string' ? JSON.parse(row.recurring_schedule) : row.recurring_schedule;
+            if (Array.isArray(parsed)) scheduleText = parsed.join(', ');
+            else scheduleText = JSON.stringify(parsed);
+          } catch { scheduleText = String(row.recurring_schedule); }
+        }
+        return `
                 <tr>
                   <td>
                     <div class="fw-600">${escapeHtml(row.batches?.programs?.name || '—')}</div>
@@ -2267,9 +2327,9 @@ window.viewClassInstanceRoster = async function(classInstanceId) {
                   </td>
                 </tr>
               `}).join('');
-              })()}
+    })()}
             </tbody>
           </table>
         </div>
       `;
-    }
+}

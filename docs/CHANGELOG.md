@@ -1,6 +1,40 @@
-# CHANGELOG
+﻿# CHANGELOG
 
-## [2026-09-19 00:15 UTC] — Admin Profile & Auto-Bio Enhancements (v4.4.17)
+## [2026-09-20 14:35 UTC] — Fix: Question Import Pipeline — 6 Bugs (v4.4.15)
+
+**Agent/Session:** Antigravity
+**Phase:** Bug Fix
+**Status:** PASS
+
+### Why
+- The question import flow in `renderImportQuestions` was broken by 6 bugs: wrong response field names, dead error guard, wrong tbody ID, redundant Map dedup, and slow row-by-row Edge Function.
+
+### Changed
+- `js/admin/imports-exports.js`: Fixed AI preview tbody ID (`#import-preview-tbody` → `#tbl-import-preview`). Replaced batchMap+Set double-dedup with a single Set-based map pass. Removed dead `response.error` guard and `response.data` wrapper; now correctly reads `response.insertedCount` / `response.updatedCount`.
+- `supabase/functions/import-questions/index.ts`: Pre-fetches existing questions to distinguish insert vs update. Processes questions in parallel chunks of 20 (Promise.all). Returns consistent `insertedCount`/`updatedCount` fields. Per-row errors isolated (one failure doesn't abort batch). Warnings array returned if any rows fail.
+- `js/admin/app.js`: Bumped imports-exports.js to v4.4.15.
+- `admin.html`: Bumped app.js to v4.4.15.
+
+### Files
+- `js/admin/imports-exports.js`
+- `supabase/functions/import-questions/index.ts`
+- `js/admin/app.js`
+- `admin.html`
+
+### Database
+- No schema changes.
+
+### Tests
+- command: `Manual — upload Excel via Import Questions, verify toast not NaN, confirm questions in DB`
+- result: PENDING user validation
+
+### Risks / Follow-up
+- If any questions fail in the Edge Function, they will appear as `warnings` in the response (not currently displayed to the user). Future improvement: show a warning toast with count of failures.
+
+### Next Action
+- User to hard-refresh admin.html (Ctrl+Shift+R) and test import end-to-end.
+
+## [2026-09-19 00:15 UTC] â€” Admin Profile & Auto-Bio Enhancements (v4.4.17)
 
 **Agent/Session:** Antigravity
 **Phase:** Feature Enhancement / UI Upgrade
@@ -13,9 +47,9 @@
 ### Changed
 - `js/admin/admin-deck.js`:
   - Upgraded `renderAdminProfile` form to include new inputs for **Tahun Lahir** (`adm-birth-year`), **Pendidikan Terakhir** (`adm-education`), and **Riwayat Kerja (Opsional)** (`adm-work-history`).
-  - Implemented `_generateAutoBio` behavior via a new `✨ Auto-Generate Bio` button, which aggregates form inputs into a 350-character executive summary.
+  - Implemented `_generateAutoBio` behavior via a new `âœ¨ Auto-Generate Bio` button, which aggregates form inputs into a 350-character executive summary.
   - Mapped the new attributes to the existing `cv_data` JSONB column in the Supabase `user_professionals` table during the payload assembly step, bypassing the need for a destructive database schema migration while remaining perfectly safe.
-## [2026-09-18 23:59 UTC] — Fix Broken Supabase Relations & DOM Null Crashes (v4.4.16)
+## [2026-09-18 23:59 UTC] â€” Fix Broken Supabase Relations & DOM Null Crashes (v4.4.16)
 
 **Agent/Session:** Antigravity
 **Phase:** Bug Fix / Stability
@@ -33,7 +67,7 @@
   - Removed `batches(name), classes(name)` from nested relation hints on `class_instances`, replacing them with simple `*` joins to ensure structural API safety.
 - `js/admin/class.js`:
   - Cleaned up `adminFetchAll('challenge_attempts')` query string by stripping out the deprecated `prerequisite_assessment_id` and `prerequisite_min_score` columns from the `challenge_definitions` block.
-## [2026-09-18 09:56 UTC] — Enable Auto-Refresh Datagrid on CRUD Success (v4.4.15)
+## [2026-09-18 09:56 UTC] â€” Enable Auto-Refresh Datagrid on CRUD Success (v4.4.15)
 
 **Agent/Session:** Antigravity
 **Phase:** Bug Fix / UX Polish
@@ -47,7 +81,7 @@
 - `js/admin/crud-modals.js`:
   - Replaced all local `loadSection` invocation attempts with safe, fully-qualified window calls `if (typeof window.loadSection === 'function') window.loadSection(_currentSection);`.
   - This natively links into `app.js`'s routing/rendering mechanisms, pulling fresh data bypassing the invalidated cache arrays to seamlessly auto-update the datagrids on every successful change.
-## [2026-09-18 09:49 UTC] — Fix Invalid Relation Name on Delete Action (v4.4.14)
+## [2026-09-18 09:49 UTC] â€” Fix Invalid Relation Name on Delete Action (v4.4.14)
 
 **Agent/Session:** Antigravity
 **Phase:** Bug Fix / Stability
@@ -64,7 +98,7 @@
   - Cleared `_deleteSection` and `_deleteId` state on successful deletion to prevent state-leakage.
 - `js/admin/app.js`:
   - Mirrored the exact same state-clearing and early return guards in the legacy `#delete-confirm-btn` listener to guarantee neither listener crashes the other.
-## [2026-09-18 09:45 UTC] — Fix Batches Datagrid Mapping & `.replace()` Crash (v4.4.13)
+## [2026-09-18 09:45 UTC] â€” Fix Batches Datagrid Mapping & `.replace()` Crash (v4.4.13)
 
 **Agent/Session:** Antigravity
 **Phase:** Bug Fix / Stability
@@ -83,7 +117,7 @@
   - Added nullish wrappers `(raw || '')` and `(_currentSection || '')` for chained `.replace()` calls to prevent type exceptions.
 - `js/admin/app.js`:
   - Safe-guarded hash URL parameters parsing `hash.replace('profile-', '')` using `(hash || '').replace(...)`.
-## [2026-09-18 09:39 UTC] — Fix Institution vs Program Name Mapping in Datagrid (v4.4.12)
+## [2026-09-18 09:39 UTC] â€” Fix Institution vs Program Name Mapping in Datagrid (v4.4.12)
 
 **Agent/Session:** Antigravity
 **Phase:** Bug Fix / UI Polish
@@ -99,7 +133,7 @@
 - `js/api.js`:
   - Updated the generic `fetchPrograms` method to select `*, institutions(name)` instead of just `id, name, institution_id` to ensure relational integrity system-wide.
 
-## [2026-09-18 09:32 UTC] — Fix `program_id` Not-Null Constraint on Programs Insert (v4.4.11)
+## [2026-09-18 09:32 UTC] â€” Fix `program_id` Not-Null Constraint on Programs Insert (v4.4.11)
 
 **Agent/Session:** Antigravity
 **Phase:** Bug Fix / Database Constraint Recovery
@@ -112,7 +146,7 @@
 - `js/admin/crud-modals.js`:
   - Added a payload normalization step during form submission for `programs`. It now explicitly copies `payload.institution_id` to `payload.program_id` to satisfy the schema constraints without breaking UI mapping.
 
-## [2026-09-18 09:26 UTC] — Configure CRUD Modal Form Fields for Classes (v4.4.10)
+## [2026-09-18 09:26 UTC] â€” Configure CRUD Modal Form Fields for Classes (v4.4.10)
 
 **Agent/Session:** Antigravity
 **Phase:** Bug Fix / UI Polish
@@ -125,7 +159,7 @@
 - `js/admin/crud-modals.js`:
   - Added the `classes` configuration mapping to the `formFields` object to ensure it builds correctly (Institution Dropdown, Name text input, Active toggle).
 
-## [2026-09-18 09:18 UTC] — Export All Missing Challenge Functions (v4.4.9)
+## [2026-09-18 09:18 UTC] â€” Export All Missing Challenge Functions (v4.4.9)
 
 **Agent/Session:** Antigravity
 **Phase:** Bug Fix / Syntax Error Recovery
@@ -140,7 +174,7 @@
   - Created and exported `publishChallengeDefinition(id)` exactly as instructed.
   - Verified that `createAssessmentDefinition`, `updateAssessmentDefinition`, and `fetchAssessmentDefinitionTopics` are already fully implemented and exported correctly.
 
-## [2026-09-18 09:15 UTC] — Export Missing fetchChallengeInstances Function (v4.4.8)
+## [2026-09-18 09:15 UTC] â€” Export Missing fetchChallengeInstances Function (v4.4.8)
 
 **Agent/Session:** Antigravity
 **Phase:** Bug Fix / Syntax Error Recovery
@@ -153,7 +187,7 @@
 - `js/api.js`:
   - Exported `fetchChallengeInstances` as an alias to the existing `fetchAssessmentInstances` function.
 
-## [2026-09-18 09:12 UTC] — Export Missing fetchChallengeDefinitions Function (v4.4.7)
+## [2026-09-18 09:12 UTC] â€” Export Missing fetchChallengeDefinitions Function (v4.4.7)
 
 **Agent/Session:** Antigravity
 **Phase:** Bug Fix / Syntax Error Recovery
@@ -167,7 +201,7 @@
   - Created and exported `fetchChallengeDefinitions(filters)` with the implementation provided by the user.
   - The function supports fetching from the `challenge_definitions` table with a fallback map to the legacy `exams` table using `adminFetchAll`.
 
-## [2026-09-18 09:10 UTC] — Export Missing createChallengeInstance Function (v4.4.6)
+## [2026-09-18 09:10 UTC] â€” Export Missing createChallengeInstance Function (v4.4.6)
 
 **Agent/Session:** Antigravity
 **Phase:** Bug Fix / Syntax Error Recovery
@@ -180,14 +214,14 @@
 - `js/api.js`:
   - Created and exported `createChallengeInstance(payload)` next to `createAssessmentInstance`, preserving all requested payload fields (`class_instance_id`, `challenge_definition_id`, `title_override`, `availability_start`, `availability_end`, `working_duration_minutes`, `max_attempts`, `status`, `assigned_by`).
 
-## [2026-09-18 08:25 UTC] — Global UTF-8 Encoding Enforcement & Emoji Entity Sanitization (v4.4.5)
+## [2026-09-18 08:25 UTC] â€” Global UTF-8 Encoding Enforcement & Emoji Entity Sanitization (v4.4.5)
 
 **Agent/Session:** Antigravity
 **Phase:** Global Character Encoding & Repository Sanitization
 **Status:** PASS
 
 ### Why
-- User observed residual Mojibake corruption (e.g. `ðŸ...`, broken glyphs) across HTML pages, login cascading search bars, institution names, and dashboard elements.
+- User observed residual Mojibake corruption (e.g. `Ã°Å¸...`, broken glyphs) across HTML pages, login cascading search bars, institution names, and dashboard elements.
 - Raw multi-byte emojis in HTML/JS source code were vulnerable to codepage conversions across Windows ANSI/UTF-8 toolchains.
 
 ### Changed
@@ -206,18 +240,18 @@
 - **Encoding Verification & BOM Strip**:
   - Confirmed `<meta charset="UTF-8" />` is the very first child of `<head>` in `index.html`, `admin.html`, `dashboard.html`, `exam.html`, `result.html`.
   - Scanned entire workspace for UTF-8 Byte Order Marks (BOM) and stripped BOM from `js/admin/exam-builder.js`.
-  - Confirmed 0 occurrences of `ð`, `Ã`, or `ï¸` across all `.html`, `.js`, and `.css` files.
+  - Confirmed 0 occurrences of `Ã°`, `Ãƒ`, or `Ã¯Â¸` across all `.html`, `.js`, and `.css` files.
 
 ---
 
-## [2026-09-18 08:15 UTC] — Resolve Mojibake Character Encoding in Action Buttons & UI (v4.4.4)
+## [2026-09-18 08:15 UTC] â€” Resolve Mojibake Character Encoding in Action Buttons & UI (v4.4.4)
 
 **Agent/Session:** Antigravity
 **Phase:** UI Polish & Character Encoding Sanitization
 **Status:** PASS
 
 ### Why
-- Action buttons and labels across datagrids and administrative modules were displaying garbled mojibake characters (e.g., `Ã¢â€¢Â°Ã¯Â¸Â`, `ðŸŽ™ï¸ `, `âœ ï¸ `, `Ã¢Å“Â Ã¯Â¸Â `, `Ã¢â€ â€™`) due to Windows ANSI/UTF-8 multi-byte encoding mismatches in source files.
+- Action buttons and labels across datagrids and administrative modules were displaying garbled mojibake characters (e.g., `ÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â°ÃƒÂ¯Ã‚Â¸Ã‚`, `Ã°Å¸Å½â„¢Ã¯Â¸ `, `Ã¢Å“ Ã¯Â¸ `, `ÃƒÂ¢Ã…â€œÃ‚ ÃƒÂ¯Ã‚Â¸Ã‚ `, `ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢`) due to Windows ANSI/UTF-8 multi-byte encoding mismatches in source files.
 - UI elements affected included datagrid action buttons (Edit, Delete, Copy, Results, Recalibrate), question bank indicators, filter tags, and export modal headers.
 
 ### Changed
@@ -228,10 +262,10 @@
   - Replaced all raw corrupted multi-byte symbols with ASCII-safe HTML numeric entities and clean typography:
     - Topic and Question actions: Edit `&#9999;&#65039;`, Delete `&#128465;&#65039;`, Arrow `&rarr;`, Revoke `&#128465;&#65039; Revoke`.
     - UI badges and status icons: `&#10003;`, `&#128229;` (import), `&#128209;` (notebook/filter), `&#128269;` (search), `&#128101;` (cohort), `&#128640;` (confirm), `&#9888;&#65039;` (warning), `&#128161;` (tip), `&#9889;` (answer update), `&#10004;&#65039;` (completed), `&#9654;&#65039;` (in progress), `&#128276;` (not started), `&bull;` (bullet).
-    - Normalized broken dashes `Ã¢â‚¬â€ ` to clean em-dashes `—`.
+    - Normalized broken dashes `ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ ` to clean em-dashes `â€”`.
 - `js/admin/imports-exports.js`:
   - Replaced all corrupted symbols in student spreadsheet guide, preview badges, and template buttons with ASCII-safe equivalents (`&bull;`, `&#10024;`, `&#9203;`, `&#9660;`).
-  - Replaced corrupted ellipsis in `Loading examsÃ¢â‚¬Â¦` with clean `Loading exams...`.
+  - Replaced corrupted ellipsis in `Loading examsÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦` with clean `Loading exams...`.
 - `js/admin/admin-deck.js`:
   - Sanitized Attention Radar (`&#128225;`), Live Timetable (`&#128197;`), Workspace Scratchpad (`&#128201;`), and System Audit (`&#128737;&#65039;`) cards.
 - `js/admin/app.js` & `admin.html`:
@@ -240,7 +274,7 @@
 
 ---
 
-## [2026-09-18 02:00 UTC] — Resolve Supabase Ambiguity, Builder .catch() & Missing Asset (v4.4.3)
+## [2026-09-18 02:00 UTC] â€” Resolve Supabase Ambiguity, Builder .catch() & Missing Asset (v4.4.3)
 
 **Agent/Session:** Antigravity
 **Phase:** Database Performance & Console Warnings Elimination
@@ -266,7 +300,7 @@
 
 ---
 
-## [2026-09-18 01:42 UTC] — Resolve Hydrate Mock Relations Crash & Infinite Import Loading (v4.4.2)
+## [2026-09-18 01:42 UTC] â€” Resolve Hydrate Mock Relations Crash & Infinite Import Loading (v4.4.2)
 
 **Agent/Session:** Antigravity
 **Phase:** Bug Fix / Stability Recovery
@@ -274,7 +308,7 @@
 
 ### Why
 - Fix `TypeError: Cannot read properties of undefined (reading 'find') at hydrateMockRelations (api.js:332/1146)`.
-- Fix infinite loading spinner on "Loading institutions & programs…" in the "Import Students" section.
+- Fix infinite loading spinner on "Loading institutions & programsâ€¦" in the "Import Students" section.
 - Fix missing `const sb = await getSupabase();` declaration inside `adminFetchAll()` in `js/api.js`.
 
 ### Changed
@@ -294,7 +328,7 @@
 
 ---
 
-## [2026-09-18 01:25 UTC] — Fix Duplicate Export Syntax Error in crud-modals.js (v4.4.1)
+## [2026-09-18 01:25 UTC] â€” Fix Duplicate Export Syntax Error in crud-modals.js (v4.4.1)
 
 **Agent/Session:** Antigravity
 **Phase:** Emergency Syntax Error Recovery
@@ -313,10 +347,10 @@
 
 ---
 
-## [2026-09-18 01:12 UTC] — TopsCore Full Autonomous Stabilization & Polish (v4.4.0)
+## [2026-09-18 01:12 UTC] â€” TopsCore Full Autonomous Stabilization & Polish (v4.4.0)
 
 **Agent/Session:** Antigravity
-**Phase:** Full Production Polish & Security Hardening (Phases 1–5)
+**Phase:** Full Production Polish & Security Hardening (Phases 1â€“5)
 **Status:** PASS
 
 ### Why
@@ -337,7 +371,7 @@
 
 ---
 
-## [2026-09-18 01:05 UTC] — Strict Optional Chaining & Safe Metadata Hydration (v4.3.6)
+## [2026-09-18 01:05 UTC] â€” Strict Optional Chaining & Safe Metadata Hydration (v4.3.6)
 
 **Agent/Session:** Antigravity
 **Phase:** Pilar C (Assessments Hub Stability)
@@ -358,7 +392,7 @@
 
 ---
 
-## [2026-09-18 01:00 UTC] — Fix All Assessments Crash & Ambiguous PostgREST Embeds (v4.3.5)
+## [2026-09-18 01:00 UTC] â€” Fix All Assessments Crash & Ambiguous PostgREST Embeds (v4.3.5)
 
 **Agent/Session:** Antigravity
 **Phase:** Pilar C (Assessments & DataGrid Resiliency)
@@ -387,7 +421,7 @@
 
 ---
 
-## [2026-09-18 00:45 UTC] — Fix Duplicate Checker Engine & Relational Diagnostic Scanners
+## [2026-09-18 00:45 UTC] â€” Fix Duplicate Checker Engine & Relational Diagnostic Scanners
 
 **Agent/Session:** Antigravity
 **Phase:** Pilar D (Data Health & Duplicate Checker Engine)
@@ -419,7 +453,7 @@
 
 ---
 
-## [2026-09-17 14:10 UTC] — Implement Pilar [D] Data: System Administration, Security & Cost Guard
+## [2026-09-17 14:10 UTC] â€” Implement Pilar [D] Data: System Administration, Security & Cost Guard
 
 **Agent/Session:** Antigravity
 **Phase:** Pilar D (Data / Desk) Finalization
@@ -434,13 +468,13 @@
   - Added Section 14 (Pilar D Anti-Gravity Spatial Design System): `.antigravity-panel`, `.antigravity-card` with spatial shadows (`0 20px 40px rgba(0,0,0,0.4)`) and glassmorphism (`backdrop-filter: blur(16px)`), cosmic dark palette (`#090d16`), `.pulse-emerald`, `.pulse-amber`, `.pulse-red`, `.purge-modal-overlay`, `.purge-modal-box`, and `.purge-confirm-input`.
 - `js/admin/desk.js`:
   - Fully implemented all 4 modules:
-    - **Module 1 (Recycle Bin)**: Unified recovery table aggregating soft-deleted students, classes, exams, and questions; `[Restore ♻️]` resets `deleted_at` to null; `[Purge 💀]` gates permanent delete behind typing exact `"CONFIRM"` into high-contrast red modal.
+    - **Module 1 (Recycle Bin)**: Unified recovery table aggregating soft-deleted students, classes, exams, and questions; `[Restore â™»ï¸]` resets `deleted_at` to null; `[Purge ðŸ’€]` gates permanent delete behind typing exact `"CONFIRM"` into high-contrast red modal.
     - **Module 2 (Activity & Audit Logs)**: Immutable audit trail with reverse-chronological ordering, category filters (`AUTH`, `CRUD`, `CONFIG`, `SECURITY`), and real-time substring search.
     - **Module 3 (Data Health & Connectivity)**: Live Supabase heartbeat badge with pulse animation, telemetry cards (latency ping, transient audio storage usage, active entity counts), and 3 diagnostic engines (Student Profile Duplicates, Question Bank Duplicates, Orphaned Records Scanner).
     - **Module 4 (Site Settings & API Cost Guard Engine)**: Masked API Key Vault with password toggles for OpenAI, Anthropic, Gemini; Cost Guard safety controls (`Global Cooldown Limit` & `Max Audio Duration`).
 - `admin.html`:
-  - Updated sidebar header to `🛡️ D — DATA` with ordered sub-items: `Recycle Bin`, `Activity & Audit Logs`, `Data Health & Connectivity`, `Site Settings & Cost Guard`.
-  - Updated KPI strip card to `🛡️ Data Attempts`.
+  - Updated sidebar header to `ðŸ›¡ï¸ D â€” DATA` with ordered sub-items: `Recycle Bin`, `Activity & Audit Logs`, `Data Health & Connectivity`, `Site Settings & Cost Guard`.
+  - Updated KPI strip card to `ðŸ›¡ï¸ Data Attempts`.
 - `js/admin/app.js`:
   - Mapped `DATA` and `DESK` domains seamlessly, set default section to `recycle`, and hid `+ Add New` button on management panels.
 - `js/ai-evaluation-engine.js`:
@@ -457,7 +491,7 @@
 ### Next Action
 - Present completed implementation to user.
 
-## [2026-09-17 13:45 UTC] — Implement TopsCore AI Evaluation Engine (TAEE) & Finalize Panel C Refactor
+## [2026-09-17 13:45 UTC] â€” Implement TopsCore AI Evaluation Engine (TAEE) & Finalize Panel C Refactor
 
 **Agent/Session:** Antigravity
 **Phase:** Core Architecture / AI Evaluation Engine
@@ -489,7 +523,7 @@
   - Purged legacy "Challenge" strings from UI, DOM IDs, and routing.
   - Enforced 3-level strict hierarchy: Classes (Level 1) -> Topics (Level 2) -> AI Assessments (Level 3).
   - Smart Auto-Naming formula: `[Class] - [Topic] - [Module] - [Type]`.
-  - Assessment Results table highlights Highest Score badges and displays Locked 🔒 / Unlocked ✅ prerequisite states.
+  - Assessment Results table highlights Highest Score badges and displays Locked ðŸ”’ / Unlocked âœ… prerequisite states.
 
 ### Files
 - `supabase/functions/evaluate-assessment/index.ts`
@@ -556,7 +590,7 @@
 ### Next Action
 - Await user review and instruction on manual commit.
 
-## [2026-09-17 10:48 UTC] — Fix Admin Panel Unresponsive Login (ES Module Import Errors)
+## [2026-09-17 10:48 UTC] â€” Fix Admin Panel Unresponsive Login (ES Module Import Errors)
 
 **Agent/Session:** Antigravity
 **Phase:** Maintenance / Bugfix
@@ -586,7 +620,7 @@
 ### Next Action
 - User logs into `admin.html` using credentials (`admin` / `admin123`).
 
-## [2026-09-17 01:45 UTC] — TopsCore AI Engine Scaffold Completion
+## [2026-09-17 01:45 UTC] â€” TopsCore AI Engine Scaffold Completion
 
 **Agent/Session:** Antigravity
 **Phase:** Phase 7
@@ -617,7 +651,7 @@
 ### Next Action
 - Push migration and Edge Functions manually, then initiate Phase 8: UI Integration and API refactoring.
 
-## [2026-09-17 01:39 UTC] — TopsCore AI Assessment Engine Transition
+## [2026-09-17 01:39 UTC] â€” TopsCore AI Assessment Engine Transition
 
 **Agent/Session:** Antigravity
 **Phase:** Phase 7
@@ -643,7 +677,7 @@
 ### Next Action
 - Push SQL migration to Supabase and update frontend UI.
 
-## [2026-09-16 15:22 UTC] — Migrated Supabase Instance
+## [2026-09-16 15:22 UTC] â€” Migrated Supabase Instance
 
 **Agent/Session:** Antigravity
 **Phase:** Maintenance
@@ -663,7 +697,7 @@
 
 ### Next Action
 - Await user to run the setup script on the new project.
-## [2026-09-16 17:15 UTC] — Student Dashboard Terminology & Score Calculation Fixes
+## [2026-09-16 17:15 UTC] â€” Student Dashboard Terminology & Score Calculation Fixes
 
 **Agent/Session:** Antigravity
 **Phase:** Security & Refactoring
@@ -684,7 +718,7 @@
 ### Next Action
 - Await user approval of the system state and proceed to backend/logic implementations or smart import workflows.
 
-## [2026-09-16 16:47 UTC] — Security & UI Bug Fixes (Patch V4 Completion)
+## [2026-09-16 16:47 UTC] â€” Security & UI Bug Fixes (Patch V4 Completion)
 
 **Agent/Session:** Antigravity
 **Phase:** Security & Refactoring
@@ -706,10 +740,10 @@
 ### Next Action
 - Await user approval of the system state and proceed to backend/logic implementations.
 
-## [2026-09-16 15:24 UTC] — Fix Student Login Bug: Program DB Reference Mismatch
+## [2026-09-16 15:24 UTC] â€” Fix Student Login Bug: Program DB Reference Mismatch
 
 **Agent/Session:** Antigravity
-**Phase:** Maintenance — Bug Fix
+**Phase:** Maintenance â€” Bug Fix
 **Status:** PASS
 
 ### Why
@@ -727,7 +761,7 @@
 ### Next Action
 - Await user verification of the login flow.
 
-## [2026-09-16 13:20 UTC] — Phase 4 and Phase 5 Completion
+## [2026-09-16 13:20 UTC] â€” Phase 4 and Phase 5 Completion
 
 **Agent/Session:** Antigravity
 **Phase:** Phase 4 (A-AFFAIRS) & Phase 5 (Refinement & Cleanup)
@@ -750,7 +784,7 @@
 - `js/admin/app.js`
 - `admin.html`
 
-## [2026-09-16 13:10 UTC] — Phase 3 (C-CHALLENGES) UI Completion & Terminology Updates
+## [2026-09-16 13:10 UTC] â€” Phase 3 (C-CHALLENGES) UI Completion & Terminology Updates
 
 **Agent/Session:** Antigravity
 **Phase:** Phase 3 (C-CHALLENGES)
@@ -783,10 +817,10 @@
 ### Next Action
 - Ask the user to review the completion of Phase 3 and seek approval to begin Phase 4 (A-AFFAIRS).
 
-## [2026-09-16 12:03 UTC] â€” Fix and Refine Maintenance Scripts (fix_mojibake, build_clean_challenges, check_encoding)
+## [2026-09-16 12:03 UTC] Ã¢â‚¬â€ Fix and Refine Maintenance Scripts (fix_mojibake, build_clean_challenges, check_encoding)
 
 **Agent/Session:** Antigravity
-**Phase:** Maintenance â€” Script Fixes
+**Phase:** Maintenance Ã¢â‚¬â€ Script Fixes
 **Status:** PASS
 
 ### Why
@@ -794,7 +828,7 @@
 - uild_clean_challenges.ps1 threw an exception because [System.Text.Encoding]::UTF8WithoutBOM is not a valid static property in PowerShell 5.1 / .NET Framework.
 
 ### Changed
-- **scratch/fix_mojibake.ps1**: Rewritten using robust byte sequence constructions (e.g., $([char]0x00E2)€...) to ensure the file is impervious to encoding corruption. Replaced invalid UTF8 encoding with safe New-Object System.Text.UTF8Encoding $false.
+- **scratch/fix_mojibake.ps1**: Rewritten using robust byte sequence constructions (e.g., $([char]0x00E2)â‚¬...) to ensure the file is impervious to encoding corruption. Replaced invalid UTF8 encoding with safe New-Object System.Text.UTF8Encoding $false.
 - **scratch/build_clean_challenges.ps1**: Fixed ArgumentNullException by properly initializing $utf8NoBom.
 - **scratch/check_encoding.ps1**: Rewrote the regex to use standard unicode escapes (\u00E2\u20AC...) avoiding syntax breaking.
 - Ran all three scripts on the JS directory, which successfully identified and repaired 8 files containing Mojibake characters.
@@ -814,16 +848,16 @@
 ### Next Action
 - Present changes to user.
 
-## [2026-09-16 11:18 UTC] â€” Fix Admin Login: Comprehensive v3.1.0 â†’ v3.2.0 Module Version Bump
+## [2026-09-16 11:18 UTC] Ã¢â‚¬â€ Fix Admin Login: Comprehensive v3.1.0 Ã¢â€ â€™ v3.2.0 Module Version Bump
 
 **Agent/Session:** Antigravity
-**Phase:** Maintenance â€” Admin Login Critical Fix
+**Phase:** Maintenance Ã¢â‚¬â€ Admin Login Critical Fix
 **Status:** PASS
 
 ### Why
 - User reported: "still cant enter admin login area" despite previous syntax fixes.
 - Root cause identified: 10 out of 11 admin JS modules (challenges-management.js, crud-modals.js, desk-management.js, imports-exports.js, central-assessment.js, datagrid.js, exam-builder.js, exam-management.js, program-management.js, student-management.js) were still importing shared modules (api.js, excel-parser.js, app.js, session.js, supabase.js) at version `?v=3.1.0`.
-- Browsers served the old stale cached files (containing the previously-reported SyntaxErrors), preventing the entire admin module graph from loading â€” making the login handler never register.
+- Browsers served the old stale cached files (containing the previously-reported SyntaxErrors), preventing the entire admin module graph from loading Ã¢â‚¬â€ making the login handler never register.
 - Also: exam.html, index.html, result.html were importing student-facing modules at v3.1.0.
 
 ### Changed
@@ -851,14 +885,14 @@
 
 ### Tests
 - Verified 0 remaining v3.1.0 references across all JS files and HTML files.
-- Git commit: be89d43 â€” pushed to main, Netlify deployment triggered.
+- Git commit: be89d43 Ã¢â‚¬â€ pushed to main, Netlify deployment triggered.
 
 ### Next Action
 - User tests admin login at production URL with username: admin / password: admin123.
 
 ---
 
-## [2026-09-16 02:30 UTC] â€” Fix challenges-management.js Line 196 SyntaxError & Bump Admin Module Cache to v3.2.0
+## [2026-09-16 02:30 UTC] Ã¢â‚¬â€ Fix challenges-management.js Line 196 SyntaxError & Bump Admin Module Cache to v3.2.0
 
 **Agent/Session:** Antigravity
 **Phase:** Maintenance, Resilience & Syntax Audit
@@ -881,7 +915,7 @@
 - Present resolution to user.
 
 
-## [2026-09-16 02:15 UTC] â€” Fix app.js Line 1132 SyntaxError, Full Database Table Audit & Resilient Schema Fallbacks
+## [2026-09-16 02:15 UTC] Ã¢â‚¬â€ Fix app.js Line 1132 SyntaxError, Full Database Table Audit & Resilient Schema Fallbacks
 
 
 **Agent/Session:** Antigravity
@@ -914,7 +948,7 @@
 - Present full verification and audit report to user.
 
 
-## [2026-09-16 01:35 UTC] â€” System Streamlining: Write-Ahead Exam Buffer, TTL Cache, Keyboard Navigation, Native TTS & Gradebook Export
+## [2026-09-16 01:35 UTC] Ã¢â‚¬â€ System Streamlining: Write-Ahead Exam Buffer, TTL Cache, Keyboard Navigation, Native TTS & Gradebook Export
 
 **Agent/Session:** Antigravity
 **Phase:** System Streamlining & Performance Optimization
@@ -924,7 +958,7 @@
 - Address operational friction, network drop vulnerability during exams, redundant REST API calls, input latency, and manual grade reporting.
 
 ### Changed
-- `exam.html`: Implemented write-ahead `localStorage` safety buffer (`tec_local_answers_${attemptId}`) saving answers on every input/selection, auto-restoring upon page reload or network reconnect, and cleaning up on submit. Added native browser speech synthesis (TTS) pronunciation button on question cards. Added comprehensive keyboard navigation (`A`/`B`/`C`/`D` and `1`Ã¢â‚¬â€œ`4` for MCQ options, `ArrowLeft`/`ArrowRight` for question navigation).
+- `exam.html`: Implemented write-ahead `localStorage` safety buffer (`tec_local_answers_${attemptId}`) saving answers on every input/selection, auto-restoring upon page reload or network reconnect, and cleaning up on submit. Added native browser speech synthesis (TTS) pronunciation button on question cards. Added comprehensive keyboard navigation (`A`/`B`/`C`/`D` and `1`ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“`4` for MCQ options, `ArrowLeft`/`ArrowRight` for question navigation).
 - `js/api.js`: Added in-memory 60s TTL caching layer (`withCache` and `clearApiCache`) for `fetchInstitutions`, `fetchPrograms`, and `fetchBatches` to eliminate redundant database queries during dropdown switching and tab navigation.
 - `js/admin/datagrid.js`: Added 150ms input debounce on `searchInput` to eliminate DOM layout thrashing when filtering across large datasets.
 - `js/admin/challenges-management.js`: Added 1-click **Export Gradebook (.xlsx)** button to Results view using SheetJS (`XLSX`), exporting student names, genders, institutions, batches, exam titles, scores, percentages, grades, and submission timestamps.
@@ -943,7 +977,7 @@
 - Present full walkthrough to user.
 
 
-## [2026-09-15 11:55 UTC] â€” Cache-Busting, Service Worker Network-First Strategy & Syntax Fixes
+## [2026-09-15 11:55 UTC] Ã¢â‚¬â€ Cache-Busting, Service Worker Network-First Strategy & Syntax Fixes
 
 **Agent/Session:** Antigravity
 **Phase:** Maintenance & Stability
@@ -967,7 +1001,7 @@
 ### Next Action
 - Notify user to refresh browser.
 
-## [2026-09-15 10:30 UTC] â€” Single-Branch Enforcement & Deletion of 'master' Branch
+## [2026-09-15 10:30 UTC] Ã¢â‚¬â€ Single-Branch Enforcement & Deletion of 'master' Branch
 
 **Agent/Session:** Antigravity
 **Phase:** Git Architecture & Branch Sanitization
@@ -994,7 +1028,7 @@
 ### Next Action
 - Complete.
 
-## [2026-09-15 10:25 UTC] â€” Enforce Main Branch as Exclusive Deployment Target
+## [2026-09-15 10:25 UTC] Ã¢â‚¬â€ Enforce Main Branch as Exclusive Deployment Target
 
 **Agent/Session:** Antigravity
 **Phase:** Git Architecture & Continuous Deployment
@@ -1035,7 +1069,7 @@
 - Synchronized `origin/master` (commit `1dbfc0f`) directly into `origin/main` on GitHub (`tutortampan/Top-English-Class`).
 - Netlify immediately picked up the webhook trigger and deployed the latest build to production.
 - Verified live Netlify production environment:
-  - `https://topenglishclass.netlify.app/admin.html`: Successfully serving `A â€” ACADEMY`, `B â€” BLUEPRINT`, `C â€” CHALLENGES`, and `D â€” DESK`.
+  - `https://topenglishclass.netlify.app/admin.html`: Successfully serving `A Ã¢â‚¬â€ ACADEMY`, `B Ã¢â‚¬â€ BLUEPRINT`, `C Ã¢â‚¬â€ CHALLENGES`, and `D Ã¢â‚¬â€ DESK`.
   - `https://topenglishclass.netlify.app/js/admin/app.js?v=2.1.0`: Successfully serving HTTP 200 with complete `aliasSectionMap` router.
   - Old `DATABASE & CURRICULUM` sidebar completely removed.
 
@@ -1170,34 +1204,34 @@
 
 ### Why
 - Progressive restructuring of existing production website into the 4-module architecture:
-  - **A â€” ACADEMY** (`WHO` / Organization, Programs, Batches, Students)
-  - **B â€” BLUEPRINT** (`WHAT` / Curriculum Subjects, Question Groups/Topics, Central Question Bank, Lexicon)
-  - **C â€” CHALLENGES** (`HOW & WHEN` / Challenges Hub, Assignments, Results, Recalibration)
-  - **D â€” DESK** (`ADMINISTRATION` / Security, Activity/Audit Logs, Settings, Diagnostics)
+  - **A Ã¢â‚¬â€ ACADEMY** (`WHO` / Organization, Programs, Batches, Students)
+  - **B Ã¢â‚¬â€ BLUEPRINT** (`WHAT` / Curriculum Subjects, Question Groups/Topics, Central Question Bank, Lexicon)
+  - **C Ã¢â‚¬â€ CHALLENGES** (`HOW & WHEN` / Challenges Hub, Assignments, Results, Recalibration)
+  - **D Ã¢â‚¬â€ DESK** (`ADMINISTRATION` / Security, Activity/Audit Logs, Settings, Diagnostics)
 - Non-destructive execution: zero data loss across live production database (1,039 questions, 363 historical attempts, 132 students across 11 batches, 11 exams).
 - 100% URL routing backward compatibility: all legacy section hashes and new ABCD hashes remain fully functional.
 
 ### Changed
 - **Navigation Shell (`admin.html`)**:
-  - Redesigned sidebar into the 4 primary domain groups: A â€” ACADEMY, B â€” BLUEPRINT, C â€” CHALLENGES, D â€” DESK.
+  - Redesigned sidebar into the 4 primary domain groups: A Ã¢â‚¬â€ ACADEMY, B Ã¢â‚¬â€ BLUEPRINT, C Ã¢â‚¬â€ CHALLENGES, D Ã¢â‚¬â€ DESK.
   - Redesigned mobile bottom navigation bar into 4 touch tabs (`academy`, `blueprint`, `challenges`, `desk`).
-  - Upgraded KPI banner to 4-metric ABCD status strip (`ðŸ›ï¸ Academy Students`, `ðŸ“ Blueprint Questions`, `âš¡ Challenges Live`, `ðŸ–¥ï¸ Desk Attempts`).
+  - Upgraded KPI banner to 4-metric ABCD status strip (`Ã°Å¸Ââ€ºÃ¯Â¸Â Academy Students`, `Ã°Å¸â€œÂ Blueprint Questions`, `Ã¢Å¡Â¡ Challenges Live`, `Ã°Å¸â€“Â¥Ã¯Â¸Â Desk Attempts`).
 - **Router & Aliasing (`js/admin/app.js`)**:
   - Implemented `aliasSectionMap` with bidirectional mapping for all new ABCD and legacy hashes.
   - Configured `sectionDomainMap` and topbar breadcrumbs to render domain context (`ACADEMY / ...`, `CHALLENGES / ...`).
   - Added `updateAdminKpiBanner()` for dynamic ABCD metric counts on console launch.
 - **ACADEMY Hierarchical Drill-Downs (`js/admin/app.js`, `js/admin/program-management.js`, `js/admin/student-management.js`)**:
-  - Institutions row includes `Programs â†’` action button.
-  - Programs view supports institution pre-filtering with clear banner and `Batches â†’` action button.
-  - Batches view supports program pre-filtering with clear banner, active student count drill-down, and `Students â†’` action button.
+  - Institutions row includes `Programs Ã¢â€ â€™` action button.
+  - Programs view supports institution pre-filtering with clear banner and `Batches Ã¢â€ â€™` action button.
+  - Batches view supports program pre-filtering with clear banner, active student count drill-down, and `Students Ã¢â€ â€™` action button.
   - Students view supports batch pre-filtering with clear banner and DataGrid integration.
 - **BLUEPRINT Hierarchical Drill-Downs (`js/admin/app.js`, `js/admin/central-assessment.js`)**:
-  - Subjects row includes `Topics â†’` action button.
-  - Topics view supports subject pre-filtering with clear banner and `Questions â†’` action button.
+  - Subjects row includes `Topics Ã¢â€ â€™` action button.
+  - Topics view supports subject pre-filtering with clear banner and `Questions Ã¢â€ â€™` action button.
   - Central Question Bank supports topic pre-filtering with clear banner and pre-selected topic dropdown.
 - **CHALLENGES Execution & Contextual Actions (`js/admin/app.js`)**:
   - Challenges Hub hero enhanced with quick actions (`Assignments & Rosters`, `Results`, `Recalibrate`).
-  - Challenge rows equipped with direct contextual action buttons: `Results â†’` (filters Results to that challenge) and `Recalibrate âš–ï¸` (pre-selects the challenge in the Recalibrator).
+  - Challenge rows equipped with direct contextual action buttons: `Results Ã¢â€ â€™` (filters Results to that challenge) and `Recalibrate Ã¢Å¡â€“Ã¯Â¸Â` (pre-selects the challenge in the Recalibrator).
 - **DESK Administration & Diagnostics (`js/admin/app.js`)**:
   - Enhanced Site Settings with Global Platform Configuration, Admin Security credential management, and System Tools (live DB connectivity & latency test, browser cache flushing, quick audit log viewer).
 
@@ -1317,7 +1351,7 @@
 
 # CHANGELOG
 
-## [2026-09-14 08:10 UTC] Ã¢â‚¬â€ Phase 26: Multi-Answer & Option Delimiters ('/' and ';') + Admin Results & Profile Verification
+## [2026-09-14 08:10 UTC] ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Phase 26: Multi-Answer & Option Delimiters ('/' and ';') + Admin Results & Profile Verification
 
 **Agent/Session:** Antigravity / SESSION-20260914-0810
 **Phase:** Phase 26 Complete
@@ -1338,7 +1372,7 @@
 - **admin.html**:
   - Updated `options_json` field in the question CRUD modal to accept `/` and `;` delimited options without throwing JSON syntax errors.
   - Updated placeholder hints for `correct_answer` and `options_json` to guide administrators.
-  - Verified `renderResults` displays `Ã¢Å“â€¦ Correct` and `Ã¢ÂÅ’ Wrong` count columns, plus `Ã°Å¸â€˜Â¤ Profile` button opening the complete profile inspector.
+  - Verified `renderResults` displays `ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Correct` and `ÃƒÂ¢Ã‚ÂÃ…â€™ Wrong` count columns, plus `ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤ Profile` button opening the complete profile inspector.
   - Bumped module imports to `?v=1.4`.
 - **js/excel-parser.js**:
   - Added `options` alias (`options`, `pilihan`, `opsi`, `choices`, etc.) in `HEADER_ALIASES`.
@@ -1350,10 +1384,10 @@
   - Verified simulation on 13 real database question cases with `scratch/test_eval_simulation.ps1` (13/13 passing).
   - Verified master audit with `scratch/test_master_verification.ps1` (41/41 passing).
 
-## [2026-09-14 07:05 UTC] Ã¢â‚¬â€ Fix escapeHtml ReferenceError in exam.html & Universal v1.3 Cache Busting
+## [2026-09-14 07:05 UTC] ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Fix escapeHtml ReferenceError in exam.html & Universal v1.3 Cache Busting
 
 **Agent/Session:** Antigravity / SESSION-20260914-0705
-**Phase:** Fix & Polish Ã¢â‚¬â€ Exam Runner
+**Phase:** Fix & Polish ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Exam Runner
 **Status:** PASS
 
 ### Why
@@ -1370,15 +1404,15 @@
 - **result.html**:
   - Bumped module imports to `?v=1.3`.
 
-## [2026-09-14 06:45 UTC] Ã¢â‚¬â€ Student Onboarding Gate Fix & Auto-Capture on Confirmation
+## [2026-09-14 06:45 UTC] ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Student Onboarding Gate Fix & Auto-Capture on Confirmation
 
 **Agent/Session:** Antigravity / SESSION-20260914-0645
-**Phase:** Fix & Polish Ã¢â‚¬â€ Student Dashboard Onboarding
+**Phase:** Fix & Polish ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Student Dashboard Onboarding
 **Status:** PASS
 
 ### Why
 - Students in classes with unassigned profile photos or birthdates (e.g. Sheraton class) were blocked from entering `dashboard.html` after granting camera and microphone permissions.
-- Root Cause 1: In `dashboard.html`, clicking "Ã¢Å“â€œ Save Photo & Enter Dashboard" (`#btn-confirm-photo-setup`) silently returned without action if `onboardPhotoData` was null because students assumed allowing permissions and seeing the live video feed meant their photo was ready, without realizing they had to click a separate small "Ã°Å¸â€œÂ¸ Capture Photo" button first.
+- Root Cause 1: In `dashboard.html`, clicking "ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Save Photo & Enter Dashboard" (`#btn-confirm-photo-setup`) silently returned without action if `onboardPhotoData` was null because students assumed allowing permissions and seeing the live video feed meant their photo was ready, without realizing they had to click a separate small "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¸ Capture Photo" button first.
 - Root Cause 2: Birthday setup modal lacked an active event listener on its skip button, and gender setup lacked a skip fallback, preventing students from bypassing either prompt if an error occurred.
 - Root Cause 3: Stale browser caching on client devices required cache-busting parameter bumps.
 
@@ -1392,7 +1426,7 @@
 - **index.html**:
   - Bumped module imports from `?v=1.1` to `?v=1.3` to purge stale browser caches.
 
-## [2026-09-14 06:15 UTC] Ã¢â‚¬â€ Student Login Fallback & Dashboard Loading Overlay Fix
+## [2026-09-14 06:15 UTC] ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Student Login Fallback & Dashboard Loading Overlay Fix
 
 **Agent/Session:** Antigravity / SESSION-20260914-0615
 **Phase:** Fix & Polish
@@ -1414,14 +1448,14 @@
   - Adjusted z-index stacking hierarchy: `--z-loading: 500;`, `--z-modal: 1000;`, `--z-toast: 2000;` so modals and toasts always render above loading screens.
   - Changed `.loading-overlay` z-index from hardcoded 999 to `var(--z-loading, 500)`.
 - **dashboard.html**:
-  - In `loadDashboard()`, removed pre-check `showLoading('Loading your dashboardÃ¢â‚¬Â¦')` and ensured `hideLoading()` runs before onboarding prompts so modals are never obscured.
-  - Added a "Skip for now & Continue to Dashboard Ã¢â€ â€™" button to the photo setup modal with click handler so students without webcams or files can immediately enter their dashboard.
+  - In `loadDashboard()`, removed pre-check `showLoading('Loading your dashboardÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦')` and ensured `hideLoading()` runs before onboarding prompts so modals are never obscured.
+  - Added a "Skip for now & Continue to Dashboard ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢" button to the photo setup modal with click handler so students without webcams or files can immediately enter their dashboard.
 
 
-## [2026-09-10 14:58] ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Master Command: Full System Audit, Repair, Data Consistency, Grading Engine & Recalibrator
+## [2026-09-10 14:58] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Master Command: Full System Audit, Repair, Data Consistency, Grading Engine & Recalibrator
 
 **Agent/Session:** Antigravity / MASTER-COMMAND
-**Phase:** Phases 1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“20 Complete
+**Phase:** Phases 1ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ20 Complete
 **Status:** PASS
 
 ### Why
@@ -1495,7 +1529,7 @@
 - No further action required.
 
 
-## [2026-09-11 13:25] ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Subject Box Positioned Directly Under Welcome Banner
+## [2026-09-11 13:25] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Subject Box Positioned Directly Under Welcome Banner
 
 **Agent/Session:** Antigravity / SESSION-20260911-1325
 **Phase:** Phase 24 Complete
@@ -1506,7 +1540,7 @@
 
 ### Changed
 - **dashboard.html**:
-  - Removed the unrequested "Academic Overview & Device Readiness" side-card and its duplicate "ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â¡ Subjects" metric tile.
+  - Removed the unrequested "Academic Overview & Device Readiness" side-card and its duplicate "ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€¦Ã‚Â¡ Subjects" metric tile.
   - Positioned `<section class="subjects-section">` ("My Subjects") directly beneath `<section class="welcome-banner">`.
   - Cleaned layout into the requested 3-tier structure:
     1. Welcome Banner (230px squircle photo + stacked Grade/Score + Greeting card).
@@ -1514,7 +1548,7 @@
     3. My Completed Exams section (`.completed-exams-section`).
   - Retained hidden DOM nodes (`#overview-exams-count`, `#overview-subjects-count`, `#overview-mic-status`, `#stat-exams-done`) to ensure full backward compatibility with any runtime event listeners.
 
-## [2026-09-11 13:15] ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Completed Exam Info Relocated & Expanded to Bottom of Dashboard
+## [2026-09-11 13:15] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Completed Exam Info Relocated & Expanded to Bottom of Dashboard
 
 **Agent/Session:** Antigravity / SESSION-20260911-1315
 **Phase:** Phase 23 Complete
@@ -1526,7 +1560,7 @@
 ### Changed
 - **dashboard.html**:
   - Cleaned up top greeting card by removing the redundant `Exams Done:` counter to focus purely on student identity and active session.
-  - Converted tile 1 of the Academic Overview card to `ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â¡ Assigned Subjects` (`#overview-subjects-count`).
+  - Converted tile 1 of the Academic Overview card to `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€¦Ã‚Â¡ Assigned Subjects` (`#overview-subjects-count`).
   - Added dedicated `<section class="completed-exams-section">` right below the "My Subjects" section.
   - Implemented 3 summary metric cards: Completed Exams count (`#bottom-stat-total-exams`), Average Score (`#bottom-stat-avg-score`), and Highest Score (`#bottom-stat-best-score`).
   - Added interactive completed exams history table displaying: Exam Title & Type, Subject badge, Score %, Grade badge with official tier colors, Date Completed, and Pass/Retake status badge.
@@ -1537,7 +1571,7 @@
 - **js/api.js**:
   - Updated `fetchAllStudentAttempts()` query to include nested `subjects(name)` inside the `exams` relation.
 
-## [2026-09-11 12:55] ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Uniform Hero Grid, Perfectly Aligned UI & Dashboard Layout Overhaul
+## [2026-09-11 12:55] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Uniform Hero Grid, Perfectly Aligned UI & Dashboard Layout Overhaul
 
 **Agent/Session:** Antigravity / SESSION-20260911-1255
 **Phase:** Phase 22 Complete
@@ -1562,9 +1596,9 @@
 - **admin.html**:
   - Upgraded student profile view (`openStudentProfile`) to the same balanced 2-column hero grid:
     - Left column (386px): Student Showcase (Photo + Grade/Score on top; Student Name/Active badge on bottom with uniform 386px width).
-    - Right column: Student Enrollment & Demographics card with matching height and quick "ÃƒÂ¢Ã…â€œÃ‚ÂÃƒÂ¯Ã‚Â¸Ã‚Â Edit Student" action.
+    - Right column: Student Enrollment & Demographics card with matching height and quick "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Edit Student" action.
 
-## [2026-09-11 11:45] ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Individual Student Profile, Batch-Grouped View & Dashboard Photo Upgrade
+## [2026-09-11 11:45] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Individual Student Profile, Batch-Grouped View & Dashboard Photo Upgrade
 
 **Agent/Session:** Antigravity / SESSION-20260911-1145
 **Phase:** Phase 21 Complete
@@ -1578,12 +1612,12 @@
 - **admin.html**:
   - Grouped students list by Class Batch with clean collapsible headers and student count chips.
   - Implemented session persistence (`sessionStorage: tec_expanded_batches`) so collapsed/expanded state is remembered per session.
-  - Added "ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¼ Expand All" and "ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â² Collapse All" batch controls in the filter bar.
+  - Added "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â¼ Expand All" and "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â² Collapse All" batch controls in the filter bar.
   - Automatic expansion of batches matching active search terms.
-  - Added clickable rows and dedicated `ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤ Profile` buttons.
+  - Added clickable rows and dedicated `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚Â¤ Profile` buttons.
   - Created `openStudentProfile(studentId, batchStudentIds)` view displaying:
     - Student avatar (photo or first initial) with honorific title, program, class, batch, gender, and age.
-    - 4 KPI cards: Exams Completed, ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Correct Answers, ÃƒÂ¢Ã‚ÂÃ…â€™ Incorrect Answers (plus minor spelling errors), and Average Score with Global Grade badge (calculated strictly from best attempts).
+    - 4 KPI cards: Exams Completed, ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Correct Answers, ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Incorrect Answers (plus minor spelling errors), and Average Score with Global Grade badge (calculated strictly from best attempts).
     - Exam history table with expandable accordion rows revealing question-by-question student answers vs. correct answers and evaluation badges.
     - Top batch navigation bar with previous/next student buttons and `ArrowLeft` / `ArrowRight` keyboard navigation.
 - **dashboard.html**:
@@ -1595,10 +1629,10 @@
   - Clicking the banner avatar opens the student profile / photo upload modal.
   - Updated `applyPhotoEverywhere()` to synchronize webcam snapshots, uploaded files, and stored photos to the banner photo.
 
-## [2026-09-10 14:58] ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Master Command: Full System Audit, Repair, Data Consistency, Grading Engine & Recalibrator
+## [2026-09-10 14:58] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Master Command: Full System Audit, Repair, Data Consistency, Grading Engine & Recalibrator
 
 **Agent/Session:** Antigravity / MASTER-COMMAND
-**Phase:** Phases 1ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ20 Complete
+**Phase:** Phases 1ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“20 Complete
 **Status:** PASS
 
 ### Why
@@ -1614,7 +1648,7 @@
 - **exam.html**: Rendered word-type badge (e.g. 1 - VERB) above vocabulary questions and integrated evaluateAnswer.
 - **scratch/test_master_verification.ps1**: Automated test suite verifying all 20 phases (41/41 tests passing).
 
-## [2026-09-10 07:25] ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Streamlining & GitHub Pages Troubleshooting
+## [2026-09-10 07:25] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Streamlining & GitHub Pages Troubleshooting
 
 **Agent/Session:** Antigravity / SESSION-20260910-0725
 **Phase:** UI Polish & Streamlining
@@ -1636,7 +1670,7 @@
 - Diagnosed GitHub Pages login failures as a Supabase CORS/URL Configuration issue (Site URL mismatch), and provided the exact steps to resolve it in the Supabase Dashboard.
 
 
-## [2026-09-10 06:55] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â UI Polish, Localization, and Exam Duplication
+## [2026-09-10 06:55] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â UI Polish, Localization, and Exam Duplication
 
 **Agent/Session:** Antigravity / SESSION-20260910-0655
 **Phase:** UI Polish & Localization
@@ -1658,7 +1692,7 @@
 
 ### Next Action
 - Ensure thorough cross-browser testing for the mobile exam views.
-## [2026-09-09 08:10] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Fix GoTrueClient Multiple Instances Race Condition via Async Singleton Promise Lock
+## [2026-09-09 08:10] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Fix GoTrueClient Multiple Instances Race Condition via Async Singleton Promise Lock
 
 **Agent/Session:** Antigravity / SESSION-20260909-1605
 **Phase:** Core Curriculum Hierarchy & Exam Management Engine
@@ -1724,12 +1758,12 @@
 ### Why
 - User report with screenshot of `http://127.0.0.1:5500/exam.html`:
   - *"the exam page is not loaded properly"*
-  - Screenshot showed student "Mr. Abid An Naufal" with countdown timer running (44:30), but top bar displaying "0 Questions", "0/0 answered", no question buttons in sidebar, and the exam card stuck indefinitely on "Loading examÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦".
+  - Screenshot showed student "Mr. Abid An Naufal" with countdown timer running (44:30), but top bar displaying "0 Questions", "0/0 answered", no question buttons in sidebar, and the exam card stuck indefinitely on "Loading examÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦".
 
 ### Root Cause
 - Student Abid had an existing `in_progress` attempt (`1e0d0d7e-3f5d-40d9-8d81-762c0aa3c0c3`) created previously in the `attempts` table, but with 0 rows in `attempt_answers`.
 - In `js/api.js` (`startExam`), because `existingAttempts?.[0]` was detected, it skipped the creation block and queried `attempt_answers`, returning `[]` (0 answers).
-- In `exam.html`, `answerRows = []` caused `renderQuestion(0)` to abort early without replacing the initial `<div class="spinner"></div><p>Loading examÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦</p>` element.
+- In `exam.html`, `answerRows = []` caused `renderQuestion(0)` to abort early without replacing the initial `<div class="spinner"></div><p>Loading examÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦</p>` element.
 
 ### Changed
 - **Database Self-Recovery**:
@@ -1778,7 +1812,7 @@
 
 ---
 
-## [2026-09-09 07:15] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Exam Hierarchy (Program -> Class -> Subject -> Type -> Level -> Order), Letter Levels, Number Orders & Mandatory Prerequisite Enforcement
+## [2026-09-09 07:15] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Exam Hierarchy (Program -> Class -> Subject -> Type -> Level -> Order), Letter Levels, Number Orders & Mandatory Prerequisite Enforcement
 
 **Agent/Session:** Antigravity / SESSION-20260909-1450
 **Phase:** Core Curriculum Hierarchy & Exam Management Engine
@@ -1801,7 +1835,7 @@
 - **Mandatory Prerequisite Exam Enforcement (`admin.html`)**:
   - Dynamically detects if the exam is Level A and Order 1 (the initial curriculum entry point).
   - If Level A Order 1: Prerequisite Exam is optional (`None` permitted).
-  - If any other level or order (e.g. Level A Order 2, Level B Order 1): Prerequisite is strictly **MANDATORY**. Form shows `* (Mandatory ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Must Pass First)` and blocks submission with error toast if not selected.
+  - If any other level or order (e.g. Level A Order 2, Level B Order 1): Prerequisite is strictly **MANDATORY**. Form shows `* (Mandatory ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Must Pass First)` and blocks submission with error toast if not selected.
 - **Dual-Layer Database Auxiliary Storage & Rehydration (`js/api.js`)**:
   - Strips PostgreSQL `GENERATED ALWAYS STORED` column `display_name` to prevent `428C9`.
   - Automatically catches missing column schema cache errors (`PGRST204`, `42703`) and falls back cleanly.
@@ -1817,7 +1851,7 @@
 
 ---
 
-## [2026-09-09 06:25] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Prerequisite Exam "None" Option & Selector Activation
+## [2026-09-09 06:25] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Prerequisite Exam "None" Option & Selector Activation
 
 **Agent/Session:** Antigravity / SESSION-20260909-1415
 **Phase:** Core Curriculum Hierarchy & Exam Management Engine
@@ -1839,7 +1873,7 @@
 
 ---
 
-## [2026-09-09 06:05] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Simplified Exam Creation, Mandatory Class, Prerequisite Selector, Questions Count & Clean Reset
+## [2026-09-09 06:05] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Simplified Exam Creation, Mandatory Class, Prerequisite Selector, Questions Count & Clean Reset
 
 **Agent/Session:** Antigravity / SESSION-20260909-1355
 **Phase:** Core Curriculum Hierarchy & Exam Management Engine
@@ -1866,20 +1900,20 @@
   - **Numerical Level Selection**: Dropdown options display purely clean numbers (`1`, `2`, `3`...).
   - **Real-Time Auto-Generated Title**: Real-time listener generates `[Program] [Class] [Subject] [Type] [Level]` while allowing free manual edits by the admin.
   - **Default 60-Minute Time Limit**: New exams pre-fill with 60 minutes.
-  - **Prerequisite Exam Selector**: Dedicated dropdown populated with other active exams and `ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â None (No Prerequisite) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â`.
+  - **Prerequisite Exam Selector**: Dedicated dropdown populated with other active exams and `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â None (No Prerequisite) ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â`.
   - **Resilient Save**: Form gracefully handles schema cache fallback for `class_id` and `prerequisite_exam_id`.
 - **Exam Management Hub (`renderExams`)**:
   - Added dedicated **Questions** column showing total questions count (`X Questions` / `0 Questions`).
-  - Added **Class** column and **Prerequisite** badge indicator (`ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Prereq: [Exam Title]`).
-  - Enforced strict alphabetical sorting (AÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œZ by Title).
+  - Added **Class** column and **Prerequisite** badge indicator (`ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Prereq: [Exam Title]`).
+  - Enforced strict alphabetical sorting (AÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Z by Title).
 - **Student Dashboard (`dashboard.html`)**:
-  - Enforces prerequisite check: if student has not passed the prerequisite exam with score ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°Ãƒâ€šÃ‚Â¥ 60%, the exam is locked with a warning badge and the Start button is disabled.
+  - Enforces prerequisite check: if student has not passed the prerequisite exam with score ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ 60%, the exam is locked with a warning badge and the Start button is disabled.
 - **Verification**:
   - `scratch/verify_exam_hub_hierarchy.ps1`: All 5 automated checks verified with 100% PASS.
 
 ---
 
-## [2026-09-09 05:00] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Level Structural Hierarchy Alignment, Class Option & Permanent Default Master Data
+## [2026-09-09 05:00] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Level Structural Hierarchy Alignment, Class Option & Permanent Default Master Data
 
 **Agent/Session:** Antigravity / SESSION-20260909-1240
 **Phase:** Core Curriculum Hierarchy & Master Data Architecture
@@ -1919,7 +1953,7 @@
 
 ---
 
-## [2026-09-09 04:30] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Admin Console Login Fix
+## [2026-09-09 04:30] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Admin Console Login Fix
 
 **Agent/Session:** Antigravity / SESSION-20260909-1225
 **Phase:** Admin Authentication & Access Control
@@ -1941,7 +1975,7 @@
 
 ---
 
-## [2026-09-09 04:20] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Streamlined Student-Exam Relations (Direct Program-Level Inheritance) & Batch Grouping
+## [2026-09-09 04:20] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Streamlined Student-Exam Relations (Direct Program-Level Inheritance) & Batch Grouping
 
 **Agent/Session:** Antigravity / SESSION-20260909-1210
 **Phase:** Core Curriculum Hierarchy & Student Reporting
@@ -1956,10 +1990,10 @@
 
 ### Changed
 - **`admin.html`**:
-  - **Exams Hub & Creation**: Exams are created directly under `Program -> Subject -> Level` without separate class assignment steps. Cleaned `formFields.exams` and removed obsolete `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Class Assignments` quick action button.
-  - **Results View (`renderResults`)**: Added **Batch** column (`badge-info`) and interactive cascading filters (`Filter by Program` ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ `Filter by Class` ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ `Filter by Batch` + search query + Reset). Submissions can now be inspected batch-by-batch.
-  - **Student Progress View (`renderProgressView`)**: Added **Batch** column and interactive cascading filters (`Program` ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ `Class` ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ `Batch` + search query + Reset) to monitor level progression by student batch.
-  - **Navigation Clean-up**: Removed obsolete `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€¦Ã‚Â½ Subject Assignments` (`class-subjects`) and `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Exam Assignments` (`exam-classes`) sub-navigation links, routing switch cases, and form definitions.
+  - **Exams Hub & Creation**: Exams are created directly under `Program -> Subject -> Level` without separate class assignment steps. Cleaned `formFields.exams` and removed obsolete `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Class Assignments` quick action button.
+  - **Results View (`renderResults`)**: Added **Batch** column (`badge-info`) and interactive cascading filters (`Filter by Program` ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ `Filter by Class` ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ `Filter by Batch` + search query + Reset). Submissions can now be inspected batch-by-batch.
+  - **Student Progress View (`renderProgressView`)**: Added **Batch** column and interactive cascading filters (`Program` ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ `Class` ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ `Batch` + search query + Reset) to monitor level progression by student batch.
+  - **Navigation Clean-up**: Removed obsolete `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â½ Subject Assignments` (`class-subjects`) and `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Exam Assignments` (`exam-classes`) sub-navigation links, routing switch cases, and form definitions.
 - **`js/api.js`**:
   - **`fetchStudentSubjects`**: Updated to directly fetch active subjects belonging to `program_id` (or resolved via class's program), eliminating mandatory `class_subjects` queries.
   - **`fetchExamsForStudentLevel`**: Updated to directly fetch published exams belonging to `level_id` (and program), eliminating mandatory `exam_classes` queries.
@@ -1980,7 +2014,7 @@
 
 ### Tests
 - command: `powershell -ExecutionPolicy Bypass -File scratch/verify_streamlined_relations.ps1`
-- result: `PASS` ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â All 5 verification checks passed.
+- result: `PASS` ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â All 5 verification checks passed.
   - Direct Subject query by Program: PASS (1 subject)
   - Direct Exam query by Level: PASS (1 published exam)
   - Attempts join with Students, Batches, Classes, and Programs: PASS (200 OK)
@@ -1989,7 +2023,7 @@
 
 ---
 
-## [2026-09-09 03:50] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Student Gender Self-Assignment & Import Workflow
+## [2026-09-09 03:50] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Student Gender Self-Assignment & Import Workflow
 
 **Agent/Session:** Antigravity / SESSION-20260909-1145
 **Phase:** Student Onboarding & Profile Customization
@@ -2015,10 +2049,10 @@
   - **Real-time Title Synchronization**: Updates `#header-student-name`, `#welcome-name`, `#prof-student-name`, and `#prof-gender-badge` dynamically.
 - **`admin.html`**:
   - Fixed import parser: removed hardcoded `female` fallback (`gender = null` if not provided).
-  - Preview table: displays `ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â³ Unassigned` badge for students without gender in spreadsheet.
+  - Preview table: displays `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³ Unassigned` badge for students without gender in spreadsheet.
   - Save & Merge: permits `gender: null` for new students; on merge, does NOT overwrite existing database gender when spreadsheet cell is blank.
   - Download template & guide: updated sample data and instructions noting that Gender is optional.
-  - CRUD Form: added `ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Unassigned (Student will choose) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â` option to manual student entry.
+  - CRUD Form: added `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Unassigned (Student will choose) ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â` option to manual student entry.
 - **`supabase/functions/student-login/index.ts`**:
   - Included `gender: student.gender || null` in JSON response.
 
@@ -2035,11 +2069,11 @@
 
 ### Tests
 - command: `powershell -ExecutionPolicy Bypass -File "d:\Tutor Tampan\Top Class Web Builder\Top English Class\scratch\verify_gender_workflow.ps1"`
-- result: `PASS` ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â All 13 checks passed with 0 errors.
+- result: `PASS` ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â All 13 checks passed with 0 errors.
 
 ---
 
-## [2026-09-09 03:25] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Idempotent Supabase Setup Schema
+## [2026-09-09 03:25] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Idempotent Supabase Setup Schema
 
 **Agent/Session:** Antigravity / SESSION-20260909-1125
 **Phase:** Database Migration & Schema Stabilization
@@ -2061,29 +2095,29 @@
 
 ### Tests
 - command: `Invoke-WebRequest -Uri "https://xuiszvwfjccvucqpactf.supabase.co/rest/v1/<table_name>?select=*" -Headers $headers -UseBasicParsing` across all 15 tables.
-- result: `PASS` ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â All 15 tables returned HTTP 200 OK with correct schema, seed rows, and active RLS policies.
+- result: `PASS` ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â All 15 tables returned HTTP 200 OK with correct schema, seed rows, and active RLS policies.
 
 ### Configuration
 - Established user permission rule in [`.agents/rules/powershell.md`](file:///d:/Tutor%20Tampan/Top%20Class%20Web%20Builder/Top%20English%20Class/.agents/rules/powershell.md) and [`docs/DECISIONS.md`](file:///d:/Tutor%20Tampan/Top%20Class%20Web%20Builder/Top%20English%20Class/docs/DECISIONS.md#DECISION-005) authorizing proactive autonomous PowerShell command execution.
 
 ---
 
-## [2026-09-09 01:55] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â One-Page Login, Remember Me, Sortable Students Table
+## [2026-09-09 01:55] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â One-Page Login, Remember Me, Sortable Students Table
 
 **Agent/Session:** Antigravity / SESSION-20260909-0955
-**Phase:** UX Enhancements ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Login & Admin Console
+**Phase:** UX Enhancements ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Login & Admin Console
 **Status:** PASS
 
 ### Why
 - User requested: "the student login system is in one page, so the menu to choose the program, class batch, and name are in one interface"
 - User requested: "add feature to save login info on the device"
 - User requested: "give me option to sort the students based on the data on top of the registered students table"
-- User reported edit student feature may not be visible ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â verified it is wired correctly.
+- User reported edit student feature may not be visible ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â verified it is wired correctly.
 
 ### Changed
-- **`index.html`** ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Complete rewrite: single-page cascading login. 5 sections (Program ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Class ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Batch ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Name ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ PIN) unlock progressively on one scroll view. Each completed step collapses to a summary chip with "Change" button. Smooth CSS `max-height` animation. "All Batches" fallback.
-- **`index.html`** ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â "Remember Me" toggle: saves full login selection to `localStorage`; auto-restores on next visit; "Clear saved login" link.
-- **`admin.html`** ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â `renderStudents`: pre-computes all student scores once; adds sortable `<th>` headers for Name, Program, Class, Batch, Gender, Overall Score, Global Grade, Status. Clicking cycles ASC ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â² ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ DESC ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â¼ ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ reset. Filter + sort work independently.
+- **`index.html`** ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Complete rewrite: single-page cascading login. 5 sections (Program ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Class ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Batch ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Name ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ PIN) unlock progressively on one scroll view. Each completed step collapses to a summary chip with "Change" button. Smooth CSS `max-height` animation. "All Batches" fallback.
+- **`index.html`** ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â "Remember Me" toggle: saves full login selection to `localStorage`; auto-restores on next visit; "Clear saved login" link.
+- **`admin.html`** ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â `renderStudents`: pre-computes all student scores once; adds sortable `<th>` headers for Name, Program, Class, Batch, Gender, Overall Score, Global Grade, Status. Clicking cycles ASC ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â² ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ DESC ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ reset. Filter + sort work independently.
 
 ### Files
 - `index.html`
@@ -2098,11 +2132,11 @@
 
 ### Next Action
 - Open `index.html` in browser to test one-page login flow.
-- Open `admin.html` ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Students ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ click column headers to test sort.
+- Open `admin.html` ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Students ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ click column headers to test sort.
 
 ---
 
-## [2026-09-09 09:25] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Batch Hierarchy (Program-Class-Batch), Honorific Titles (Mr./Miss), Overall Score & Global Grade
+## [2026-09-09 09:25] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Batch Hierarchy (Program-Class-Batch), Honorific Titles (Mr./Miss), Overall Score & Global Grade
 
 **Agent/Session:** Antigravity / SESSION-20260909-0925
 **Phase:** Core Entity Hierarchy & Student Assessment Extension
@@ -2128,7 +2162,7 @@
   - Updated `setStudentSession` to store `batch_id` and `batch_name`.
 - **Admin Console (`admin.html`)**:
   - Added `Batches` navigation under `CLASS MANAGEMENT` domain with full CRUD management (`renderBatches`).
-  - Updated `Students` table header and rows: placed `Batch` immediately next to `Class`, added `Overall Score` (average across highest effective scores per completed exam per AGENTS.md ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.7 & ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.8), and added `Global Grade` (`S`, `A`, `B`, `C`, `D`, `E`, `F` per AGENTS.md ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.10).
+  - Updated `Students` table header and rows: placed `Batch` immediately next to `Class`, added `Overall Score` (average across highest effective scores per completed exam per AGENTS.md ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.7 & ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.8), and added `Global Grade` (`S`, `A`, `B`, `C`, `D`, `E`, `F` per AGENTS.md ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.10).
   - Enforced strict cascading dependency in `openCrudModal`: Program unlocks Class, Class unlocks Batch; Batch is disabled until Class is selected.
   - Updated `formFields.students` to follow Program -> Class -> Batch hierarchy.
   - Updated Student Import UI: structured Target Program, Target Class, and Target Batch in cascading order; recognized `BATCH` column in spreadsheets; displayed Batch in preview table; and persisted `batch_id`.
@@ -2136,7 +2170,7 @@
 - **Student Login & Portal (`index.html` & `dashboard.html`)**:
   - Converted `index.html` student login flow into 5 structured steps: Program (1/5) -> Class (2/5) -> Batch (3/5) -> Student Name (4/5) -> PIN (5/5).
   - Updated step progress indicators (5 dots, 4 connection lines) and back buttons.
-  - Updated `dashboard.html`: welcome meta displays `Program ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Âº Class ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Âº Batch`; profile card shows hierarchy `Program`, `Class`, and `Batch`.
+  - Updated `dashboard.html`: welcome meta displays `Program ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âº Class ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âº Batch`; profile card shows hierarchy `Program`, `Class`, and `Batch`.
 
 ### Files
 - `supabase-setup.sql`
@@ -2165,7 +2199,7 @@
 ### Next Action
 - Present walkthrough to user.
 
-## [2026-09-09 08:42] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Smart Data Merge & Duplicate Elimination Engine
+## [2026-09-09 08:42] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Smart Data Merge & Duplicate Elimination Engine
 
 **Agent/Session:** Antigravity / SESSION-20260909-0842
 **Phase:** Data Integrity & Import Automation
@@ -2181,15 +2215,15 @@
   - Added `adminHardDelete(table, id)` supporting both live Supabase and mock stores.
 - **Student Import Engine (`admin.html`)**:
   - Added intra-batch deduplication: merges duplicate rows in the spreadsheet before saving so each student is processed exactly once with consolidated details.
-  - Implemented database match detection by `(name, class_id)`: marks matching students as `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Merge / Update Existing` and new students as `ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“Ãƒâ€šÃ‚Â¨ New Student`.
+  - Implemented database match detection by `(name, class_id)`: marks matching students as `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ Merge / Update Existing` and new students as `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¨ New Student`.
   - When saving, executes `adminUpdate` for existing students (updating birth date, gender, non-default PIN, active status) preserving internal UUIDs, attempts, and progress history, while executing `adminInsert` only for brand-new students.
 - **Question Import Engine (`admin.html`)**:
   - Added duplicate detection matching target `exam_id` + `question_order` / `question_text`.
   - Merges/updates existing questions via `adminUpdate` to avoid unique constraint collisions on `(exam_id, question_order)`, and inserts new questions via `adminInsert`.
 - **Student Management Console (`admin.html`)**:
   - Added real-time duplicate student detection on table load.
-  - Added prominent alert banner with one-click `"ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Gabungkan Semua Duplikat"` button when duplicate students exist.
-  - Added `"ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Merge Duplikat (N)"` button in the section header.
+  - Added prominent alert banner with one-click `"ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ Gabungkan Semua Duplikat"` button when duplicate students exist.
+  - Added `"ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ Merge Duplikat (N)"` button in the section header.
   - Added `"Kembar / Duplikat"` badge next to duplicate student names in the table.
   - Added automatic duplicate merge check in `crudForm` when manually adding a student.
 
@@ -2212,7 +2246,7 @@
 ### Next Action
 - Present walkthrough to user.
 
-## [2026-09-09 08:35] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Sidebar Layout Optimization (No-Scroll & Overflow Prevention)
+## [2026-09-09 08:35] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Sidebar Layout Optimization (No-Scroll & Overflow Prevention)
 
 **Agent/Session:** Antigravity / SESSION-20260909-0835
 **Phase:** UI/UX & Responsive Layout Hardening
@@ -2255,7 +2289,7 @@
 ### Next Action
 - Present walkthrough to user.
 
-## [2026-09-09 05:52] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Student Import Engine & Exam String Resolution
+## [2026-09-09 05:52] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Student Import Engine & Exam String Resolution
 
 **Agent/Session:** Antigravity / SESSION-20260909-0552
 **Phase:** Feature Completion & Reliability Hardening
@@ -2266,13 +2300,13 @@
 
 ### Changed
 - **Student Import Engine (`admin.html`)**: Implemented full Excel/CSV student importer with Target Program & Class selectors, downloadable sample template (`Template_Student_Import.xlsx`), case-insensitive column mapper (`NAME`, `GENDER`, `BIRTH_DATE`/`AGE`, `PIN`, `PROGRAM`, `CLASS`), interactive preview table with age calculation and duplicate warning detection, SHA-256 PIN hashing (`hashPin`), and direct batch saving via `adminInsert`.
-- **Student Navigation Shortcut**: Added "ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â¥ Import Students" shortcut button in the Students management section header.
+- **Student Navigation Shortcut**: Added "ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ Import Students" shortcut button in the Students management section header.
 - **Apostrophe / Quote Resilience**: Replaced unsafe inline `onclick` string interpolation (`'${r.name}'`, `'${r.exam_title}'`) with safe `data-del-*` and `data-edit-*` dataset handlers and added `escapeHtml` utility across `programs`, `subjects`, `levels`, `classes`, `students`, `exams`, and `questions`.
-- **Approved Exam Display Formula (AGENTS.md ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.5 & ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.6)**: Implemented `formatExamDisplayName` formatting `[PROGRAM] [CLASS] SUBJECT ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· LEVEL ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· EXAM TYPE ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â EXAM TITLE` across Exam Hub, Questions bank, and dropdown selectors.
+- **Approved Exam Display Formula (AGENTS.md ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.5 & ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.6)**: Implemented `formatExamDisplayName` formatting `[PROGRAM] [CLASS] SUBJECT ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· LEVEL ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· EXAM TYPE ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â EXAM TITLE` across Exam Hub, Questions bank, and dropdown selectors.
 - **Expanded Exam Search**: Broadened `renderExams` search filter to match Program name, Level name, Level number, Answer Type, Status, and Question Order.
 - **Fuzzy Question Import Parser**: Added fuzzy, trimmed, case-insensitive column detection in `renderImportQuestions` for questions (`QUESTION`, `SOAL`, `PERTANYAAN`, `INDONESIA`), answers (`ANSWER`, `JAWABAN`, `KUNCI`), and numeric values (`0`, `1990`).
 - **Safe Options Snapshot Parsing (`exam.html`)**: Implemented `parseSnapshotOptions` to handle JSON strings and comma-separated option strings without throwing `TypeError: options.forEach is not a function`.
-- **Written Answer String Tolerance (`js/api.js`)**: Brought `normalizeAnswerText`, `damerauLevenshtein`, and written answer tolerance (0 errors = 1.0, 1-2 errors = 0.5, 3+ = 0) into `js/api.js` client fallback to ensure exact server parity per AGENTS.md ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.12 & ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.13.
+- **Written Answer String Tolerance (`js/api.js`)**: Brought `normalizeAnswerText`, `damerauLevenshtein`, and written answer tolerance (0 errors = 1.0, 1-2 errors = 0.5, 3+ = 0) into `js/api.js` client fallback to ensure exact server parity per AGENTS.md ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.12 & ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§2.13.
 
 ### Files
 - `admin.html`
@@ -2295,7 +2329,7 @@
 ### Next Action
 - Present walkthrough to user.
 
-## [2026-09-09 00:33] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Project Initialization & Architecture Setup
+## [2026-09-09 00:33] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Project Initialization & Architecture Setup
 
 **Agent/Session:** Antigravity / SESSION-20260909-0033
 **Phase:** Phase 1 - Foundation & Core Features Implementation
@@ -2329,24 +2363,24 @@
 ### Next Action
 - Create `supabase-setup.sql` and Edge Functions.
 
-## [2026-09-09 05:18] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Panel Streamlining, Sleek Modernization, Strict Sorting, Header Standardization & Exam Hub Restoration
+## [2026-09-09 05:18] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â Panel Streamlining, Sleek Modernization, Strict Sorting, Header Standardization & Exam Hub Restoration
 
 **Agent/Session:** Antigravity / SESSION-20260909-0518
-**Phase:** Phase 3 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â UI Streamlining & Exam Management Restoration
+**Phase:** Phase 3 ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â UI Streamlining & Exam Management Restoration
 **Status:** PASS
 
 ### Why
 - User requested streamlining all panels into a modern, sleek, elegant aesthetic.
-- User requested that everything that needs to be listed is in strict alphabetical order (AÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œZ).
+- User requested that everything that needs to be listed is in strict alphabetical order (AÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Z).
 - User requested an audit and alignment of all table headers into logical order.
 - User requested restoring and fixing the Exam Management panel, which appeared missing or inaccessible.
 
 ### Changed
 - `admin.html`:
   - Completely redesigned primary navigation with prominent segmented glassmorphism tabs (`DATABASE`, `CLASS`, `STUDENT`, `EXAM`) and a synchronized topbar domain quick-switcher pill bar.
-  - Restored and elevated the Exam Management panel into an **Exam Management Hub** featuring 4 real-time KPI cards (Total Exams, Published, Draft, Questions in Bank), quick action buttons (`+ Create Exam`, `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â¥ Import Questions`, `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â¤ Export Questions`, `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Class Assignments`), interactive status filter pills (`All`, `Published`, `Draft`, `Unpublished`, `Archived`), and live search bar.
-  - Restored the missing **Student Progress** management view (`renderProgressView`) with status chips (`ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Completed`, `ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â¶ Unlocked`, `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Locked`) and visual percentage progress bars.
-  - Standardized all 12 table headers across all panels into a uniform logical hierarchy (`Parent Entity ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Child Entity ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Attributes ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Status ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Timestamps ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Actions`).
+  - Restored and elevated the Exam Management panel into an **Exam Management Hub** featuring 4 real-time KPI cards (Total Exams, Published, Draft, Questions in Bank), quick action buttons (`+ Create Exam`, `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ Import Questions`, `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ Export Questions`, `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Class Assignments`), interactive status filter pills (`All`, `Published`, `Draft`, `Unpublished`, `Archived`), and live search bar.
+  - Restored the missing **Student Progress** management view (`renderProgressView`) with status chips (`ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ Completed`, `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶ Unlocked`, `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Locked`) and visual percentage progress bars.
+  - Standardized all 12 table headers across all panels into a uniform logical hierarchy (`Parent Entity ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Child Entity ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Attributes ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Status ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Timestamps ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Actions`).
   - Enforced strict alphabetical sorting (A to Z) across all tables and select dropdowns: Programs, Classes, Subjects, Levels, Students, Exams, Questions, Exam Classes, Results, and Student Progress.
   - Added section counter badges (`count-chip`) on all section headers.
   - Cleaned up duplicate code blocks and fixed modal cascading dropdown dependencies.
@@ -2387,7 +2421,7 @@
 ### Next Action
 - Ready for user review and demonstration.
 
-## [2026-09-11 10:50 UTC] ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Master Command Deep-Dive Verification
+## [2026-09-11 10:50 UTC] ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Master Command Deep-Dive Verification
 
 **Agent/Session:** Antigravity
 **Phase:** Phase 20 (Deep-Dive Verification)
@@ -2454,7 +2488,7 @@
  ## [2026-09-14 22:11] - Simplified Exam Creation and Hidden Locked Exams
 
 **Agent/Session:** Antigravity
-**Phase:** Phase 25 â€” Exam Creation & Locked Exams
+**Phase:** Phase 25 Ã¢â‚¬â€ Exam Creation & Locked Exams
 **Status:** PASS
 
 ### Why
@@ -2575,7 +2609,7 @@
 - `js/api.js`
 - `dashboard.html`
 
-## [2026-09-19 01:15] � Robust Question Import Preview & Fuzzy Parsing
+## [2026-09-19 01:15] — Robust Question Import Preview & Fuzzy Parsing
 
 **Agent/Session:** Antigravity (v4.4.18)
 **Phase:** Feature Enhancement / UI Upgrade
@@ -2765,3 +2799,4 @@ ull in the topic map, which correctly defaults back to existingTopics[0]?.id dow
 - js/admin/class.js`n
 ### Next Action
 - Verify batch import is finally completely unblocked.
+

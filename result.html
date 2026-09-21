@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Result — TOPS CORE</title>
-  <meta name="description" content="View your exam results and answer breakdown on TOPS CORE." />
+  <meta name="description" content="View your Assessment results and answer breakdown on TOPS CORE." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
@@ -47,7 +47,7 @@
       <div class="result-grade-display grade-S" id="result-grade-badge">—</div>
       <div class="result-percentage" id="result-percentage">0%</div>
       <h1 class="text-gradient mb-2" id="result-headline">Assessment Complete!</h1>
-      <p class="text-muted" id="result-exam-name"></p>
+      <p class="text-muted" id="result-Assessment-name"></p>
       <div id="result-best-score-badge" style="text-align:center;margin-bottom:0.75rem;"></div>
 
       <!-- Summary Grid -->
@@ -83,9 +83,9 @@
   </div>
 
   <script type="module">
-    import { fetchAttemptResult, fetchAttemptAnswers, fetchAllStudentAttempts, startExam } from './js/api.js?v=4.1.0';
-    import { requireStudentSession } from './js/session.js?v=4.1.0';
-    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=4.1.0';
+    import { fetchAttemptResult, fetchAttemptAnswers, fetchAllStudentAttempts, startAssessment } from './js/api.js?v=4.1.4';
+    import { requireStudentSession } from './js/session.js?v=4.1.4';
+    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=4.1.4';
 
     const session = requireStudentSession();
     if (!session) throw new Error('Not authenticated');
@@ -129,17 +129,17 @@
         const headlines = { S: '&#127942; Perfect Score!', A: '&#127775; Outstanding!', B: '&#128077; Great Work!', C: '&#9989; Good Effort!', D: '&#128218; Keep Practicing!', E: '&#128170; Keep Going!', F: '&#128259; Try Again' };
         document.getElementById('result-headline').textContent = headlines[grade] || 'Assessment Complete!';
 
-        // V1: title from assessments or legacy exams join
-        const asmData  = attempt.assessments || attempt.exams;
-        const asmTitle = asmData?.title || asmData?.exam_title || 'Assessment';
-        const subj = asmData?.subjects?.name || '';
+        // V1: title from assessments or legacy Assessments join
+        const asmData  = attempt.assessments || attempt.Assessments;
+        const asmTitle = asmData?.title || asmData?.name || 'Assessment';
+        const subj = asmData?.Classes?.name || '';
         const lvl  = asmData?.levels?.name ? `Level ${asmData.levels.name}` : '';
-        const typ  = asmData?.assessment_type || asmData?.exam_type || '';
+        const typ  = asmData?.assessment_type || asmData?.Assessment_type || '';
         const nameParts = [subj, lvl, typ, asmTitle].filter(Boolean);
-        document.getElementById('result-exam-name').textContent = nameParts.join(' &bull; ');
+        document.getElementById('result-Assessment-name').textContent = nameParts.join(' &bull; ');
 
         // V1: Best score badge
-        const assessmentId = attempt.assessment_id || attempt.exam_id;
+        const assessmentId = attempt.assessment_id || attempt.Assessment_id;
         const isBest = attempt.is_best_score === true;
 
         // Inject best-score indicator near the grade badge if we have it
@@ -183,7 +183,7 @@
           try {
             const allAttempts = await fetchAllStudentAttempts(session.student_id);
             const thisAssessmentAttempts = allAttempts
-              .filter(a => (a.assessment_id || a.exam_id) === assessmentId && ['SUBMITTED','AUTO_SUBMITTED'].includes(a.status))
+              .filter(a => (a.assessment_id || a.Assessment_id) === assessmentId && ['SUBMITTED','AUTO_SUBMITTED'].includes(a.status))
               .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
 
             if (thisAssessmentAttempts.length > 1) {
@@ -200,8 +200,8 @@
             showLoading('Starting new attempt...');
             const eid = assessmentId;
             if (!eid) throw new Error('No assessment ID found.');
-            sessionStorage.setItem('tec_exam_id', eid);
-            window.location.href = 'exam.html';
+            sessionStorage.setItem('tec_assessment_id', eid);
+            window.location.href = 'assessment.html';
           } catch(e) {
             hideLoading();
             showToast(e.message, 'error');

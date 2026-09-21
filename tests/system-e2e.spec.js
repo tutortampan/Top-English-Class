@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 
 test.describe('Top English Program - E2E System Tests', () => {
 test.beforeEach(async ({ page }) => {
@@ -11,10 +11,10 @@ await expect(page.locator('#step-num-1')).toHaveText('1');
 await expect(page.locator('#remember-me-banner')).toBeVisible();
 });
 
-test('Exam Runner Anti-Cheat and Timer Integrity', async ({ page }) => {
-await page.goto('/exam.html?exam_id=demo-test');
-await expect(page.locator('#exam-timer')).toBeVisible();
-await expect(page.locator('#exam-sync-status')).toBeVisible();
+test('Assessment Runner Anti-Cheat and Timer Integrity', async ({ page }) => {
+await page.goto('/assessment.html?Assessment_id=demo-test');
+await expect(page.locator('#Assessment-timer')).toBeVisible();
+await expect(page.locator('#Assessment-sync-status')).toBeVisible();
 });
 
 test('Admin Console ABCD Navigation Verification', async ({ page }) => {

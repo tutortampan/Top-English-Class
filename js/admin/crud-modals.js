@@ -1,8 +1,9 @@
-import {
+﻿import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete,
   mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
-  detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions
+  detectDuplicateQuestions, resequenceAssessmentQuestions, resolveDuplicateQuestionGroup, batchResolveAssessmentDuplicateQuestions
 } from '../api.js?v=4.4.1';
+import { cleanStudentName } from '../api.js?v=4.4.1';
 import { showToast, showLoading, hideLoading } from '../app.js?v=4.4.1';
 
 function escapeHtml(str) {
@@ -49,7 +50,7 @@ const formFields = {
     { id: 'name', label: 'Institution Name', type: 'text', required: true },
     { id: 'is_active', label: 'Active', type: 'checkbox' },
   ],
-  subjects: [
+  Classes: [
     { id: 'name', label: 'Class Name', type: 'text', required: true },
     { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
     { id: 'is_active', label: 'Active', type: 'checkbox' },
@@ -70,7 +71,7 @@ const formFields = {
   levels: [
     { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true, uiOnly: true },
     { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
-    { id: 'class_id', label: 'Subject', type: 'select', source: 'classes', required: true, dependsOn: 'institution_id' },
+    { id: 'class_id', label: 'Class', type: 'select', source: 'classes', required: true, dependsOn: 'institution_id' },
     { id: 'level_number', label: 'Level Number', type: 'number', required: true, placeholder: 'e.g. 1' },
     { id: 'name', label: 'Level Name', type: 'text', required: true, placeholder: 'e.g. Level 1 - Beginner' },
     { id: 'is_active', label: 'Active', type: 'checkbox' },
@@ -114,19 +115,19 @@ const formFields = {
       { id: 'prerequisite_rules', label: 'Prerequisite Rules (JSON)', type: 'textarea' },
       { id: 'payload', label: 'Configuration Payload (JSON)', type: 'textarea' }
     ],
-    exams: [
+    Assessments: [
     { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
     { id: 'program_id', label: 'Class (Optional / Assigned)', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
-    { id: 'class_id', label: 'Subject', type: 'select', source: 'classes', required: false, dependsOn: 'institution_id' },
-    { id: 'exam_type', label: 'Exam Type', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Final'], required: true, defaultValue: 'Daily' },
+    { id: 'class_id', label: 'Class', type: 'select', source: 'classes', required: false, dependsOn: 'institution_id' },
+    { id: 'Assessment_type', label: 'Assessment Type', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Final'], required: true, defaultValue: 'Daily' },
     
-    { id: 'exam_order', label: 'Order (1, 2, 3...)', type: 'select', options: ['1','2','3','4','5','6','7','8','9','10'], required: true, defaultValue: '1' },
-    { id: 'exam_title', label: 'Assessment Title (Auto-Generated)', type: 'text', required: true, placeholder: 'Auto-generated as: [Class] - [Topic] - [Module] - [Type]' },
-    { id: 'prerequisite_exam_id', label: 'Prerequisite Exam (Optional)', type: 'select', source: 'exams', required: false },
+    { id: 'Assessment_order', label: 'Order (1, 2, 3...)', type: 'select', options: ['1','2','3','4','5','6','7','8','9','10'], required: true, defaultValue: '1' },
+    { id: 'Assessment_title', label: 'Assessment Title (Auto-Generated)', type: 'text', required: true, placeholder: 'Auto-generated as: [Class] - [Topic] - [Module] - [Type]' },
+    { id: 'prerequisite_Assessment_id', label: 'Prerequisite Assessment (Optional)', type: 'select', source: 'Assessments', required: false },
     { id: 'minimum_required_score', label: 'Passing Score % (Default: 60%)', type: 'number', required: true, defaultValue: 60 },
     { id: 'prerequisite_min_score', label: 'Prerequisite Min % (Default: 60%)', type: 'number', required: false, defaultValue: 60 },
     { id: 'time_limit_minutes', label: 'Global Time Limit (minutes)', type: 'number', required: true, defaultValue: 60 },
-    { id: 'exam_status', label: 'Exam Status', type: 'select', options: ['published','draft','unpublished','archived'], required: true },
+    { id: 'Assessment_status', label: 'Assessment Status', type: 'select', options: ['published','draft','unpublished','archived'], required: true },
     { id: 'question_order', label: 'Question Order', type: 'select', options: [{ value: 'sequential', label: 'Sequential' }, { value: 'random', label: 'Random' }], required: true },
     { id: 'retake_allowed', label: 'Retake Allowed', type: 'checkbox' },
     { id: 'max_attempts', label: 'Max Attempts (blank = unlimited)', type: 'number' },
@@ -134,7 +135,7 @@ const formFields = {
   questions: [
     { id: 'question_text', label: 'Question Text', type: 'textarea', required: true },
     { id: 'question_order', label: 'Order', type: 'number', required: true },
-    { id: 'exam_id', label: 'Examination', type: 'select', source: 'exams', required: true },
+    { id: 'Assessment_id', label: 'Assessmentination', type: 'select', source: 'Assessments', required: true },
     { id: 'answer_type', label: 'Answer Type', type: 'select', options: [
       {value:'multiple_choice',label:'Multiple Choice'},
       {value:'dropdown',label:'Dropdown'},
@@ -162,10 +163,10 @@ async function openCrudModal(section, record) {
           batches: 'Batch',
           institutions: 'Institution',
           classes: 'Class',
-          subjects: 'Subject',
+          Classes: 'Class',
           levels: 'Level',
           students: 'Student',
-          exams: 'Assessment',
+          Assessments: 'Assessment',
           class_instances: 'Class Instance',
           class_meetings: 'Meeting',
           topics: 'Topic',
@@ -188,7 +189,7 @@ async function openCrudModal(section, record) {
 
       for (const f of fields) {
         const group = document.createElement('div');
-        const isFull = ['exam_title', 'question_text', 'options_json', 'name'].includes(f.id) || f.type === 'textarea';
+        const isFull = ['Assessment_title', 'question_text', 'options_json', 'name'].includes(f.id) || f.type === 'textarea';
         group.className = `form-group ${isFull ? 'form-group-full' : ''}`;
 
         const label = document.createElement('label');
@@ -203,7 +204,7 @@ async function openCrudModal(section, record) {
           sel.id = `field-${f.id}`;
           sel.name = f.id;
           if (f.required) sel.required = true;
-          if (f.id === 'prerequisite_exam_id') {
+          if (f.id === 'prerequisite_Assessment_id') {
             sel.innerHTML = `<option value="">None (Optional)</option>`;
             sel.disabled = false;
 
@@ -218,14 +219,14 @@ async function openCrudModal(section, record) {
             opts = opts.filter(o => {
               if (o.is_active !== undefined) return o.is_active === true;
               if (o.status !== undefined) return o.status !== 'cancelled' && o.status !== 'archived';
-              if (o.exam_status !== undefined) return o.exam_status === 'published';
+              if (o.Assessment_status !== undefined) return o.Assessment_status === 'published';
               return true;
             });
 
             opts.forEach(o => {
               const opt = document.createElement('option');
               opt.value = o.id;
-              opt.textContent = o.name || o.title || o.exam_title || o.id;
+              opt.textContent = o.name || o.title || o.Assessment_title || o.id;
               if (record && record[f.id] === o.id) opt.selected = true;
               sel.appendChild(opt);
             });
@@ -291,11 +292,11 @@ async function openCrudModal(section, record) {
       const progSelect = crudForm.querySelector('#field-institution_id');
       const classSelect = crudForm.querySelector('#field-program_id');
       const batchSelect = crudForm.querySelector('#field-batch_id');
-      const subjectSelect = crudForm.querySelector('#field-class_id');
-      const prereqSelect = crudForm.querySelector('#field-prerequisite_assessment_id') || crudForm.querySelector('#field-prerequisite_exam_id');
-      const titleInput = crudForm.querySelector('#field-exam_title') || crudForm.querySelector('#field-name');
+      const Classeselect = crudForm.querySelector('#field-class_id');
+      const prereqSelect = crudForm.querySelector('#field-prerequisite_assessment_id') || crudForm.querySelector('#field-prerequisite_Assessment_id');
+      const titleInput = crudForm.querySelector('#field-Assessment_title') || crudForm.querySelector('#field-name');
       const levelSelect = crudForm.querySelector('#field-level_id');
-      const examTypeInput = crudForm.querySelector('#field-exam_type') || crudForm.querySelector('#field-challenge_type');
+      const AssessmentTypeInput = crudForm.querySelector('#field-Assessment_type') || crudForm.querySelector('#field-category');
       const orderSelect = crudForm.querySelector('#field-order_num') || crudForm.querySelector('#field-display_order');
 
       const updatePrereqRequirement = () => {
@@ -306,30 +307,30 @@ async function openCrudModal(section, record) {
 
       if (prereqSelect) {
         prereqSelect.disabled = false;
-        const isNoneSelected = !record || !record.prerequisite_exam_id;
+        const isNoneSelected = !record || !record.prerequisite_Assessment_id;
         prereqSelect.innerHTML = `<option value="" ${isNoneSelected ? 'selected' : ''}>None (Optional)</option>`;
-        const allExams = await adminFetchAll('exams');
-        const eligible = allExams.filter(e => !e.deleted_at && e.id !== _editId);
-        eligible.sort((a, b) => (a.exam_title || '').localeCompare(b.exam_title || '')).forEach(e => {
+        const allAssessments = await adminFetchAll('assessments');
+        const eligible = allAssessments.filter(e => !e.deleted_at && e.id !== _editId);
+        eligible.sort((a, b) => (a.Assessment_title || '').localeCompare(b.Assessment_title || '')).forEach(e => {
           const opt = document.createElement('option');
           opt.value = e.id;
-          opt.textContent = e.exam_title || e.display_name || e.id;
-          if (record && record.prerequisite_exam_id === e.id) opt.selected = true;
+          opt.textContent = e.Assessment_title || e.display_name || e.id;
+          if (record && record.prerequisite_Assessment_id === e.id) opt.selected = true;
           prereqSelect.appendChild(opt);
         });
         updatePrereqRequirement();
       }
 
-            let _titleManuallyEdited = Boolean(_editId && (record?.exam_title || record?.name));
+            let _titleManuallyEdited = Boolean(_editId && (record?.Assessment_title || record?.name));
       const triggerAutoTitle = () => {
         if (_titleManuallyEdited || !titleInput) return;
-        if (_currentSection === 'exams') {
+        if (_currentSection === 'Assessments') {
           const cText = (classSelect && classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].textContent.trim() : '') ||
                         (progSelect && progSelect.selectedIndex > 0 ? progSelect.options[progSelect.selectedIndex].textContent.trim() : '');
-          const tText = subjectSelect && subjectSelect.selectedIndex > 0 ? subjectSelect.options[subjectSelect.selectedIndex].textContent.trim() : '';
+          const tText = Classeselect && Classeselect.selectedIndex > 0 ? Classeselect.options[Classeselect.selectedIndex].textContent.trim() : '';
           const selectedLvlOpt = levelSelect && levelSelect.selectedIndex > 0 ? levelSelect.options[levelSelect.selectedIndex] : null;
           const mText = selectedLvlOpt ? (selectedLvlOpt.getAttribute('data-level-letter') || selectedLvlOpt.textContent.trim()) : '';
-          const typeText = examTypeInput ? examTypeInput.value.trim() : '';
+          const typeText = AssessmentTypeInput ? AssessmentTypeInput.value.trim() : '';
 
           const parts = [cText, tText, mText, typeText].filter(Boolean);
           if (parts.length > 0) {
@@ -349,7 +350,7 @@ async function openCrudModal(section, record) {
         }
       };
 
-      if (titleInput && (_currentSection === 'exams' || _currentSection === 'assessments')) {
+      if (titleInput && (_currentSection === 'Assessments' || _currentSection === 'assessments')) {
         titleInput.addEventListener('input', () => {
           _titleManuallyEdited = true;
         });
@@ -364,11 +365,11 @@ async function openCrudModal(section, record) {
           const allLevels = await adminFetchAll('levels');
           let activeLevels = allLevels.filter(l => !l.deleted_at);
 
-          const selSubjId = subjectSelect ? subjectSelect.value : null;
+          const selSubjId = Classeselect ? Classeselect.value : null;
           if (selSubjId) {
-            const subjectSpecific = activeLevels.filter(l => l.class_id === selSubjId);
-            if (subjectSpecific.length > 0) {
-              activeLevels = subjectSpecific;
+            const Classespecific = activeLevels.filter(l => l.class_id === selSubjId);
+            if (Classespecific.length > 0) {
+              activeLevels = Classespecific;
             }
           }
 
@@ -471,37 +472,37 @@ async function openCrudModal(section, record) {
         });
       }
 
-      // Program -> Subject -> Level cascading dependencies
-      if (progSelect && subjectSelect) {
-        const populateSubjectsForProgram = async (selectedProgId) => {
-          subjectSelect.innerHTML = `<option value="">— Select Subject —</option>`;
+      // Program -> Class -> Level cascading dependencies
+      if (progSelect && Classeselect) {
+        const populateClassesForProgram = async (selectedProgId) => {
+          Classeselect.innerHTML = `<option value="">— Select Class —</option>`;
           if (!selectedProgId) {
-            subjectSelect.disabled = true;
+            Classeselect.disabled = true;
             return;
           }
-          subjectSelect.disabled = false;
-          const allSubjects = await adminFetchAll('classes');
-          const filteredSubjects = allSubjects.filter(s => s.institution_id === selectedProgId && !s.deleted_at);
-          filteredSubjects.sort((a, b) => (a.name || '').localeCompare(b.name || '')).forEach(s => {
+          Classeselect.disabled = false;
+          const allClasses = await adminFetchAll('classes');
+          const filteredClasses = allClasses.filter(s => s.institution_id === selectedProgId && !s.deleted_at);
+          filteredClasses.sort((a, b) => (a.name || '').localeCompare(b.name || '')).forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id;
             opt.textContent = s.name;
             if (record && record.class_id === s.id) opt.selected = true;
-            subjectSelect.appendChild(opt);
+            Classeselect.appendChild(opt);
           });
           await populateLevelsForSection();
           triggerAutoTitle();
         };
 
-        const initialProgIdForSubject = record?.institution_id || (record?.classes?.institution_id) || progSelect?.value;
-        if (subjectSelect) {
-          if (initialProgIdForSubject) {
-            await populateSubjectsForProgram(initialProgIdForSubject);
+        const initialProgIdForClass = record?.institution_id || (record?.classes?.institution_id) || progSelect?.value;
+        if (Classeselect) {
+          if (initialProgIdForClass) {
+            await populateClassesForProgram(initialProgIdForClass);
           } else {
-            subjectSelect.disabled = true;
-            subjectSelect.innerHTML = `<option value="">— Select Program First —</option>`;
+            Classeselect.disabled = true;
+            Classeselect.innerHTML = `<option value="">— Select Program First —</option>`;
           }
-          subjectSelect.addEventListener('change', async () => {
+          Classeselect.addEventListener('change', async () => {
             await populateLevelsForSection();
             triggerAutoTitle();
           });
@@ -509,7 +510,7 @@ async function openCrudModal(section, record) {
 
         if (progSelect) {
           progSelect.addEventListener('change', async (e) => {
-            await populateSubjectsForProgram(e.target.value);
+            await populateClassesForProgram(e.target.value);
           });
         }
       }
@@ -526,9 +527,9 @@ async function openCrudModal(section, record) {
           triggerAutoTitle();
         });
       }
-      if (examTypeInput) {
-        examTypeInput.addEventListener('change', triggerAutoTitle);
-        examTypeInput.addEventListener('input', triggerAutoTitle);
+      if (AssessmentTypeInput) {
+        AssessmentTypeInput.addEventListener('change', triggerAutoTitle);
+        AssessmentTypeInput.addEventListener('input', triggerAutoTitle);
       }
 
 
@@ -600,8 +601,8 @@ function _initCrudModals() {
         else payload[f.id] = el.value || null;
       }
 
-      // Prerequisite Exam Validation: Must fill if level and order are not Level A and Order 1
-      if (_currentSection === 'exams') {
+      // Prerequisite Assessment Validation: Must fill if level and order are not Level A and Order 1
+      if (_currentSection === 'Assessments') {
         // Prerequisite logic handled in Assessment Builder
       }
 
@@ -616,7 +617,7 @@ function _initCrudModals() {
       }
 
       if (_currentSection === 'students' && payload.name) {
-        payload.name = formatStudentName(payload.name, payload.gender);
+        payload.name = cleanStudentName(payload.name);
       }
       try {
         let payloadToSave = { ...payload };
@@ -627,18 +628,18 @@ function _initCrudModals() {
             if (targetTable === 'levels' && payloadToSave.program_id && (err.message?.includes('program_id') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
               delete payloadToSave.program_id;
               await adminUpdate(targetTable, _editId, payloadToSave);
-            } else if (targetTable === 'exams') {
+            } else if (targetTable === 'Assessments') {
               let retried = false;
               if ('program_id' in payloadToSave && (err.message?.includes('program_id') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
                 delete payloadToSave.program_id;
                 retried = true;
               }
-              if ('prerequisite_exam_id' in payloadToSave && (err.message?.includes('prerequisite') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
-                delete payloadToSave.prerequisite_exam_id;
+              if ('prerequisite_Assessment_id' in payloadToSave && (err.message?.includes('prerequisite') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
+                delete payloadToSave.prerequisite_Assessment_id;
                 retried = true;
               }
-              if ('exam_order' in payloadToSave && (err.message?.includes('order') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
-                delete payloadToSave.exam_order;
+              if ('Assessment_order' in payloadToSave && (err.message?.includes('order') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
+                delete payloadToSave.Assessment_order;
                 retried = true;
               }
               if (retried) {
@@ -670,18 +671,18 @@ function _initCrudModals() {
             if (targetTable === 'levels' && payloadToSave.program_id && (err.message?.includes('program_id') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
               delete payloadToSave.program_id;
               await adminInsert(targetTable, payloadToSave);
-            } else if (targetTable === 'exams') {
+            } else if (targetTable === 'Assessments') {
               let retried = false;
               if ('program_id' in payloadToSave && (err.message?.includes('program_id') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
                 delete payloadToSave.program_id;
                 retried = true;
               }
-              if ('prerequisite_exam_id' in payloadToSave && (err.message?.includes('prerequisite') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
-                delete payloadToSave.prerequisite_exam_id;
+              if ('prerequisite_Assessment_id' in payloadToSave && (err.message?.includes('prerequisite') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
+                delete payloadToSave.prerequisite_Assessment_id;
                 retried = true;
               }
-              if ('exam_order' in payloadToSave && (err.message?.includes('order') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
-                delete payloadToSave.exam_order;
+              if ('Assessment_order' in payloadToSave && (err.message?.includes('order') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
+                delete payloadToSave.Assessment_order;
                 retried = true;
               }
               if (retried) {
@@ -697,7 +698,9 @@ function _initCrudModals() {
         }
         window.isProfileDirty = false;
         crudModal.classList.add('hidden');
-        if (typeof window.loadSection === 'function') window.loadSection(_currentSection);
+        if (typeof window.loadSection === 'function') {
+          window.loadSection(window._activeSectionAlias || _currentSection);
+        }
       } catch(e) {
         showToast('Save failed: ' + e.message, 'error');
       }
@@ -747,7 +750,7 @@ function _initCrudModals() {
 // ============================================================
 let currentDupStudScope = 'same_class';
 let dupStudentGroups = [];
-let currentDupQTab = 'same_exam';
+let currentDupQTab = 'same_Assessment';
 let _dupModalsInitialized = false;
 
 function _initDuplicateModals() {
@@ -812,7 +815,7 @@ function _initDuplicateModals() {
     dupQModal?.classList.add('hidden');
   });
 
-  document.getElementById('dup-q-exam-select')?.addEventListener('change', () => loadDuplicateQuestions());
+  document.getElementById('dup-q-Assessment-select')?.addEventListener('change', () => loadDuplicateQuestions());
 
   document.querySelectorAll('.dup-q-tab-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
@@ -823,25 +826,25 @@ function _initDuplicateModals() {
       const target = e.currentTarget;
       target.classList.remove('btn-secondary');
       target.classList.add('btn-primary');
-      currentDupQTab = target.dataset.qtab || 'same_exam';
+      currentDupQTab = target.dataset.qtab || 'same_Assessment';
       await loadDuplicateQuestions();
     });
   });
 
   const batchCleanQuestionsHandler = async () => {
-    const dupQExamSelect = document.getElementById('dup-q-exam-select');
-    const examId = dupQExamSelect?.value || null;
-    if (!examId) {
-      showToast('Please select a specific Exam from the filter above to perform Batch Auto-Resolve.', 'warning');
+    const dupQAssessmentselect = document.getElementById('dup-q-Assessment-select');
+    const AssessmentId = dupQAssessmentselect?.value || null;
+    if (!AssessmentId) {
+      showToast('Please select a specific Assessment from the filter above to perform Batch Auto-Resolve.', 'warning');
       return;
     }
-    if (!confirm('Are you sure you want to batch resolve ALL duplicate questions for this exam? This is irreversible.')) return;
+    if (!confirm('Are you sure you want to batch resolve ALL duplicate questions for this Assessment? This is irreversible.')) return;
 
     showLoading('Batch resolving duplicate questions...');
     try {
-      const res = await batchResolveExamDuplicateQuestions(examId);
+      const res = await batchResolveAssessmentDuplicateQuestions(AssessmentId);
       hideLoading();
-      showToast(`Successfully processed exam: repointed ${res.totalRepointedAnswers || 0} answers across ${res.groupsResolved || 0} duplicate groups.`, 'success');
+      showToast(`Successfully processed Assessment: repointed ${res.totalRepointedAnswers || 0} answers across ${res.groupsResolved || 0} duplicate groups.`, 'success');
       await loadDuplicateQuestions();
     } catch (err) {
       hideLoading();
@@ -850,7 +853,7 @@ function _initDuplicateModals() {
     }
   };
 
-  document.getElementById('btn-batch-clean-exam-questions')?.addEventListener('click', batchCleanQuestionsHandler);
+  document.getElementById('btn-batch-clean-Assessment-questions')?.addEventListener('click', batchCleanQuestionsHandler);
   document.getElementById('btn-resolve-all-visible-questions')?.addEventListener('click', batchCleanQuestionsHandler);
 }
 
@@ -925,7 +928,7 @@ async function loadDuplicateStudents(scope = 'same_class') {
       btn.addEventListener('click', async (e) => {
         const primaryId = e.currentTarget.dataset.primary;
         const secondaryId = e.currentTarget.dataset.secondary;
-        if (!confirm('Merge this student into the primary profile? All exam attempts and progress will be transferred, and this duplicate profile will be soft-deleted. This cannot be undone.')) return;
+        if (!confirm('Merge this student into the primary profile? All Assessment attempts and progress will be transferred, and this duplicate profile will be soft-deleted. This cannot be undone.')) return;
 
         e.currentTarget.disabled = true;
         e.currentTarget.innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
@@ -950,32 +953,32 @@ async function loadDuplicateStudents(scope = 'same_class') {
 // --- QUESTION DUPLICATE LOADER ---
 async function loadDuplicateQuestions() {
   const dupQContent = document.getElementById('dup-questions-content');
-  const dupQExamSelect = document.getElementById('dup-q-exam-select');
+  const dupQAssessmentselect = document.getElementById('dup-q-Assessment-select');
   if (!dupQContent) return;
 
   dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><div class="spinner"></div><p>Scanning for duplicate questions...</p></div>';
   try {
-    const examId = dupQExamSelect?.value || null;
-    const data = await detectDuplicateQuestions(examId);
+    const AssessmentId = dupQAssessmentselect?.value || null;
+    const data = await detectDuplicateQuestions(AssessmentId);
 
     // Update count badges
     const sameCountEl = document.getElementById('dup-q-same-count');
-    if (sameCountEl) sameCountEl.textContent = data.totalSameExamDupCount || 0;
+    if (sameCountEl) sameCountEl.textContent = data.totalSameAssessmentDupCount || 0;
     const orderCountEl = document.getElementById('dup-q-order-count');
-    if (orderCountEl) orderCountEl.textContent = (data.sameExamOrderConflicts || []).length;
+    if (orderCountEl) orderCountEl.textContent = (data.sameAssessmentOrderConflicts || []).length;
     const crossCountEl = document.getElementById('dup-q-cross-count');
-    if (crossCountEl) crossCountEl.textContent = (data.crossExamDuplicates || []).length;
+    if (crossCountEl) crossCountEl.textContent = (data.crossAssessmentDuplicates || []).length;
 
-    // View tab 1: SAME EXAM DUPLICATES
-    if (currentDupQTab === 'same_exam') {
-      if (!data.sameExamDuplicates || data.sameExamDuplicates.length === 0) {
+    // View tab 1: SAME Assessment DUPLICATES
+    if (currentDupQTab === 'same_Assessment') {
+      if (!data.sameAssessmentDuplicates || data.sameAssessmentDuplicates.length === 0) {
         dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No duplicate questions found in this assessment scope.</p></div>';
         return;
       }
 
       let html = '';
-      data.sameExamDuplicates.forEach((group) => {
-        const examTitle = group.examTitle || 'Unknown Assessment';
+      data.sameAssessmentDuplicates.forEach((group) => {
+        const AssessmentTitle = group.AssessmentTitle || 'Unknown Assessment';
         const primaryQ = group.candidates[0];
 
         let optsDisplay = '';
@@ -991,7 +994,7 @@ async function loadDuplicateQuestions() {
         html += `
           <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-warning, #f59e0b); background:var(--clr-surface, #1e293b); border-radius:8px;">
             <div class="d-flex justify-between align-center mb-2 flex-wrap gap-2">
-              <div class="fw-700" style="color:#f8fafc;">Duplicate Question in: ${escapeHtml(examTitle)}</div>
+              <div class="fw-700" style="color:#f8fafc;">Duplicate Question in: ${escapeHtml(AssessmentTitle)}</div>
               <button class="btn btn-warning btn-sm btn-resolve-q-group" data-primary="${primaryQ.id}" style="font-size:0.75rem;">Auto-Resolve Group</button>
             </div>
             <div class="text-sm mb-3 px-3 py-2 rounded" style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08);">
@@ -1036,7 +1039,7 @@ async function loadDuplicateQuestions() {
       dupQContent.querySelectorAll('.btn-resolve-q-group').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           const primaryId = e.currentTarget.dataset.primary;
-          const group = data.sameExamDuplicates.find(g => g.recommendedPrimaryId === primaryId);
+          const group = data.sameAssessmentDuplicates.find(g => g.recommendedPrimaryId === primaryId);
           if (!group) return;
 
           if (!confirm('Resolve this duplicate question group? All student answers tied to the duplicates will be repointed to the primary question, and the duplicates will be removed. Finally, questions will be re-sequenced.')) return;
@@ -1049,7 +1052,7 @@ async function loadDuplicateQuestions() {
               await resolveDuplicateQuestionGroup(group.recommendedPrimaryId, group.candidates[i].id, false);
               count++;
             }
-            await resequenceExamQuestions(group.examId);
+            await resequenceAssessmentQuestions(group.AssessmentId);
             showToast(`Resolved! Repointed answers. ${count} duplicates removed.`, 'success');
             await loadDuplicateQuestions();
           } catch (err) {
@@ -1064,19 +1067,19 @@ async function loadDuplicateQuestions() {
 
     // View tab 2: ORDER CONFLICTS
     if (currentDupQTab === 'order_conflicts') {
-      if (!data.sameExamOrderConflicts || data.sameExamOrderConflicts.length === 0) {
+      if (!data.sameAssessmentOrderConflicts || data.sameAssessmentOrderConflicts.length === 0) {
         dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No question order conflicts detected.</p></div>';
         return;
       }
 
       let html = '';
-      data.sameExamOrderConflicts.forEach((group) => {
-        const examTitle = group.examTitle || 'Unknown Exam';
+      data.sameAssessmentOrderConflicts.forEach((group) => {
+        const AssessmentTitle = group.AssessmentTitle || 'Unknown Assessment';
         html += `
           <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-info, #3b82f6); background:var(--clr-surface, #1e293b); border-radius:8px;">
             <div class="d-flex justify-between align-center mb-2 flex-wrap gap-2">
-              <div class="fw-700" style="color:#f8fafc;">Order Conflict (#${group.order}) in: ${escapeHtml(examTitle)}</div>
-              <button class="btn btn-secondary btn-sm btn-resequence-exam" data-exam="${group.examId}" style="font-size:0.75rem;">Resequence Exam (1..N)</button>
+              <div class="fw-700" style="color:#f8fafc;">Order Conflict (#${group.order}) in: ${escapeHtml(AssessmentTitle)}</div>
+              <button class="btn btn-secondary btn-sm btn-resequence-Assessment" data-Assessment="${group.AssessmentId}" style="font-size:0.75rem;">Resequence Assessment (1..N)</button>
             </div>
             <table class="table-sm w-100 text-xs" style="border-collapse:collapse; width:100%;">
               <thead>
@@ -1101,13 +1104,13 @@ async function loadDuplicateQuestions() {
       });
       dupQContent.innerHTML = html;
 
-      dupQContent.querySelectorAll('.btn-resequence-exam').forEach(btn => {
+      dupQContent.querySelectorAll('.btn-resequence-Assessment').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-          const examId = e.currentTarget.dataset.exam;
+          const AssessmentId = e.currentTarget.dataset.Assessment;
           e.currentTarget.disabled = true;
           try {
-            await resequenceExamQuestions(examId);
-            showToast('Exam questions resequenced sequentially!', 'success');
+            await resequenceAssessmentQuestions(AssessmentId);
+            showToast('Assessment questions resequenced sequentially!', 'success');
             await loadDuplicateQuestions();
           } catch (err) {
             showToast(`Resequence failed: ${err.message}`, 'error');
@@ -1118,22 +1121,22 @@ async function loadDuplicateQuestions() {
       return;
     }
 
-    // View tab 3: CROSS EXAM DUPLICATES
-    if (currentDupQTab === 'cross_exam') {
-      if (!data.crossExamDuplicates || data.crossExamDuplicates.length === 0) {
-        dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No cross-exam duplicate questions found.</p></div>';
+    // View tab 3: CROSS Assessment DUPLICATES
+    if (currentDupQTab === 'cross_Assessment') {
+      if (!data.crossAssessmentDuplicates || data.crossAssessmentDuplicates.length === 0) {
+        dupQContent.innerHTML = '<div class="empty-state p-6 text-center"><p>✅ No cross-Assessment duplicate questions found.</p></div>';
         return;
       }
 
       let html = '';
-      data.crossExamDuplicates.forEach((group) => {
+      data.crossAssessmentDuplicates.forEach((group) => {
         html += `
           <div class="card p-4 mb-4" style="border-left:4px solid var(--clr-primary, #6366f1); background:var(--clr-surface, #1e293b); border-radius:8px;">
-            <div class="fw-700 mb-2" style="color:#f8fafc;">Identical Text in ${group.examCount} assessments (${group.candidatesCount} instances)</div>
+            <div class="fw-700 mb-2" style="color:#f8fafc;">Identical Text in ${group.AssessmentCount} assessments (${group.candidatesCount} instances)</div>
             <div class="text-sm mb-2 px-3 py-2 rounded" style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08);">
               ${escapeHtml(group.questionText)}
             </div>
-            <div class="text-xs text-muted"><strong>Assessments:</strong> ${(group.exams || []).map(e => escapeHtml(e.title)).join(' • ')}</div>
+            <div class="text-xs text-muted"><strong>Assessments:</strong> ${(group.Assessments || []).map(e => escapeHtml(e.title)).join(' • ')}</div>
           </div>
         `;
       });
@@ -1147,17 +1150,17 @@ async function loadDuplicateQuestions() {
   }
 }
 
-// --- POPULATE EXAM SELECT IN QUESTIONS MODAL ---
+// --- POPULATE Assessment SELECT IN QUESTIONS MODAL ---
 async function initDuplicateQuestionsSelect() {
-  const dupQExamSelect = document.getElementById('dup-q-exam-select');
-  if (!dupQExamSelect) return;
+  const dupQAssessmentselect = document.getElementById('dup-q-Assessment-select');
+  if (!dupQAssessmentselect) return;
   try {
-    const exams = await adminFetchAll('exams', 'id, exam_title, exam_status');
-    const sortedExams = (exams || []).sort((a, b) => (a.exam_title || '').localeCompare(b.exam_title || ''));
-    dupQExamSelect.innerHTML = '<option value="">— All Exams (Global Search) —</option>' +
-      sortedExams.map(e => `<option value="${e.id}">${escapeHtml(e.exam_title)} (${e.exam_status || 'published'})</option>`).join('');
+    const Assessments = await adminFetchAll('Assessments', 'id, Assessment_title, Assessment_status');
+    const sortedAssessments = (Assessments || []).sort((a, b) => (a.Assessment_title || '').localeCompare(b.Assessment_title || ''));
+    dupQAssessmentselect.innerHTML = '<option value="">— All Assessments (Global Search) —</option>' +
+      sortedAssessments.map(e => `<option value="${e.id}">${escapeHtml(e.Assessment_title)} (${e.Assessment_status || 'published'})</option>`).join('');
   } catch (e) {
-    console.warn('Could not load exams for duplicate select:', e);
+    console.warn('Could not load Assessments for duplicate select:', e);
   }
 }
 

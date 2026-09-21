@@ -9,8 +9,8 @@ import { createSpeechSession, isSpeechSupported } from './speech.js?v=4.1.0';
 import { damerauLevenshtein, normalizeAnswerText } from './grading.js?v=4.1.0';
 
 export const AI_MODULE_TYPES = {
-  VISUAL_PRONOUNS: 'VISUAL_PRONOUNS',
-  NARRATIVE_TENSE: 'NARRATIVE_TENSE',
+  POINT_AND_SPEAK: 'POINT_AND_SPEAK',
+  STORYTELLING: 'STORYTELLING',
   CONVERSATIONAL: 'CONVERSATIONAL',
   MULTIPLE_CHOICE: 'MULTIPLE_CHOICE',
   READ_ALOUD: 'READ_ALOUD',
@@ -319,7 +319,7 @@ function runClientDeterministicFallback(payload) {
   const lower = t.toLowerCase();
 
   switch (payload.moduleType) {
-    case AI_MODULE_TYPES.VISUAL_PRONOUNS: {
+    case AI_MODULE_TYPES.POINT_AND_SPEAK: {
       const targets = ctx.targetGrammar || ['this', 'that', 'these', 'those'];
       const sentences = t.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 3);
       const hits = {};
@@ -341,7 +341,7 @@ function runClientDeterministicFallback(payload) {
       };
     }
 
-    case AI_MODULE_TYPES.NARRATIVE_TENSE: {
+    case AI_MODULE_TYPES.STORYTELLING: {
       const words = lower.split(/\s+/).filter(Boolean);
       const isPast = (ctx.targetTense || 'Past Simple').toLowerCase().includes('past');
       let count = 0;

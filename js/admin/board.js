@@ -426,28 +426,68 @@ export async function renderBoardOverview(container) {
   const recent = students
     .filter(s => !s.deleted_at)
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 8);
+    .slice(0, 5);
+
+  const sortedInstitutions = [...institutions].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const instsHtml = sortedInstitutions.map(inst => {
+    const instProgs = programs.filter(p => p.institution_id === inst.id).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    return `
+      <div class="glass-card" style="padding:1rem; margin-bottom:1rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+           <h3 style="margin:0; font-size:1.1rem;">&#x1F3E2; ${escHtml(inst.name)}</h3>
+           <div style="display:flex; align-items:center; gap:0.5rem;">
+             <span class="badge ${inst.is_active !== false ? 'badge-success' : 'badge-neutral'}">${inst.is_active !== false ? 'Active' : 'Inactive'}</span>
+             <button class="btn btn-ghost btn-xs" onclick='window._editRecord("institutions", "${inst.id}", ${JSON.stringify(JSON.stringify(inst))})' title="Edit Institution" style="padding:0 0.4rem; height:auto; min-height:0;">✏️</button>
+           </div>
+        </div>
+        <h4 style="margin:0 0 .5rem 0; font-size:.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--fm-text-muted);">Programs</h4>
+        <div style="display:flex; flex-direction:column; gap:.25rem;">
+          ${instProgs.length === 0 ? '<div class="text-muted text-sm">No programs.</div>' : instProgs.map(p => {
+             const progBatches = batches.filter(b => b.program_id === p.id).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+             return `
+             <div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.02); padding:.4rem; border-radius:6px; border:1px solid var(--clr-border);">
+                <div>
+                   <div class="fw-600 text-sm">${escHtml(p.name)}</div>
+                   <div class="text-xs text-muted">${progBatches.length} Batches &bull; ${progBatches.map(b=> `<span style="cursor:pointer; text-decoration:underline;" onclick='window.openCrudModal("batches", ${JSON.stringify(b).replace(/'/g, "&#39;")})' title="Edit Batch">${escHtml(b.name)}</span>`).join(', ')}</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <span class="badge ${p.is_active !== false ? 'badge-success' : 'badge-neutral'}">${p.is_active !== false ? 'Active' : 'Inactive'}</span>
+                  <button class="btn btn-ghost btn-xs" onclick='window._editRecord("programs", "${p.id}", ${JSON.stringify(JSON.stringify(p))})' title="Edit Program" style="padding:0 0.4rem; height:auto; min-height:0;">✏️</button>
+                </div>
+             </div>
+             `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
 
   document.getElementById('board-lower-grid').innerHTML = `
-    <div class="glass-card" style="padding:1.5rem;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-        <h3 style="margin:0;font-size:1rem;font-weight:800;">&#x1F550; Recently Added</h3>
-        <button class="btn btn-ghost btn-sm" onclick="window.loadSection('students')">View All</button>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:.5rem;">
-        ${recent.length === 0 ? '<p class="text-muted text-sm">No students yet.</p>' :
-          recent.map(s =>
-            '<div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem;background:rgba(255,255,255,0.02);border-radius:8px;border:1px solid var(--clr-border);">'
-            + '<div>'
-            + '<div class="fw-700 text-sm">' + escHtml(formatStudentName(s.name, s.gender)) + '</div>'
-            + '<div class="text-xs text-muted">' + new Date(s.created_at).toLocaleDateString() + '</div>'
-            + '</div>'
-            + '<span class="badge ' + (s.is_active ? 'badge-success' : 'badge-neutral') + '">' + (s.is_active ? 'Active' : 'Inactive') + '</span>'
-            + '</div>'
-          ).join('')}
+    <div id="board-inst-panels" style="display:flex; flex-direction:column; padding-right: 0.5rem;">
+      <h3 style="margin:0 0 1rem 0; font-size:1.2rem; font-weight:800; position: sticky; top: 0; background: var(--fm-bg); z-index: 10; padding-bottom: 0.5rem;">Organization Hierarchy</h3>
+      ${instsHtml || '<p class="text-muted">No institutions available.</p>'}
+    </div>
+    <div style="display:flex; flex-direction:column; gap:1rem; padding-right: 0.5rem;">
+      <div id="board-bulk-slot"></div>
+      <div class="glass-card" style="padding:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+          <h3 style="margin:0;font-size:1rem;font-weight:800;">&#x1F550; Recently Added</h3>
+          <button class="btn btn-ghost btn-sm" onclick="window.loadSection('students')">View All</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.25rem;">
+          ${recent.length === 0 ? '<p class="text-muted text-sm">No students yet.</p>' :
+            recent.map(s =>
+              '<div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem;background:rgba(255,255,255,0.02);border-radius:8px;border:1px solid var(--clr-border);">'
+              + '<div>'
+              + '<div class="fw-700 text-sm">' + escHtml(formatStudentName(s.name, s.gender)) + '</div>'
+              + '<div class="text-xs text-muted">' + new Date(s.created_at).toLocaleDateString() + '</div>'
+              + '</div>'
+              + '<span class="badge ' + (s.is_active !== false ? 'badge-success' : 'badge-neutral') + '">' + (s.is_active !== false ? 'Active' : 'Inactive') + '</span>'
+              + '</div>'
+            ).join('')}
+        </div>
       </div>
     </div>
-    <div id="board-bulk-slot"></div>
   `;
 
   renderBulkImporterPanel(

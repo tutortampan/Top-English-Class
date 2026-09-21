@@ -1,4 +1,4 @@
-// js/admin/dossier_export.js
+﻿// js/admin/dossier_export.js
 
 export function exportStudentDossier(studentData, educationList, skillsList, assessmentList) {
   const printWindow = window.open('', '_blank');
@@ -38,7 +38,7 @@ export function exportStudentDossier(studentData, educationList, skillsList, ass
         <h4>ACADEMIC ADMINISTRATION BOARD</h4>
         <p>Jl. Pendidikan Akademik No. 45, Mataram | Email: support@topscore.edu</p>
         <hr>
-        <p style="font-weight:bold;">DOCUMENT SUBJECT: INDIVIDUAL STUDENT DOSSIER PROFILE &nbsp;|&nbsp; STATUS: OFFICIAL & VERIFIED</p>
+        <p style="font-weight:bold;">DOCUMENT Class: INDIVIDUAL STUDENT DOSSIER PROFILE &nbsp;|&nbsp; STATUS: OFFICIAL & VERIFIED</p>
       </div>
 
       <div class="grid">

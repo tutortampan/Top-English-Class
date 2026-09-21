@@ -288,6 +288,235 @@ export async function renderBatches(area) {
   });
 }
 
+export async function renderUnifiedInstitutions(area) {
+  const [batches, programs, institutions, allStudents] = await Promise.all([
+    adminFetchAll('batches', '*'),
+    adminFetchAll('programs', '*'),
+    adminFetchAll('institutions', '*'),
+    adminFetchAll('students', 'id, is_active, batch_id')
+  ]);
+
+  // Map programs and institutions by ID for easy lookup
+  const instMap = institutions.reduce((acc, i) => ({...acc, [i.id]: i}), {});
+  const progMap = programs.reduce((acc, p) => ({...acc, [p.id]: p}), {});
+
+  // Build the flattened rows
+  // To handle empty programs/institutions, we could iterate over all.
+  // But for now, we'll iterate over all batches, PLUS any programs without batches, PLUS any institutions without programs.
+  let gridData = [];
+  
+  // 1. Batches
+  batches.forEach(b => {
+    const prog = progMap[b.program_id] || {};
+    const inst = instMap[prog.institution_id] || {};
+    const activeStudents = allStudents.filter(s => s.batch_id === b.id && s.is_active !== false).length;
+    
+    gridData.push({
+      id: b.id, // ID for DataGrid key
+      batchId: b.id,
+      programId: prog.id,
+      institutionId: inst.id,
+      institutionName: inst.name || 'Unknown',
+      programName: prog.name || 'Unknown',
+      batchName: b.name || 'Unknown',
+      enrollmentDate: b.enrollment_date || '-',
+      graduateDate: b.actual_final_date || '-',
+      studentCount: activeStudents,
+      status: (b.is_active !== false) ? 'Active' : 'Inactive',
+      type: 'Batch',
+      _batchRaw: b,
+      _progRaw: prog,
+      _instRaw: inst
+    });
+  });
+
+  // 2. Programs without batches (REMOVED: User requested Batch only view)
+  // 3. Institutions without programs (REMOVED: User requested Batch only view)
+
+  // Sort by Institution -> Program -> Batch
+  gridData.sort((a, b) => {
+    if (a.institutionName !== b.institutionName) return a.institutionName.localeCompare(b.institutionName);
+    if (a.programName !== b.programName) return a.programName.localeCompare(b.programName);
+    return a.batchName.localeCompare(b.batchName);
+  });
+
+  area.innerHTML = `
+    <div class="section-header d-flex justify-between align-center">
+      <div>
+        <h2 class="section-title">Batches <span class="count-chip">${gridData.length} Total Rows</span></h2>
+        <p class="section-subtitle">Manage batch enrollments and schedules.</p>
+      </div>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="btn btn-primary btn-sm" onclick="window.openCrudModal('batches', null)">+ Batch</button>
+      </div>
+    </div>
+    
+    <div id="unified-grid-container" class="card" style="padding:1rem;"></div>
+  `;
+
+  // Attach drawer functions to the window so the grid can call them
+  window._showInstitutionDrawer = (id) => {
+    const row = gridData.find(r => r.institutionId === id);
+    if (!row || !row._instRaw) return;
+    const body = `
+      <div style="display:flex; flex-direction:column; gap:1rem;">
+        <div>
+          <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.institutionName)}</h4>
+          <div class="text-muted text-sm">Institution details available in Board Overview.</div>
+        </div>
+      </div>
+    `;
+    const footer = `
+      <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
+      <button class="btn btn-outline" onclick='window.loadSection("board_overview"); closeRecordDrawer();'>Board Overview</button>
+      <button class="btn btn-primary" onclick='window._editRecord("institutions", "${id}", ${JSON.stringify(JSON.stringify(row._instRaw))}); closeRecordDrawer();'>Edit</button>
+    `;
+    if (window.openRecordDrawer) window.openRecordDrawer('Institution Details', body, footer);
+  };
+
+  window._showProgramDrawer = (id) => {
+    const row = gridData.find(r => r.programId === id);
+    if (!row || !row._progRaw) return;
+    const isActive = row._progRaw.is_active !== false;
+    const body = `
+      <div style="display:flex; flex-direction:column; gap:1rem;">
+        <div>
+          <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.programName)}</h4>
+          <div class="text-muted text-sm">Status: <strong class="${isActive ? 'text-success' : 'text-muted'}">${isActive ? 'Active' : 'Inactive'}</strong></div>
+        </div>
+        <hr style="border-color:var(--fm-border-subtle); margin:0;">
+        <div>
+          <div class="text-sm text-muted mb-1">Parent Institution</div>
+          <div class="fw-600">${escapeHtml(row.institutionName)}</div>
+        </div>
+      </div>
+    `;
+    const footer = `
+      <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
+      <button class="btn btn-primary" onclick='window._editRecord("programs", "${id}", ${JSON.stringify(JSON.stringify(row._progRaw))}); closeRecordDrawer();'>Edit</button>
+    `;
+    if (window.openRecordDrawer) window.openRecordDrawer('Program Details', body, footer);
+  };
+
+  window._showBatchDrawer = (id) => {
+    const row = gridData.find(r => r.batchId === id);
+    if (!row || !row._batchRaw) return;
+    const isActive = row._batchRaw.is_active !== false;
+    const body = `
+      <div style="display:flex; flex-direction:column; gap:1rem;">
+        <div>
+          <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.batchName)}</h4>
+          <div class="text-muted text-sm">Status: <strong class="${isActive ? 'text-success' : 'text-muted'}">${row.status}</strong></div>
+        </div>
+        <hr style="border-color:var(--fm-border-subtle); margin:0;">
+        <div>
+          <div class="text-sm text-muted mb-1">Hierarchy</div>
+          <div class="fw-600">${escapeHtml(row.institutionName)} / ${escapeHtml(row.programName)}</div>
+        </div>
+        <div>
+          <div class="text-sm text-muted mb-1">Enrollment</div>
+          <div class="fw-600">${row.studentCount} Active Students</div>
+        </div>
+        <div>
+          <div class="text-sm text-muted mb-1">Enrollment Date</div>
+          <div class="fw-600">${escapeHtml(row.enrollmentDate)}</div>
+        </div>
+        <div>
+          <div class="text-sm text-muted mb-1">Graduate Date</div>
+          <div class="fw-600">${escapeHtml(row.graduateDate)}</div>
+        </div>
+      </div>
+    `;
+    const footer = `
+      <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
+      <button class="btn btn-outline" onclick='window._filterBatchId="${id}"; window._filterBatchName="${escapeHtml(row.batchName)}"; window.loadSection("students"); closeRecordDrawer();'>View Students</button>
+      <button class="btn btn-primary" onclick='window._editRecord("batches", "${id}", ${JSON.stringify(row._batchRaw).replace(/'/g, "&#39;")}); closeRecordDrawer();'>Edit</button>
+    `;
+    if (window.openRecordDrawer) window.openRecordDrawer('Batch Details', body, footer);
+  };
+
+  new (DataGrid || window.DataGrid)({
+    container: 'unified-grid-container',
+    data: gridData,
+    pageSize: 50,
+    searchKeys: ['institutionName', 'programName', 'batchName'],
+    bulkActions: false,
+    columns: [
+      { 
+        key: 'institutionName', 
+        label: 'Institution', 
+        sortable: true,
+        render: (val, row) => {
+          if (row.institutionId) {
+             return `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); window._showInstitutionDrawer('${row.institutionId}')" class="text-primary fw-600" style="text-decoration:none;">${escapeHtml(val)}</a>`;
+          }
+          return escapeHtml(val);
+        }
+      },
+      { 
+        key: 'programName', 
+        label: 'Program', 
+        sortable: true,
+        render: (val, row) => {
+          if (row.programId) {
+             return `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); window._showProgramDrawer('${row.programId}')" class="text-primary fw-600" style="text-decoration:none;">${escapeHtml(val)}</a>`;
+          }
+          return escapeHtml(val);
+        }
+      },
+      { 
+        key: 'batchName', 
+        label: 'Batch', 
+        sortable: true,
+        render: (val, row) => {
+          if (row.batchId) {
+             return `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); window._showBatchDrawer('${row.batchId}')" class="text-primary fw-600" style="text-decoration:none;">${escapeHtml(val)}</a>`;
+          }
+          return escapeHtml(val);
+        }
+      },
+      { 
+        key: 'enrollmentDate', 
+        label: 'Enrollment Date', 
+        sortable: true 
+      },
+      { 
+        key: 'graduateDate', 
+        label: 'Graduate Date', 
+        sortable: true 
+      },
+      { 
+        key: 'studentCount', 
+        label: 'Students', 
+        sortable: true,
+        render: (val) => val > 0 ? `${val} <span style="color:var(--fm-text-muted);font-size:0.8rem;">Active</span>` : '-'
+      },
+      { 
+        key: 'status', 
+        label: 'Status', 
+        sortable: true,
+        render: (val) => {
+          if (val === '-') return val;
+          return val === 'Active' 
+            ? '<span class="status-badge status-active">ACTIVE</span>'
+            : '<span class="status-badge status-inactive">INACTIVE</span>';
+        }
+      },
+      {
+        key: 'actions',
+        label: '',
+        sortable: false,
+        align: 'right',
+        render: (val, row) => {
+          return `
+            <button class="btn btn-ghost btn-xs text-primary" onclick='event.stopPropagation(); window._showBatchDrawer("${row.batchId}");' title="Options">⋮</button>
+          `;
+        }
+      }
+    ]
+  });
+}
+
 // Utility function copied from app.js to prevent undefined errors
 function escapeHtml(unsafe) {
   if (!unsafe) return '';

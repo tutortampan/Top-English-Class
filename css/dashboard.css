@@ -369,15 +369,15 @@
   margin: 0;
 }
 
-/* Subject cards (Compact & Dense) */
-.subjects-grid {
+/* Class cards (Compact & Dense) */
+.classes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--space-3);
   margin-bottom: var(--space-6);
 }
 
-.subject-card {
+.class-card {
   border-radius: var(--radius-lg);
   background: rgba(13, 21, 38, 0.7);
   backdrop-filter: blur(12px);
@@ -395,18 +395,18 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
-.subject-card:hover {
+.class-card:hover {
   transform: translateY(-2px);
   border-color: rgba(99, 102, 241, 0.4);
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.15);
 }
 
-.subject-card .subject-icon {
+.class-card .class-icon {
   font-size: 1.5rem;
   line-height: 1;
 }
 
-.subject-card .subject-name {
+.class-card .class-name {
   font-weight: 700;
   font-size: 0.98rem;
   margin-bottom: 0;
@@ -439,9 +439,9 @@
 }
 
 /* ============================================================
-   EXAM PAGE (COMPACT)
+   ASSESSMENT PAGE (COMPACT)
    ============================================================ */
-.exam-page {
+.assessment-page {
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -449,7 +449,7 @@
   flex-direction: column;
 }
 
-.exam-topbar {
+.assessment-topbar {
   position: sticky;
   top: 0;
   z-index: var(--z-nav);
@@ -463,7 +463,7 @@
   gap: var(--space-3);
 }
 
-.exam-title-bar {
+.assessment-title-bar {
   flex: 1;
   overflow: hidden;
   display: flex;
@@ -471,7 +471,7 @@
   gap: var(--space-2);
 }
 
-.exam-name-display {
+.assessment-name-display {
   font-weight: 700;
   font-size: 0.9rem;
   white-space: nowrap;
@@ -480,12 +480,12 @@
   color: var(--clr-accent-1);
 }
 
-.exam-meta-display {
+.assessment-meta-display {
   display: none; /* Hide meta on topbar for compactness */
 }
 
 /* Timer */
-.exam-timer {
+.assessment-timer {
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -499,14 +499,14 @@
   transition: all var(--transition-base);
 }
 
-.exam-timer.warning {
+.assessment-timer.warning {
   background: rgba(245,158,11,0.15);
   border-color: rgba(245,158,11,0.4);
   color: var(--clr-warning);
   animation: timer-pulse 1s ease-in-out infinite;
 }
 
-.exam-timer.critical {
+.assessment-timer.critical {
   background: rgba(239,68,68,0.15);
   border-color: rgba(239,68,68,0.4);
   color: var(--clr-danger);
@@ -517,19 +517,19 @@
   50% { transform: scale(1.03); }
 }
 
-.exam-progress-wrap {
+.assessment-progress-wrap {
   height: 2px; /* Super thin progress bar */
   background: rgba(255,255,255,0.06);
 }
 
-.exam-progress-fill {
+.assessment-progress-fill {
   height: 100%;
   background: var(--grad-primary);
   transition: width 0.5s ease;
 }
 
-/* Exam Layout Container */
-.exam-body {
+/* Assessment Layout Container */
+.assessment-body {
   flex: 1;
   display: flex;
   overflow: hidden;
@@ -538,7 +538,7 @@
 }
 
 /* Question area */
-.exam-main-content {
+.assessment-main-content {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-3) var(--space-3) 0 var(--space-3);
@@ -591,7 +591,7 @@
   margin-bottom: var(--space-4);
 }
 
-/* Exam Nav Drawer (Mobile first, slide up from bottom) */
+/* Assessment Nav Drawer (Mobile first, slide up from bottom) */
 .q-nav-drawer {
   position: fixed;
   bottom: 0;
@@ -790,14 +790,14 @@
   color: var(--clr-text-3);
 }
 
-/* Exam nav buttons (removed desktop-specific large margin) */
-.exam-nav-buttons {
+/* Assessment nav buttons (removed desktop-specific large margin) */
+.assessment-nav-buttons {
   display: none; /* Handled by bottom nav on mobile, hidden initially */
 }
 
 /* Desktop override for sidebar */
 @media (min-width: 769px) {
-  .exam-body {
+  .assessment-body {
     flex-direction: row;
     padding: var(--space-4);
     padding-bottom: 0;
@@ -820,7 +820,7 @@
     display: none;
   }
   
-  .exam-nav-buttons {
+  .assessment-nav-buttons {
     display: flex;
     justify-content: space-between;
     margin-top: var(--space-4);
@@ -940,14 +940,14 @@
     max-width: 100% !important;
   }
 
-  /* Subjects Grid */
-  .subjects-grid {
+  /* Classes Grid */
+  .classes-grid {
     grid-template-columns: 1fr;
     gap: var(--space-4);
   }
 
-  /* Exam Layout (exam.html overrides) */
-  .exam-main-content {
+  /* Assessment Layout (exam.html overrides) */
+  .assessment-main-content {
     padding: var(--space-2);
   }
 
@@ -1064,7 +1064,7 @@
   -webkit-touch-callout: none;
 }
 
-.question-text, .question-number, .q-nav-grid, .exam-topbar {
+.question-text, .question-number, .q-nav-grid, .assessment-topbar {
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -1079,7 +1079,7 @@
   -ms-user-select: text !important;
 }
 
-/* ── Completed Exams Section (Bottom of Dashboard) ── */
+/* ── Completed Assessments Section (Bottom of Dashboard) ── */
 .completed-exams-section {
   margin-top: var(--space-8);
   margin-bottom: var(--space-10);
@@ -1183,4 +1183,151 @@
 }
 
 
+/* ============================================================
+   DASHBOARD — FONT SIZE & PANEL SLIM (Mobile-First Tuning)
+   ============================================================ */
 
+/* Section headings: tighten on dashboard (override admin.css .section-title) */
+.dashboard-page .section-title {
+  font-size: clamp(0.95rem, 3vw, 1.15rem);
+  font-weight: 800;
+  gap: 0.4rem;
+}
+
+.dashboard-page .section-subtitle {
+  font-size: 0.72rem;
+  margin-top: 1px;
+}
+
+/* Welcome banner — reduce vertical bulk */
+.welcome-name {
+  font-size: clamp(0.95rem, 3vw, 1.2rem);
+}
+.welcome-meta {
+  font-size: 0.75rem;
+}
+
+/* Class card — slightly tighter */
+.class-card {
+  padding: 10px 14px;
+  gap: 6px;
+}
+.class-card .class-icon {
+  font-size: 1.25rem;
+}
+.class-card .class-name {
+  font-size: 0.88rem;
+}
+
+/* Completed summary stats — slimmer values */
+.completed-summary-val {
+  font-size: 1.25rem;
+}
+.completed-summary-icon {
+  font-size: 1.4rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+.completed-summary-card {
+  padding: 14px 16px;
+  gap: 12px;
+}
+
+/* Assessment table — compact rows */
+.completed-exams-table td {
+  padding: 10px 14px;
+  font-size: 0.82rem;
+}
+.completed-exams-table th {
+  padding: 10px 14px;
+  font-size: 0.68rem;
+}
+
+/* ── Mobile: ≤ 640px ── */
+@media (max-width: 640px) {
+  /* 2-column class grid instead of 1 — see more cards at once */
+  .classes-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .class-card {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+  .class-card .class-icon {
+    font-size: 1.1rem;
+  }
+  .class-card .class-name {
+    font-size: 0.8rem;
+    line-height: 1.3;
+  }
+
+  /* Section titles even smaller on phone */
+  .dashboard-page .section-title {
+    font-size: 0.92rem;
+  }
+  .dashboard-page .section-subtitle {
+    font-size: 0.68rem;
+  }
+
+  /* Section header row: tighter vertical spacing */
+  .classes-section .section-header,
+  .completed-Assessments-section .section-header {
+    margin-bottom: var(--space-2);
+  }
+
+  /* Completed summary: 3-col horizontal strip (super slim) */
+  .completed-summary-bar {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: var(--space-2);
+  }
+  .completed-summary-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 12px;
+    gap: 4px;
+  }
+  .completed-summary-icon {
+    display: none; /* hide icon on mobile to save space */
+  }
+  .completed-summary-val {
+    font-size: 1.1rem;
+  }
+  .completed-summary-lbl {
+    font-size: 0.6rem;
+    letter-spacing: 0.02em;
+  }
+
+  /* Assessment list table: hide less-important columns */
+  .completed-exams-table th:nth-child(4),
+  .completed-exams-table td:nth-child(4) {
+    display: none; /* hide Date column */
+  }
+  .completed-exams-table td {
+    padding: 8px 10px;
+    font-size: 0.78rem;
+  }
+  .completed-exams-table th {
+    padding: 8px 10px;
+    font-size: 0.62rem;
+  }
+
+  /* Mobile assessment card list (v1 cards) */
+  .v1-assessment-card {
+    padding: 10px 12px;
+  }
+  .assessment-card-title {
+    font-size: 0.82rem;
+  }
+  .assessment-card-badges {
+    gap: 4px;
+  }
+  .assessment-card-badges .badge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+  }
+}

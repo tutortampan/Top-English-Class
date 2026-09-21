@@ -1,4 +1,4 @@
-import { calculateGrade } from './grading.js';
+﻿import { calculateGrade } from './grading.js';
 
 // TOPS CORE — Toast Notification System
 let toastContainer = null;
@@ -77,7 +77,7 @@ export function withTimeout(promise, ms, actionName = 'Operation') {
 }
 
 // TOPS CORE — Scoring & Grade (client-display only, NOT authoritative)
-// The authoritative calculation is in submit-exam Edge Function.
+// The authoritative calculation is in submit-Assessment Edge Function.
 
 /** Escape HTML special characters */
 export function escapeHtml(str) {

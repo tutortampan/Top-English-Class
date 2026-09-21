@@ -1,25 +1,25 @@
-import { DataGrid } from './datagrid.js?v=4.4.5';
+﻿import { DataGrid } from './datagrid.js?v=4.4.5';
 window.DataGrid = DataGrid;
 import { renderAIAssessments, renderImportAIAssessments } from './panel-c-builder.js?v=4.4.5';
 import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete,
   adminFetchDeleted, adminRestore,
   mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
-  detectDuplicateQuestions, resequenceExamQuestions, resolveDuplicateQuestionGroup, batchResolveExamDuplicateQuestions,
+  detectDuplicateQuestions, resequenceAssessmentQuestions, resolveDuplicateQuestionGroup, batchResolveAssessmentDuplicateQuestions,
   fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
-  testSupabaseConnection, previewRecalibrateExam, applyRecalibrateExam, isPassing, calculatePercentage
+  testSupabaseConnection, previewRecalibrateAssessment, applyRecalibrateAssessment, isPassing, calculatePercentage
 } from '../api.js?v=4.4.5';
 import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.4.5';
 import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=4.4.5';
 import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.4.5';
 import { getSupabase } from '../supabase.js?v=4.4.5';
-import { openAssessmentBuilder } from './exam-builder.js?v=4.4.5';
+import { openAssessmentBuilder } from '\-builder.js?v=4.4.5';
 import { renderStudents as _renderStudentsModule } from './student-management.js?v=4.4.5';
-import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule } from './program-management.js?v=4.4.5';
+import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule, renderUnifiedInstitutions } from './program-management.js?v=4.4.5';
 import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport, renderResults, renderProgressView, renderRecalibrator, renderClassInstances } from './class.js?v=4.4.14';
-import { renderExams } from './exam-management.js?v=4.4.5';
+import { renderAssessments } from '\-management.js?v=4.4.5';
 import { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin } from './desk.js?v=4.4.5';
-import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=4.4.5';
+import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=4.4.15';
 import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin } from './crud-modals.js?v=4.4.5';
 import { renderDashboard, renderAdminProfile, renderAdminSchedule, renderWorkRecords, renderCVGenerator } from './admin-deck.js?v=4.4.5';
 import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
@@ -30,19 +30,19 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
     // â€”â€”â€” ABCD Primary Architecture Section Titles â€”â€”â€”
     const sectionTitles = {
       dashboard: 'Executive Dashboard', profile: 'My Profile', schedule: 'Personal Schedule', work_records: 'Work Records', cv_generator: 'CV Generator',
-      assessments: 'AI Assessments', import_ai_assessments: 'Import AI Assessments', board_overview: 'Board Overview',
-      institutions: 'Institutions', programs: 'Programs', batches: 'Batches', students: 'Students Roster', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
-      subjects: 'Classes (Subjects)', classes: 'Classes', class_instances: 'Class Instances', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', question_types: 'Validation Dictionary', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
-      exams: 'All Assessments', challenge_definitions: 'Assessment Definitions', challenge_instances: 'Assessment Instances', assignments: 'Assignments & Rosters', results: 'Assessment Results', recalibrator: 'Recalibration Engine',
+      assessments: 'Assessments', import_ai_assessments: 'Import AI Assessments', board_overview: 'Board Overview',
+      institutions: 'Batches', students: 'Students Roster', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
+      Classes: 'Classes (Classes)', classes: 'Classes', class_instances: 'Class Instances', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', question_types: 'Validation Dictionary', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
+      Assessments: 'All Assessments', assessments: 'Assessment Definitions', assessment_instances: 'Assessment Instances', assignments: 'Assignments & Rosters', results: 'Assessment Results', recalibrator: 'Recalibration Engine',
       audit: 'Activity & Audit Logs', settings: 'Site Settings & Cost Guard', recycle: 'Recycle Bin', health: 'Data Health & Connectivity'
     };
 
     // ABCD 4-Domain Mapping
     const sectionDomainMap = {
       dashboard: 'ADMIN', profile: 'ADMIN', schedule: 'ADMIN', work_records: 'ADMIN', cv_generator: 'ADMIN',
-      board_overview: 'BOARD', institutions: 'BOARD', programs: 'BOARD', batches: 'BOARD', students: 'BOARD', 'import-students': 'BOARD', 'progress-view': 'BOARD',
-      subjects: 'CLASS', classes: 'CLASS', class_instances: 'CLASS', levels: 'CLASS', topics: 'CLASS', questions: 'CLASS', question_types: 'CLASS', 'import-questions': 'CLASS', 'export-questions': 'CLASS',
-      exams: 'CLASS', challenge_definitions: 'CLASS', challenge_instances: 'CLASS', assignments: 'CLASS', results: 'CLASS', recalibrator: 'CLASS', assessments: 'CLASS', import_ai_assessments: 'CLASS',
+      board_overview: 'BOARD', institutions: 'BOARD', students: 'BOARD', 'import-students': 'BOARD', 'progress-view': 'BOARD',
+      Classes: 'CLASS', classes: 'CLASS', class_instances: 'CLASS', levels: 'CLASS', topics: 'CLASS', questions: 'CLASS', question_types: 'CLASS', 'import-questions': 'CLASS', 'export-questions': 'CLASS',
+      Assessments: 'CLASS', assessments: 'CLASS', assessment_instances: 'CLASS', assignments: 'CLASS', results: 'CLASS', recalibrator: 'CLASS', assessments: 'CLASS', import_ai_assessments: 'CLASS',
       audit: 'DATA', settings: 'DATA', recycle: 'DATA', health: 'DATA'
     };
 
@@ -50,7 +50,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
     const domainToPanelMap = {
       ADMIN: 'admin', BOARD: 'board', CLASS: 'class', DATA: 'desk', DESK: 'desk',
       ASSESSMENTS: 'class', // Legacy alias
-      DATABASE: 'board', STUDENT: 'board', EXAM: 'class',
+      DATABASE: 'board', STUDENT: 'board', Assessment: 'class',
       ACADEMY: 'board'
     };
 
@@ -61,7 +61,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
       assessments: 'classes', // Legacy alias
       desk: 'recycle',
       data: 'recycle',
-      database: 'classes', student: 'students', exam: 'exams',
+      database: 'classes', student: 'students', Assessment: 'Assessments',
       academy: 'institutions'
     };
 
@@ -72,18 +72,18 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
       'academy-batches': 'batches',
       'academy-students': 'students',
       'academy-import': 'import-students',
-      'board-subjects': 'classes',
+      'board-Classes': 'classes',
       'board-topics': 'topics',
       'board-bank': 'questions',
       'board-wordtypes': 'question_types',
       'board-import': 'import-questions',
       'board-export': 'export-questions',
-      'class-hub': 'exams',
-      'class-assignments': 'challenge_instances',
+      'class-hub': 'Assessments',
+      'class-assignments': 'assessment_instances',
       'class-results': 'results',
       'class-recalibrator': 'recalibrator',
-      'assessments-hub': 'exams',
-      'assessments-assignments': 'challenge_instances',
+      'assessments-hub': 'Assessments',
+      'assessments-assignments': 'assessment_instances',
       'assessments-results': 'results',
       'assessments-recalibrator': 'recalibrator',
       'desk-audit': 'audit',
@@ -96,14 +96,14 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
       try {
         const [stds, asms, atts, profs] = await Promise.all([
           adminFetchAll('students'),
-          adminFetchAll('exams'),
+          adminFetchAll('assessments'),
           adminFetchAll('attempts'),
           adminFetchAll('user_professionals')
         ]);
         const kpiAcad = document.getElementById('kpi-board');
         if (kpiAcad) kpiAcad.textContent = stds.filter(s => !s.deleted_at).length;
         const kpiChal = document.getElementById('kpi-class') || document.getElementById('kpi-assessments');
-        if (kpiChal) kpiChal.textContent = asms.filter(a => !a.deleted_at && a.exam_status === 'published').length;
+        if (kpiChal) kpiChal.textContent = asms.filter(a => !a.deleted_at && a.Assessment_status === 'published').length;
         const kpiDesk = document.getElementById('kpi-desk');
         if (kpiDesk) kpiDesk.textContent = atts.length;
         const kpiAdmin = document.getElementById('kpi-admin');
@@ -205,7 +205,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
         openStudentProfile(studentId, [], true);
       } else {
         activatePrimaryTab('class');
-        loadSection('exams', true);
+        loadSection('Assessments', true);
       }
       initConnectionBanner(); // Check live DB connection and show status banner
     }
@@ -310,19 +310,19 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
       return '';
     }
 
-    function formatExamDisplayName(exam, classContext = '') {
-      if (!exam) return 'â€”';
+    function formatAssessmentDisplayName(Assessment, classContext = '') {
+      if (!Assessment) return 'â€”';
       const parts = [];
-      if (exam.institutions?.name) parts.push(`[${exam.institutions.name}]`);
+      if (Assessment.institutions?.name) parts.push(`[${Assessment.institutions.name}]`);
       if (classContext) parts.push(`[${classContext}]`);
-      if (exam.classes?.name) parts.push(exam.classes.name);
-      if (exam.levels?.name) {
-        const lvl = String(exam.levels.name);
+      if (Assessment.classes?.name) parts.push(Assessment.classes.name);
+      if (Assessment.levels?.name) {
+        const lvl = String(Assessment.levels.name);
         parts.push(lvl.toLowerCase().includes('level') ? lvl : `Level ${lvl}`);
       }
-      if (exam.exam_type) parts.push(exam.exam_type);
-      if (exam.exam_title) parts.push(exam.exam_title);
-      return parts.length > 0 ? parts.join(' &middot; ') : (exam.exam_title || 'Exam');
+      if (Assessment.Assessment_type) parts.push(Assessment.Assessment_type);
+      if (Assessment.Assessment_title) parts.push(Assessment.Assessment_title);
+      return parts.length > 0 ? parts.join(' &middot; ') : (Assessment.Assessment_title || 'Assessment');
     }
 
     // â”€â”€ DB Connection Status Banner â”€â”€
@@ -370,6 +370,9 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
         window.history.pushState(null, '', `#${rawSection}`);
       }
       _currentSection = section;
+      window._activeSectionAlias = rawSection; // the hash alias
+      window._activeSection = section; // the actual section
+
       if (typeof window._cleanupProfileView === 'function') {
         window._cleanupProfileView();
         window._cleanupProfileView = null;
@@ -393,7 +396,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
 
       // Set up Add button
       document.getElementById('add-record-btn').onclick = () => {
-        if (section === 'exams') {
+        if (section === 'Assessments') {
           openAssessmentBuilder(null);
         } else {
           openCrudModal(section, null);
@@ -403,18 +406,16 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
 
       try {
         switch(section) {
-          case 'institutions':        await renderPrograms(area); break;
-          case 'classes':            await renderSubjects(area); break;
+          case 'institutions':        await _renderBatchesModule(area); break;
+          case 'classes':            await renderClasses(area); break;
           case 'class_instances':     await renderClassInstances(area); break;
           case 'levels':              await renderLevels(area); break;
           case 'topics':              await renderTopics(area); break;
           case 'question_types':          await renderWordTypes(area); break;
-          case 'programs':            await _renderClassesModule(area); break;
-          case 'batches':             await _renderBatchesModule(area); break;
           case 'students':            await _renderStudentsModule(area); break;
-          case 'exams':               await renderExams(area); break;
+          case 'Assessments':               await renderAssessments(area); break;
           case 'questions':           await renderCentralQuestionBank(area); break;
-          case 'challenge_instances':         await renderAssignments(area); break;
+          case 'assessment_instances':         await renderAssignments(area); break;
           case 'results':             await renderResults(area); break;
           case 'progress-view':       await renderProgressView(area); break;
           case 'audit':               await renderAuditLog(area); break;
@@ -525,8 +526,8 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
       });
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ CLASSES (Formerly Subjects) Ã¢â€â‚¬Ã¢â€â‚¬
-    async function renderSubjects(area) {
+    // Ã¢â€â‚¬Ã¢â€â‚¬ CLASSES (Formerly Classes) Ã¢â€â‚¬Ã¢â€â‚¬
+    async function renderClasses(area) {
       const [rawData, institutions] = await Promise.all([adminFetchAll('classes', '*, institutions(name)'), adminFetchAll('institutions')]);
       // Sort by Institution Name (A-Z), then Class Name (A-Z)
       const data = [...rawData].sort((a, b) => {
@@ -552,11 +553,11 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
                 <th class="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody id="tbl-subjects"></tbody>
+            <tbody id="tbl-Classes"></tbody>
           </table>
         </div>
       `;
-      const tbody = document.getElementById('tbl-subjects');
+      const tbody = document.getElementById('tbl-Classes');
       if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-4">No class board yet.</td></tr>'; return; }
       window._subjRecords = {};
       data.forEach(r => {
@@ -581,8 +582,8 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
         btn.addEventListener('click', () => {
           const sid = btn.getAttribute('data-nav-topics');
           const rec = window._subjRecords[sid];
-          window._filterSubjectId = sid;
-          window._filterSubjectName = rec ? rec.name : '';
+          window._filterClassId = sid;
+          window._filterClassName = rec ? rec.name : '';
           loadSection('topics');
         });
       });
@@ -611,7 +612,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
       const classMap = {};
       allClasses.forEach(c => { classMap[c.id] = c; });
 
-      // Sort by Institution Name (A-Z), Program Name, Subject Name (A-Z), then level_number ascending
+      // Sort by Institution Name (A-Z), Program Name, Class Name (A-Z), then level_number ascending
       const data = [...rawData].sort((a, b) => {
         const pA = a.classes?.institutions?.name || '';
         const pB = b.classes?.institutions?.name || '';
@@ -626,7 +627,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
         <div class="section-header">
           <div>
             <h2 class="section-title">Levels <span class="count-chip">${data.length} Total</span></h2>
-            <p class="section-subtitle">Curriculum progression tiers ordered by program, class, subject, and level rank</p>
+            <p class="section-subtitle">Curriculum progression tiers ordered by program, class, Class, and level rank</p>
           </div>
         </div>
         <div class="table-wrap">
@@ -732,7 +733,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
         // 1. Fetch student record with relations
         const { data: student, error: stErr } = await sb
           .from('students')
-          .select('*, programs(id, name, institution_id, institutions(name)), institutions(id, name), batches(id, name)')
+          .select('*, programs!program_id(id, name, institution_id), institutions!institution_id(id, name), batches!batch_id(id, name)')
           .eq('id', studentId)
           .single();
 
@@ -740,10 +741,10 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
           throw new Error(stErr?.message || 'Student record not found.');
         }
 
-        // 2. Fetch student\'s attempts with exams and attempt_answers
+        // 2. Fetch student\'s attempts with Assessments and attempt_answers
         const { data: rawAttempts, error: attErr } = await sb
           .from('attempts')
-          .select('*, exams(id, exam_title, exam_type, answer_type, time_limit_minutes, classes(id, name), levels(id, name, level_number)), attempt_answers(*)')
+          .select('*, assessments(id, name, assessment_type, classes(id, name)), attempt_answers(*)')
           .eq('student_id', studentId)
           .in('status', ['submitted', 'auto_submitted'])
           .order('submitted_at', { ascending: false });
@@ -754,20 +755,20 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
 
         const allAttempts = rawAttempts || [];
 
-        // 3. Identify highest-scoring attempt per unique exam
+        // 3. Identify highest-scoring attempt per unique Assessment
         const bestAttemptMap = new Map();
         allAttempts.forEach(att => {
           const pct = parseFloat(att.percentage || att.score || 0);
-          const existing = bestAttemptMap.get(att.exam_id);
+          const existing = bestAttemptMap.get(att.Assessment_id);
           if (!existing || pct > parseFloat(existing.percentage || existing.score || 0)) {
-            bestAttemptMap.set(att.exam_id, att);
+            bestAttemptMap.set(att.Assessment_id, att);
           }
         });
 
         const bestAttempts = Array.from(bestAttemptMap.values());
         const bestAttemptIds = new Set(bestAttempts.map(a => a.id));
 
-        // 4. Compute KPIs (Best attempt per exam only â€” per agreement)
+        // 4. Compute KPIs (Best attempt per Assessment only â€” per agreement)
         let totalCorrect = 0;
         let totalMinor = 0;
         let totalIncorrect = 0;
@@ -921,10 +922,10 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
               </div>
             </div>
 
-            <!-- Detailed Answer Stats: Exams, Correct, Incorrect -->
+            <!-- Detailed Answer Stats: Assessments, Correct, Incorrect -->
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
               <div class="glass-card p-4 text-center">
-                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em;">EXAMS COMPLETED</div>
+                <div class="text-xs text-muted mb-1" style="font-weight:700; letter-spacing:0.05em;">Assessments COMPLETED</div>
                 <div class="fw-800" style="font-size:2rem; color:var(--clr-text-1);">${bestAttempts.length}</div>
                 <div class="text-xs text-muted mt-1">${allAttempts.length} total attempt${allAttempts.length === 1 ? '' : 's'}</div>
               </div>
@@ -940,12 +941,12 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
               </div>
             </div>
 
-            <!-- Detailed Exam Breakdown -->
+            <!-- Detailed Assessment Breakdown -->
             <div class="glass-card p-5">
               <div class="d-flex align-center justify-between mb-3 flex-wrap gap-2">
                 <div>
-                  <h3 style="font-size:1.15rem; font-weight:700; margin:0;">&#128203; Exam Performance &amp; Question History</h3>
-                  <p class="text-xs text-muted">Click any exam row below to inspect question-level answers and correct vs. incorrect breakdown</p>
+                  <h3 style="font-size:1.15rem; font-weight:700; margin:0;">&#128203; Assessment Performance &amp; Question History</h3>
+                  <p class="text-xs text-muted">Click any Assessment row below to inspect question-level answers and correct vs. incorrect breakdown</p>
                 </div>
                 <span class="badge badge-neutral">${allAttempts.length} Attempt${allAttempts.length === 1 ? '' : 's'} Logged</span>
               </div>
@@ -953,16 +954,16 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
               ${allAttempts.length === 0 ? `
                 <div class="empty-state p-6 text-center">
                   <div style="font-size:2.5rem; margin-bottom:8px;">&#128221;</div>
-                  <h4 style="font-weight:700;">No Exams Taken Yet</h4>
-                  <p class="text-xs text-muted">This student hasn't completed or submitted any exams yet.</p>
+                  <h4 style="font-weight:700;">No Assessments Taken Yet</h4>
+                  <p class="text-xs text-muted">This student hasn't completed or submitted any Assessments yet.</p>
                 </div>
               ` : `
                 <div class="table-wrap">
                   <table>
                     <thead>
                       <tr>
-                        <th>Exam Title</th>
-                        <th>Subject</th>
+                        <th>Assessment Title</th>
+                        <th>Class</th>
                         <th class="text-center">Score</th>
                         <th class="text-center">Grade</th>
                         <th class="text-center">&#9989; Correct</th>
@@ -986,8 +987,8 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
                         });
                         const pct = parseFloat(att.percentage || att.score || 0).toFixed(1);
                         const grade = att.grade || getGrade(Math.round(pct));
-                        const examTitle = att.exams?.exam_title || 'Exam';
-                        const subjectName = att.exams?.classes?.name || '&mdash;';
+                        const AssessmentTitle = att.assessments?.name || 'Assessment';
+                        const ClassName = att.assessments?.classes?.name || '&mdash;';
                         const submitDate = att.submitted_at ? new Date(att.submitted_at).toLocaleString() : '&mdash;';
                         const rowId = `att-row-${att.id}`;
                         const detailId = `att-detail-${att.id}`;
@@ -997,11 +998,11 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
                             <td class="fw-600">
                               <div class="d-flex align-center gap-2">
                                 <span class="toggle-arrow" id="arrow-${att.id}" style="font-size:0.75rem; color:var(--clr-text-muted); transition:transform 0.2s;">&#9654;</span>
-                                <span>${escapeHtml(examTitle)}</span>
-                                ${isBest ? `<span class="badge badge-success" style="font-size:0.65rem;" title="Highest score attempt for this exam">&#11088; Best</span>` : ''}
+                                <span>${escapeHtml(AssessmentTitle)}</span>
+                                ${isBest ? `<span class="badge badge-success" style="font-size:0.65rem;" title="Highest score attempt for this Assessment">&#11088; Best</span>` : ''}
                               </div>
                             </td>
-                            <td class="text-sm text-muted">${escapeHtml(subjectName)}</td>
+                            <td class="text-sm text-muted">${escapeHtml(ClassName)}</td>
                             <td class="text-center fw-700 text-grade-${grade}">${pct}%</td>
                             <td class="text-center"><span class="grade-badge grade-${grade}" style="width:26px; height:26px; font-size:0.75rem; display:inline-flex;">${grade}</span></td>
                             <td class="text-center"><span class="badge badge-success" style="font-size:0.75rem;">${attCorrect}</span></td>
@@ -1155,7 +1156,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
       }
     }
 
-    // --- EXAM MANAGEMENT HUB (Restored & Elevated) ---
+    // --- Assessment MANAGEMENT HUB (Restored & Elevated) ---
 
 
 // Global edit/delete handlers
