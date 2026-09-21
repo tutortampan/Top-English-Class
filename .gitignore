@@ -6,3 +6,8 @@ Thumbs.db
 desktop.ini
 *.ini
 scratch/
+
+# Supabase CLI binaries
+.supabase-cli/
+supabase.exe
+supabase-go.exe
