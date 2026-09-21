@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=4.1.5" />
-  <link rel="stylesheet" href="css/dashboard.css?v=4.1.5" />
-  <link rel="stylesheet" href="css/components/avatars.css?v=4.1.5" />
+  <link rel="stylesheet" href="css/style.css?v=4.1.6" />
+  <link rel="stylesheet" href="css/dashboard.css?v=4.1.6" />
+  <link rel="stylesheet" href="css/components/avatars.css?v=4.1.6" />
   <style>
     /* ============================================================
        COMPACT MOBILE-FIRST STUDENT DASHBOARD STYLES
@@ -497,78 +497,87 @@
       </div>
     </section>
 
-    <!-- Student Profile Modal -->
+    <!-- Student Profile Modal (Sleek, Compact, Zero-Scroll) -->
     <div class="modal-backdrop hidden" id="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
-      <div class="modal-box" style="max-width:640px;">
-        <div class="modal-header">
-          <div>
-            <h3 id="profile-modal-title">&#127891; Student Profile</h3>
-            <p class="text-muted text-sm">Manage profile photo, personal PIN & view history</p>
+      <div class="modal-box profile-modal-box">
+        <!-- Modal Header with Integrated Tab Navigation -->
+        <div class="profile-modal-header">
+          <div class="profile-header-left">
+            <h3 id="profile-modal-title">&#127891; Profile</h3>
+            <div class="profile-tab-nav" role="tablist">
+              <button type="button" class="profile-tab-btn active" id="tab-btn-profile" role="tab" aria-selected="true">Account &amp; PIN</button>
+              <button type="button" class="profile-tab-btn" id="tab-btn-history" role="tab" aria-selected="false">History</button>
+            </div>
           </div>
-          <button class="btn btn-ghost btn-icon" id="close-profile-modal" aria-label="Close">✕</button>
+          <button class="btn btn-ghost btn-icon btn-sm profile-close-btn" id="close-profile-modal" aria-label="Close">&#10005;</button>
         </div>
-        <div class="p-4" style="display:flex;flex-direction:column;gap:var(--space-5);">
-          
-          <!-- Avatar & Student Meta Card -->
-          <div class="glass-card p-5 d-flex align-center gap-5" style="position:relative;">
-            <div style="position:relative;cursor:pointer;flex-shrink:0;" id="avatar-container" title="Click to upload profile photo">
-              <div id="avatar-img-wrapper" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--clr-primary),var(--clr-accent-1));display:flex;align-items:center;justify-content:center;font-size:2.4rem;font-weight:700;overflow:hidden;border:3px solid var(--clr-accent-1);box-shadow:0 0 0 4px rgba(99,102,241,0.15);">
-                <span id="avatar-icon">👤</span>
-                <img id="prof-photo-img" class="hidden" style="width:100%;height:100%;object-fit:cover;" alt="Profile Photo" />
+
+        <!-- Tab 1: Account & PIN (Fits entirely on screen with zero scrolling) -->
+        <div class="profile-tab-pane" id="tab-pane-profile">
+          <!-- Student Identity Card -->
+          <div class="profile-id-card">
+            <div class="profile-avatar-wrap" id="avatar-container" title="Click to upload profile photo">
+              <div id="avatar-img-wrapper" class="profile-avatar-circle">
+                <span id="avatar-icon">&#128100;</span>
+                <img id="prof-photo-img" class="hidden" alt="Profile Photo" />
               </div>
-              <div style="position:absolute;bottom:2px;right:2px;background:var(--clr-accent-1);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65rem;box-shadow:var(--shadow-md);border:2px solid var(--clr-base);">📷</div>
+              <div class="profile-avatar-camera" title="Change photo">&#128247;</div>
               <input type="file" id="photo-file-input" accept="image/*" class="hidden" />
             </div>
-            <div style="flex:1;min-width:0;">
-              <h4 class="fw-700 text-lg" id="prof-student-name" style="margin-bottom:var(--space-1);">—</h4>
-              <p class="text-xs text-muted" id="prof-student-prog">—</p>
-              <p class="text-sm text-muted" id="prof-student-class" style="margin-bottom:var(--space-1);">—</p>
-              <p class="text-xs text-muted hidden" id="prof-student-batch" style="margin-bottom:var(--space-1);">—</p>
-              <p class="text-xs text-muted mt-2" style="color:var(--clr-accent-1);">Click photo to change</p>
+
+            <div class="profile-id-details">
+              <div class="profile-name-row">
+                <h4 class="profile-student-name" id="prof-student-name">—</h4>
+                <div class="profile-meta-pills">
+                  <span class="profile-pill hidden" id="prof-student-prog">—</span>
+                  <span class="profile-pill" id="prof-student-class">—</span>
+                  <span class="profile-pill hidden" id="prof-student-batch">—</span>
+                </div>
+              </div>
+
+              <!-- Compact Segmented Gender / Title Toggle -->
+              <div class="profile-gender-row">
+                <span class="profile-field-label">Title:</span>
+                <div class="profile-gender-toggle" id="prof-gender-btns">
+                  <button type="button" class="btn btn-secondary btn-sm profile-gender-btn" id="btn-prof-male">&#128104; Mr.</button>
+                  <button type="button" class="btn btn-secondary btn-sm profile-gender-btn" id="btn-prof-female">&#128105; Miss</button>
+                </div>
+                <!-- Preserved for JS state compatibility -->
+                <span id="prof-gender-badge" class="hidden"></span>
+              </div>
             </div>
           </div>
 
-          <!-- Gender & Title Card -->
-          <div class="glass-card p-5">
-            <div class="d-flex justify-between align-center mb-2" style="flex-wrap:wrap;gap:var(--space-2);">
-              <div>
-                <h4 class="fw-700 text-sm d-flex align-center gap-2">👤 Gender &amp; Honorific Title</h4>
-                <p class="text-xs text-muted">Your title appears as <strong>Mr.</strong> or <strong>Miss</strong> across Assessments, reports, and rankings.</p>
-              </div>
-              <span id="prof-gender-badge" class="badge badge-neutral">—</span>
+          <!-- Compact Change PIN Card -->
+          <div class="profile-pin-card">
+            <div class="profile-pin-header">
+              <span class="profile-pin-icon">&#128273;</span>
+              <span class="profile-pin-title">Change Personal PIN</span>
             </div>
-            <div class="d-flex gap-3 mt-3" id="prof-gender-btns">
-              <button type="button" class="btn btn-secondary btn-sm flex-1" id="btn-prof-male">👨 Male (Mr.)</button>
-              <button type="button" class="btn btn-secondary btn-sm flex-1" id="btn-prof-female">👩 Female (Miss)</button>
-            </div>
-          </div>
-
-          <!-- Change PIN Form Card -->
-          <div class="glass-card p-5">
-            <h4 class="fw-700 text-sm d-flex align-center gap-2" style="margin-bottom:var(--space-4);">🔑 Change Personal PIN</h4>
-            <form id="change-pin-form">
-              <div class="d-flex gap-3" style="flex-wrap:wrap;margin-bottom:var(--space-4);">
-                <div style="flex:1;min-width:130px;">
-                  <label class="form-label text-xs">Current PIN</label>
-                  <input type="password" id="pin-old" class="form-control" placeholder="****" maxlength="6" required />
+            <form id="change-pin-form" class="profile-pin-form">
+              <div class="profile-pin-inputs">
+                <div class="profile-pin-group">
+                  <label class="profile-pin-label" for="pin-old">Current</label>
+                  <input type="password" id="pin-old" class="form-control profile-pin-input" placeholder="••••" maxlength="6" required />
                 </div>
-                <div style="flex:1;min-width:130px;">
-                  <label class="form-label text-xs">New PIN (min 4 digits)</label>
-                  <input type="password" id="pin-new" class="form-control" placeholder="****" maxlength="6" required />
+                <div class="profile-pin-group">
+                  <label class="profile-pin-label" for="pin-new">New PIN</label>
+                  <input type="password" id="pin-new" class="form-control profile-pin-input" placeholder="••••" maxlength="6" required />
                 </div>
-                <div style="flex:1;min-width:130px;">
-                  <label class="form-label text-xs">Confirm New PIN</label>
-                  <input type="password" id="pin-confirm" class="form-control" placeholder="****" maxlength="6" required />
+                <div class="profile-pin-group">
+                  <label class="profile-pin-label" for="pin-confirm">Confirm</label>
+                  <input type="password" id="pin-confirm" class="form-control profile-pin-input" placeholder="••••" maxlength="6" required />
                 </div>
               </div>
-              <button type="submit" class="btn btn-primary btn-sm" id="save-pin-btn">Update PIN</button>
+              <button type="submit" class="btn btn-primary profile-pin-submit" id="save-pin-btn">Update PIN</button>
             </form>
           </div>
+        </div>
 
-          <!-- Assessment History -->
-          <div class="glass-card p-5">
-            <h4 class="fw-700 text-sm" style="margin-bottom:var(--space-4);">📋 Recent Assessment Attempts &amp; Scores</h4>
-            <div class="table-wrap" style="max-height:220px;overflow-y:auto;">
+        <!-- Tab 2: Recent History -->
+        <div class="profile-tab-pane hidden" id="tab-pane-history">
+          <div class="profile-history-card">
+            <div class="table-wrap profile-history-table-wrap">
               <table>
                 <thead>
                   <tr>
@@ -2006,18 +2015,56 @@
       const openBtn = document.getElementById('view-profile-btn');
       const closeBtn = document.getElementById('close-profile-modal');
 
-      document.getElementById('prof-student-name').textContent = session.student_name;
-      document.getElementById('prof-student-prog').textContent = `Institution: ${session.institution_name}`;
-      document.getElementById('prof-student-class').textContent = `Program: ${session.program_name}`;
+      document.getElementById('prof-student-name').textContent = session.student_name || 'Student';
+      const progEl = document.getElementById('prof-student-prog');
+      if (progEl) {
+        if (session.institution_name && session.institution_name !== 'undefined') {
+          progEl.textContent = session.institution_name;
+          progEl.classList.remove('hidden');
+        } else {
+          progEl.classList.add('hidden');
+        }
+      }
+      const classEl = document.getElementById('prof-student-class');
+      if (classEl) {
+        classEl.textContent = session.program_name || 'Program';
+      }
       const batchEl = document.getElementById('prof-student-batch');
       if (batchEl) {
-        if (session.batch_name) {
-          batchEl.textContent = `Batch: ${session.batch_name}`;
+        if (session.batch_name && session.batch_name !== 'undefined') {
+          batchEl.textContent = session.batch_name;
           batchEl.classList.remove('hidden');
         } else {
           batchEl.classList.add('hidden');
         }
       }
+
+      // Profile Tab Navigation (Zero-scroll architecture)
+      const tabBtnProfile = document.getElementById('tab-btn-profile');
+      const tabBtnHistory = document.getElementById('tab-btn-history');
+      const paneProfile = document.getElementById('tab-pane-profile');
+      const paneHistory = document.getElementById('tab-pane-history');
+
+      function switchProfileTab(tab) {
+        if (tab === 'history') {
+          tabBtnHistory?.classList.add('active');
+          tabBtnHistory?.setAttribute('aria-selected', 'true');
+          tabBtnProfile?.classList.remove('active');
+          tabBtnProfile?.setAttribute('aria-selected', 'false');
+          paneHistory?.classList.remove('hidden');
+          paneProfile?.classList.add('hidden');
+        } else {
+          tabBtnProfile?.classList.add('active');
+          tabBtnProfile?.setAttribute('aria-selected', 'true');
+          tabBtnHistory?.classList.remove('active');
+          tabBtnHistory?.setAttribute('aria-selected', 'false');
+          paneProfile?.classList.remove('hidden');
+          paneHistory?.classList.add('hidden');
+        }
+      }
+
+      tabBtnProfile?.addEventListener('click', () => switchProfileTab('profile'));
+      tabBtnHistory?.addEventListener('click', () => switchProfileTab('history'));
 
       // Fetch and display existing student photo
       (async () => {
@@ -2149,6 +2196,7 @@
 
       openBtn.addEventListener('click', () => {
         applyStudentGenderUI(session.gender);
+        switchProfileTab('profile');
         window.isProfileDirty = false;
         if(changePinForm) changePinForm.reset();
         modal.classList.remove('hidden');
@@ -2175,6 +2223,7 @@
       // Header avatar also opens profile modal
       document.getElementById('header-avatar')?.addEventListener('click', () => {
         applyStudentGenderUI(session.gender);
+        switchProfileTab('profile');
         window.isProfileDirty = false;
         if(changePinForm) changePinForm.reset();
         modal.classList.remove('hidden');
