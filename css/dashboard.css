@@ -332,6 +332,54 @@
   transform: scale(1.08);
 }
 
+/* Header Action Icon Buttons (Profile, Logout) */
+.header-action-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text-2);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.header-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--clr-text-1);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.header-action-btn:active {
+  transform: translateY(0);
+}
+
+.header-action-btn svg {
+  display: block;
+  pointer-events: none;
+}
+
+.header-profile-btn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
+}
+
+.header-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+}
+
 .dashboard-content {
   padding: clamp(1rem, 4vw, 2.5rem) clamp(1rem, 5vw, 3rem);
   max-width: 1200px;
@@ -927,6 +975,17 @@
   .dashboard-header-brand {
     font-size: 1rem;
   }
+  #header-student-name {
+    display: none;
+  }
+  .header-action-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .header-avatar {
+    width: 32px;
+    height: 32px;
+  }
   .dashboard-content {
     padding: var(--space-4);
   }
@@ -983,6 +1042,12 @@
 @media (max-width: 480px) {
   .dashboard-header-brand {
     font-size: 0.9rem;
+  }
+  #header-mic-text {
+    display: none;
+  }
+  #header-mic-btn {
+    padding: 4px 6px !important;
   }
   .welcome-name {
     font-size: 1.2rem;

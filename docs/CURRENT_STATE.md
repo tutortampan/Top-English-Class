@@ -1,24 +1,21 @@
 # CURRENT STATE
 
-Last Updated: 2026-09-20 14:35 UTC
-Current Phase: Implementation
-Current Task: Fix Question Import Pipeline — 6 Bugs
+Last Updated: 2026-09-21 06:05 UTC
+Current Phase: Implementation / UI Polish
+Current Task: Convert Student Dashboard Logout and Profile Buttons to Icons
 Status: COMPLETE
 
 ## Completed
-- Fixed 6 bugs in the question import pipeline across `js/admin/imports-exports.js` and `supabase/functions/import-questions/index.ts`:
-  1. **Bug 1 (Response field mismatch)**: `response.data.mergedCount` → `response?.updatedCount` (Edge Function returns `updatedCount`, not `mergedCount`, and `callEdgeFunction` has no `.data` wrapper).
-  2. **Bug 2 (Dead error guard)**: Removed `if (response.error)` dead-code guard — `callEdgeFunction` throws on error, never returns it.
-  3. **Bug 3 (Wrong tbody ID)**: `#import-preview-tbody` → `#tbl-import-preview` for AI Assessment file detection preview.
-  4. **Bug 4+5 (Redundant batchMap)**: Replaced the `Map+Set` double-dedup no-op with a single clean `Set`-based `parsedQuestionsState.map()` pass; also removed per-item `examId` from payload (it's already sent top-level).
-  5. **Bug 6 (Row-by-row inserts)**: Rewrote Edge Function to pre-fetch existing questions and process inserts/updates in parallel chunks of 20 (via `Promise.all`) instead of 50 sequential round-trips.
-- Version bumped: `imports-exports.js` v4.4.5 → v4.4.15, `app.js` v4.4.14 → v4.4.15 in `admin.html`.
+- Converted text "Profile" and "Logout" buttons in `dashboard.html` to sleek, modern SVG icon buttons with tooltips (`title="View Profile"`, `title="Logout"`).
+- Styled `.header-action-btn`, `.header-profile-btn`, and `.header-logout-btn` in `css/dashboard.css` with subtle glassmorphic styling, responsive hover states, smooth transforms, and accent/warning glows.
+- Enhanced mobile responsiveness: auto-collapses `#header-student-name` on <= 768px screens to save horizontal space, scales icon buttons to 32px on mobile, and hides `#header-mic-text` on <= 480px.
+- Bumped CSS cache version to `v4.1.5` in `dashboard.html`.
 
 ## In Progress
 - None.
 
 ## Not Started
-- End-to-end user validation of Central Question Bank import.
+- Next user testing or further feature requests.
 
 ## Current Architecture
 - Static HTML/CSS/JS frontend
