@@ -181,7 +181,7 @@ export function recalculateAttempt(answers, passingThreshold = 60) {
     return {
       ...ans,
       score: evalRes.score,
-      evaluation_result: evalRes.evaluation_result
+      evaluation_result: evalRes.result
     };
   });
   const percentage = calculatePercentage(totalScore, totalQuestions);
