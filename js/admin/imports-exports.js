@@ -1,4 +1,4 @@
-﻿import { adminFetchAll, adminInsert, adminUpdate, formatStudentName, cleanStudentName } from '../api.js?v=4.4.3';
+import { adminFetchAll, adminInsert, adminUpdate, formatStudentName, cleanStudentName } from '../api.js?v=4.4.3';
 import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.4.3';
 import { showToast, showLoading, hideLoading } from '../app.js?v=4.4.3';
 import { callEdgeFunction, getSupabase } from '../supabase.js?v=4.4.3';
@@ -782,7 +782,6 @@ function calculateAgeFromBirthDate(birthDateStr) {
                   <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="READ_ALOUD">⚡ Read Aloud</button>
                   <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="TURN_BASED_ROLEPLAY">⚡ Turn-Based Roleplay</button>
                   <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="SPEAKING_MONOLOGUE">⚡ Speaking Performance</button>
-                  <button class="btn btn-outline-primary btn-sm text-left dl-ai-tmpl" data-module="VOCAB_MASTERY">⚡ Vocab Mastery</button>
                 </div>
               </div>
             </div>

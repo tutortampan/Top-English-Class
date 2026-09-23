@@ -57,16 +57,6 @@ export const AI_MODULES = {
     name: "Speaking Performance",
     columns: ["TOPIC", "MIN_DURATION_SEC"],
     sample: { TOPIC: "Describe your hometown and its culture.", MIN_DURATION_SEC: 120 }
-  },
-  VOCAB_MASTERY: {
-    name: "Vocabulary Mastery",
-    columns: ["TOPIC", "TYPE", "QUESTION", "ANSWER"],
-    sample: [
-      { TOPIC: "Verbs - Action", TYPE: "Verb", QUESTION: "Accomplish", ANSWER: "Achieve or complete successfully" },
-      { TOPIC: "Verbs - Action", TYPE: "Verb", QUESTION: "Develop", ANSWER: "Grow or advance something" },
-      { TOPIC: "Verbs - Action", TYPE: "Verb", QUESTION: "Improve", ANSWER: "Make something better" },
-      { TOPIC: "Adjectives - Quality", TYPE: "Adjective", QUESTION: "Excellent", ANSWER: "Extremely good" }
-    ]
   }
 };
 

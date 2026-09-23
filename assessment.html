@@ -138,13 +138,13 @@
   </div>
 
   <script type="module">
-    import { startASSESSMENT, saveAnswer, submitAssessment, logCheatingEvent } from './js/api.js?v=4.2.6';
-    import { evaluateAnswer } from './js/grading.js?v=4.2.6';
-    import { requireStudentSession } from './js/session.js?v=4.2.6';
-    import { showToast, showLoading, hideLoading, formatTime, escapeHtml as appEscapeHtml } from './js/app.js?v=4.2.6';
-    import { startCountdown, isExpired } from './js/timer.js?v=4.2.6';
-    import { createSpeechSession, isSpeechSupported } from './js/speech.js?v=4.2.6';
-    import { SUPABASE_URL, SUPABASE_ANON_KEY } from './js/supabase.js?v=4.2.6';
+    import { startASSESSMENT, saveAnswer, submitAssessment, logCheatingEvent } from './js/api.js?v=4.3.0';
+    import { evaluateAnswer } from './js/grading.js?v=4.3.0';
+    import { requireStudentSession } from './js/session.js?v=4.3.0';
+    import { showToast, showLoading, hideLoading, formatTime, escapeHtml as appEscapeHtml } from './js/app.js?v=4.3.0';
+    import { startCountdown, isExpired } from './js/timer.js?v=4.3.0';
+    import { createSpeechSession, isSpeechSupported } from './js/speech.js?v=4.3.0';
+    import { SUPABASE_URL, SUPABASE_ANON_KEY } from './js/supabase.js?v=4.3.0';
 
     function escapeHtml(str) {
       if (typeof appEscapeHtml === 'function') return appEscapeHtml(str);
@@ -1173,6 +1173,7 @@
   </script>
 </body>
 </html>
+
 
 
 

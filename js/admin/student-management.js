@@ -454,7 +454,7 @@ export async function renderStudents(area) {
           printBtn.innerHTML = '&#x1F5A8;'; // printer icon
           printBtn.onclick = (e) => {
             e.stopPropagation();
-            import('./dossier_export.js?v=4.2.6').then(m => {
+            import('./dossier_export.js?v=4.3.0').then(m => {
               const edu = [{period: '2026', institution: row.instName, details: 'Enrolled in ' + row.progName}];
               const skills = ['English Proficiency'];
               const studentAttempts = allAttempts.filter(a => a.student_id === row.id && a.status === 'SUBMITTED');
@@ -522,6 +522,7 @@ export function openStudentProfile(studentId, batchStudentIds = [], skipHistory 
     return window.openStudentProfile(studentId, batchStudentIds, skipHistory);
   }
 }
+
 
 
 

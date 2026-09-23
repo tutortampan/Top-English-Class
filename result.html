@@ -83,9 +83,9 @@
   </div>
 
   <script type="module">
-    import { fetchAttemptResult, fetchAttemptAnswers, fetchAllStudentAttempts, startAssessment } from './js/api.js?v=4.2.6';
-    import { requireStudentSession } from './js/session.js?v=4.2.6';
-    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=4.2.6';
+    import { fetchAttemptResult, fetchAttemptAnswers, fetchAllStudentAttempts, startAssessment } from './js/api.js?v=4.3.0';
+    import { requireStudentSession } from './js/session.js?v=4.3.0';
+    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=4.3.0';
 
     const session = requireStudentSession();
     if (!session) throw new Error('Not authenticated');
@@ -355,6 +355,7 @@
   </script>
 </body>
 </html>
+
 
 
 
