@@ -13,10 +13,15 @@
 
 ### Changed
 - `js/admin/app.js`: Replaced corrupted UTF-8 emoji with HTML entities (`&#9888;&#65039;` for ⚠️, `&#8635;` for ↺) in the section error state template.
+- `js/admin/dossier_export.js`: **CRITICAL FIX** — Rewrote entire file to correct escaped backtick template literals (`\`` → `` ` ``) that caused a fatal `SyntaxError: Invalid or unexpected token` preventing Student Dossier print from loading.
+- `js/admin/student-management.js`: Bumped dossier dynamic import version from `v=4.1.0` → `v=4.2.6`.
+- `js/grading.js`: Fixed a property reference bug in `recalculateAttempt` where `evalRes.evaluation_result` was used instead of `evalRes.result`.
 - All HTML pages bumped from `?v=4.2.5` → `?v=4.2.6` for forced browser cache refresh.
 
 ### Files
 - `js/admin/app.js`
+- `js/admin/dossier_export.js` ← **critical syntax fix**
+- `js/admin/student-management.js`
 - `admin.html`
 - `assessment.html`
 - `dashboard.html`
