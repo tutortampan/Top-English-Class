@@ -1,5 +1,5 @@
-﻿import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js?v=4.3.5';
-import { openAssessmentBuilder } from '\-builder.js?v=4.3.5';
+import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js?v=4.3.5';
+import { openAssessmentBuilder } from './assessment-builder.js?v=4.3.5';
 import { showToast, showLoading, hideLoading } from '../app.js?v=4.3.5';
 import { getSupabase } from '../supabase.js?v=4.3.5';
 import { DataGrid } from './datagrid.js?v=4.3.5';

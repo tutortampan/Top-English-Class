@@ -1,18 +1,18 @@
-﻿// js/admin/dossier_export.js
+// js/admin/dossier_export.js
 
 export function exportStudentDossier(studentData, educationList, skillsList, assessmentList) {
   const printWindow = window.open('', '_blank');
   
-  const eduHtml = educationList.map(e => \`• [\${e.period}] \${e.institution} — \${e.details}\`).join('<br>');
-  const skillHtml = skillsList.map(s => \`• \${s}\`).join('<br>');
-  const assessmentHtml = assessmentList.map(a => \`• [\${a.date}] \${a.title} — Score: \${a.score}% (Grade: \${a.grade}) [\${a.status}]\`).join('<br>');
+  const eduHtml = educationList.map(e => `&bull; [${e.period}] ${e.institution} &mdash; ${e.details}`).join('<br>');
+  const skillHtml = skillsList.map(s => `&bull; ${s}`).join('<br>');
+  const assessmentHtml = assessmentList.map(a => `&bull; [${a.date}] ${a.title} &mdash; Score: ${a.score}% (Grade: ${a.grade}) [${a.status}]`).join('<br>');
 
-  const htmlContent = \`
+  const htmlContent = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8">
-      <title>Student Dossier - \${studentData.name}</title>
+      <title>Student Dossier - ${studentData.name}</title>
       <style>
         body { font-family: "Times New Roman", Times, serif; font-size: 11pt; line-height: 1.5; color: #000; padding: 20px; max-width: 800px; margin: auto; }
         h1, h2, h3, h4 { color: #000; margin-bottom: 0.5rem; }
@@ -38,53 +38,53 @@ export function exportStudentDossier(studentData, educationList, skillsList, ass
         <h4>ACADEMIC ADMINISTRATION BOARD</h4>
         <p>Jl. Pendidikan Akademik No. 45, Mataram | Email: support@topscore.edu</p>
         <hr>
-        <p style="font-weight:bold;">DOCUMENT Class: INDIVIDUAL STUDENT DOSSIER PROFILE &nbsp;|&nbsp; STATUS: OFFICIAL & VERIFIED</p>
+        <p style="font-weight:bold;">DOCUMENT Class: INDIVIDUAL STUDENT DOSSIER PROFILE &nbsp;|&nbsp; STATUS: OFFICIAL &amp; VERIFIED</p>
       </div>
 
       <div class="grid">
         <div>
           <div class="section">
             <div class="section-title">I. Main Identity</div>
-            <p><span class="info-label">Full Name:</span> \${studentData.name}</p>
-            <p><span class="info-label">Date of Birth:</span> \${studentData.birth_date || '—'}</p>
-            <p><span class="info-label">Gender:</span> \${studentData.gender || '—'}</p>
+            <p><span class="info-label">Full Name:</span> ${studentData.name}</p>
+            <p><span class="info-label">Date of Birth:</span> ${studentData.birth_date || '&mdash;'}</p>
+            <p><span class="info-label">Gender:</span> ${studentData.gender || '&mdash;'}</p>
           </div>
           <div class="section">
-            <div class="section-title">II. Academic & Class Information</div>
-            <p><span class="info-label">Institution:</span> \${studentData.institution_name || '—'}</p>
-            <p><span class="info-label">Program:</span> \${studentData.program_name || '—'}</p>
-            <p><span class="info-label">Batch:</span> \${studentData.batch_name || '—'}</p>
-            <p><span class="info-label">Status:</span> \${studentData.is_active ? 'Active' : 'Inactive'}</p>
+            <div class="section-title">II. Academic &amp; Class Information</div>
+            <p><span class="info-label">Institution:</span> ${studentData.institution_name || '&mdash;'}</p>
+            <p><span class="info-label">Program:</span> ${studentData.program_name || '&mdash;'}</p>
+            <p><span class="info-label">Batch:</span> ${studentData.batch_name || '&mdash;'}</p>
+            <p><span class="info-label">Status:</span> ${studentData.is_active ? 'Active' : 'Inactive'}</p>
           </div>
         </div>
         <div>
           <div class="photo-box">
-            \${studentData.photo_url ? \`<img src="\${studentData.photo_url}" alt="Student Photo">\` : '3:4 Photo'}
+            ${studentData.photo_url ? `<img src="${studentData.photo_url}" alt="Student Photo">` : '3:4 Photo'}
           </div>
         </div>
       </div>
 
       <div class="section">
         <div class="section-title">III. Education Background (Reverse Chronological)</div>
-        <p>\${eduHtml || 'No education records found.'}</p>
+        <p>${eduHtml || 'No education records found.'}</p>
       </div>
 
       <div class="section">
-        <div class="section-title">IV. Skills & Competencies</div>
-        <p>\${skillHtml || 'No skills recorded.'}</p>
+        <div class="section-title">IV. Skills &amp; Competencies</div>
+        <p>${skillHtml || 'No skills recorded.'}</p>
       </div>
 
       <div class="section">
         <div class="section-title">V. Assessment History (Reverse Chronological)</div>
-        <p>\${assessmentHtml || 'No assessment history found.'}</p>
+        <p>${assessmentHtml || 'No assessment history found.'}</p>
       </div>
 
       <div class="footer">
-        Powered by TopsCore · 2026
+        Powered by TopsCore &middot; 2026
       </div>
     </body>
     </html>
-  \`;
+  `;
 
   printWindow.document.open();
   printWindow.document.write(htmlContent);

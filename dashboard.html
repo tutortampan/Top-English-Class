@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=4.1.6" />
-  <link rel="stylesheet" href="css/dashboard.css?v=4.1.6" />
-  <link rel="stylesheet" href="css/components/avatars.css?v=4.1.6" />
+  <link rel="stylesheet" href="css/style.css?v=4.2.6" />
+  <link rel="stylesheet" href="css/dashboard.css?v=4.2.6" />
+  <link rel="stylesheet" href="css/components/avatars.css?v=4.2.6" />
   <style>
     /* ============================================================
        COMPACT MOBILE-FIRST STUDENT DASHBOARD STYLES
@@ -548,6 +548,41 @@
             </div>
           </div>
 
+          <!-- Compact Personal Data Card -->
+          <div class="profile-pin-card" style="margin-top: 16px; margin-bottom: 16px;">
+            <div class="profile-pin-header">
+              <span class="profile-pin-icon">&#128100;</span>
+              <span class="profile-pin-title">Personal Data</span>
+            </div>
+            <form id="personal-data-form" class="profile-pin-form">
+              <div class="profile-pin-inputs" style="grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));">
+                <div class="profile-pin-group">
+                  <label class="profile-pin-label" for="prof-dob">Date of Birth</label>
+                  <input type="date" id="prof-dob" class="form-control profile-pin-input" style="font-size:0.85rem; padding: 6px;" required />
+                </div>
+                <div class="profile-pin-group">
+                  <label class="profile-pin-label">Age</label>
+                  <div id="prof-age" class="form-control profile-pin-input" style="background:var(--clr-surface-2); display:flex; align-items:center; font-size:0.85rem; padding: 6px; color:var(--clr-text-3);">--</div>
+                </div>
+                <div class="profile-pin-group">
+                  <label class="profile-pin-label" for="prof-education">Education</label>
+                  <select id="prof-education" class="form-control profile-pin-input" style="font-size:0.85rem; padding: 6px;" required>
+                    <option value="">Select...</option>
+                    <option value="Elementary School">Elementary School</option>
+                    <option value="Middle School">Middle School</option>
+                    <option value="High School">High School</option>
+                    <option value="Diploma">Diploma</option>
+                    <option value="Bachelor's Degree">Bachelor's Degree</option>
+                    <option value="Master's Degree">Master's Degree</option>
+                    <option value="Doctorate">Doctorate</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary profile-pin-submit" id="save-personal-data-btn">Update Data</button>
+            </form>
+          </div>
+
           <!-- Compact Change PIN Card -->
           <div class="profile-pin-card">
             <div class="profile-pin-header">
@@ -752,10 +787,10 @@
   </div>
 
   <script type="module">
-    import { fetchStudentClasses, fetchStudentProgress, fetchAssessmentsForStudentClass, fetchStudentAttemptsForAssessment, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, updateStudentEducation, formatStudentName, fetchAssignments, fetchAssessments } from './js/api.js?v=4.1.4';
-    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.1.4';
-    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.1.4';
-    import { testMicrophoneCapability } from './js/speech.js?v=4.1.4';
+    import { fetchStudentClasses, fetchStudentProgress, fetchAssessmentsForStudentClass, fetchStudentAttemptsForAssessment, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, updateStudentEducation, formatStudentName, fetchAssignments, fetchAssessments, toOrdinalLevel } from './js/api.js?v=4.2.6';
+    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.2.6';
+    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.2.6';
+    import { testMicrophoneCapability } from './js/speech.js?v=4.2.6';
 
 
     function escapeHtml(str) {
@@ -1284,7 +1319,7 @@
           }
           if (hasEducation && !session.education) {
              session.education = st.education;
-             const { setStudentSession } = await import('./js/session.js?v=4.1.4');
+             const { setStudentSession } = await import('./js/session.js?v=4.2.6');
              setStudentSession(session);
           }
         }
@@ -1334,7 +1369,7 @@
           try {
             await updateStudentEducation(session.student_id, eduList);
             session.education = eduList;
-            const { setStudentSession } = await import('./js/session.js?v=4.1.4');
+            const { setStudentSession } = await import('./js/session.js?v=4.2.6');
             setStudentSession(session);
             showToast('Academic background verified!', 'success');
             doResolve();
@@ -1472,7 +1507,12 @@
         const levelMap = new Map();
         for (const Assessment of Assessments) {
           const lvlId   = Assessment.level_id || '_default';
-          const lvlName = Assessment.levels?.name || Assessment.level_name || (lvlId === '_default' ? 'General' : `Level ${lvlId}`);
+          const lvlNum  = Assessment.levels?.level_number ?? null;
+          // Use toOrdinalLevel for proper "1st Level", "2nd Level", etc.
+          // Fall back to existing name, then derive from level_number, then 'Unleveled'
+          const lvlName = lvlNum != null
+            ? toOrdinalLevel(lvlNum)
+            : (Assessment.levels?.name || Assessment.level_name || (lvlId === '_default' ? 'Unleveled' : `Level ${lvlId}`));
           const lvlOrder = Assessment.levels?.level_number ?? Assessment.level_order ?? 99;
           if (!levelMap.has(lvlId)) levelMap.set(lvlId, { name: lvlName, order: lvlOrder, Assessments: [] });
           levelMap.get(lvlId).Assessments.push(Assessment);
@@ -1517,7 +1557,7 @@
             if (inProg) {
               statusBadge = `<span style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">&#9203; In Progress</span>`;
-              actionBtn   = `<button onclick="location.href='assessment.html?attempt_id=${inProg.id}'"
+              actionBtn   = `<button onclick="location.href='assessment.html?attempt_id=${inProg.id}&assessment_id=${inProg.assessment_id || ''}'"
                               style="background:var(--clr-accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;
                               font-size:0.78rem;font-weight:700;cursor:pointer;">Resume ←’</button>`;
             } else if (best) {
@@ -1532,7 +1572,7 @@
             } else {
               statusBadge = `<span style="background:rgba(99,102,241,0.12);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">Not Started</span>`;
-              actionBtn   = `<button onclick="location.href='assessment.html?Assessment_id=${Assessment.id}'"
+              actionBtn   = `<button onclick="location.href='assessment.html?assessment_id=${Assessment.id}'"
                               style="background:var(--clr-accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;
                               font-size:0.78rem;font-weight:700;cursor:pointer;">Start Assessment ←’</button>`;
             }
@@ -1876,8 +1916,9 @@
       attempts.forEach(att => {
         const pct = parseFloat(att.percentage || 0);
         if (pct > highestPct) highestPct = pct;
-        if (!bestAttemptsMap[att.Assessment_id] || pct > bestAttemptsMap[att.Assessment_id]) {
-          bestAttemptsMap[att.Assessment_id] = pct;
+        const aid = att.assessment_id || att.Assessment_id;
+        if (!bestAttemptsMap[aid] || pct > bestAttemptsMap[aid]) {
+          bestAttemptsMap[aid] = pct;
         }
       });
 
@@ -1923,9 +1964,9 @@
       `;
 
       sortedAttempts.forEach(a => {
-        const AssessmentObj = a.Assessments || {};
-        const AssessmentTitle = AssessmentObj.Assessment_title || 'English Assessment';
-        const AssessmentType = AssessmentObj.Assessment_type || '';
+        const AssessmentObj = a.assessments || a.Assessments || {};
+        const AssessmentTitle = AssessmentObj.title || AssessmentObj.name || AssessmentObj.Assessment_title || 'English Assessment';
+        const AssessmentType = AssessmentObj.assessment_type || AssessmentObj.Assessment_type || '';
         const className = AssessmentObj.classes?.name || 'General English';
         const pct = parseFloat(a.percentage || 0).toFixed(1);
         const grade = a.grade || getGrade(pct);
@@ -2066,14 +2107,73 @@
       tabBtnProfile?.addEventListener('click', () => switchProfileTab('profile'));
       tabBtnHistory?.addEventListener('click', () => switchProfileTab('history'));
 
-      // Fetch and display existing student photo
+      // Fetch and display existing student photo and personal data
       (async () => {
         try {
           const sb = await (await import('./js/supabase.js')).getSupabase();
-          const { data: st } = await sb.from('students').select('photo_url').eq('id', session.student_id).single();
+          const { data: st } = await sb.from('students').select('photo_url, birth_date, education').eq('id', session.student_id).single();
           if (st?.photo_url) applyPhotoEverywhere(st.photo_url);
+          
+          if (st?.birth_date) {
+            document.getElementById('prof-dob').value = st.birth_date;
+            calculateAge(st.birth_date);
+          }
+          if (st?.education) {
+            document.getElementById('prof-education').value = st.education;
+          }
         } catch {}
       })();
+
+      // Helper function to calculate age
+      function calculateAge(dobString) {
+        const ageSpan = document.getElementById('prof-age');
+        if (!dobString) {
+          ageSpan.textContent = '--';
+          return;
+        }
+        const today = new Date();
+        const birthDate = new Date(dobString);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        ageSpan.textContent = age + ' years old';
+      }
+
+      // Update age on change
+      document.getElementById('prof-dob')?.addEventListener('change', (e) => {
+        calculateAge(e.target.value);
+        window.isProfileDirty = true;
+      });
+
+      document.getElementById('prof-education')?.addEventListener('change', () => {
+        window.isProfileDirty = true;
+      });
+
+      // Personal Data Form Handler
+      const personalDataForm = document.getElementById('personal-data-form');
+      if (personalDataForm) {
+        personalDataForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const dob = document.getElementById('prof-dob').value;
+          const edu = document.getElementById('prof-education').value;
+
+          showLoading('Saving Personal Data...');
+          try {
+            const sb = await (await import('./js/supabase.js')).getSupabase();
+            const { error } = await sb.from('students').update({ birth_date: dob, education: edu }).eq('id', session.student_id);
+            if (error) throw error;
+            
+            hideLoading();
+            showToast('Personal Data updated successfully!', 'success');
+            window.isProfileDirty = false;
+          } catch(err) {
+            hideLoading();
+            showToast('Error saving data: ' + err.message, 'error');
+          }
+        });
+      }
 
       const tbody = document.getElementById('tbl-profile-history');
       if (tbody) tbody.innerHTML = '';

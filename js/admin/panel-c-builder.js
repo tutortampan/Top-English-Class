@@ -1,4 +1,4 @@
-﻿/**
+/**
  * panel-c-builder.js
  * Panel C (Class & Assessment Management) Dashboard
  * Handles Smart Auto-Naming, Assessment Duplication, Prerequisite Engine, and AI Module Templates
@@ -60,8 +60,13 @@ export const AI_MODULES = {
   },
   VOCAB_MASTERY: {
     name: "Vocabulary Mastery",
-    columns: ["LEXICAL_ITEM", "DEFINITION", "MODE"],
-    sample: { LEXICAL_ITEM: "Accomplish", DEFINITION: "Achieve or complete successfully.", MODE: "Spelling" }
+    columns: ["TOPIC", "TYPE", "QUESTION", "ANSWER"],
+    sample: [
+      { TOPIC: "Verbs - Action", TYPE: "Verb", QUESTION: "Accomplish", ANSWER: "Achieve or complete successfully" },
+      { TOPIC: "Verbs - Action", TYPE: "Verb", QUESTION: "Develop", ANSWER: "Grow or advance something" },
+      { TOPIC: "Verbs - Action", TYPE: "Verb", QUESTION: "Improve", ANSWER: "Make something better" },
+      { TOPIC: "Adjectives - Quality", TYPE: "Adjective", QUESTION: "Excellent", ANSWER: "Extremely good" }
+    ]
   }
 };
 

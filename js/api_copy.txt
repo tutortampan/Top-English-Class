@@ -1196,4 +1196,4 @@ export async function fetchAssessmentResultsFromDB(filters = {}) {
 
 export async function generateAttemptNarrative(attemptId) {
   return await callEdgeFunction('generate-narrative', { attempt_id: attemptId });
-}
+}

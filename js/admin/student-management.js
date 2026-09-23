@@ -1,4 +1,4 @@
-﻿import { adminFetchAll, formatStudentName, cleanStudentName, adminSoftDelete, clearAdminCache } from '../api.js?v=4.4.3';
+import { adminFetchAll, formatStudentName, cleanStudentName, adminSoftDelete, clearAdminCache } from '../api.js?v=4.4.3';
 import { getGrade, showToast } from '../app.js?v=4.4.3';
 import { DataGrid } from './datagrid.js?v=4.4.3';
 
@@ -454,7 +454,7 @@ export async function renderStudents(area) {
           printBtn.innerHTML = '&#x1F5A8;'; // printer icon
           printBtn.onclick = (e) => {
             e.stopPropagation();
-            import('./dossier_export.js?v=4.1.0').then(m => {
+            import('./dossier_export.js?v=4.2.6').then(m => {
               const edu = [{period: '2026', institution: row.instName, details: 'Enrolled in ' + row.progName}];
               const skills = ['English Proficiency'];
               const studentAttempts = allAttempts.filter(a => a.student_id === row.id && a.status === 'SUBMITTED');

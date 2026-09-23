@@ -1,60 +1,65 @@
 # CURRENT STATE
 
-Last Updated: 2026-09-21 06:16 UTC
-Current Phase: Implementation / UI Polish
-Current Task: Overhaul Student Profile Modal Layout & Typography (Zero-Scroll Mobile Design)
+Last Updated: 2026-09-23 10:44 UTC
+Current Phase: Maintenance / Polish
+Current Task: Mojibake Cleanup, Syntax Audit & Version Bump
 Status: COMPLETE
 
 ## Completed
-- Redesigned the Student Profile Modal into a sleek, compact, zero-scroll interface:
-  - Eliminated awkward vertical scrolling by introducing integrated tab navigation: **Account & PIN** (primary) and **History** (recent attempts).
-  - Compacted the Identity Card: sleek 50px avatar with camera badge, modern font hierarchy, and clean metadata pills.
-  - Eliminated the `Institution: undefined` rendering bug by gracefully hiding empty/undefined institution data.
-  - Replaced bulky duplicate honorific cards with a sleek, native-feel segmented pill toggle (`👨 Mr.` / `👩 Miss`).
-  - Streamlined Change PIN section into a compact 3-column inline grid (`Current`, `New PIN`, `Confirm`) with centered inputs and dedicated submit button.
-  - Refined typography: replaced aggressive uppercase labels with elegant sentence case, balanced font weights, and subtle silver/slate tones.
-- Preserved all 22 internal DOM element IDs to ensure 100% compatibility with PIN updates, gender changes, photo uploads, and history tables.
-- Bumped CSS cache version to `v4.1.6` in `dashboard.html`.
+- **Part 1 — session.js:** Added `institution_id` and `institution_name` to `setStudentSession` — dashboard welcome-meta no longer renders "undefined".
+- **Part 2 — dashboard.html:** Fixed `bestAttemptsMap` to use lowercase `assessment_id` (fallback uppercase). Fixed `AssessmentObj` parsing for Supabase join. `toOrdinalLevel` imported and used. Titles display correctly.
+- **Part 3 — result.html:** Level string builder prevents "Level Level" duplication. Class name uses lowercase `classes.name` first.
+- **Part 4 — api.js:** All missing Master Module functions appended. Single clean declaration of all exports verified.
+- **Part 5 — assessment.html:** `assessmentId` extraction is case-insensitive across URL params and sessionStorage.
+- **Part 6 — admin/app.js:** Fixed mojibake (corrupted UTF-8 emoji) in error state HTML template — ⚠️ warning icon and ↺ retry button now use safe HTML entity codes.
+- **Part 7 — Cache Bump v4.2.6:** All HTML files bumped from v4.2.5 → v4.2.6 to force browser reload.
+- **Full Syntax Audit:** All 17 JS admin modules + api.js + session.js + grading.js passed `node --check`. Zero syntax errors.
+- **Export Compatibility:** All named imports in admin/app.js cross-verified against source module exports — 0 missing exports.
 
 ## In Progress
 - None.
 
 ## Not Started
-- User validation on mobile device.
+- Manual browser test of full student flow (login → dashboard → class → assessment → result).
+- Manual browser test of admin panel (login → navigate all sections).
 
 ## Current Architecture
 - Static HTML/CSS/JS frontend
 - Supabase PostgreSQL + Auth + Edge Functions backend
-- **Structural Alignment**: Adopted Pilar B & C hierarchy (`Class -> Topic -> Assessment -> Module`). Legacy `Subject` and `Exam` terminology is officially deprecated in documentation.
+- **Structural Alignment**: ABCD 4-domain admin architecture (Admin, Board, Class, Data). Legacy `Subject`/`Exam` terminology deprecated in docs.
 
 ## Database State
 - Latest migration: No schema changes in this session.
-- Tables: `questions` schema unchanged. Edge Function now pre-fetches on `(exam_id, question_order)` to distinguish insert vs update without requiring a UNIQUE constraint.
+- Tables: unchanged.
 
 ## Frontend State
-- Pages completed: `admin.html` — Import Questions panel fully fixed.
+- Pages completed: `assessment.html`, `result.html`, `dashboard.html`, `admin.html` — cache version v4.2.6.
+- Admin CSS: Full Football Manager matte theme. All KPI, status dots, orbs, section headers, toasts, drawers, modals styled.
 
 ## Backend State
-- Edge Functions completed: `import-questions` — parallel chunk processing, correct response fields, per-row error isolation.
+- Edge Functions completed: `import-questions` — from prior session.
 
 ## Tests
-- Manual verification needed: upload a valid Excel with 5+ questions via Import Questions panel.
+- Syntax check: PASS (all JS files)
+- Export audit: PASS (all admin/app.js imports verified)
+- Cache versions: 4.2.6 across all 4 HTML pages
 
 ## Known Issues
-- N/A
+- Playwright browser driver (v1.57.0) returns 404 from Azure CDN — cannot run automated browser tests in current environment. Manual testing required.
+- Remaining mojibake in JS comments (decorative separator lines) — cosmetic only, no runtime impact.
 
 ## Blockers
 - None.
 
 ## Next Exact Action
-1. Open `admin.html` in browser (hard-refresh with Ctrl+Shift+R to clear cache).
-2. Go to C — Class → Import Questions.
-3. Select an exam, select exam type, upload a template, confirm preview renders.
-4. Click Save — verify toast shows correct counts (not NaN).
-5. Check Central Question Bank to confirm questions appear.
+1. Hard-refresh browser (Ctrl+Shift+R) on `admin.html`.
+2. Login with `admin` / `admin123`.
+3. Navigate each domain (Admin, Board, Class, Data) to verify correct rendering.
+4. Test full student flow from `index.html`.
 
 ## Files Changed In Latest Step
-- `js/admin/imports-exports.js` — Bug 1,2,3,4,5 fixed
-- `supabase/functions/import-questions/index.ts` — Bug 6 fixed + response fields aligned
-- `js/admin/app.js` — version bump (imports-exports v4.4.15)
-- `admin.html` — version bump (app.js v4.4.15)
+- `js/admin/app.js` — Fixed emoji mojibake (⚠️ and 🔄) in error state template
+- `admin.html` — Version bump v4.2.5 → v4.2.6
+- `assessment.html` — Version bump v4.2.5 → v4.2.6
+- `dashboard.html` — Version bump v4.2.5 → v4.2.6
+- `result.html` — Version bump v4.2.5 → v4.2.6

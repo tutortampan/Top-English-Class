@@ -1,4 +1,4 @@
-﻿import { DataGrid } from './datagrid.js?v=4.4.5';
+import { DataGrid } from './datagrid.js?v=4.4.5';
 window.DataGrid = DataGrid;
 import { renderAIAssessments, renderImportAIAssessments } from './panel-c-builder.js?v=4.4.5';
 import {
@@ -13,11 +13,11 @@ import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows
 import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=4.4.5';
 import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.4.5';
 import { getSupabase } from '../supabase.js?v=4.4.5';
-import { openAssessmentBuilder } from '\-builder.js?v=4.4.5';
+import { openAssessmentBuilder } from './assessment-builder.js?v=4.4.5';
 import { renderStudents as _renderStudentsModule } from './student-management.js?v=4.4.5';
 import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule, renderUnifiedInstitutions } from './program-management.js?v=4.4.5';
 import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport, renderResults, renderProgressView, renderRecalibrator, renderClassInstances } from './class.js?v=4.4.14';
-import { renderAssessments } from '\-management.js?v=4.4.5';
+import { renderAssessments } from './assessment-management.js?v=4.4.5';
 import { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin } from './desk.js?v=4.4.5';
 import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=4.4.15';
 import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin } from './crud-modals.js?v=4.4.5';
@@ -440,11 +440,11 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
         console.error('[loadSection] error:', section, e);
         area.innerHTML = `
           <div class="empty-state card mt-4" style="padding:3.5rem 1.5rem; text-align:center; max-width:600px; margin:2rem auto; border:1px solid rgba(239,68,68,0.3); background:rgba(239,68,68,0.04);">
-            <div style="font-size:2.5rem; margin-bottom:1rem;">âš ï¸</div>
+            <div style="font-size:2.5rem; margin-bottom:1rem;">&#9888;&#65039;</div>
             <h3 style="color:var(--clr-text-1); font-size:1.25rem; font-weight:700; margin-bottom:0.5rem;">Section Loading Interrupted</h3>
             <p class="text-danger text-sm" style="margin-bottom:1.5rem; word-break:break-word;">${escapeHtml(e?.message || 'An unexpected error occurred.')}</p>
             <div class="d-flex gap-3 justify-center">
-              <button class="btn btn-primary btn-sm" onclick="window.loadSection('${section}')">ðŸ”„ Retry Section</button>
+              <button class="btn btn-primary btn-sm" onclick="window.loadSection('${section}')">&#8635; Retry Section</button>
               <button class="btn btn-secondary btn-sm" onclick="window.location.reload()">Reload Application</button>
             </div>
           </div>

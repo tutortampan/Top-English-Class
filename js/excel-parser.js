@@ -1,4 +1,4 @@
-﻿// TOPS CORE — Centralized Excel Parser & Normalizer
+﻿// TOPS CORE â€” Centralized Excel Parser & Normalizer
 // Phases 5, 6, 7
 
 /**
@@ -17,13 +17,13 @@ const HEADER_ALIASES = {
   pin: ['pin', 'password', 'pass', 'kodesandi'],
   title: ['title', 'Assessment_title', 'Assessmenttitle', 'judul', 'nama_ujian'],
   topic: ['topic', 'topik', 'topic_name', 'nama_topik', 'tema', 'theme', 'kategori', 'category'],
-  question_type: ['question_type', 'word_type', 'wordtype', 'part_of_speech', 'pos', 'type', 'tipe', 'jenis_kata', 'tipe_kata', 'tipekata', 'jenis', 'kategori_kata', 'pos_tag', 'category'],
+  question_type: ['question_type', 'word_type', 'wordtype', 'part_of_speech', 'pos', 'type', 'tipe', 'jenis_kata', 'tipe_kata', 'tipekata', 'jenis', 'kategori_kata', 'pos_tag', 'category', 'mode'],
   week: ['week', 'minggu', 'wk'],
   day: ['day', 'hari'],
   type: ['type', 'tipe', 'question_type', 'wordtype', 'part_of_speech', 'partofspeech'],
   no: ['no', 'nomor', 'num', 'order', 'urutan'],
-  question: ['question', 'soal', 'pertanyaan', 'q', 'prompt', 'indonesia', 'kalimat', 'text'],
-  answer: ['answer', 'jawaban', 'kunci', 'kunci_jawaban', 'kuncijawaban', 'a', 'accepted_answers', 'english', 'solution', 'jawaban_benar', 'terjemahan'],
+  question: ['question', 'soal', 'pertanyaan', 'q', 'prompt', 'indonesia', 'kalimat', 'text', 'lexical_item', 'lexicalitem', 'lexical', 'word', 'kata', 'vocabulary', 'vocab'],
+  answer: ['answer', 'jawaban', 'kunci', 'kunci_jawaban', 'kuncijawaban', 'a', 'accepted_answers', 'english', 'solution', 'jawaban_benar', 'terjemahan', 'definition', 'definisi', 'meaning', 'makna', 'arti'],
   options: ['options', 'pilihan', 'opsi', 'choices', 'pilihan_jawaban', 'pilihanjawaban', 'list_pilihan', 'opsi_jawaban'],
   option_a: ['option_a', 'optiona', 'pilihan_a', 'pilihana', 'opsi_a', 'a'],
   option_b: ['option_b', 'optionb', 'pilihan_b', 'pilihanb', 'opsi_b', 'b'],
@@ -271,7 +271,7 @@ export function processCentralBankQuestionImport(normalizedRows, { existingQuest
     const rowNum = row._rawRowIndex || (idx + 2);
     const questionText = String(row.question || '').trim();
     const rawAnswer = String(row.answer || '').trim();
-    const topicName = String(row.topic || row.tema || 'General').trim();
+    const topicName = String(row.topic || row.tema || row.class || row.title || 'General').trim();
     const rawWordType = String(row.question_type || row.type || '').trim();
 
     if (!questionText) {

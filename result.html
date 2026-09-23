@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -83,9 +83,9 @@
   </div>
 
   <script type="module">
-    import { fetchAttemptResult, fetchAttemptAnswers, fetchAllStudentAttempts, startAssessment } from './js/api.js?v=4.1.4';
-    import { requireStudentSession } from './js/session.js?v=4.1.4';
-    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=4.1.4';
+    import { fetchAttemptResult, fetchAttemptAnswers, fetchAllStudentAttempts, startAssessment } from './js/api.js?v=4.2.6';
+    import { requireStudentSession } from './js/session.js?v=4.2.6';
+    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=4.2.6';
 
     const session = requireStudentSession();
     if (!session) throw new Error('Not authenticated');
@@ -132,8 +132,10 @@
         // V1: title from assessments or legacy Assessments join
         const asmData  = attempt.assessments || attempt.Assessments;
         const asmTitle = asmData?.title || asmData?.name || 'Assessment';
-        const subj = asmData?.Classes?.name || '';
-        const lvl  = asmData?.levels?.name ? `Level ${asmData.levels.name}` : '';
+        const subj = asmData?.classes?.name || asmData?.Classes?.name || '';
+        const lvl  = asmData?.levels?.name
+          ? (String(asmData.levels.name).toLowerCase().includes('level') ? asmData.levels.name : `Level ${asmData.levels.name}`)
+          : '';
         const typ  = asmData?.assessment_type || asmData?.Assessment_type || '';
         const nameParts = [subj, lvl, typ, asmTitle].filter(Boolean);
         document.getElementById('result-Assessment-name').textContent = nameParts.join(' &bull; ');

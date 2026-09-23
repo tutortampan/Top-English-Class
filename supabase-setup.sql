@@ -559,3 +559,5 @@ CREATE TRIGGER trigger_student_batch_change
 BEFORE UPDATE ON students
 FOR EACH ROW
 EXECUTE FUNCTION trg_student_batch_change();
+
+ALTER TABLE students ADD COLUMN IF NOT EXISTS education TEXT;

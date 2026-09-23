@@ -1,4 +1,4 @@
-﻿// TOPS CORE Centralized Assessment System V1 Admin UI
+// TOPS CORE Centralized Assessment System V1 Admin UI
 import {
   fetchGlobalClasses,
   fetchWordTypes,
@@ -30,7 +30,7 @@ import {
   fetchClassInstanceRoster,
   addAdditionalMember
 } from '../api.js';
-import { openAssessmentBuilder } from '\-builder.js';
+import { openAssessmentBuilder } from './assessment-builder.js';
 import { showToast, showLoading, hideLoading, getGrade } from '../app.js';
 import { parseExcelWorkbook, processCentralBankQuestionImport } from '../excel-parser.js';
 import { openStudentProfile } from './student-management.js';
@@ -1218,6 +1218,20 @@ Existing historical attempt records will NOT be modified.`;
             });
         }
 
+        let newTopicsCount = 0;
+
+        // 1B: QUESTION PRE-FETCHING FOR DEDUPLICATION
+        const { data: dbQuestions } = await sb.from('questions').select('id, question_text, topic_id');
+        const questionSet = new Set();
+        if (dbQuestions) {
+            dbQuestions.forEach(q => {
+                if (q.question_text && q.topic_id) {
+                    const normQ = q.question_text.trim().toLowerCase();
+                    questionSet.add(`${normQ}_${q.topic_id}`);
+                }
+            });
+        }
+
         // 2. Auto-register any new custom Word Types
         const customWordTypesToRegister = Array.from(new Set(
           rows.filter(r => r.wordType && !validWordTypes.some(v => (v.name || v).toLowerCase() === r.wordType.toLowerCase()))
@@ -1251,7 +1265,8 @@ Existing historical attempt records will NOT be modified.`;
           }
 
           // 1. Extract and Normalize Topic
-          const rawTopic = row.Topic || row.TOPIC || row.topic || row['Topic Name'] || row.topicName || '';
+          // row.topicName is pre-resolved by processCentralBankQuestionImport (handles VOCAB_MASTERY's Class column too)
+          const rawTopic = row.topicName || row.Topic || row.TOPIC || row.topic || row['Topic Name'] || row.topicName || '';
           const normalizedExcelTopic = rawTopic.trim().toLowerCase();
           let finalTopicId = null; 
           
@@ -1265,8 +1280,7 @@ Existing historical attempt records will NOT be modified.`;
                           .from('topics')
                           .insert([{ 
                               name: rawTopic.trim(),
-                              class_id: targetClassId,
-                              status: 'active'
+                              class_id: safeClassId
                           }])
                           .select('id')
                           .single();
@@ -1274,6 +1288,7 @@ Existing historical attempt records will NOT be modified.`;
                       if (newTopic) {
                           finalTopicId = newTopic.id;
                           topicDictionary[normalizedExcelTopic] = newTopic.id; // Cache it so we don't duplicate
+                          newTopicsCount++;
                           console.log(`Auto-created missing topic: "${rawTopic.trim()}"`);
                       } else if (createErr) {
                           console.warn(`Failed to auto-create topic "${rawTopic.trim()}":`, createErr.message);
@@ -1284,19 +1299,23 @@ Existing historical attempt records will NOT be modified.`;
               }
           }
 
-          // 2. Extract Word Type
-          const finalWordType = row['Word Type'] || row.WordType || row.WORD_TYPE || row.word_type || row.question_type || row.wordType || '-';
+          // 2. Extract Word Type — prefer pre-parsed field from processCentralBankQuestionImport
+          const finalWordType = row.wordType || row['Word Type'] || row.WordType || row.WORD_TYPE || row.word_type || row.question_type || '-';
 
-          // 3. Extract Question Text
-          const finalQuestionText = row.Question || row.QUESTION || row.question_text || row.question || 'Empty Question';
+          // 3. Extract Question Text — prefer pre-parsed field (handles VOCAB_MASTERY LEXICAL_ITEM)
+          const finalQuestionText = row.question_text || row.Question || row.QUESTION || row.question || 'Empty Question';
 
-          // 4. Extract and Format Answers to JSONB Array
-          const rawAnswer = row['Accepted Answers'] || row.ACCEPTED_ANSWERS || row.accepted_answers || row.Answers || row.correct_answer || row.answer || '';
+          // 4. Extract Answers — prefer pre-parsed accepted_answers array (handles VOCAB_MASTERY DEFINITION)
           let finalAnswerArray = [];
-          if (typeof rawAnswer === 'string') {
-              finalAnswerArray = rawAnswer.split(/[;/|]/).map(a => a.trim()).filter(a => a !== '');
-          } else if (Array.isArray(rawAnswer)) {
-              finalAnswerArray = rawAnswer;
+          if (Array.isArray(row.accepted_answers) && row.accepted_answers.length > 0) {
+              finalAnswerArray = row.accepted_answers;
+          } else {
+              const rawAnswer = row['Accepted Answers'] || row.ACCEPTED_ANSWERS || row.accepted_answers || row.Answers || row.correct_answer || row.answer || '';
+              if (typeof rawAnswer === 'string') {
+                  finalAnswerArray = rawAnswer.split(/[;/|]/).map(a => a.trim()).filter(a => a !== '');
+              } else if (Array.isArray(rawAnswer)) {
+                  finalAnswerArray = rawAnswer;
+              }
           }
           
           const safeAnswer = finalAnswerArray.length > 0 ? JSON.stringify(finalAnswerArray) : '[]';
@@ -1327,18 +1346,27 @@ Existing historical attempt records will NOT be modified.`;
             skippedCount++;
           } else {
             // FOR INSERTS (New Questions)
-            const insertPayload = {
-                question_order: baseOrder + idx,
-                question_text: finalQuestionText,
-                question_type: finalWordType, 
-                answer_type: row.answer_type || 'written', // Keep constraint fallback
-                accepted_answers: finalAnswerArray, 
-                correct_answer: safeAnswer,
-                topic_id: finalTopicId,
-                class_id: safeClassId,
-                status: 'ACTIVE'
-            };
-            questionsToInsert.push(insertPayload);
+            const normFinalQ = finalQuestionText.trim().toLowerCase();
+            const dedupeKey = `${normFinalQ}_${finalTopicId}`;
+
+            if (questionSet.has(dedupeKey)) {
+                // Skip if duplicate exists in the same topic
+                skippedCount++;
+            } else {
+                const insertPayload = {
+                    question_order: baseOrder + idx,
+                    question_text: finalQuestionText,
+                    question_type: finalWordType, 
+                    answer_type: row.answer_type || 'written', // Keep constraint fallback
+                    accepted_answers: finalAnswerArray, 
+                    correct_answer: safeAnswer,
+                    topic_id: finalTopicId,
+                    class_id: safeClassId,
+                    status: 'ACTIVE'
+                };
+                questionsToInsert.push(insertPayload);
+                questionSet.add(dedupeKey); // Add to set to prevent in-sheet duplicates
+            }
           }
         }
 
@@ -1367,7 +1395,7 @@ Existing historical attempt records will NOT be modified.`;
         clearAdminCache('topics');
 
         hideLoading();
-        showToast(`Import complete! ${insertedCount} questions added, ${updatedCount} answer keys updated.`, 'success');
+        showToast(`Import Complete! ${insertedCount} new questions inserted. ${skippedCount} duplicates skipped. ${newTopicsCount} new topics created.`, 'success');
 
         // Redirect to Question Bank table
         if (window.loadSection) {

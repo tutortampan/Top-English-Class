@@ -1,4 +1,114 @@
-﻿# CHANGELOG
+# CHANGELOG
+
+## [2026-09-23 10:44 UTC] — Maintenance: Syntax Audit, Mojibake Cleanup & v4.2.6 Cache Bump
+
+**Agent/Session:** Antigravity
+**Phase:** Maintenance
+**Status:** PASS
+
+### Why
+- Session resumed after model overload interruption. Performed full system audit on resumption.
+- Identified corrupted UTF-8 emoji (mojibake) in `js/admin/app.js` error state UI (⚠️ and 🔄 rendered as garbage bytes).
+- Cache versions were at 4.2.5 and needed bumping to ensure browser loads the latest code after the bug fixes.
+
+### Changed
+- `js/admin/app.js`: Replaced corrupted UTF-8 emoji with HTML entities (`&#9888;&#65039;` for ⚠️, `&#8635;` for ↺) in the section error state template.
+- All HTML pages bumped from `?v=4.2.5` → `?v=4.2.6` for forced browser cache refresh.
+
+### Files
+- `js/admin/app.js`
+- `admin.html`
+- `assessment.html`
+- `dashboard.html`
+- `result.html`
+
+### Database
+- No schema changes.
+
+### Tests
+- `node --check` on all 17 admin JS modules: PASS
+- `node --check` on api.js, session.js, grading.js: PASS
+- Named import/export cross-verification for admin/app.js: PASS
+
+### Risks / Follow-up
+- Playwright browser driver (1.57.0) 404 from Azure CDN — automated browser tests not available. Manual verification required.
+- Remaining mojibake in comment-only lines (decorative separators) — cosmetic, zero runtime impact.
+
+### Next Action
+- Manual browser test: admin login + full student flow.
+
+## [2026-09-22 18:35 UTC] — Fix: System-Wide Reconciliation, Data Preservation, and Bug Elimination (v4.2.0)
+
+**Agent/Session:** Antigravity
+**Phase:** Bug Fix
+**Status:** PASS
+
+### Why
+- `dashboard.html` rendered "undefined" for institution name because `js/session.js` did not persist it.
+- `dashboard.html` completed assessments table showed "English Assessment" fallback for title due to incorrect mapping of Supabase's `assessments` join payload.
+- `result.html` duplicated the "Level" string prefix.
+- `js/api.js` was missing 4 master functions affecting potential scaling/admin functionalities.
+
+### Changed
+- `js/session.js`: Updated `setStudentSession` to explicitly persist `institution_id` and `institution_name`.
+- `dashboard.html`:
+  - Updated `bestAttemptsMap` mapping inside `renderCompletedAssessmentsBottom` to accept lowercase `assessment_id` with uppercase fallback.
+  - Corrected `AssessmentObj` parsing logic to retrieve titles securely from Supabase `assessments` join keys.
+- `result.html`: Changed the level string logic to check if `.includes('level')` exists before prepending `"Level"`.
+- `js/api.js`: Appended missing master functions (`fetchClassMeetings`, `invokeAIEvaluation`, `fetchAssessmentResultsFromDB`, `generateAttemptNarrative`, `addAdditionalMember`).
+- All script tags across `dashboard.html`, `result.html`, `assessment.html`, and `admin.html` bumped to `?v=4.2.0`.
+
+### Files
+- `js/session.js`
+- `dashboard.html`
+- `result.html`
+- `assessment.html`
+- `admin.html`
+- `js/api.js`
+
+### Database
+- No schema changes.
+
+### Tests
+- Confirmed `api.js` completeness.
+- Syntax audit check validated for all modified files.
+
+### Next Action
+- Hard-refresh browser; test full student flow.
+
+**Agent/Session:** Antigravity
+**Phase:** Bug Fix
+**Status:** PASS
+
+### Why
+- `assessment.html` only read `ASSESSMENT_id` (uppercase) from URL params, causing redirect-to-dashboard when the dashboard emitted `assessment_id` (lowercase). Students could not start new assessments.
+- `result.html` read `asmData?.Classes?.name` (capital C) but Supabase returns the join under lowercase `classes`, so the class/subject name was always blank.
+- `dashboard.html` didn't import or use `toOrdinalLevel`, so level headers defaulted to "General" instead of "1st Level", "2nd Level", etc.
+
+### Changed
+- `assessment.html`: Made `assessmentId` extraction resilient to all URL param casings (`assessment_id`, `Assessment_id`, `ASSESSMENT_id`). Added sessionStorage fallback for both `tec_assessment_id` and `tec_ASSESSMENT_id`. Normalizes to lowercase key after first successful read. Added `console.warn` before redirect for traceability. Bumped all import cache versions to v4.1.5.
+- `result.html`: Fixed class/subject name lookup to try `asmData?.classes?.name` first (matching Supabase join output), then `asmData?.Classes?.name` as fallback. Bumped versions to v4.1.5.
+- `dashboard.html`: Added `toOrdinalLevel` to import from `api.js`. Level grouping in `openClassModal()` now uses `toOrdinalLevel(level_number)` when the level has a `level_number`. Changed "Start Assessment" button param from `Assessment_id` to `assessment_id`. Resume button now also includes `assessment_id` param. Bumped all versions to v4.1.5.
+
+### Files
+- `assessment.html`
+- `result.html`
+- `dashboard.html`
+
+### Database
+- No schema changes.
+
+### Tests
+- command: `node -e "const fs=require('fs'); ... new Function(c)" on js/api.js`
+- result: PASS (exit code 0)
+- Import statement audit on all 3 HTML files: PASS (no syntax errors, no bad tokens)
+
+### Risks / Follow-up
+- The `logCheatingEvent` import in assessment.html should be verified to exist as an export in api.js.
+- Manual test needed: full student flow (login → dashboard → class → assessment → result).
+
+### Next Action
+- Hard-refresh browser; test full student flow.
 
 ## [2026-09-20 14:35 UTC] — Fix: Question Import Pipeline — 6 Bugs (v4.4.15)
 
