@@ -1,6 +1,6 @@
-import { adminFetchAll, adminSoftDelete } from '../api.js?v=4.6.2';
-import { showToast } from '../app.js?v=4.6.2';
-import { DataGrid } from './datagrid.js?v=4.6.2';
+import { adminFetchAll, adminSoftDelete } from '../api.js?v=4.7.0';
+import { showToast } from '../app.js?v=4.7.0';
+import { DataGrid } from './datagrid.js?v=4.7.0';
 if (typeof window !== 'undefined' && !window.DataGrid) window.DataGrid = DataGrid;
 
 let programsGrid, batchesGrid;

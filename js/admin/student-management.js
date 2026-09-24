@@ -1,6 +1,6 @@
-import { adminFetchAll, formatStudentName, cleanStudentName, adminSoftDelete, clearAdminCache } from '../api.js?v=4.6.2';
-import { getGrade, showToast } from '../app.js?v=4.6.2';
-import { DataGrid } from './datagrid.js?v=4.6.2';
+import { adminFetchAll, formatStudentName, cleanStudentName, adminSoftDelete, clearAdminCache } from '../api.js?v=4.7.0';
+import { getGrade, showToast } from '../app.js?v=4.7.0';
+import { DataGrid } from './datagrid.js?v=4.7.0';
 
 let studentGrid = null;
 
@@ -281,7 +281,7 @@ export async function renderStudents(area) {
         btn.textContent = 'Saving...';
         btn.disabled = true;
 
-        const sb = (await import('../supabase.js?v=4.6.2')).getSupabase ? await (await import('../supabase.js?v=4.6.2')).getSupabase() : null;
+        const sb = (await import('../supabase.js?v=4.7.0')).getSupabase ? await (await import('../supabase.js?v=4.7.0')).getSupabase() : null;
         if (!sb) { showToast('Cannot connect.', 'error'); close(); return; }
 
         for (const id of selectedIds) {
@@ -296,7 +296,7 @@ export async function renderStudents(area) {
 
       overlay.querySelector('#bulk-activate').onclick = async () => {
         close();
-        const sb = (await import('../supabase.js?v=4.6.2')).getSupabase ? await (await import('../supabase.js?v=4.6.2')).getSupabase() : null;
+        const sb = (await import('../supabase.js?v=4.7.0')).getSupabase ? await (await import('../supabase.js?v=4.7.0')).getSupabase() : null;
         if (!sb) { showToast('Cannot connect.', 'error'); return; }
         for (const id of selectedIds) await sb.from('students').update({ is_active: true }).eq('id', id);
         showToast(`Activated ${selectedIds.length} students.`, 'success');
@@ -305,7 +305,7 @@ export async function renderStudents(area) {
 
       overlay.querySelector('#bulk-deactivate').onclick = async () => {
         close();
-        const sb = (await import('../supabase.js?v=4.6.2')).getSupabase ? await (await import('../supabase.js?v=4.6.2')).getSupabase() : null;
+        const sb = (await import('../supabase.js?v=4.7.0')).getSupabase ? await (await import('../supabase.js?v=4.7.0')).getSupabase() : null;
         if (!sb) { showToast('Cannot connect.', 'error'); return; }
         for (const id of selectedIds) await sb.from('students').update({ is_active: false }).eq('id', id);
         showToast(`Deactivated ${selectedIds.length} students.`, 'success');
@@ -454,7 +454,7 @@ export async function renderStudents(area) {
           printBtn.innerHTML = '&#x1F5A8;'; // printer icon
           printBtn.onclick = (e) => {
             e.stopPropagation();
-            import('./dossier_export.js?v=4.6.2').then(m => {
+            import('./dossier_export.js?v=4.7.0').then(m => {
               const edu = [{period: '2026', institution: row.instName, details: 'Enrolled in ' + row.progName}];
               const skills = ['English Proficiency'];
               const studentAttempts = allAttempts.filter(a => a.student_id === row.id && a.status === 'SUBMITTED');

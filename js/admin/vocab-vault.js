@@ -15,9 +15,9 @@ import {
   fetchPrograms,
   fetchAssessmentDefinitions,
   adminFetchAll
-} from '../api.js?v=4.6.2';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.6.2';
-import { getSupabase } from '../supabase.js?v=4.6.2';
+} from '../api.js?v=4.7.0';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.0';
+import { getSupabase } from '../supabase.js?v=4.7.0';
 
 // ─── Helpers ───────────────────────────────────────────────
 
@@ -218,6 +218,7 @@ function openImportModal(existingWords, topics, onSuccess) {
           normalized[k.trim().toUpperCase()] = String(v).trim();
         }
         return {
+          level:      normalized.LEVEL || normalized.TARGET_LEVEL || '1',
           topic:      normalized.TOPIC || '',
           indonesian: normalized.INDONESIAN || '',
           english:    normalized.ENGLISH || '',
@@ -417,7 +418,7 @@ async function openAssessmentBuilderModal(vaultTopics) {
     questionOrder: 'random',
     quotaMode: 'full',
     customQuota: null,
-    scheduleMode: 'flexible',
+    scheduleMode: 'batch',
     windowStart: null,
     windowEnd: null,
     durationMinutes: 60
@@ -527,24 +528,39 @@ async function openAssessmentBuilderModal(vaultTopics) {
         updateAutoTitle();
         if (!state.programId) return;
         const sb = await getSupabase();
-        const { data } = await sb.from('levels').select('id,name,level_number').eq('program_id', state.programId).eq('is_active', true).is('deleted_at', null).order('level_number');
+        const { data } = await sb.from('levels')
+            .select('id,name,level_number,sort_order')
+            .eq('program_id', state.programId)
+            .eq('is_active', true)
+            .is('deleted_at', null)
+            .order('sort_order', { ascending: true })
+            .order('level_number', { ascending: true });
+        
         let levelData = data;
         if (!data || data.length === 0) {
             levelData = [
-                { id: 'lvl1', name: '1st', level_number: 1 },
-                { id: 'lvl2', name: '2nd', level_number: 2 },
-                { id: 'lvl3', name: '3rd', level_number: 3 }
+                { id: 'lvl1', name: '1st Level', level_number: 1 },
+                { id: 'lvl2', name: '2nd Level', level_number: 2 },
+                { id: 'lvl3', name: '3rd Level', level_number: 3 }
             ];
         } else {
             levelData = levelData.map(l => {
-                let suffix = 'th';
-                if (l.level_number === 1) suffix = 'st';
-                else if (l.level_number === 2) suffix = 'nd';
-                else if (l.level_number === 3) suffix = 'rd';
+                if (l.level_number === 0) return { ...l, name: 'All Levels' };
+                let suffix = 'th Level';
+                if (l.level_number === 1) suffix = 'st Level';
+                else if (l.level_number === 2) suffix = 'nd Level';
+                else if (l.level_number === 3) suffix = 'rd Level';
                 return { ...l, name: l.name || `${l.level_number}${suffix}` };
             });
         }
-        bLevel.innerHTML = '<option value="">— Select Level —</option>' + levelData.map(l => `<option value="${escapeHtml(l.id)}">${escapeHtml(l.name)}</option>`).join('');
+        
+        levelData.sort((a, b) => {
+            if (a.level_number === 0) return 1;
+            if (b.level_number === 0) return -1;
+            return (a.sort_order || a.level_number) - (b.sort_order || b.level_number);
+        });
+
+        bLevel.innerHTML = '<option value="">- Select Level -</option>' + levelData.map(l => `<option value="${escapeHtml(l.id)}">${escapeHtml(l.name)}</option>`).join('');
         bLevel.disabled = false;
         if (state.levelId) bLevel.value = state.levelId;
       });
@@ -752,12 +768,12 @@ async function openAssessmentBuilderModal(vaultTopics) {
           <label class="form-label">Schedule Mode</label>
           <div class="d-flex gap-3 flex-wrap">
             <label class="d-flex align-center gap-2" style="cursor:pointer;">
-              <input type="radio" name="sched-mode" value="flexible" ${state.scheduleMode==='flexible'?'checked':''} style="accent-color:var(--clr-primary);" />
-              <span>&#128336; Flexible Window (Due Date)</span>
+              <input type="radio" name="sched-mode" value="batch" ${state.scheduleMode==='batch' || state.scheduleMode==='flexible' ? 'checked' : ''} style="accent-color:var(--clr-primary);" />
+              <span>&#128336; Batch Duration (Flexible Self-Paced)</span>
             </label>
             <label class="d-flex align-center gap-2" style="cursor:pointer;">
-              <input type="radio" name="sched-mode" value="fixed" ${state.scheduleMode==='fixed'?'checked':''} style="accent-color:var(--clr-primary);" />
-              <span>&#128197; Fixed Schedule (Synchronous Window)</span>
+              <input type="radio" name="sched-mode" value="manual" ${state.scheduleMode==='manual'?'checked':''} style="accent-color:var(--clr-primary);" />
+              <span>&#128197; Tutor Live Control (Manual Toggle / In-Class)</span>
             </label>
           </div>
         </div>

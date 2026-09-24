@@ -1,8 +1,8 @@
-import { adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete } from '../api.js?v=4.6.2';
-import { getSupabase } from '../supabase.js?v=4.6.2';
-import { generateExecutiveCV } from './cv-export.js?v=4.6.2';
-import { getBustedAvatarUrl } from '../utils/avatar-engine.js?v=4.6.2';
-import { showToast } from '../app.js?v=4.6.2';
+import { adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete } from '../api.js?v=4.7.0';
+import { getSupabase } from '../supabase.js?v=4.7.0';
+import { generateExecutiveCV } from './cv-export.js?v=4.7.0';
+import { getBustedAvatarUrl } from '../utils/avatar-engine.js?v=4.7.0';
+import { showToast } from '../app.js?v=4.7.0';
 
 async function ensureProfessionalProfile() {
   const records = await adminFetchAll('user_professionals');

@@ -1,8 +1,8 @@
-import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js?v=4.6.2';
-import { openAssessmentBuilder } from './assessment-builder.js?v=4.6.2';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.6.2';
-import { getSupabase } from '../supabase.js?v=4.6.2';
-import { DataGrid } from './datagrid.js?v=4.6.2';
+import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js?v=4.7.0';
+import { openAssessmentBuilder } from './assessment-builder.js?v=4.7.0';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.0';
+import { getSupabase } from '../supabase.js?v=4.7.0';
+import { DataGrid } from './datagrid.js?v=4.7.0';
 if (typeof window !== 'undefined') window.DataGrid = DataGrid;
 
 let AssessmentsGrid;

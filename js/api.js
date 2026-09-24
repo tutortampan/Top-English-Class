@@ -1250,7 +1250,7 @@ export async function fetchVaultTopics() {
 export async function checkVaultDuplicates(newRows) {
   const sb = await getSupabase();
   const { data: vaultData, error } = await sb.from('vocabulary_vault')
-    .select('id, topic, indonesian, english')
+    .select('id, topic, indonesian, english, target_level')
     .is('deleted_at', null);
   if (error) throw error;
   const vault = vaultData || [];
@@ -1264,16 +1264,17 @@ export async function checkVaultDuplicates(newRows) {
     const rowEng = normStr(row.english);
     const rowInd = normStr(row.indonesian);
     const rowTopic = normStr(row.topic);
+    const rowLevel = parseInt(row.level || row.target_level || 1, 10) || 1;
 
-    const exact = vault.find(v => normStr(v.english) === rowEng && normStr(v.topic) === rowTopic);
+    const exact = vault.find(v => 
+        normStr(v.english) === rowEng && 
+        normStr(v.indonesian) === rowInd && 
+        normStr(v.topic) === rowTopic && 
+        (v.target_level || 1) === rowLevel
+    );
+
     if (exact) {
       duplicateConflicts.push({ index: i, row, existingRecord: exact, conflictType: 'EXACT' });
-      continue;
-    }
-
-    const synOverlap = vault.find(v => normStr(v.english) === rowEng || normStr(v.indonesian) === rowInd);
-    if (synOverlap) {
-      duplicateConflicts.push({ index: i, row, existingRecord: synOverlap, conflictType: 'SYNONYM_OVERLAP' });
       continue;
     }
 
@@ -1294,7 +1295,8 @@ function sanitizeVaultRow(row) {
     topic:      String(row.topic || '').trim().replace(/\s+/g, ' '),
     indonesian: String(row.indonesian || '').trim().replace(/\s+/g, ' '),
     english:    canonicalizeSynonyms(row.english),
-    word_type:  String(row.word_type || 'Verb').trim().replace(/\s+/g, ' ')
+    word_type:  String(row.word_type || 'Verb').trim().replace(/\s+/g, ' '),
+    target_level: parseInt(row.level || row.target_level || 1, 10) || 1
   };
 }
 
@@ -1384,7 +1386,7 @@ export async function createVocabMasteryAssessment(config) {
     institutionId, programId, classId, levelId,
     tier, title,
     questionOrder = 'random',
-    scheduleMode = 'flexible',
+    scheduleMode = 'batch',
     windowStart = null, windowEnd = null,
     durationMinutes = 60,
     quotaMode = 'full', customQuota = null,
@@ -1394,13 +1396,20 @@ export async function createVocabMasteryAssessment(config) {
   let vaultWords = [];
   let sourceTopics = [];
 
+  // Determine Target Level
+  let targetLevel = 1;
+  let isAllLevels = false;
+  const { data: lvlData } = await sb.from('levels').select('level_number').eq('id', levelId).single();
+  if (lvlData) {
+      targetLevel = lvlData.level_number || 1;
+      if (lvlData.level_number === 0) isAllLevels = true;
+  }
+
   if (tier === 'TASK') {
     if (!sourceTopic) throw new Error('sourceTopic is required for TASK tier.');
-    const { data, error } = await sb.from('vocabulary_vault')
-      .select('*')
-      .eq('topic', sourceTopic)
-      .is('deleted_at', null)
-      .order('topic').order('indonesian');
+    let q = sb.from('vocabulary_vault').select('*').eq('topic', sourceTopic).is('deleted_at', null);
+    if (!isAllLevels) q = q.eq('target_level', targetLevel);
+    const { data, error } = await q.order('topic').order('indonesian');
     if (error) throw error;
     vaultWords = data || [];
     sourceTopics = [sourceTopic];
@@ -1417,18 +1426,11 @@ export async function createVocabMasteryAssessment(config) {
       if (t) topicsSet.add(t);
     });
     sourceTopics = [...topicsSet];
-    const { data, error } = await sb.from('vocabulary_vault')
-      .select('*')
-      .in('topic', sourceTopics)
-      .is('deleted_at', null)
-      .order('topic').order('indonesian');
+    let q = sb.from('vocabulary_vault').select('*').in('topic', sourceTopics).is('deleted_at', null);
+    if (!isAllLevels) q = q.eq('target_level', targetLevel);
+    const { data, error } = await q.order('topic').order('indonesian');
     if (error) throw error;
-    const seen = new Map();
-    for (const w of (data || [])) {
-      const key = w.english.toLowerCase().trim();
-      if (!seen.has(key)) seen.set(key, w);
-    }
-    vaultWords = [...seen.values()];
+    vaultWords = data || [];
   } else if (tier === 'EXAM') {
     if (!sourceQuizIds.length) throw new Error('sourceQuizIds required for EXAM tier.');
     const { data: quizAsms, error: qErr } = await sb.from('assessments')
@@ -1442,18 +1444,11 @@ export async function createVocabMasteryAssessment(config) {
       if (a.payload?.source_topic) topicsSet.add(a.payload.source_topic);
     });
     sourceTopics = [...topicsSet];
-    const { data, error } = await sb.from('vocabulary_vault')
-      .select('*')
-      .in('topic', sourceTopics)
-      .is('deleted_at', null)
-      .order('topic').order('indonesian');
+    let q = sb.from('vocabulary_vault').select('*').in('topic', sourceTopics).is('deleted_at', null);
+    if (!isAllLevels) q = q.eq('target_level', targetLevel);
+    const { data, error } = await q.order('topic').order('indonesian');
     if (error) throw error;
-    const seen = new Map();
-    for (const w of (data || [])) {
-      const key = w.english.toLowerCase().trim();
-      if (!seen.has(key)) seen.set(key, w);
-    }
-    vaultWords = [...seen.values()];
+    vaultWords = data || [];
   }
 
   const totalGatheredWords = vaultWords.length;
@@ -1479,6 +1474,9 @@ export async function createVocabMasteryAssessment(config) {
     class_id:             classId,
     level_id:             levelId,
     schedule_mode:        scheduleMode,
+    prerequisites:        (tier === 'QUIZ' && sourceTaskIds.length > 0) ? { parents: sourceTaskIds.map(id => ({ assessment_id: id, min_score: 60 })) } : 
+                          (tier === 'EXAM' && sourceQuizIds.length > 0) ? { parents: sourceQuizIds.map(id => ({ assessment_id: id, min_score: 60 })) } : null,
+    is_unlocked:          scheduleMode === 'batch' ? true : false,
     window_start:         windowStart || null,
     window_end:           windowEnd || null,
     time_limit_minutes:   durationMinutes,
@@ -1542,8 +1540,9 @@ export async function checkAndTriggerLevelUp(studentId, currentLevelId) {
 
   // Audits ALL EXAM assessments in this level across ALL classes
   const { data: exams, error: exErr } = await sb.from('assessments')
-    .select('id')
+    .select('id, levels!inner(level_number)')
     .eq('level_id', currentLevelId)
+    .neq('levels.level_number', 0)
     .eq('assessment_type', 'EXAM')
     .eq('status', 'PUBLISHED')
     .is('deleted_at', null);

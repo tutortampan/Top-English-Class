@@ -1,5 +1,5 @@
 // js/admin/board_import.js
-import { getSupabase } from '../supabase.js?v=4.6.2';
+import { getSupabase } from '../supabase.js?v=4.7.0';
 
 export async function handleExcelRosterImport(file) {
   const data = await file.arrayBuffer();
