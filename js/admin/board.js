@@ -4,10 +4,10 @@
  * Works with existing DB tables: students, programs, batches, institutions (no schema changes).
  */
 
-import { adminFetchAll, adminInsert, adminUpdate, formatStudentName } from '../api.js?v=4.1.0';
-import { showToast } from '../app.js?v=4.1.0';
-import { handleExcelRosterImport } from './board_import.js?v=4.1.0';
-import { processAndCompressAvatar, getBustedAvatarUrl } from '../utils/avatar-engine.js?v=4.1.0';
+import { adminFetchAll, adminInsert, adminUpdate, formatStudentName } from '../api.js?v=4.6.2';
+import { showToast } from '../app.js?v=4.6.2';
+import { handleExcelRosterImport } from './board_import.js?v=4.6.2';
+import { processAndCompressAvatar, getBustedAvatarUrl } from '../utils/avatar-engine.js?v=4.6.2';
 
 // ---- HELPERS ----
 function escHtml(str) {

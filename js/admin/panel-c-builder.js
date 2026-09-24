@@ -3,9 +3,9 @@
  * Panel C (Class & Assessment Management) Dashboard
  * Handles Smart Auto-Naming, Assessment Duplication, Prerequisite Engine, and AI Module Templates
  */
-import { adminFetchAll, adminSoftDelete } from "../api.js?v=4.1.0";
-import { getSupabase } from "../supabase.js?v=4.1.0";
-import { showToast } from "../app.js?v=4.1.0";
+import { adminFetchAll, adminSoftDelete } from "../api.js?v=4.6.2";
+import { getSupabase } from "../supabase.js?v=4.6.2";
+import { showToast } from "../app.js?v=4.6.2";
 
 // AI Module Definitions
 export const AI_MODULES = {

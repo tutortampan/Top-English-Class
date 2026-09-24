@@ -1,7 +1,7 @@
-import { adminFetchAll, adminInsert, adminUpdate, formatStudentName, cleanStudentName } from '../api.js?v=4.4.3';
-import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.4.3';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.4.3';
-import { callEdgeFunction, getSupabase } from '../supabase.js?v=4.4.3';
+import { adminFetchAll, adminInsert, adminUpdate, formatStudentName, cleanStudentName } from '../api.js?v=4.6.2';
+import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.6.2';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.6.2';
+import { callEdgeFunction, getSupabase } from '../supabase.js?v=4.6.2';
 import { downloadAITemplate, AI_MODULES } from './panel-c-builder.js';
 
 const toLevelLetter = (level) => { return String.fromCharCode(64 + parseInt(level || 1)) || 'A'; };

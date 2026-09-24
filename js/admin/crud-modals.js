@@ -1,10 +1,10 @@
-﻿import {
+import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete,
   mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
   detectDuplicateQuestions, resequenceAssessmentQuestions, resolveDuplicateQuestionGroup, batchResolveAssessmentDuplicateQuestions
-} from '../api.js?v=4.4.1';
-import { cleanStudentName } from '../api.js?v=4.4.1';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.4.1';
+} from '../api.js?v=4.6.2';
+import { cleanStudentName } from '../api.js?v=4.6.2';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.6.2';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';

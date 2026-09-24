@@ -37,8 +37,10 @@ export function normalizeAnswerText(text) {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, ' ')
-    .replace(/[^\w\s'-]/g, '') // preserve letters, digits, spaces, hyphens, apostrophes
-    .replace(/\bi'm\b/g, 'i am');
+    .replace(/[.,?!"']+$/, '')
+    .replace(/[^\w\s'-]/g, '')
+    .replace(/\bi'm\b/g, 'i am')
+    .trim();
 }
 
 /**
@@ -56,9 +58,9 @@ export function stripHyphens(text) {
  */
 export function parseCorrectAnswers(rawAnswer) {
   if (rawAnswer === null || rawAnswer === undefined) return [];
-  if (Array.isArray(rawAnswer)) return rawAnswer.map(s => String(s).trim()).filter(Boolean);
-  return String(rawAnswer)
-    .split(/[;|/]/)
+  const list = Array.isArray(rawAnswer) ? rawAnswer : [rawAnswer];
+  return list
+    .flatMap(s => String(s).split(/[;|/]/))
     .map(s => s.trim())
     .filter(Boolean);
 }

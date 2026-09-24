@@ -1,6 +1,6 @@
-import { DataGrid } from './datagrid.js?v=4.4.5';
+import { DataGrid } from './datagrid.js?v=4.6.2';
 window.DataGrid = DataGrid;
-import { renderAIAssessments, renderImportAIAssessments } from './panel-c-builder.js?v=4.4.5';
+import { renderAIAssessments, renderImportAIAssessments } from './panel-c-builder.js?v=4.6.2';
 import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete,
   adminFetchDeleted, adminRestore,
@@ -8,21 +8,22 @@ import {
   detectDuplicateQuestions, resequenceAssessmentQuestions, resolveDuplicateQuestionGroup, batchResolveAssessmentDuplicateQuestions,
   fetchInstitutions, fetchPrograms, fetchBatches, formatStudentName,
   testSupabaseConnection, previewRecalibrateAssessment, applyRecalibrateAssessment, isPassing, calculatePercentage
-} from '../api.js?v=4.4.5';
-import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.4.5';
-import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=4.4.5';
-import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.4.5';
-import { getSupabase } from '../supabase.js?v=4.4.5';
-import { openAssessmentBuilder } from './assessment-builder.js?v=4.4.5';
-import { renderStudents as _renderStudentsModule } from './student-management.js?v=4.4.5';
-import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule, renderUnifiedInstitutions } from './program-management.js?v=4.4.5';
-import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport, renderResults, renderProgressView, renderRecalibrator, renderClassInstances } from './class.js?v=4.4.14';
-import { renderAssessments } from './assessment-management.js?v=4.4.5';
-import { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin } from './desk.js?v=4.4.5';
-import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=4.4.15';
-import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin } from './crud-modals.js?v=4.4.5';
-import { renderDashboard, renderAdminProfile, renderAdminSchedule, renderWorkRecords, renderCVGenerator } from './admin-deck.js?v=4.4.5';
-import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
+} from '../api.js?v=4.6.2';
+import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.6.2';
+import { setAdminSession, getAdminSession, clearAdminSession } from '../session.js?v=4.6.2';
+import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.6.2';
+import { getSupabase } from '../supabase.js?v=4.6.2';
+import { openAssessmentBuilder } from './assessment-builder.js?v=4.6.2';
+import { renderStudents as _renderStudentsModule } from './student-management.js?v=4.6.2';
+import { renderClasses as _renderClassesModule, renderBatches as _renderBatchesModule, renderUnifiedInstitutions } from './program-management.js?v=4.6.2';
+import { renderTopics, renderWordTypes, renderCentralQuestionBank, renderAssignments, renderCentralQuestionImport, renderResults, renderProgressView, renderRecalibrator, renderClassInstances } from './class.js?v=4.6.2';
+import { renderAssessments } from './assessment-management.js?v=4.6.2';
+import { renderVocabularyVault } from './vocab-vault.js?v=4.6.2';
+import { renderAuditLog, renderSettings, renderDataHealth, renderRecycleBin } from './desk.js?v=4.6.2';
+import { renderImportStudents, renderImportQuestions, renderExportQuestions } from './imports-exports.js?v=4.6.2';
+import { openCrudModal, openDuplicateStudentsModal, openDuplicateQuestionsModal, hashPin } from './crud-modals.js?v=4.6.2';
+import { renderDashboard, renderAdminProfile, renderAdminSchedule, renderWorkRecords, renderCVGenerator } from './admin-deck.js?v=4.6.2';
+import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.6.2';
 
     // -- Primary Tab Switching Variables --
     const mobileTabs = document.querySelectorAll('.mobile-tab');
@@ -32,7 +33,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
       dashboard: 'Executive Dashboard', profile: 'My Profile', schedule: 'Personal Schedule', work_records: 'Work Records', cv_generator: 'CV Generator',
       assessments: 'Assessments', import_ai_assessments: 'Import AI Assessments', board_overview: 'Board Overview',
       institutions: 'Batches', students: 'Students Roster', 'import-students': 'Import Students', 'progress-view': 'Student Progress',
-      Classes: 'Classes (Classes)', classes: 'Classes', class_instances: 'Class Instances', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', question_types: 'Validation Dictionary', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
+      Classes: 'Classes (Classes)', classes: 'Classes', class_instances: 'Class Instances', levels: 'Levels', topics: 'Question Groups & Topics', questions: 'Central Question Bank', question_types: 'Validation Dictionary', vocab_vault: 'Vocabulary Vault', 'import-questions': 'Import Questions', 'export-questions': 'Export Questions',
       Assessments: 'All Assessments', assessments: 'Assessment Definitions', assessment_instances: 'Assessment Instances', assignments: 'Assignments & Rosters', results: 'Assessment Results', recalibrator: 'Recalibration Engine',
       audit: 'Activity & Audit Logs', settings: 'Site Settings & Cost Guard', recycle: 'Recycle Bin', health: 'Data Health & Connectivity'
     };
@@ -41,7 +42,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
     const sectionDomainMap = {
       dashboard: 'ADMIN', profile: 'ADMIN', schedule: 'ADMIN', work_records: 'ADMIN', cv_generator: 'ADMIN',
       board_overview: 'BOARD', institutions: 'BOARD', students: 'BOARD', 'import-students': 'BOARD', 'progress-view': 'BOARD',
-      Classes: 'CLASS', classes: 'CLASS', class_instances: 'CLASS', levels: 'CLASS', topics: 'CLASS', questions: 'CLASS', question_types: 'CLASS', 'import-questions': 'CLASS', 'export-questions': 'CLASS',
+      Classes: 'CLASS', classes: 'CLASS', class_instances: 'CLASS', levels: 'CLASS', topics: 'CLASS', questions: 'CLASS', question_types: 'CLASS', vocab_vault: 'CLASS', 'import-questions': 'CLASS', 'export-questions': 'CLASS',
       Assessments: 'CLASS', assessments: 'CLASS', assessment_instances: 'CLASS', assignments: 'CLASS', results: 'CLASS', recalibrator: 'CLASS', assessments: 'CLASS', import_ai_assessments: 'CLASS',
       audit: 'DATA', settings: 'DATA', recycle: 'DATA', health: 'DATA'
     };
@@ -412,6 +413,7 @@ import { renderBoardOverview, openStudentFullEdit } from './board.js?v=4.4.5';
           case 'levels':              await renderLevels(area); break;
           case 'topics':              await renderTopics(area); break;
           case 'question_types':          await renderWordTypes(area); break;
+          case 'vocab_vault':             await renderVocabularyVault(area); break;
           case 'students':            await _renderStudentsModule(area); break;
           case 'Assessments':               await renderAssessments(area); break;
           case 'questions':           await renderCentralQuestionBank(area); break;

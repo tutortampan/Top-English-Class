@@ -1,4 +1,4 @@
-﻿/**
+/**
  * js/admin/desk.js
  * PILAR [D] DATA — SYSTEM ADMINISTRATION, SECURITY & HEALTH
  * Modules:
@@ -15,10 +15,10 @@ import {
   adminHardDelete,
   clearAdminCache,
   testSupabaseConnection
-} from '../api.js?v=4.4.1';
-import { getSupabase } from '../supabase.js?v=4.4.1';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.4.1';
-import { openDuplicateStudentsModal, openDuplicateQuestionsModal } from './crud-modals.js?v=4.4.1';
+} from '../api.js?v=4.6.2';
+import { getSupabase } from '../supabase.js?v=4.6.2';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.6.2';
+import { openDuplicateStudentsModal, openDuplicateQuestionsModal } from './crud-modals.js?v=4.6.2';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';

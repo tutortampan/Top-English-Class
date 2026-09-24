@@ -1,8 +1,8 @@
-﻿
-    import { fetchStudentClasses, fetchStudentProgress, fetchAssessmentsForStudentClass, fetchStudentAttemptsForAssessment, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, updateStudentEducation, formatStudentName, fetchAssignments, fetchAssessments } from './js/api.js?v=4.1.0';
-    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.1.0';
-    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.1.0';
-    import { testMicrophoneCapability } from './js/speech.js?v=4.1.0';
+
+    import { fetchStudentClasses, fetchStudentProgress, fetchAssessmentsForStudentClass, fetchStudentAttemptsForAssessment, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, updateStudentEducation, formatStudentName, fetchAssignments, fetchAssessments } from './js/api.js?v=4.6.2';
+    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.6.2';
+    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.6.2';
+    import { testMicrophoneCapability } from './js/speech.js?v=4.6.2';
 
 
     function escapeHtml(str) {
@@ -531,7 +531,7 @@
           }
           if (hasEducation && !session.education) {
              session.education = st.education;
-             const { setStudentSession } = await import('./js/session.js?v=4.1.0');
+             const { setStudentSession } = await import('./js/session.js?v=4.6.2');
              setStudentSession(session);
           }
         }
@@ -581,7 +581,7 @@
           try {
             await updateStudentEducation(session.student_id, eduList);
             session.education = eduList;
-            const { setStudentSession } = await import('./js/session.js?v=4.1.0');
+            const { setStudentSession } = await import('./js/session.js?v=4.6.2');
             setStudentSession(session);
             showToast('Academic background verified!', 'success');
             doResolve();
