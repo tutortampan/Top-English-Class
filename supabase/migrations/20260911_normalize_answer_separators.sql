@@ -1,5 +1,5 @@
 -- ============================================================
--- TOP ENGLISH CLASS — Migration: Normalize Answer Separators
+-- TopsCore — Migration: Normalize Answer Separators
 -- Converts all pipe (|) and slash (/) delimiters in correct_answer
 -- fields to the canonical semicolon (;) separator.
 --

@@ -2,9 +2,9 @@ import {
   adminFetchAll, adminInsert, adminUpdate, adminSoftDelete,
   mergeDuplicateStudents, detectDuplicateStudents, mergeStudentPair,
   detectDuplicateQuestions, resequenceAssessmentQuestions, resolveDuplicateQuestionGroup, batchResolveAssessmentDuplicateQuestions
-} from '../api.js?v=4.7.0';
-import { cleanStudentName } from '../api.js?v=4.7.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.0';
+} from '../api.js?v=4.7.4';
+import { cleanStudentName } from '../api.js?v=4.7.4';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.4';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -28,13 +28,7 @@ let _currentSection = null;
 let _editId     = null;
 
 const formFields = {
-  user_professionals: [
-    { id: 'full_name', label: 'Full Name', type: 'text', required: true },
-    { id: 'title', label: 'Professional Title', type: 'text', required: false },
-    { id: 'bio', label: 'Biography', type: 'textarea', required: false },
-    { id: 'contact_email', label: 'Email Address', type: 'text', required: false },
-    { id: 'contact_phone', label: 'Phone Number', type: 'text', required: false }
-  ],
+  
   work_records: [
     { id: 'company_name', label: 'Company / Organization', type: 'text', required: true },
     { id: 'role_title', label: 'Role / Job Title', type: 'text', required: true },
@@ -50,14 +44,10 @@ const formFields = {
     { id: 'name', label: 'Institution Name', type: 'text', required: true },
     { id: 'is_active', label: 'Active', type: 'checkbox' },
   ],
-  Classes: [
-    { id: 'name', label: 'Class Name', type: 'text', required: true },
-    { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
-    { id: 'is_active', label: 'Active', type: 'checkbox' },
-  ],
+
   classes: [
     { id: 'name', label: 'Class Name', type: 'text', required: true },
-    { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
+    { id: 'level_id', label: 'Level', type: 'select', source: 'levels', required: true },
     { id: 'is_active', label: 'Active', type: 'checkbox' },
   ],
   class_instances: [
@@ -69,27 +59,28 @@ const formFields = {
     { id: 'status', label: 'Status', type: 'select', options: [{val:'active',text:'Active'},{val:'finished',text:'Finished'},{val:'inactive',text:'Inactive'}], required: true }
   ],
   levels: [
-    { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true, uiOnly: true },
-    { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
-    { id: 'class_id', label: 'Class', type: 'select', source: 'classes', required: true, dependsOn: 'institution_id' },
+    { id: 'institution_id', label: 'Institution', type: 'select', source: 'institutions', required: true, uiOnly: true },
+    { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
+
     { id: 'level_number', label: 'Level Number', type: 'number', required: true, placeholder: 'e.g. 1' },
     { id: 'name', label: 'Level Name', type: 'text', required: true, placeholder: 'e.g. Level 1 - Beginner' },
     { id: 'is_active', label: 'Active', type: 'checkbox' },
   ],
   programs: [
     { id: 'name', label: 'Program Name', type: 'text', required: true },
-    { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
+    { id: 'institution_id', label: 'Institution', type: 'select', source: 'institutions', required: true },
     { id: 'is_active', label: 'Active', type: 'checkbox' },
   ],
   batches: [
-    { id: 'institution_id', label: 'Program (filter only)', type: 'select', source: 'institutions', required: false, uiOnly: true },
-    { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: true, dependsOn: 'institution_id' },
+    { id: 'institution_id', label: 'Institution (filter only)', type: 'select', source: 'institutions', required: false, uiOnly: true },
+    { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: true, dependsOn: 'institution_id' },
     { id: 'name', label: 'Batch Name', type: 'text', required: true, placeholder: 'e.g. Batch 2026-A' },
+    { id: 'current_level_id', label: 'Current Level', type: 'select', source: 'levels', required: false },
     { id: 'is_active', label: 'Active', type: 'checkbox' },
   ],
   students: [
-    { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
-    { id: 'program_id', label: 'Class', type: 'select', source: 'programs', required: true, dependsOn: 'institution_id' },
+    { id: 'institution_id', label: 'Institution', type: 'select', source: 'institutions', required: true },
+    { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: true, dependsOn: 'institution_id' },
     { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: false, dependsOn: 'program_id' },
     
     { id: 'name', label: 'Full Name', type: 'text', required: true },
@@ -104,8 +95,9 @@ const formFields = {
   ],
       assessments: [
       { id: 'institution_id', label: 'Institution', type: 'select', source: 'institutions', required: true },
-      { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
-      { id: 'batch_id', label: 'Batch', type: 'select', source: 'batches', required: false, dependsOn: 'program_id' },
+      { id: 'program_id', label: 'Program', type: 'select', source: 'programs', required: true, dependsOn: 'institution_id' },
+      { id: 'level_id', label: 'Level', type: 'select', source: 'levels', required: true, dependsOn: 'program_id' },
+      { id: 'class_id', label: 'Class', type: 'select', source: 'classes', required: true, dependsOn: 'level_id' },
       { id: 'module_id', label: 'AI Module', type: 'select', source: 'modules', required: true },
       { id: 'auto_name_override', label: 'Manual Name Override', type: 'checkbox' },
       { id: 'name', label: 'Assessment Name', type: 'text', required: true },
@@ -116,18 +108,18 @@ const formFields = {
       { id: 'payload', label: 'Configuration Payload (JSON)', type: 'textarea' }
     ],
     Assessments: [
-    { id: 'institution_id', label: 'Program', type: 'select', source: 'institutions', required: true },
-    { id: 'program_id', label: 'Class (Optional / Assigned)', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
+    { id: 'institution_id', label: 'Institution', type: 'select', source: 'institutions', required: true },
+    { id: 'program_id', label: 'Program (Optional / Assigned)', type: 'select', source: 'programs', required: false, dependsOn: 'institution_id' },
     { id: 'class_id', label: 'Class', type: 'select', source: 'classes', required: false, dependsOn: 'institution_id' },
-    { id: 'Assessment_type', label: 'Assessment Type', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Final'], required: true, defaultValue: 'Daily' },
+    { id: 'assessment_type', label: 'Assessment Type', type: 'select', options: ['Task', 'Quiz', 'Exam'], required: true, defaultValue: 'Task' },
     
-    { id: 'Assessment_order', label: 'Order (1, 2, 3...)', type: 'select', options: ['1','2','3','4','5','6','7','8','9','10'], required: true, defaultValue: '1' },
-    { id: 'Assessment_title', label: 'Assessment Title (Auto-Generated)', type: 'text', required: true, placeholder: 'Auto-generated as: [Class] - [Topic] - [Module] - [Type]' },
-    { id: 'prerequisite_Assessment_id', label: 'Prerequisite Assessment (Optional)', type: 'select', source: 'Assessments', required: false },
+    { id: 'Assessment_order', label: 'Sequence Order', type: 'number', required: true, defaultValue: '1', placeholder: 'e.g. 1' },
+    { id: 'title', label: 'Assessment Title (Auto-Generated)', type: 'text', required: true, placeholder: 'Auto-generated as: [Institution] - [Program] - [Class] - [Level] - [Type]' },
+    { id: 'prerequisite_assessment_id', label: 'Prerequisite Assessment (Optional)', type: 'select', source: 'Assessments', required: false },
     { id: 'minimum_required_score', label: 'Passing Score % (Default: 60%)', type: 'number', required: true, defaultValue: 60 },
     { id: 'prerequisite_min_score', label: 'Prerequisite Min % (Default: 60%)', type: 'number', required: false, defaultValue: 60 },
     { id: 'time_limit_minutes', label: 'Global Time Limit (minutes)', type: 'number', required: true, defaultValue: 60 },
-    { id: 'Assessment_status', label: 'Assessment Status', type: 'select', options: ['published','draft','unpublished','archived'], required: true },
+    { id: 'status', label: 'Assessment Status', type: 'select', options: [{value:'PUBLISHED',label:'PUBLISHED'},{value:'DRAFT',label:'DRAFT'},{value:'UNPUBLISHED',label:'UNPUBLISHED'},{value:'ARCHIVED',label:'ARCHIVED'}], required: true },
     { id: 'question_order', label: 'Question Order', type: 'select', options: [{ value: 'sequential', label: 'Sequential' }, { value: 'random', label: 'Random' }], required: true },
     { id: 'retake_allowed', label: 'Retake Allowed', type: 'checkbox' },
     { id: 'max_attempts', label: 'Max Attempts (blank = unlimited)', type: 'number' },
@@ -135,7 +127,7 @@ const formFields = {
   questions: [
     { id: 'question_text', label: 'Question Text', type: 'textarea', required: true },
     { id: 'question_order', label: 'Order', type: 'number', required: true },
-    { id: 'Assessment_id', label: 'Assessmentination', type: 'select', source: 'Assessments', required: true },
+    { id: 'assessment_id', label: 'Assessment', type: 'select', source: 'Assessments', required: true },
     { id: 'answer_type', label: 'Answer Type', type: 'select', options: [
       {value:'multiple_choice',label:'Multiple Choice'},
       {value:'dropdown',label:'Dropdown'},
@@ -163,7 +155,7 @@ async function openCrudModal(section, record) {
           batches: 'Batch',
           institutions: 'Institution',
           classes: 'Class',
-          Classes: 'Class',
+
           levels: 'Level',
           students: 'Student',
           Assessments: 'Assessment',
@@ -189,7 +181,7 @@ async function openCrudModal(section, record) {
 
       for (const f of fields) {
         const group = document.createElement('div');
-        const isFull = ['Assessment_title', 'question_text', 'options_json', 'name'].includes(f.id) || f.type === 'textarea';
+        const isFull = ['title', 'question_text', 'options_json', 'name'].includes(f.id) || f.type === 'textarea';
         group.className = `form-group ${isFull ? 'form-group-full' : ''}`;
 
         const label = document.createElement('label');
@@ -204,7 +196,7 @@ async function openCrudModal(section, record) {
           sel.id = `field-${f.id}`;
           sel.name = f.id;
           if (f.required) sel.required = true;
-          if (f.id === 'prerequisite_Assessment_id') {
+          if (f.id === 'prerequisite_assessment_id') {
             sel.innerHTML = `<option value="">None (Optional)</option>`;
             sel.disabled = false;
 
@@ -219,14 +211,14 @@ async function openCrudModal(section, record) {
             opts = opts.filter(o => {
               if (o.is_active !== undefined) return o.is_active === true;
               if (o.status !== undefined) return o.status !== 'cancelled' && o.status !== 'archived';
-              if (o.Assessment_status !== undefined) return o.Assessment_status === 'published';
+              if (o.status !== undefined) return o.status === 'published';
               return true;
             });
 
             opts.forEach(o => {
               const opt = document.createElement('option');
               opt.value = o.id;
-              opt.textContent = o.name || o.title || o.Assessment_title || o.id;
+              opt.textContent = o.name || o.title || o.title || o.id;
               if (record && record[f.id] === o.id) opt.selected = true;
               sel.appendChild(opt);
             });
@@ -293,10 +285,10 @@ async function openCrudModal(section, record) {
       const classSelect = crudForm.querySelector('#field-program_id');
       const batchSelect = crudForm.querySelector('#field-batch_id');
       const Classeselect = crudForm.querySelector('#field-class_id');
-      const prereqSelect = crudForm.querySelector('#field-prerequisite_assessment_id') || crudForm.querySelector('#field-prerequisite_Assessment_id');
-      const titleInput = crudForm.querySelector('#field-Assessment_title') || crudForm.querySelector('#field-name');
+      const prereqSelect = crudForm.querySelector('#field-prerequisite_assessment_id') || crudForm.querySelector('#field-prerequisite_assessment_id');
+      const titleInput = crudForm.querySelector('#field-title') || crudForm.querySelector('#field-name');
       const levelSelect = crudForm.querySelector('#field-level_id');
-      const AssessmentTypeInput = crudForm.querySelector('#field-Assessment_type') || crudForm.querySelector('#field-category');
+      const AssessmentTypeInput = crudForm.querySelector('#field-assessment_type') || crudForm.querySelector('#field-category');
       const orderSelect = crudForm.querySelector('#field-order_num') || crudForm.querySelector('#field-display_order');
 
       const updatePrereqRequirement = () => {
@@ -307,32 +299,32 @@ async function openCrudModal(section, record) {
 
       if (prereqSelect) {
         prereqSelect.disabled = false;
-        const isNoneSelected = !record || !record.prerequisite_Assessment_id;
+        const isNoneSelected = !record || !record.prerequisite_assessment_id;
         prereqSelect.innerHTML = `<option value="" ${isNoneSelected ? 'selected' : ''}>None (Optional)</option>`;
         const allAssessments = await adminFetchAll('assessments');
         const eligible = allAssessments.filter(e => !e.deleted_at && e.id !== _editId);
-        eligible.sort((a, b) => (a.Assessment_title || '').localeCompare(b.Assessment_title || '')).forEach(e => {
+        eligible.sort((a, b) => (a.title || '').localeCompare(b.title || '')).forEach(e => {
           const opt = document.createElement('option');
           opt.value = e.id;
-          opt.textContent = e.Assessment_title || e.display_name || e.id;
-          if (record && record.prerequisite_Assessment_id === e.id) opt.selected = true;
+          opt.textContent = e.title || e.display_name || e.id;
+          if (record && record.prerequisite_assessment_id === e.id) opt.selected = true;
           prereqSelect.appendChild(opt);
         });
         updatePrereqRequirement();
       }
 
-            let _titleManuallyEdited = Boolean(_editId && (record?.Assessment_title || record?.name));
+            let _titleManuallyEdited = Boolean(_editId && (record?.title || record?.name));
       const triggerAutoTitle = () => {
         if (_titleManuallyEdited || !titleInput) return;
         if (_currentSection === 'Assessments') {
-          const cText = (classSelect && classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].textContent.trim() : '') ||
-                        (progSelect && progSelect.selectedIndex > 0 ? progSelect.options[progSelect.selectedIndex].textContent.trim() : '');
+          const instText = progSelect && progSelect.selectedIndex > 0 ? progSelect.options[progSelect.selectedIndex].textContent.trim() : '';
+          const pText = classSelect && classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].textContent.trim() : '';
           const tText = Classeselect && Classeselect.selectedIndex > 0 ? Classeselect.options[Classeselect.selectedIndex].textContent.trim() : '';
           const selectedLvlOpt = levelSelect && levelSelect.selectedIndex > 0 ? levelSelect.options[levelSelect.selectedIndex] : null;
           const mText = selectedLvlOpt ? (selectedLvlOpt.getAttribute('data-level-letter') || selectedLvlOpt.textContent.trim()) : '';
           const typeText = AssessmentTypeInput ? AssessmentTypeInput.value.trim() : '';
 
-          const parts = [cText, tText, mText, typeText].filter(Boolean);
+          const parts = [instText, pText, tText, mText, typeText].filter(Boolean);
           if (parts.length > 0) {
             titleInput.value = parts.join(' - ');
           }
@@ -363,15 +355,7 @@ async function openCrudModal(section, record) {
 
         try {
           const allLevels = await adminFetchAll('levels');
-          let activeLevels = allLevels.filter(l => !l.deleted_at);
-
-          const selSubjId = Classeselect ? Classeselect.value : null;
-          if (selSubjId) {
-            const Classespecific = activeLevels.filter(l => l.class_id === selSubjId);
-            if (Classespecific.length > 0) {
-              activeLevels = Classespecific;
-            }
-          }
+          const activeLevels = allLevels.filter(l => !l.deleted_at);
 
           const seen = new Set();
           activeLevels.sort((a, b) => (Number(a.level_number) || 0) - (Number(b.level_number) || 0)).forEach(l => {
@@ -611,11 +595,6 @@ function _initCrudModals() {
 
       const targetTable = (_currentSection || '').replace('-', '_');
       
-      // FIX: Handle schema ambiguity where 'programs' table expects 'program_id' instead of/along with 'institution_id'
-      if (_currentSection === 'programs' && payload.institution_id) {
-        payload.program_id = payload.institution_id;
-      }
-
       if (_currentSection === 'students' && payload.name) {
         payload.name = cleanStudentName(payload.name);
       }
@@ -634,8 +613,8 @@ function _initCrudModals() {
                 delete payloadToSave.program_id;
                 retried = true;
               }
-              if ('prerequisite_Assessment_id' in payloadToSave && (err.message?.includes('prerequisite') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
-                delete payloadToSave.prerequisite_Assessment_id;
+              if ('prerequisite_assessment_id' in payloadToSave && (err.message?.includes('prerequisite') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
+                delete payloadToSave.prerequisite_assessment_id;
                 retried = true;
               }
               if ('Assessment_order' in payloadToSave && (err.message?.includes('order') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
@@ -677,8 +656,8 @@ function _initCrudModals() {
                 delete payloadToSave.program_id;
                 retried = true;
               }
-              if ('prerequisite_Assessment_id' in payloadToSave && (err.message?.includes('prerequisite') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
-                delete payloadToSave.prerequisite_Assessment_id;
+              if ('prerequisite_assessment_id' in payloadToSave && (err.message?.includes('prerequisite') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
+                delete payloadToSave.prerequisite_assessment_id;
                 retried = true;
               }
               if ('Assessment_order' in payloadToSave && (err.message?.includes('order') || err.message?.includes('PGRST204') || err.message?.includes('400'))) {
@@ -1155,10 +1134,10 @@ async function initDuplicateQuestionsSelect() {
   const dupQAssessmentselect = document.getElementById('dup-q-Assessment-select');
   if (!dupQAssessmentselect) return;
   try {
-    const Assessments = await adminFetchAll('Assessments', 'id, Assessment_title, Assessment_status');
-    const sortedAssessments = (Assessments || []).sort((a, b) => (a.Assessment_title || '').localeCompare(b.Assessment_title || ''));
+    const Assessments = await adminFetchAll('assessments', 'id, title, status');
+    const sortedAssessments = (Assessments || []).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     dupQAssessmentselect.innerHTML = '<option value="">— All Assessments (Global Search) —</option>' +
-      sortedAssessments.map(e => `<option value="${e.id}">${escapeHtml(e.Assessment_title)} (${e.Assessment_status || 'published'})</option>`).join('');
+      sortedAssessments.map(e => `<option value="${e.id}">${escapeHtml(e.title)} (${e.status || 'published'})</option>`).join('');
   } catch (e) {
     console.warn('Could not load Assessments for duplicate select:', e);
   }

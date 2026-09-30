@@ -138,13 +138,13 @@
   </div>
 
   <script type="module">
-    import { startASSESSMENT, saveAnswer, submitAssessment, logCheatingEvent, getServerTimeWita, checkAndTriggerLevelUp } from './js/api.js?v=4.7.0';
-    import { evaluateAnswer } from './js/grading.js?v=4.7.0';
-    import { requireStudentSession } from './js/session.js?v=4.7.0';
-    import { showToast, showLoading, hideLoading, formatTime, escapeHtml as appEscapeHtml } from './js/app.js?v=4.7.0';
-    import { startCountdown, isExpired } from './js/timer.js?v=4.7.0';
-    import { createSpeechSession, isSpeechSupported } from './js/speech.js?v=4.7.0';
-    import { SUPABASE_URL, SUPABASE_ANON_KEY } from './js/supabase.js?v=4.7.0';
+    import { startASSESSMENT, saveAnswer, submitAssessment, logCheatingEvent, getServerTimeWita, checkAndTriggerLevelUp } from './js/api.js?v=4.7.4';
+    import { evaluateAnswer } from './js/grading.js?v=4.7.4';
+    import { requireStudentSession } from './js/session.js?v=4.7.4';
+    import { showToast, showLoading, hideLoading, formatTime, escapeHtml as appEscapeHtml } from './js/app.js?v=4.7.4';
+    import { startCountdown, isExpired } from './js/timer.js?v=4.7.4';
+    import { createSpeechSession, isSpeechSupported } from './js/speech.js?v=4.7.4';
+    import { SUPABASE_URL, SUPABASE_ANON_KEY } from './js/supabase.js?v=4.7.4';
 
     function escapeHtml(str) {
       if (typeof appEscapeHtml === 'function') return appEscapeHtml(str);
@@ -166,15 +166,15 @@
     let assessmentId = urlParams.get('assessment_id') ||
                        urlParams.get('Assessment_id') ||
                        urlParams.get('ASSESSMENT_id') ||
-                       sessionStorage.getItem('tec_assessment_id') ||
-                       sessionStorage.getItem('tec_ASSESSMENT_id');
+                       sessionStorage.getItem('topscore_assessment_id') ||
+                       sessionStorage.getItem('topscore_ASSESSMENT_id');
 
     if (assessmentId) {
       // Normalize to lowercase key for consistency going forward
-      sessionStorage.setItem('tec_assessment_id', assessmentId);
+      sessionStorage.setItem('topscore_assessment_id', assessmentId);
     }
     if (urlParams.get('attempt_id')) {
-      sessionStorage.setItem('tec_attempt_id', urlParams.get('attempt_id'));
+      sessionStorage.setItem('topscore_attempt_id', urlParams.get('attempt_id'));
     }
     if (!assessmentId) {
       console.warn('No valid assessment ID found. Redirecting to dashboard.');
@@ -291,7 +291,7 @@
       if (!isAssessmentActive || !attemptData?.id) return;
       saveCurrentAnswer();
       isAssessmentActive = false;
-      const token = sessionStorage.getItem('tec_student_token') || '';
+      const token = sessionStorage.getItem('topscore_student_token') || '';
       const payload = JSON.stringify({
         attempt_id: attemptData.id,
         token: token,
@@ -368,13 +368,13 @@
 
         // Server time gate: Enforce WITA window check for schedule_mode === 'fixed'
         if (assessmentData?.schedule_mode === 'manual' && assessmentData?.is_unlocked === false) {
-          const mainEl = document.getElementById('assessment-main');
-          if (mainEl) {
-            mainEl.innerHTML = `
+          const main = document.getElementById('assessment-main');
+          if (main) {
+            main.innerHTML = `
               <div class="glass-panel text-center p-5 mx-auto" style="max-width:500px;margin-top:10vh;">
-                <h2 class="fw-800 text-xl mb-3" style="color:var(--clr-text-1);">🔒 Ujian Terkunci</h2>
-                <p class="text-sm" style="color:var(--clr-text-2);">Menunggu instruksi tutor di kelas.</p>
-                <button class="btn btn-primary mt-4" onclick="window.location.href='dashboard.html'">Kembali ke Dashboard</button>
+                <h2 class="fw-800 text-xl mb-3" style="color:var(--clr-text-1);">🔒 Assessment Locked</h2>
+                <p class="text-sm" style="color:var(--clr-text-2);">Waiting for your tutor to unlock this session in class.</p>
+                <button class="btn btn-primary mt-4" onclick="window.location.href='dashboard.html'">Return to Dashboard</button>
               </div>
             `;
           }
@@ -422,7 +422,7 @@
 
         // Reconcile with client Write-Ahead Buffer (prevents data loss across reloads/disconnects)
         try {
-          const localBufferRaw = localStorage.getItem(`tec_local_answers_${attemptData.id}`);
+          const localBufferRaw = localStorage.getItem(`topscore_local_answers_${attemptData.id}`);
           if (localBufferRaw) {
             const localBuffer = JSON.parse(localBufferRaw);
             let restoredCount = 0;
@@ -492,7 +492,7 @@
         }
 
         // Figure out current section
-        const savedSecIndex = parseInt(sessionStorage.getItem(`tec_sec_${attemptData.id}`), 10);
+        const savedSecIndex = parseInt(sessionStorage.getItem(`topscore_sec_${attemptData.id}`), 10);
         if (!isNaN(savedSecIndex) && savedSecIndex >= 0 && savedSecIndex < assessmentSections.length) {
           currentSectionIndex = savedSecIndex;
         } else {
@@ -514,7 +514,7 @@
 
     function startSection(index) {
        currentSectionIndex = index;
-       sessionStorage.setItem(`tec_sec_${attemptData.id}`, index);
+       sessionStorage.setItem(`topscore_sec_${attemptData.id}`, index);
        const currentSection = assessmentSections[index];
 
        answerRows = allAnswerRows.filter(row => {
@@ -546,11 +546,11 @@
       
       let sectionEndAt = null;
       if (currentSection && currentSection.time_limit_minutes) {
-         let secStartedStr = localStorage.getItem(`tec_sec_started_${attemptData.id}_${currentSectionIndex}`);
+         let secStartedStr = localStorage.getItem(`topscore_sec_started_${attemptData.id}_${currentSectionIndex}`);
          let secStarted;
          if (!secStartedStr) {
             secStarted = new Date();
-            localStorage.setItem(`tec_sec_started_${attemptData.id}_${currentSectionIndex}`, secStarted.toISOString());
+            localStorage.setItem(`topscore_sec_started_${attemptData.id}_${currentSectionIndex}`, secStarted.toISOString());
          } else {
             secStarted = new Date(secStartedStr);
          }
@@ -730,13 +730,13 @@
       // Render answer area
       const answerArea = document.getElementById('answer-area');
       if (answerType === 'multiple_choice') {
-        renderMC(answerArea, row, savedAnswer);
+        renderMC(answerArea, row, savedAnswer, snap);
       } else if (answerType === 'dropdown') {
-        renderDropdown(answerArea, row, savedAnswer);
+        renderDropdown(answerArea, row, savedAnswer, snap);
       } else if (answerType === 'written') {
-        renderWritten(answerArea, row, savedAnswer);
+        renderWritten(answerArea, row, savedAnswer, snap);
       } else if (answerType === 'speech_to_text') {
-        renderSpeech(answerArea, row, savedAnswer);
+        renderSpeech(answerArea, row, savedAnswer, snap);
       }
 
       // Nav buttons (desktop)
@@ -807,8 +807,8 @@
     }
 
     // —— Answer type renderers ——
-    function renderMC(area, row, savedAnswer) {
-      const options = parseSnapshotOptions(row.options_snapshot);
+    function renderMC(area, row, savedAnswer, snap = {}) {
+      const options = parseSnapshotOptions(snap.options_snapshot || row.options_snapshot);
       const letters = ['A','B','C','D','E','F','G','H','I','J'];
       options.forEach((opt, i) => {
         const optText = typeof opt === 'string' ? opt : opt.text || opt.value || JSON.stringify(opt);
@@ -843,8 +843,8 @@
       });
     }
 
-    function renderDropdown(area, row, savedAnswer) {
-      const rawOptions = parseSnapshotOptions(row.options_snapshot);
+    function renderDropdown(area, row, savedAnswer, snap = {}) {
+      const rawOptions = parseSnapshotOptions(snap.options_snapshot || row.options_snapshot);
       const options = [...rawOptions].sort((a, b) => {
         const valA = String(typeof a === 'string' ? a : a.text || a.value || '');
         const valB = String(typeof b === 'string' ? b : b.text || b.value || '');
@@ -873,7 +873,7 @@
       area.appendChild(sel);
     }
 
-    function renderWritten(area, row, savedAnswer) {
+    function renderWritten(area, row, savedAnswer, snap = {}) {
       const ta = document.createElement('textarea');
       ta.className = 'written-input';
       ta.id = `written-${row.id}`;
@@ -888,7 +888,7 @@
       area.appendChild(ta);
     }
 
-    function renderSpeech(area, row, savedAnswer) {
+    function renderSpeech(area, row, savedAnswer, snap = {}) {
       if (!isSpeechSupported()) {
         area.innerHTML = `
           <div class="glass-card p-5" style="border-color:rgba(245,158,11,0.3);">
@@ -1052,7 +1052,7 @@
     function persistLocalBuffer() {
       if (attemptData?.id && answeredMap) {
         try {
-          localStorage.setItem(`tec_local_answers_${attemptData.id}`, JSON.stringify(answeredMap));
+          localStorage.setItem(`topscore_local_answers_${attemptData.id}`, JSON.stringify(answeredMap));
         } catch (_) {}
       }
     }
@@ -1165,7 +1165,7 @@
       timerController?.stop();
       saveCurrentAnswer();
       if (attemptData?.id) {
-        sessionStorage.setItem('tec_attempt_id', attemptData.id);
+        sessionStorage.setItem('topscore_attempt_id', attemptData.id);
       }
       showLoading(isAuto ? 'Time is up. Auto-submitting the ASSESSMENT.' : 'Submitting your ASSESSMENT.');
 
@@ -1187,9 +1187,9 @@
         }
         
         // Clean up safety buffer on successful submission
-        try { localStorage.removeItem(`tec_local_answers_${attemptData.id}`); } catch (_) {}
+        try { localStorage.removeItem(`topscore_local_answers_${attemptData.id}`); } catch (_) {}
         hideLoading();
-        sessionStorage.setItem('tec_attempt_id', attemptData.id);
+        sessionStorage.setItem('topscore_attempt_id', attemptData.id);
         window.location.href = 'result.html';
       } catch(e) {
         console.error('Submit error:', e);
@@ -1208,7 +1208,7 @@
               body: JSON.stringify({ status: 'auto_submitted', submitted_at: new Date().toISOString() })
             });
           } catch (_) {}
-          sessionStorage.setItem('tec_attempt_id', attemptData.id);
+          sessionStorage.setItem('topscore_attempt_id', attemptData.id);
           window.location.href = 'result.html';
         } else {
           showToast('Submission failed: ' + e.message, 'error');

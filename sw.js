@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'abcd-core-v4.3.0';
+const CACHE_NAME = 'abcd-core-v4.3.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -34,6 +34,9 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   // Only cache GET requests
   if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith('http://') && !event.request.url.startsWith('https://')) {
+    return; // Bypass chrome-extension:// and other non-HTTP schemes
+  }
   // Skip caching API/Supabase calls
   if (event.request.url.includes('supabase.co')) return;
 
@@ -47,7 +50,7 @@ self.addEventListener('fetch', event => {
     // Network-first for scripts and documents so bug fixes and updates propagate immediately
     event.respondWith(
       fetch(event.request).then(response => {
-        if (response && response.status === 200 && response.type === 'basic') {
+        if (response && response.status === 200 && response.type === 'basic' && event.request.url.startsWith('http')) {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
         }

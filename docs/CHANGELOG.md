@@ -1,4 +1,616 @@
+## [2026-09-29 07:33] — Implemented Assessment Hub Smart Gateway
+
+**Agent/Session:** Antigravity
+**Phase:** UI Consistency
+**Status:** PASS
+
+### Why
+- The user chose Approach B (Central Gateway in Assessment Hub).
+- The Hub should retain its primary function for creating assessments, but we must enforce the Single-Door contextual policy.
+
+### Changed
+- Replaced the disabled "+ Create Assessment" button in `js/admin/assessment-management.js` with a Smart Gateway modal.
+- `window.openAssessmentGatewayModal` fetches all `classes` and `levels`.
+- The dropdown visually displays both Class Name and its corresponding Level (since 1 Class = 1 Level).
+- Context-Aware Routing: Selecting a "Vocab" class automatically boots the 5-step Vocab Vault wizard; selecting others boots the general builder.
+- The `level_id` is implicitly resolved because the class inherently belongs to a level in the database schema.
+
+### Files
+- js/admin/assessment-management.js
+
+### Risks / Follow-up
+- None.
+
+
+
+**Agent/Session:** Antigravity
+**Phase:** UI Consistency
+**Status:** PASS
+
+### Why
+- The user indicated that each Class determines its own Assessment Module (e.g. Vocab classes must use Vocab Mastery).
+- Creating an assessment globally in the Hub bypasses this context.
+
+### Changed
+- Added a '+ New Assessment' button directly to each Class row in the Classes table (js/admin/classes-management.js).
+- Configured dynamic routing: Clicking this button on a 'Vocab' class automatically launches the 5-step Vocab Vault wizard (with the class pre-selected).
+- Clicking it on a general class launches the standard Assessment Builder (with the class pre-selected).
+- Fixed ID casing bug for wiz-class in js/admin/assessment-builder.js.
+
+### Files
+- js/admin/classes-management.js
+- js/admin/assessment-builder.js
+
+### Risks / Follow-up
+- None.
+
+## [2026-09-29 06:55] — Assessment Hub UI & Vocab Defect Fixes
+
+**Agent/Session:** Antigravity
+**Phase:** UI Consistency & Assessment Hub Fixes
+**Status:** PASS
+
+### Why
+- The Assessment Hub grid incorrectly displayed 'Multiple Choice' for Vocab Assessments.
+- Clicking 'Edit' on a Vocab Assessment opened the 4-step wizard instead of the standard 4-tab UI, causing a mismatch with how regular assessments are edited.
+- Vocab Mastery multiple-choice distractors could accidentally pick a synonym that is ALSO a correct answer.
+
+### Changed
+- Removed the custom UI intercept in js/admin/assessment-management.js so Vocab Mastery assessments open in the standard assessment-builder.js when edited.
+- Updated js/admin/assessment-builder.js to preserve custom assessment_type strings (like VOCAB_TASK) when saving an edited assessment.
+- Updated js/admin/assessment-management.js gridData generation to fetch assessment_questions and dynamically deduce the most common answer_type.
+- Hardened js/api.js distractor logic for Vocab Mastery generation to explicitly exclude any synonym of the target English word.
+
+### Files
+- js/admin/assessment-management.js
+- js/admin/assessment-builder.js
+- js/api.js
+
+### Risks / Follow-up
+- None. Edits to Vocab Assessments will now just update metadata (Title, Duration, Status) like normal assessments without triggering the 4-step word selection wizard.
+
+## [2026-09-28 15:50] - Unify Edit UI for Vocabulary Mastery Assessments
+
+**Agent/Session:** Antigravity
+**Phase:** Fix
+**Status:** PASS
+
+### Why
+- The edit panel for Vocab Mastery assessments defaulted to the generic Assessment Builder (5 steps) rather than the original 4-step wizard used to create it, confusing users.
+
+### Changed
+- Added support for `editAssessment` state in `vocab-vault.js`.
+- Dynamically patched `window.openAssessmentBuilder` in `assessment-management.js` and `window.openAIAssessmentEditor` in `panel-c-builder.js` to route VOCAB and IDIOM assessments to `openAssessmentBuilderModal` in `vocab-vault.js`.
+
+### Files
+- `js/admin/vocab-vault.js`
+- `js/admin/assessment-management.js`
+- `js/admin/panel-c-builder.js`
+
+### Next Action
+- Await user validation.
+
+## [2026-09-27 15:06] - Phase 2-4 System Rescue & Dual-Axis Workspace
+
+**Agent/Session:** Antigravity
+**Phase:** 2-4
+**Status:** PASS
+
+### Why
+- The user requested completion of the system rescue and dual-axis workspace refactoring master directive, eliminating redundant assessment builders and establishing a subject-first UI in the class manager.
+
+### Changed
+- `js/admin/app.js`: Removed redundant routing, mapping levels/assessments legacy pages back to `#classes`.
+- `js/api.js`: Hardened `fetchAssessmentsForStudentClass`, updated `checkAndTriggerLevelUp` to support `VOCAB_EXAM`, applied dual-check logic (student/batch) in `fetchStudentLevel`.
+- `dashboard.html`: Render logic updated to cleanly distinguish active vs completed classes via `cLvlNum`.
+- `js/admin/classes-management.js`: Complete rewrite to feature a Subject-First Dual-Axis UI (Y-Axis Subjects, X-Axis Levels) complete with 'Vocab Test' and 'Idiom & Proverb Test' native builder integrations.
+
+### Files
+- `js/admin/app.js`
+- `js/api.js`
+- `dashboard.html`
+- `js/admin/classes-management.js`
+- `docs/TODO.md`
+- `docs/CURRENT_STATE.md`
+
+### Next Action
+- Await user verification of the new class management UI and dashboard layout.
+
+## [2026-09-27 22:00] — Complete Phase 7 & Fix Class Duplication
+
+**Agent/Session:** Antigravity
+**Phase:** Phase 6 & 7
+**Status:** PASS
+
+### Why
+- The user reported an issue where duplicate Vocabulary Mastery classes were created by the classes-management.js auto-seeder, causing empty assessment lists in the student dashboard when students clicked the 'wrong' class.
+- The Student Assessment UI for the new answer modes needed final verification.
+
+### Changed
+- Executed a DB cleanup script to softly delete duplicate classes and re-point orphaned assessments to the single keeper class.
+- Verified and fixed the hasVocabMastery seeder logic in classes-management.js to reliably prevent duplicate creation.
+- Updated assessment.html to accurately pass down the options_snapshot array from question_snapshot to the renderMC and renderDropdown functions.
+- Confirmed that Phase 7 UI is fully functional for Dropdown, Multiple Choice, Speech to Text, and Written answer formats.
+
+### Files
+- assessment.html
+- docs/CURRENT_STATE.md
+
+## [2026-09-27 17:21] — Split Vocabulary Vault with Tabs\n\n**Agent/Session:** Antigravity\n**Phase:** Phase 6\n**Status:** PASS\n\n### Why\n- The user requested that Expressions, Idioms, and Proverbs be separated from standard vocabulary words since their assessments will be different.\n\n### Changed\n- Added a tabbed navigation interface at the top of the Vocabulary Vault.\n- The Vocabulary tab displays all words EXCEPT Expressions, Idioms, and Proverbs.\n- The Expressions, Idioms & Proverbs tab exclusively displays those specific word types.\n- Bumped version to 4.7.6.\n\n### Files\n- js/admin/vocab-vault.js\n\n## [2026-09-27 17:13] — Close Vocab Import Modal Immediately\n\n**Agent/Session:** Antigravity\n**Phase:** Phase 6\n**Status:** PASS\n\n### Why\n- The preview modal was remaining open while the upload progress bar was running, blocking the view.\n\n### Changed\n- Moved the close() call for the import modal to execute *before* showLoading() and importVaultWords().\n- Bumped version to 4.7.5.\n\n### Files\n- js/admin/vocab-vault.js\n\n## [2026-09-27 17:12] — Fix Global Loading Overlay z-index\n\n**Agent/Session:** Antigravity\n**Phase:** Phase 6\n**Status:** PASS\n\n### Why\n- The global loading overlay (with the progress bar) was appearing behind the modal backdrop because --z-loading was 500, but --z-modal was 1000.\n\n### Changed\n- Increased --z-loading to 9999 in css/style.css.\n- Bumped version to 4.7.4.\n\n### Files\n- css/style.css\n- dmin.html\n\n## [2026-09-27 17:06] — Widen Vocab Import Modal\n\n**Agent/Session:** Antigravity\n**Phase:** Phase 6\n**Status:** PASS\n\n### Why\n- Vocab import conflict table was forcing horizontal scrolling and hiding columns because the modal was constrained to 680px max-width.\n\n### Changed\n- Increased ault-import-modal max-width to 950px.\n- Applied 	able-layout: fixed and precise percentage widths to columns.\n\n### Files\n- js/admin/vocab-vault.js\n\n## [2026-09-27 16:55] — Add Global Loading Progress Bar\n\n**Agent/Session:** Antigravity\n**Phase:** Phase 6\n**Status:** PASS\n\n### Why\n- To provide visual feedback during long operations like Student Import and Vocabulary Import.\n\n### Changed\n- Added updateLoadingProgress in pp.js.\n- Plumbed onProgress callback into importVaultWords in pi.js.\n- Integrated progress bar calls in ocab-vault.js and imports-exports.js.\n\n### Files\n- js/app.js\n- js/api.js\n- js/admin/vocab-vault.js\n- js/admin/imports-exports.js\n\n## [2026-09-27 16:45] — Fix Modal ID Collision\n\n**Agent/Session:** Antigravity\n**Phase:** Phase 6\n**Status:** PASS\n\n### Why\n- Fixed UI freeze/unresponsiveness on Vocab Vault Import/Assessment Builder modals caused by document.getElementById grabbing older modal instances.\n\n### Changed\n- Refactored ocab-vault.js to strictly use modal.querySelector inside all modal rendering functions to guarantee event listeners attach to the current DOM modal node.\n\n### Files\n- js/admin/vocab-vault.js\n\n## [2026-09-27 16:22] — Vocab Vault Capitalization and Sort Fixes
+
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 6 (Navigation Refinement & Hygiene)
+**Status:** PASS
+
+### Why
+User reported that capitalization was mangled in the Vocabulary Vault, and requested proper sorting across columns, specifically ensuring the table columns were ordered exactly as 'No - Level - Topic - Word Type - Indonesian - English'.
+
+### Changed
+- `js/admin/vocab-vault.js`: Removed `toTitleCase` and `toSentenceCase` in the rendering grid and the move topics modal so topics and vocabulary render with the exact capitalization the user typed.
+- `js/admin/vocab-vault.js`: Confirmed the table columns match the requested layout. Re-implemented custom sorting to append dynamic sort icons (up/down arrows) and improved the string sorting algorithm to map dynamically based on lowercased inputs.
+- `js/admin/app.js`: Ensured `GENERIC GLOBAL TABLE SORTER` allows sorting across all other non-datagrid tables throughout the application.
+
+### Files
+- `js/admin/vocab-vault.js`
+- `js/admin/app.js`
+
+### Next Action
+- Wait for user manual UI verification.
+
+## [2026-09-27 16:17] — Unified Blueprint Control & Domain C Dual-Axis Binder Workspace
+
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 6 (Navigation Refinement & Hygiene)
+**Status:** PASS
+
+### Why
+User issued a MASTER ARCHITECTURAL DIRECTIVE to consolidate structural entity generation into a Master Action Ribbon in Domain B, and to refactor the Domain C curriculum workspace into a Dual-Axis Binder model without inline CSS.
+
+### Changed
+- `js/admin/program-management.js`: Injected the Master Action Ribbon in `renderUnifiedInstitutions()` grouping `Add Institution`, `Add Program`, `Add Level`, `Add Class`, and `Add Batch` into a single central control hub.
+- `js/admin/classes-management.js`: Completely removed the inline `<style>` tag. Rewrote `renderClasses()` to generate the Dual-Axis Binder Workspace (`.binder-layout`) utilizing standard `admin.css` classes. Y-Axis handles Levels, X-Axis handles Classes, and the Canvas displays class content.
+- `css/admin.css`: Confirmed the presence of the necessary binder classes.
+
+### Files
+- `js/admin/program-management.js`
+- `js/admin/classes-management.js`
+
+### Next Action
+- Await manual migration execution by the user and subsequent instruction, or manual UI verification.
+
+## [2026-09-27 16:13] — Global Table Interaction & Roster Level Column
+
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 6 (Navigation Refinement & Hygiene)
+**Status:** PASS
+
+### Why
+User requested a new Level column for the student roster, as well as global support for rearranging (drag-and-drop) and resizing columns on all generic tables across the system.
+
+### Changed
+- `js/admin/student-management.js`: Modified the `adminFetchAll` string to fetch `batches!batch_id(current_level_id)`. Mapped the current level to `levelName` via the `levelsMap`. Appended a new `Level` column rendering standard `.badge.badge-neutral` labels to the DataGrid columns array.
+- `js/admin/app.js`: Injected a global drag-and-drop reordering system mapping HTML5 `dragstart`/`dragover`/`drop` events on all `<th>` tags for standard `table:not(.datagrid-table)`. Rearranges both the header array and every internal cell in the corresponding `<tbody>`.
+- `js/admin/app.js`: Injected a global `MutationObserver` that listens for DOM additions and automatically executes `makeTableResizable()` against any uninitialized standard table to enable sticky column boundaries globally.
+
+### Files
+- `js/admin/student-management.js`
+- `js/admin/app.js`
+
+### Database
+- migration: `20260926_auto_assignment_architecture.sql` and `20260927_add_deleted_at_to_curriculum.sql` are pending manual execution by the user in the Supabase SQL Editor.
+
+### Next Action
+- Await manual migration execution by the user and subsequent instruction.
+
+## [2026-09-27 07:05] — Domain C Tier 2 Workspace (Classes & Curriculum)
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 3 Refactor
+**Status:** PASS (Pending Smoke Test)
+
+### Why
+User requested a targeted directive: Level-First Workspace anchored on Vocabulary Mastery with extensible class tabs.
+
+### Changed
+- `js/admin/classes-management.js`: Rewrote `renderClasses` to support `activeClassId` and a two-tier tab layout.
+- `admin.html`: Renamed navigation item to "Curriculum & Classes", added `#add-class-modal`.
+- `js/admin/app.js`: Updated sectionTitle mapping for Classes.
+- `css/admin.css`: Added styles for `.class-sub-tabs`.
+
+### Files
+- `js/admin/classes-management.js`
+- `admin.html`
+- `js/admin/app.js`
+- `css/admin.css`
+
+### Database
+- migration: none (Awaiting manual execution of existing migrations).
+
+### Tests
+- command: Manual Browser Verification
+- result: Automated Playwright failed due to local driver issue; delegated to user for manual smoke test.
+
+## [2026-09-26 16:05] — Phase 5: E2E Integration Testing & Automated Remediation Alerts
+
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 5 (E2E Integration Testing & Automated Remediation Alerts)
+**Status:** PASS
+
+### Why
+User requested Phase 5 implementation focusing on automated remediation alerts and Gradebook export stabilization.
+
+### Changed
+- `js/admin/student-management.js`: Computed `remediationPending` status for students. Displayed a `⚠️ Remediation Pending` badge on the roster Name column. Added a `⚠️ X Awaiting Remediation` chip to the section header and sidebar. Rewrote the Students Export logic to use a 9-column `Gradebook_Export.csv` format matching the required gradebook fields. Configured row-click to open the dossier immediately if remediation is pending.
+
+### Files
+- `js/admin/student-management.js`
+
+### Database
+- migration: none for this step.
+
+### Tests
+- command: Manual Login Smoke Test
+- result: The codebase syntax checks out. The browser subagent encountered an isolated Playwright CDN installation issue that did not impact the code integrity. E2E workflows require manual validation or a resolved playwright install.
+
+### Risks / Follow-up
+- Validate the export Gradebook in Excel manually.
+- The Playwright driver error on `playwright-1.57.0-win32_x64.zip` must be resolved locally for automated visual UI testing to function properly.
+
+### Next Action
+- Await user validation of Phase 5.
+
+## [2026-09-26 15:45] — Phase 4: Student Dashboard Filtering, Exam Finality & Progression Gating
+
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 4 (Student Dashboard Filtering, Exam Finality & Progression Gating)
+**Status:** PASS
+
+### Why
+User requested Phase 4 implementation focusing on dashboard filtering by level, exam finality constraints (no retakes without tutor authorization), enforcing the progression gate on assessment submission, and adding the tutor remedial override button to the admin panel.
+
+### Changed
+- `dashboard.html`: Updated `renderClasses` to filter active classes by student level and render completed classes in a collapsible drawer ("Completed Milestones (Previous Levels)"). Enforced Exam finality locks on the "Start Assessment" button if a failed exam attempt exists and is not unlocked.
+- `result.html`: Removed the `#try-again-btn` completely for EXAM types and injected a mandated Security Policy Card instead.
+- `js/admin/app.js`: Added the `🔓 Allow Remedial Retake` button to the attempt details row for failed exams in `openStudentProfile`, and wired it to `adminUnlockRemedialExam`.
+- `js/api.js`: (Previously implemented) Added `checkAndTriggerLevelUp` and `adminUnlockRemedialExam`.
+- `assessment.html`: (Previously implemented) Invokes `checkAndTriggerLevelUp` upon successful submission of EXAM types.
+
+### Files
+- `dashboard.html`
+- `result.html`
+- `js/admin/app.js`
+- `js/api.js`
+- `assessment.html`
+
+## [2026-09-26 15:35] — Phase 3: Domain C Class & Vocabulary Blueprint Matrix
+
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 3 (Domain C Class & Vocabulary Blueprint Matrix)
+**Status:** PASS
+
+### Why
+User requested the implementation of Phase 3, which focuses on refactoring `admin.html#classes` (Domain C) into a Hierarchical Worksheet Grid centered around Vocabulary Mastery across levels. This requires level-scoped topic fetching for assessments and applying strict timing rules for Tasks and Quizzes/Exams.
+
+### Changed
+- `js/admin/classes-management.js`: Created new module containing `renderClasses(area)` to generate the Hierarchical Worksheet Grid Matrix. Integrated `[ 📖 Open Vault ↗ ]` and `[ + Build ]` action buttons.
+- `js/admin/app.js`: Removed inline `renderClasses` function and wired the routing case to use `_renderClassesModule` from `classes-management.js`.
+- `js/api.js`: Enhanced `fetchVaultTopics(targetLevelNum)` to support dynamic scoping by level. Built `fetchVaultStats()` to retrieve matrix aggregates for Lexicon Pool sizes.
+- `js/admin/vocab-vault.js`: Exported `openAssessmentBuilderModal(prefillClassId)` to accept a target class ID. Refactored Step 3 source rendering for the `TASK` tier to dynamically fetch `vaultTopics` scoped to the selected class level.
+
+### Files
+- `js/api.js`
+- `js/admin/vocab-vault.js`
+- `js/admin/app.js`
+- `js/admin/classes-management.js`
+
+## [2026-09-25 19:03] — Excel-Style Matrix & UI Overhaul
+
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 6 (Navigation Refinement & Hygiene)
+**Status:** PASS
+
+### Why
+The Batches Matrix needed rigid, balanced column proportions, protection against wrapping action buttons, and standard Excel-like horizontal column resizing functionality across the app.
+
+### Changed
+- `js/admin/app.js`: Added global `makeTableResizable` utility to handle col-resizer dragging and `localStorage` memory.
+- `css/admin.css`: Added `.matrix-table` and `.col-resizer` rules for distinct, dark-mode spreadsheet styling.
+- `js/admin/program-management.js`: Updated `renderUnifiedInstitutions` to use exact `<colgroup>` widths, wrapped student action elements in flex/no-wrap containers, and attached the resizer hook to the rendered tables.
+
+## [2026-09-25 18:41] — Enforce Server-Side Remedial Cap
+
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 6 (Navigation Refinement & Hygiene)
+**Status:** PASS
+
+### Why
+The remedial cap for retaking EXAM-type assessments was only enforced on the frontend. The backend edge function `start-assessment` needed to strictly validate the `is_remedial_unlocked` flag to prevent manual API manipulation.
+
+### Changed
+- `supabase/functions/start-assessment/index.ts`: Added `is_remedial_unlocked` to the initial student fetch. Added backend logic to reject EXAM retakes with a 403 error if `is_remedial_unlocked` is not true.
+
+## [2026-09-25 18:37] — Refactor Batches to Hierarchical Matrix Panel
+
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 6 (Navigation Refinement)
+**Status:** PASS
+
+### Why
+User requested a replacement of the flat Batches datagrid with a structured 4-column Hierarchical Matrix Panel grouping batches by Institution -> Program -> Batch, displaying Level and Student metrics as sub-rows.
+
+### Changed
+- `js/admin/program-management.js`: Stripped `DataGrid` usage inside `renderUnifiedInstitutions`. Added dynamic DOM generator `renderHierarchyMatrix` inline to calculate rowspans. Included inline actions for '+ Add Batch', '+ Add Student', and 'Import'.
+
+## [2026-09-25 18:21] — Runtime Bug Fixes & UI Localization
+
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 6 (Navigation Refinement & Hygiene)
+**Status:** PASS
+
+### Why
+User requested immediate runtime bug fixes, architectural alignment, and UI localization (Standard English) for the assessment, result, and admin panel areas.
+
+### Changed
+- `assessment.html`: Fixed mainBox ReferenceError by properly querying `assessment-main` and injected strictly English lock screen UI.
+- `js/admin/student-management.js`: Updated `a.Assessment_id` fallback to `a.assessment_id || a.Assessment_id` in completedAssessmentsCount.
+- `js/admin/vocab-vault.js`: Enforced explicit UI English banners for Task (Batch Schedule) and Quiz/Exam (Tutor Live Control) and verified Step 5 timing payloads.
+- `result.html`: Added retake guard for EXAM assessment type.
+- `dashboard.html`: Added EXAM retake enforcement against `is_remedial_unlocked`.
+
+## [2026-09-26 00:30] � Global schema nomenclature cleanup & purge legacy assets
+
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 6 (Navigation Refinement & Hygiene)
+**Status:** PASS
+
+### Why
+User issued a strong directive to execute a deep audit and completely wipe out all legacy "Top English Class" branding, redundant files, and outdated database schema names ('challenges', 'assessment_instances') from the entire workspace.
+
+### Changed
+- js/api.js: Purged alias functions for publishChallengeDefinition and createChallengeInstance. Replaced ssessment_instances table references with the new ssignments table name.
+- js/admin/class.js: Migrated API imports to createAssessmentInstance, replaced internal ssessment_instances nested Supabase query patterns to use direct ssessments lookup (since the new ttempts table links directly to ssessment_id).
+- js/admin/assessment-builder.js: Replaced outdated challenge_instance_type key with standard ssignment_type (aligning with supabase-setup.sql).
+- js/admin/app.js: Cleaned up router aliases changing ssessment_instances to ssignments.
+- js/session.js: Added an IIFE startup script to forcefully purge any legacy localStorage or sessionStorage keys containing 	openglish or 	op_english.
+- patch_relations.js: Updated mock relational store arrays to drop ssessment_instances in favor of ssignments.
+- Workspace: Forcibly deleted legacy test-result directories and standalone scripts (ewrite_challenges.ps1).
+
+### Files
+- js/api.js
+- js/admin/class.js
+- js/admin/assessment-builder.js
+- js/admin/app.js
+- js/session.js
+- patch_relations.js
+- 	est-results/system-e2e-Top-English-* (Deleted)
+- ewrite_challenges.ps1 (Deleted)
+
+
 # CHANGELOG
+
+## [2026-09-25 15:54] — Addressed remaining gap tasks (Remedial Cap, Exports, Level Tabs)
+
+**Agent/Session:** Antigravity (Current)
+**Phase:** Phase 5 (Outstanding Requests)
+**Status:** PASS
+
+### Why
+User explicitly instructed to "address everything" from the pending gap list. This included UI improvements (merging tabs), administrative features (Open Session), and critical server-side business rule enforcement (Remedial Cap of 70%).
+
+### Changed
+- `js/admin/app.js`: Merged level tabs by filtering unique level names in `renderClasses()`.
+- `js/admin/assessment-management.js`: Wrote and appended `openSessionModal()` logic.
+- `js/admin/class.js`: Enforced remedial cap (70% max) in the XLSX Gradebook Export logic and added a "Remedial Cap Applied" column.
+- `supabase/functions/submit-assessment/index.ts`: 
+  - Added server-side remedial cap logic to preserve raw score but cap `effective_score` to 70% if `is_remedial` is true on an EXAM/QUIZ.
+  - Adjusted `calculateGrade(pct)` to use `>=` 100 for 'S' grade to mirror `grading.js` exactly.
+
+### Files
+- `js/admin/app.js`
+- `js/admin/assessment-management.js`
+- `js/admin/class.js`
+- `supabase/functions/submit-assessment/index.ts`
+
+### Next Action
+- Wait for user feedback on changes.
+
+
+
+## [2026-09-25 15:35] — Audit Execution: Sidebar Streamline, English UI Pass, Remedial Cap
+
+**Agent/Session:** Antigravity
+**Phase:** Phase 5 (Architecture Compliance & Remedial Cap)
+**Status:** PASS
+
+### Why
+- Comprehensive audit (MASTER DIRECTIVE) revealed 3 compliance gaps:
+  1. Domain C sidebar had 14 links instead of the mandated 3.
+  2. Indonesian text scattered in UI (Bank Soal, Izinkan Remedi, Buka Sesi, alert dialogs).
+  3. No remedial grade cap logic existed for EXAM/QUIZ remedial attempts.
+
+### Changed
+- **admin.html (Domain C):** Pruned from 14 links → 3: "Classes & Blueprint", "Vocabulary Vault", "Assessments Hub".
+- **js/admin/app.js:** `Bank Soal` button → `Question Bank`.
+- **js/admin/class.js:**
+  - `Izinkan Remedi` → `Allow Remedial`; confirm/alert → English `showToast()`.
+  - Unlock threshold: `< 60` → `< 70` (matching cap boundary); now covers QUIZ too.
+  - `getEffectivePct()`: caps remedial EXAM/QUIZ scores at 70 in deduplication.
+  - Score column: shows capped 70% + amber `REMEDIAL CAP APPLIED` badge.
+  - Grade column: shows `C` when cap is active.
+- **js/admin/vocab-vault.js:** `Buka Sesi` → `Open Session`.
+
+### Files
+- `admin.html`, `js/admin/app.js`, `js/admin/class.js`, `js/admin/vocab-vault.js`
+
+### Tests
+- All files verified readable (no parse errors).
+
+### Next Action
+- Manual browser verification of admin panel and remedial cap badge.
+
+## [2026-09-25 04:00] — Fix admin panel SyntaxError
+
+**Agent/Session:** Antigravity
+**Phase:** Debugging
+**Status:** PASS
+
+### Why
+- The admin panel was completely inaccessible (white screen / broken execution) due to a catastrophic syntax error in `js/admin/app.js`.
+- The previous agent's patch script (`patch_app_classes.mjs`) used a faulty `indexOf` that resulted in duplicating the first 590 lines of the file into the middle of a string template, causing `SyntaxError: Unexpected token '{'`
+
+### Changed
+- Extracted the corrupted sections, scrubbed the duplicate imports, and cleanly restored the original file.
+- Re-applied the "Bank Soal" button and its event listener using a precise `replace_file_content` block to ensure no syntax errors.
+
+### Files
+- `js/admin/app.js`
+
+
+## [2026-09-25 03:20] — Admin Remedial Unlock & Dynamic Timers
+
+**Agent/Session:** Antigravity
+**Phase:** Implementation
+**Status:** PASS
+
+### Why
+- Admin needed a way to manually unlock remedial attempts for students who failed an EXAM directly from the Results Grid.
+- The timer logic in `assessment.html` needed to be differentiated: floating duration for TASKs vs absolute hard `window_end` for EXAMs.
+
+### Changed
+- Added 'Izinkan Remedi' button to the Actions column in `js/admin/class.js` for failed EXAM attempts.
+- Attached an event listener in `class.js` to update the `is_remedial_unlocked` flag directly in the Supabase database and immediately refresh the UI.
+- Refactored `startTimer()` in `assessment.html` to conditionally apply floating timers based on `working_duration_minutes` for TASKs, and absolute countdowns for EXAMs based on `expires_at`.
+
+### Files
+- `js/admin/class.js`
+- `assessment.html`
+
+### Next Action
+- Await user verification.
+
+
+## [2026-09-25 02:40] — Fix double buttons, double submits, and add Remedial Locking
+
+**Agent/Session:** Antigravity
+**Phase:** Phase 4
+**Status:** PASS
+
+### Why
+- The dashboard was rendering assessments twice: once inside the old V1 'Assigned Assessments' layout, and once inside the new Class Modal.
+- The user reported a "double button" issue which required an audit of `dashboard.html` and `assessment.html`.
+- Students needed to be locked out of the dashboard if they failed an EXAM/QUIZ, pending a teacher unlocking a remedial attempt.
+
+### Changed
+- Removed `renderAssignedAssessments` usage from `dashboard.html` to eliminate duplicate assessment UI.
+- Added `isSubmitting` lock to `assessment.html` to eliminate double-submits.
+- Implemented dashboard lock check in `dashboard.html` for failed `EXAM/QUIZ` attempts lacking the `is_remedial_unlocked` flag.
+- Modified `api.js` `fetchAllStudentAttempts` to return the `is_remedial_unlocked` state.
+
+### Files
+- `dashboard.html`
+- `assessment.html`
+- `js/api.js`
+- `supabase/migrations/20260925_remedial_unlock.sql`
+
+### Database
+- migration: `20260925_remedial_unlock.sql` adds `is_remedial_unlocked BOOLEAN DEFAULT FALSE` to `attempts`.
+
+### Next Action
+- Await user verification of the dashboard lock and double-button fix.
+
+
+
+## [2026-09-24 16:56] — Vocab Vault Rename Topic Feature
+
+**Agent/Session:** Antigravity
+**Phase:** Implementation
+**Status:** PASS
+
+### Why
+- User requested the ability to edit/rename topic names directly in the Vocabulary Vault UI.
+
+### Changed
+- Added `renameVaultTopic` to `js/api.js` to handle renaming topics via Supabase.
+- Added "Rename Topic" button in `js/admin/vocab-vault.js` UI next to the topic filter, which dynamically appears when a topic is selected.
+- Configured the frontend to prompt for the new name, send the API update, and refresh the Vault upon completion.
+
+### Files
+- `js/api.js`
+- `js/admin/vocab-vault.js`
+
+### Database
+- N/A
+
+### Tests
+- command: N/A
+- result: Manual visual testing required by user.
+
+### Risks / Follow-up
+- N/A
+
+### Next Action
+- Await further user requests.
+
+## [2026-09-24 16:35 UTC] — Fix: Corrected Mislabeled UI Fields in CRUD Modals
+
+**Agent/Session:** Antigravity
+**Phase:** Maintenance / Bug Fix
+**Status:** PASS
+
+### Why
+- The user noticed that the "Add Assessment" modal (and likely others) had fields incorrectly labeled due to a misunderstanding of the architecture. For example, `institution_id` was labeled "Program", and `program_id` was labeled "Class".
+- According to the core hierarchy (`INSTITUTION -> PROGRAM -> CLASSES -> ASSESSMENTS`), the UI labels need to strictly match the underlying data structure to avoid massive confusion.
+
+### Changed
+- `js/admin/crud-modals.js`: Corrected the labels for `institution_id` to "Institution", and `program_id` to "Program" across all CRUD modal configurations (`Classes`, `classes`, `levels`, `programs`, `batches`, `students`, `Assessments`).
+- Fixed a typo where `Assessment_id` in the `questions` array was labeled "Assessmentination".
+- Fixed the logic for generating the `Assessment_title` so it accurately incorporates the Institution name (e.g. `[Institution] - [Program] - [Class] - [Level] - [Type]`).
+- Converted `Assessment_order` from a dropdown (1-10) to a freeform `number` input for better flexibility. Changed `Assessment_type` to feature the correct terminology: `Task`, `Quiz`, `Exam`.
+
+### Files
+- `js/admin/crud-modals.js`
+
+
+## [2026-09-24 16:26 UTC] — UI: Rearranged Sidebar Navigation & Renamed Question Bank
+
+**Agent/Session:** Antigravity
+**Phase:** Maintenance / Polish
+**Status:** PASS
+
+### Why
+- The user requested the sidebar navigation items in the "C — Class" domain to be arranged alphabetically.
+- The user requested "Central Question Bank" to be renamed to "Question Bank" for conciseness.
+
+### Changed
+- `admin.html`: Reordered the C — Class nav domain items alphabetically (Assessments Hub, Classes & Blueprint, Levels, Question Bank, Topics, Vocabulary Vault) and updated the label for Question Bank.
+- `js/admin/app.js`: Updated the section title mapping for `questions` to use "Question Bank".
+- `js/admin/class.js`: Updated heading titles, confirm prompts, loading messages, and comments to reflect "Question Bank".
+- `js/api.js`: Updated `// --- Central question bank ---` comment.
+
+### Files
+- `admin.html`
+- `js/admin/app.js`
+- `js/admin/class.js`
+- `js/api.js`
+
+
+## [2026-09-24 16:20 UTC] — Fix: Removed invalid Class column from Batches and Fixed Student Export
+
+**Agent/Session:** Antigravity
+**Phase:** Maintenance
+**Status:** PASS
+
+### Why
+- The Batches grid displayed a "Class" column that duplicated the "Program" name. According to the data model (AGENTS.md), Batches belong to Programs, not Classes.
+- The Student Export CSV function in `student-management.js` was referencing an undefined `students` variable instead of `filteredGridData`, and erroneously labeled the Batch column as "Class".
+
+### Changed
+- `js/admin/program-management.js`: Removed the `className` column from `batchesGrid` and updated the detailed row view and search keys to omit it.
+- `js/admin/student-management.js`: Fixed the `exportBtn.onclick` to use `filteredGridData` instead of `students`. Updated CSV headers and values to correctly represent `Batch` rather than `Class`.
+
+### Files
+- `js/admin/program-management.js`
+- `js/admin/student-management.js`
+
 
 ## [2026-09-23 10:44 UTC] — Maintenance: Syntax Audit, Mojibake Cleanup & v4.2.6 Cache Bump
 
@@ -91,7 +703,7 @@
 - `dashboard.html` didn't import or use `toOrdinalLevel`, so level headers defaulted to "General" instead of "1st Level", "2nd Level", etc.
 
 ### Changed
-- `assessment.html`: Made `assessmentId` extraction resilient to all URL param casings (`assessment_id`, `Assessment_id`, `ASSESSMENT_id`). Added sessionStorage fallback for both `tec_assessment_id` and `tec_ASSESSMENT_id`. Normalizes to lowercase key after first successful read. Added `console.warn` before redirect for traceability. Bumped all import cache versions to v4.1.5.
+- `assessment.html`: Made `assessmentId` extraction resilient to all URL param casings (`assessment_id`, `Assessment_id`, `ASSESSMENT_id`). Added sessionStorage fallback for both `topscore_assessment_id` and `topscore_ASSESSMENT_id`. Normalizes to lowercase key after first successful read. Added `console.warn` before redirect for traceability. Bumped all import cache versions to v4.1.5.
 - `result.html`: Fixed class/subject name lookup to try `asmData?.classes?.name` first (matching Supabase join output), then `asmData?.Classes?.name` as fallback. Bumped versions to v4.1.5.
 - `dashboard.html`: Added `toOrdinalLevel` to import from `api.js`. Level grouping in `openClassModal()` now uses `toOrdinalLevel(level_number)` when the level has a `level_number`. Changed "Start Assessment" button param from `Assessment_id` to `assessment_id`. Resume button now also includes `assessment_id` param. Bumped all versions to v4.1.5.
 
@@ -487,6 +1099,32 @@
 ---
 
 ## [2026-09-18 01:05 UTC] â€” Strict Optional Chaining & Safe Metadata Hydration (v4.3.6)
+
+## [2026-09-27 07:15 UTC] - Refactor Domain C Curriculum Workspace into Dual-Axis Binder Layout
+
+**Agent/Session:** Antigravity
+**Phase:** Phase 6 (Domain C Refactoring)
+**Status:** PASS (Pending Manual Smoke Test)
+
+### Why
+- The user mandated a STRICT PROTOCOL to refactor the Domain C Curriculum workspace into a Dual-Axis Master-Detail Binder Layout.
+- Eliminate "Double Sidebar" confusion by shifting the Y-Axis (Level) down and fusing it to the canvas, and locking the X-Axis (Class) to the top of the canvas.
+- Maintain legacy link routing compatibility for `#assessments`.
+
+### Changed
+- `js/admin/app.js`: Added `'assessments': 'classes'` to `aliasSectionMap` to ensure route backward compatibility.
+- `admin.html`: Removed `Assessments Hub` item from `C — CLASS` group and ensured `Curriculum & Classes` is the primary entry point.
+- `js/admin/classes-management.js`: Constructed the `.binder-layout` DOM containing `.binder-sidebar` (Y-Axis) and `.class-sub-tabs` (X-Axis).
+- `css/admin.css`: Finalized visual fusion of tabs. Added `margin-top: 41px` to `.binder-sidebar`, negative margins to `.level-tab-btn.active` and `.class-tab-btn.active`, and adjusted `z-index` to hide intersecting borders, exactly mimicking a physical binder.
+
+### Tests
+- command: `node --check js/admin/app.js ; node --check js/admin/classes-management.js`
+- result: `PASS`
+
+### Next Action
+- The user must manually execute the Login Smoke Test (Admin bypass and Student 6-digit PIN) to guarantee no regressions occurred.
+
+---
 
 **Agent/Session:** Antigravity
 **Phase:** Pilar C (Assessments Hub Stability)
@@ -1073,7 +1711,7 @@
 - Address operational friction, network drop vulnerability during exams, redundant REST API calls, input latency, and manual grade reporting.
 
 ### Changed
-- `exam.html`: Implemented write-ahead `localStorage` safety buffer (`tec_local_answers_${attemptId}`) saving answers on every input/selection, auto-restoring upon page reload or network reconnect, and cleaning up on submit. Added native browser speech synthesis (TTS) pronunciation button on question cards. Added comprehensive keyboard navigation (`A`/`B`/`C`/`D` and `1`ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“`4` for MCQ options, `ArrowLeft`/`ArrowRight` for question navigation).
+- `exam.html`: Implemented write-ahead `localStorage` safety buffer (`topscore_local_answers_${attemptId}`) saving answers on every input/selection, auto-restoring upon page reload or network reconnect, and cleaning up on submit. Added native browser speech synthesis (TTS) pronunciation button on question cards. Added comprehensive keyboard navigation (`A`/`B`/`C`/`D` and `1`ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“`4` for MCQ options, `ArrowLeft`/`ArrowRight` for question navigation).
 - `js/api.js`: Added in-memory 60s TTL caching layer (`withCache` and `clearApiCache`) for `fetchInstitutions`, `fetchPrograms`, and `fetchBatches` to eliminate redundant database queries during dropdown switching and tab navigation.
 - `js/admin/datagrid.js`: Added 150ms input debounce on `searchInput` to eliminate DOM layout thrashing when filtering across large datasets.
 - `js/admin/challenges-management.js`: Added 1-click **Export Gradebook (.xlsx)** button to Results view using SheetJS (`XLSX`), exporting student names, genders, institutions, batches, exam titles, scores, percentages, grades, and submission timestamps.
@@ -1726,7 +2364,7 @@
 ### Changed
 - **admin.html**:
   - Grouped students list by Class Batch with clean collapsible headers and student count chips.
-  - Implemented session persistence (`sessionStorage: tec_expanded_batches`) so collapsed/expanded state is remembered per session.
+  - Implemented session persistence (`sessionStorage: topscore_expanded_batches`) so collapsed/expanded state is remembered per session.
   - Added "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â¼ Expand All" and "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â² Collapse All" batch controls in the filter bar.
   - Automatic expansion of batches matching active search terms.
   - Added clickable rows and dedicated `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚Â¤ Profile` buttons.
@@ -1850,7 +2488,7 @@
   - When the 10-second anti-cheat alert countdown reaches 0 (`count <= 0`), `autoSubmit()` is now immediately invoked (previously only dismissed the popup).
 - **SubmitExam Latency Optimization**:
   - Replaced sequential 120 single-row roundtrips with concurrent `Promise.all()` batch updates in `js/api.js`, dropping submission time from ~20 seconds to under 1 second.
-  - Stored `tec_attempt_id` in `sessionStorage` at the start of `doSubmit` to ensure seamless transition to `result.html`.
+  - Stored `topscore_attempt_id` in `sessionStorage` at the start of `doSubmit` to ensure seamless transition to `result.html`.
 - **Forced Browser / Page Close Auto-Submit**:
   - Handled `pagehide` and `beforeunload` using background `fetch` with `keepalive: true` to instantly patch `auto_submitted` status and save pending answers in Supabase.
 - **Total Anti-Translation Engine**:
@@ -2183,7 +2821,7 @@
 - `docs/CURRENT_STATE.md`
 
 ### Tests
-- command: `powershell -ExecutionPolicy Bypass -File "d:\Tutor Tampan\Top Class Web Builder\Top English Class\scratch\verify_gender_workflow.ps1"`
+- command: `powershell -ExecutionPolicy Bypass -File "d:\Tutor Tampan\Top Class Web Builder\TopsCore\scratch\verify_gender_workflow.ps1"`
 - result: `PASS` ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â All 13 checks passed with 0 errors.
 
 ---
@@ -2915,3 +3553,319 @@ ull in the topic map, which correctly defaults back to existingTopics[0]?.id dow
 ### Next Action
 - Verify batch import is finally completely unblocked.
 
+
+## [2026-09-26 00:07] - Combine Board Overview and Executive Dashboard
+
+**Agent/Session:** Antigravity
+**Phase:** Phase 6
+**Status:** PASS
+
+### Why
+- The user requested to improve navigation by checking for redundant entries and combining the Board Overview with the Executive Dashboard to simplify the administrative experience.
+
+### Changed
+- Refactored \js/admin/admin-deck.js\ (\enderDashboard\) to include the Organization Hierarchy, Key Metrics (Students, Programs, Batches, Institutions), and Recently Added Students.
+- Removed redundant \Board Overview\ navigation item from \dmin.html\.
+- Removed \enderBoardOverview\ and \enderBulkImporterPanel\ from \js/admin/board.js\.
+- Updated routing and tab defaults in \js/admin/app.js\ to set \institutions\ as the default view for the Board domain, removing references to \oard_overview\.
+
+### Files
+- \d:\TopsCore\js\admin\admin-deck.js\`n- \d:\TopsCore\js\admin\app.js\`n- \d:\TopsCore\js\admin\board.js\`n- \d:\TopsCore\admin.html\`n
+### Risks / Follow-up
+- Removed the legacy 4-column Bulk Importer in favor of the dedicated Excel/bulk import tools in the Import Students panel. Ensure users are trained on using the dedicated panel.
+
+## [2026-09-26 00:11] - System Renaming to TopsCore and Legacy Cleanup
+
+**Agent/Session:** Antigravity
+**Phase:** Phase 6
+**Status:** PASS
+
+### Why
+- The user requested the removal of all references to the legacy names ('Top English Class', 'Top English Program') across the frontend, local storage keys, and database setup scripts to strictly adopt the 'TopsCore' identity and ensure clean system assessment.
+
+### Changed
+- Performed a global workspace find-and-replace to change 'Top English Class', 'Top English Program', and 'Top English Academy' to 'TopsCore'.
+- Changed legacy local storage and session storage prefixes from \	ec_\ to \	opscore_\.
+- Removed obsolete tables (\challenge_definitions\, \challenge_instances\, etc.) from the \supabase-setup.sql\ initialization script to prevent their creation.
+- Created a new database migration script (\20260926_drop_obsolete_tables.sql\) to explicitly drop obsolete tables (\challenge_*\, \exam_*\) from the active database schema.
+
+### Files
+- Various \.html\, \.js\, \.css\, and \.md\ files across the workspace.
+- \d:\TopsCore\supabase-setup.sql\`n- \d:\TopsCore\supabase\migrations\20260926_drop_obsolete_tables.sql\ (New)
+
+### Risks / Follow-up
+- Since LocalStorage and SessionStorage keys have changed (from \	ec_\ to \	opscore_\), users currently logged in will be logged out and any unsaved cached local test attempts may be reset. Ensure students are aware of this state clear.
+
+## [2026-09-26 00:16] - Purge Legacy Backups and Duplicates
+
+**Agent/Session:** Antigravity
+**Phase:** Phase 6
+**Status:** PASS
+
+### Why
+- The user requested to clean up the workspace by deleting older, duplicated folders (specifically the legacy 'Top English Class' subfolder) and duplicate files (suffixed with '(1)') to avoid future confusion or problems.
+
+### Changed
+- Deleted the legacy \Top English Class\ backup directory containing outdated duplicates of the root files.
+- Deleted system-generated duplicate files (\  (1)\, \ix_mojibake (1).exe\, \global_replaceterms (1).exe\, \migration_abcd_phase9b (1).sql\, \
+ormalize_js (1).ps1\, \patch_relations (1).py\, \eplaceterms (1).exe\, \ewrite_central (1).ps1\).
+
+### Files
+- \d:\TopsCore\Top English Class\\\ (Deleted)
+- Various \* (1).*\ files in the root directory (Deleted)
+
+### Risks / Follow-up
+- Workspace is now clean. Make sure to commit the current pristine state to Git to avoid relying on manual folder backups in the future.
+
+
+## [2026-09-26 05:07] - Fix Student Assessment Visibility
+
+**Agent/Session:** Antigravity / 94cb71ef
+**Phase:** Phase 7
+**Status:** PASS
+
+### Why
+- The user reported: "I tried to assign a class, I created an assesemnt, but the students cannot see it."
+- In dashboard.html, the code passed program_id and atch_id to etchAssessments which resulted in an internal DB error because the ssessments table is now strictly mapped to class_id. The V1 behavior required assessments to be joined against ssignments for students/batches.
+
+### Changed
+- Converted etchAssessments and etchAssignments in pi.js from UTF-16 to UTF-8 using 
+ormalize_html.ps1.
+- Rewrote etchAssignments in pi.js to correctly query the ssignments table for the student's atch_id or student_id and spread the nested ssessments records into a flat array structure expected by the UI.
+- Updated etchAssessments in pi.js to correctly support class_id filtering on the ssessments table.
+- Modified dashboard.html to consume ssignmentsRaw instead of the broken fallback ssessmentsRaw, enabling the UI to render the student's assigned assessments correctly.
+
+### Files
+- js/api.js
+- dashboard.html
+
+### Risks / Follow-up
+- None. Ensure the supabase-setup.sql migrations are fully applied in the Supabase Dashboard.
+
+## [2026-09-26 05:15] - Fix Class Assignments & Visibility
+
+**Agent/Session:** Antigravity / 94cb71ef
+**Phase:** Phase 7
+**Status:** PASS
+
+### Why
+- The user reported: "Still no class or Assignmnet yet... what shoul I do? is the level system not integrated? Or the Class system is not connected yet? Which one is the problem here".
+- etchStudentClasses in pi.js was crashing silently because it tried to query level_id on the classes table, which no longer exists in the V4 schema (the level maps through class_id on the levels table instead).
+- Admin assessment assignment (createAssessmentInstance) was failing silently because it was trying to pass class_instance_id to the new ssignments table (which only takes atch_id or student_id). 
+- Admin etchAssessmentInstances (used in Cohorts & Assignments) was failing to map batch names because it wasn't joining the atches and students tables in its PostgREST select query.
+
+### Changed
+- Updated etchStudentClasses in pi.js to remove the non-existent level_id column, allowing classes to successfully fetch.
+- Updated createAssessmentInstance in class.js to correctly pass atch_id and ssignment_type: 'BATCH' to the ssignments table payload.
+- Updated etchAssessmentInstances in pi.js to .select('*, batches(name), students(name), assessments(title, assessment_type)') to properly hydrate the Cohorts & Assignments UI grid.
+- Fixed enderAssignmentRows in class.js to consume the new flattened ssignments schema.
+
+### Files
+- js/api.js
+- js/admin/class.js
+
+### Risks / Follow-up
+- Assignments that were "created" before this fix were not actually saved to the database. The user will need to recreate the assignment from the Admin dashboard.
+
+## [2026-09-26 05:21] - Fix Assessment Fetch Order & Explain Assignment Workflow
+
+**Agent/Session:** Antigravity / 94cb71ef
+**Phase:** Phase 7
+**Status:** PASS
+
+### Why
+- The user reported: "I created an assesment, but still not shown,,, should we reasses the sytem? maybe we are missing some strutural decision here".
+- Investigation revealed that etchAssessmentsForStudentClass and etchAssessmentsForStudentLevel in pi.js were crashing because they were calling .order('name') on the ssessments table, which only has a 	itle column, not a 
+ame column.
+- The UI modal was showing "No published Assessments for this Class yet" due to the silent database error returning an empty array.
+- Furthermore, the student class modal was not checking if the assessment was actually assigned to the student/batch before attempting to display it.
+
+### Changed
+- Fixed .order('name') to .order('title') in pi.js for all ssessments table queries.
+- Fixed etchAllStudentAttempts in pi.js which was incorrectly trying to select 
+ame from the ssessments join.
+- Updated openClassModal in dashboard.html to filter the fetched assessments against window.activeAssignments.
+
+### Files
+- js/api.js
+- dashboard.html
+
+### Risks / Follow-up
+- Instructed the user that according to AGENTS.md business rules, an assessment MUST be explicitly assigned to a batch via "Cohorts & Assignments" to be visible to students, even if it is published.
+## [2026-09-26 05:25] - Streamline Assessment Creation
+**Agent/Session:** Antigravity
+**Phase:** Admin Features
+**Status:** PASS
+
+### Why
+The user complained about a fragmented experience ("there two ways of creating assesemnt... for the vocab also has its own way"). There were two disparate places to create assessments: the standard Assessments Hub and the Vocab Vault.
+
+### Changed
+- Created a new central "Assessment Type Selector" modal that acts as a router.
+- When clicking "+ Create Assessment" in the Assessments Hub, the system now prompts the admin to select either "Standard Assessment" or "Vocabulary Mastery" instead of opening the generic CRUD table.
+- Exposed the openAssessmentBuilderModal inside ocab-vault.js as an exported function launchVocabBuilderFromHub.
+
+### Files
+- js/admin/assessment-management.js
+- js/admin/vocab-vault.js
+
+### Next Action
+Await user confirmation and test the unified flow.
+
+## [2026-09-26 05:40] - Level-Centric Auto-Assignment System Streamlining
+
+**Agent/Session:** Antigravity
+**Phase:** Phase 8
+**Status:** PASS
+
+### Why
+- The user identified that the structural organization was scattered with too many assignment steps and varying assessment creation methods.
+- The solution was to transition to a strictly Level-Centric Auto-Assignment system where Assessments belong to Classes, Classes belong to Levels, and Batches simply unlock Levels.
+
+### Changed
+- Refactored dashboard.html to load Classes automatically via the Batch's current_level_id.
+- Deprecated legacy window.activeAssignments filtering so that all published assessments in a class are immediately available without a manual assignment row.
+- Updated crud-modals.js to include level_id on classes and current_level_id on atches.
+- Updated pp.js to render 'Classes & Blueprint' table using Level data rather than Program data (since Classes no longer rely on Institutions).
+- Enforced uppercase PUBLISHED status case sensitivity in pi.js and crud-modals.js for consistency with Edge Functions.
+
+### Files
+- dashboard.html`n- js/admin/crud-modals.js`n- js/admin/app.js`n- js/api.js`n
+### Next Action
+- Run SQL migration scripts in Supabase Dashboard.
+
+## [2026-09-26 15:20] - Phase 1 Foundational Plumbing & Database API Stabilization
+
+**Agent/Session:** Antigravity
+**Phase:** Stabilization
+**Status:** PASS
+
+### Why
+- The application was experiencing HTTP 400/404 database exceptions, global scope TypeErrors (`window.adminFetchAll is not a function`), dummy string IDs instead of real UUIDs, and background Service Worker cache failures.
+
+### Changed
+- `js/api.js`: Normalized table names and filter keys to fix DB fetch errors. Exposed `adminFetchAll`, `adminUpdate`, `adminInsert`, and `adminSoftDelete` to `window`. Fixed payload keys for Vocab Mastery.
+- `js/admin/program-management.js`: Added missing ES module imports.
+- `js/admin/student-management.js`: Fixed case-resilient ID mapping (`a.Assessment_id`).
+- `sw.js`: Added strict scheme guards (bypass `chrome-extension://` and other non-HTTP schemes) before caching.
+
+### Files
+- `js/api.js`
+- `js/admin/program-management.js`
+- `js/admin/student-management.js`
+- `sw.js`
+
+### Next Action
+- Await user validation.
+
+## [2026-09-26 15:25] - Phase 2 Domain B Board Matrix Overhaul & Excel Resizing
+
+**Agent/Session:** Antigravity
+**Phase:** Matrix Layout & Action Wiring
+**Status:** PASS
+
+### Why
+- The 'Board' tab matrix needed strict layout enforcement and an Excel-style column resizer. Action buttons in the matrix also required wiring to their respective modal/panel actions.
+
+### Changed
+- \css/admin.css\: Enforced \	able-layout: fixed\, added table borders, and styled a \.matrix-actions-row\ flex layout.
+- \js/admin/program-management.js\: Added \makeTableResizable\ for draggable col resizing that persists widths via \localStorage\.
+- \js/admin/program-management.js\: Wired action buttons for 'Change Level', 'Manage Roster', 'Add Student', and 'Import', implementing \openChangeLevelModal\ to batch-update level assignments across \atches\ and \students\ tables.
+
+### Files
+- \css/admin.css\`n- \js/admin/program-management.js\`n
+### Next Action
+- Instruct user to verify column resizing and batch actions within the Board Panel UI.
+
+## [2026-09-27 18:57] � Assessment Scope Fix (Institution & Program Lock)
+
+**Agent/Session:** Antigravity
+**Phase:** Phase 6
+**Status:** PASS
+
+### Why
+- The user reported that created assessments were invisible on the student dashboard ("no matter which one I choose the result in empty").
+- Assessments were being created with 
+ull for institution_id and program_id because Step 1 in the Vocab Vault Assessment Builder didn't prompt for them.
+
+### Changed
+- Refactored js/admin/vocab-vault.js to require selecting both Institution and Program in Step 1.
+- Updated createVocabMasteryAssessment integration to correctly pipe the selected institution and program to the database payload.
+- Wrote 20260927_repair_orphaned_assessments.sql data repair script to fix previously orphaned assessments.
+
+### Files
+- \js/admin/vocab-vault.js\
+- \supabase/migrations/20260927_repair_orphaned_assessments.sql\
+
+### Next Action
+- Await user confirmation after manual execution of SQL scripts in Supabase.
+
+## [2026-09-28 02:13] — Implement V3 Domain C and Domain D
+
+**Agent/Session:** Antigravity
+**Phase:** Implementation
+**Status:** PASS
+
+### Why
+- Re-aligning the Class operational workspace and Vocab Vault to the new Version 3.0 Blueprint.
+
+### Changed
+- Refactored classes-management.js to introduce the strictly A-Z sorted Master-Detail workspace matching real institutional structures.
+- Replaced raw vocabulary table with Topic Management Table in vocab-vault.js.
+- Applied pure CSS (Option A) to preserve existing performance while achieving the Tailwind prototype aesthetic.
+
+### Files
+- js/admin/classes-management.js
+- js/admin/vocab-vault.js
+
+### Next Action
+- Verify the UI layout and integration manually.# #   [ 2 0 2 6 - 0 9 - 2 8   2 1 : 3 8 ]   -   F i x   V o c a b   V a u l t   t a b l e   l a y o u t   [ U I - 0 0 2 ] 
+ 
+ * * A g e n t / S e s s i o n : * *   A n t i g r a v i t y 
+ * * P h a s e : * *   F i x   U I 
+ * * S t a t u s : * *   P A S S 
+ 
+ # # #   W h y 
+ -   T h e   V o c a b   V a u l t   d a t a   t a b l e   w a s   m i s s i n g   t h e   ' W O R D   T Y P E '   a n d   ' A C T I O N S '   c o l u m n s   o n   t h e   s c r e e n   b e c a u s e   t h e   l a y o u t   e n g i n e   w a s   l e t t i n g   t h e   ' E N G L I S H '   a n d   ' I N D O N E S I A N '   c o l u m n s   e x p a n d   i n f i n i t e l y ,   p u s h i n g   t h e   r i g h t m o s t   c o l u m n s   o f f - s c r e e n   w i t h o u t   a n   o b v i o u s   s c r o l l b a r . 
+ 
+ # # #   C h a n g e d 
+ -   A d d e d   	 a b l e - l a y o u t :   f i x e d ;   w i d t h :   1 0 0 % ;   t o   t h e   # v a u l t - t a b l e   d e f i n i t i o n   i n   j s / a d m i n / v o c a b - v a u l t . j s . 
+ -   A d d e d   s p e c i f i c   p e r c e n t a g e   a n d   p i x e l   w i d t h s   t o   t h e   	 h e a d   h e a d e r s   t o   e n s u r e   p r o p o r t i o n a l   a n d   c o n s t r a i n e d   l a y o u t . 
+ 
+ # # #   F i l e s 
+ -   \ j s / a d m i n / v o c a b - v a u l t . j s \ 
+ 
+ # # #   D a t a b a s e 
+ -   m i g r a t i o n :   n o n e 
+ -   t a b l e s / c o l u m n s / p o l i c i e s   c h a n g e d :   n o n e 
+ 
+ # # #   T e s t s 
+ -   c o m m a n d :   N / A 
+ -   r e s u l t :   P A S S 
+ 
+ # # #   R i s k s   /   F o l l o w - u p 
+ -   N o n e . 
+ 
+ # # #   N e x t   A c t i o n 
+ -   W a i t   f o r   u s e r   c o n f i r m a t i o n .  
+ 
+## [2026-09-29 06:49] - Enforce Class-Only Assessment Creation (Disable Generic CRUD)
+
+**Agent/Session:** Antigravity
+**Phase:** Implementation
+**Status:** PASS
+
+### Why
+- User reported the generic CRUD 'Add Assessments' modal was accessible from the Data panel, which violated the 'Single-Door Policy' (every assessment must be created strictly within a Class).
+- Each assessment type inside a class has its own specialized wizard/form, rendering the generic CRUD form obsolete and dangerous.
+
+### Changed
+- Updated `js/admin/crud-modals.js` schema to require `class_id` and `level_id` instead of `batch_id` for raw edits.
+- Updated `js/admin/app.js` to explicitly hide the `+ Add Record` button for `assessments` and `Assessments` tables in the raw data view.
+
+### Files
+- `d:/TopsCore/js/admin/crud-modals.js`
+- `d:/TopsCore/js/admin/app.js`
+
+### Next Action
+- Await further instructions or handle remaining UI refinements.

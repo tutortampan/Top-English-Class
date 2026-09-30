@@ -1,6 +1,6 @@
-# TOP ENGLISH PROGRAM — DEPLOYMENT GUIDE
+# TopsCore — DEPLOYMENT GUIDE
 
-This document provides complete instructions for deploying the **TOP ENGLISH PROGRAM** platform to production hosting environments (**Netlify** and **Vercel**) connected to the Supabase Cloud backend.
+This document provides complete instructions for deploying the **TopsCore** platform to production hosting environments (**Netlify** and **Vercel**) connected to the Supabase Cloud backend.
 
 ---
 

@@ -83,16 +83,16 @@
   </div>
 
   <script type="module">
-    import { fetchAttemptResult, fetchAttemptAnswers, fetchAllStudentAttempts, startAssessment } from './js/api.js?v=4.7.0';
-    import { requireStudentSession } from './js/session.js?v=4.7.0';
-    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=4.7.0';
+    import { fetchAttemptResult, fetchAttemptAnswers, fetchAllStudentAttempts, startAssessment } from './js/api.js?v=4.7.4';
+    import { requireStudentSession } from './js/session.js?v=4.7.4';
+    import { showToast, getGrade, showLoading, hideLoading } from './js/app.js?v=4.7.4';
 
     const session = requireStudentSession();
     if (!session) throw new Error('Not authenticated');
 
     // V1: support ?attempt_id= URL param (from dashboard "View Result" button)
     const urlParams = new URLSearchParams(window.location.search);
-    const attemptId = urlParams.get('attempt_id') || sessionStorage.getItem('tec_attempt_id');
+    const attemptId = urlParams.get('attempt_id') || sessionStorage.getItem('topscore_attempt_id');
     if (!attemptId) { window.location.href = 'dashboard.html'; }
 
     function escapeHtml(str) {
@@ -197,18 +197,34 @@
         }
 
         // Wire up Try Again button with V1 assessment_id
-        document.getElementById('try-again-btn').onclick = async () => {
-          try {
-            showLoading('Starting new attempt...');
-            const eid = assessmentId;
-            if (!eid) throw new Error('No assessment ID found.');
-            sessionStorage.setItem('tec_assessment_id', eid);
-            window.location.href = 'assessment.html';
-          } catch(e) {
-            hideLoading();
-            showToast(e.message, 'error');
-          }
-        };
+        const tryAgainBtn = document.getElementById('try-again-btn');
+        if (typ === 'EXAM') {
+          const parent = tryAgainBtn.parentElement;
+          tryAgainBtn.remove();
+          parent.insertAdjacentHTML('beforeend', `
+            <div class="security-policy-card" style="margin-top:1.5rem; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:1rem; color:#f59e0b;">
+              <div style="font-weight:700; font-size:0.85rem; text-transform:uppercase; margin-bottom:0.4rem; display:flex; align-items:center; gap:0.4rem;">
+                <span>🔒</span> Security Policy
+              </div>
+              <p style="font-size:0.8rem; margin:0; line-height:1.4;">
+                Official Exam attempts are locked and final upon submission. If you experienced a technical issue or require a remedial attempt, please contact your tutor for authorization.
+              </p>
+            </div>
+          `);
+        } else {
+          tryAgainBtn.onclick = async () => {
+            try {
+              showLoading('Starting new attempt...');
+              const eid = assessmentId;
+              if (!eid) throw new Error('No assessment ID found.');
+              sessionStorage.setItem('topscore_assessment_id', eid);
+              window.location.href = 'assessment.html';
+            } catch(e) {
+              hideLoading();
+              showToast(e.message, 'error');
+            }
+          };
+        }
 
       } catch(e) {
         showToast('Failed to load results: ' + e.message, 'error');

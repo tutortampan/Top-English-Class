@@ -104,7 +104,7 @@ function evaluateStudentAnswer(studentAnswer: string, validAnswers: string[]): {
 }
 
 function calculateGrade(pct: number): string {
-  if (pct === 100) return "S";
+  if (pct >= 100) return "S";
   if (pct >= 91) return "A";
   if (pct >= 71) return "B";
   if (pct >= 51) return "C";
@@ -214,7 +214,29 @@ Deno.serve(async (req: Request) => {
     // 5. Calculate Percentage and Grade
     const percentage = totalQuestions > 0 ? (totalScore / totalQuestions) * 100 : 0;
     const roundedPct = Math.round(percentage * 100) / 100;
-    const grade = calculateGrade(Math.round(percentage));
+
+    // 5b. Server-Authoritative Remedial Cap (AGENTS.md §2 — Non-Negotiable Business Rule)
+    // When an attempt is flagged is_remedial=true on an EXAM or QUIZ assessment,
+    // the effective score stored for best-score resolution is capped at 70%.
+    // Raw score/percentage is preserved intact; only effectivePct is capped.
+    let effectivePct = roundedPct;
+    let isRemedialCapApplied = false;
+    if (attempt.is_remedial === true) {
+      const targetAsmId = attempt.assessment_id || attempt.Assessment_id;
+      const { data: asmForCap } = await supabase
+        .from("Assessments")
+        .select("Assessment_type")
+        .eq("id", targetAsmId)
+        .single();
+      if (asmForCap && (asmForCap.Assessment_type === "EXAM" || asmForCap.Assessment_type === "QUIZ")) {
+        if (effectivePct > 70) {
+          effectivePct = 70;
+          isRemedialCapApplied = true;
+        }
+      }
+    }
+
+    const grade = calculateGrade(Math.round(isRemedialCapApplied ? effectivePct : roundedPct));
 
     // 6. Update Attempt
     const { data: updatedAttempt, error: updErr } = await supabase
@@ -227,7 +249,8 @@ Deno.serve(async (req: Request) => {
         total_questions: totalQuestions,
         percentage: roundedPct,
         grade,
-        effective_score: roundedPct
+        effective_score: effectivePct,
+        remedial_cap_applied: isRemedialCapApplied
       })
       .eq("id", attempt_id)
       .select()
@@ -254,6 +277,38 @@ Deno.serve(async (req: Request) => {
           .from("attempts")
           .update({ is_best_score: a.id === bestId })
           .eq("id", a.id);
+      }
+    }
+
+    // 7b. Auto-Leveling Logic
+    const { data: asmRec } = await supabase
+      .from("assessments")
+      .select("assessment_type, class_id, classes(level_id)")
+      .eq("id", targetAssessmentId)
+      .single();
+
+    if (asmRec && (asmRec.assessment_type === 'EXAM' || asmRec.assessment_type === 'QUIZ') && roundedPct >= 75) {
+      // Find current level number
+      if (asmRec.classes && asmRec.classes.level_id) {
+         const { data: currLevel } = await supabase.from("levels").select("level_number").eq("id", asmRec.classes.level_id).single();
+         if (currLevel) {
+           const nextLevelNum = currLevel.level_number + 1;
+           // Find next level ID
+           const { data: nextLevel } = await supabase.from("levels").select("id").eq("level_number", nextLevelNum).single();
+           if (nextLevel) {
+             // Grant access to next level by assigning it in student_classes or similar?
+             // Or update the student's level_id directly?
+             // Since students now have level_id column, we can update it if the new level is higher!
+             const { data: studRec } = await supabase.from("students").select("level_id").eq("id", attempt.student_id).single();
+             if (studRec) {
+                // Check if current student level is less than next level
+                const { data: studLevel } = await supabase.from("levels").select("level_number").eq("id", studRec.level_id).single();
+                if (!studLevel || studLevel.level_number < nextLevelNum) {
+                   await supabase.from("students").update({ level_id: nextLevel.id }).eq("id", attempt.student_id);
+                }
+             }
+           }
+         }
       }
     }
 

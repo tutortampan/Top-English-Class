@@ -1,5 +1,5 @@
-﻿/* ============================================================
-   TOP ENGLISH CLASS — Global Design System
+/* ============================================================
+   TopsCore � Global Design System
    Dark mode, glassmorphism, micro-animations
    ============================================================ */
 
@@ -24,7 +24,7 @@
   --clr-accent-1: #6366f1;   /* indigo */
   --clr-accent-2: #8b5cf6;   /* violet */
   --clr-accent-3: #06b6d4;   /* cyan */
-  --clr-primary: #6366f1;    /* alias for accent-1 — used by pill filters, progress bars, admin highlights */
+  --clr-primary: #6366f1;    /* alias for accent-1 � used by pill filters, progress bars, admin highlights */
   --grad-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
   --grad-glow: radial-gradient(ellipse at top, rgba(99,102,241,0.25) 0%, transparent 70%);
 
@@ -79,7 +79,7 @@
   /* Z-index */
   --z-nav: 50;
   --z-dropdown: 100;
-  --z-loading: 500;
+  --z-loading: 9999;
   --z-modal: 1000;
   --z-toast: 2000;
 }

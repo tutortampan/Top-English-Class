@@ -126,3 +126,43 @@ Status: ACCEPTED
    - Added `class_id UUID REFERENCES classes(id) ON DELETE SET NULL` to `levels` in `supabase-setup.sql`.
    - The frontend submit handler incorporates graceful fallback: if the database schema cache rejects `class_id`, the level is saved without crashing.
 
+
+## DECISION-002 - Level-Centric Auto-Assignment
+
+Date: 2026-09-26
+Status: ACCEPTED
+
+### Context
+The previous assignment architecture required administrators to manually assign every new assessment to specific Batches or Students (via the ssignments table) before students could see them. This caused friction and a disconnected workflow where creating an assessment and assigning it were two separate, manual steps. The user provided a syllabus diagram indicating that subjects (Classes) are strictly grouped into Levels (e.g., 1st Level = Basic English, Telling Story 1, Vocab 1).
+
+### Decision
+We are switching to a **Level-Centric Auto-Assignment** model.
+1. Classes (Subjects) belong to a Level.
+2. Assessments are created within a Class.
+3. Batches (and by extension, the students in them) exist at a specific Level (or unlock levels sequentially).
+4. By simply being on "1st Level", a batch automatically gains access to ALL assessments belonging to ANY class mapped to the "1st Level". 
+5. The ssignments table is DEPRECATED for broad cohort assignments, though it may still be retained for highly specific individual student overrides if needed.
+
+### Consequences
+- Assessment visibility queries in pi.js (e.g., etchAssessmentsForStudentClass) must be completely rewritten. Instead of joining on the ssignments table, the query will now check if the assessment's class_id belongs to a level_id that the student's batch has unlocked.
+- The Admin UI "Cohorts & Assignments" tab will be repurposed or removed in favor of simply mapping Batches to Levels.
+- We must update the AGENTS.md Non-Negotiable Business Rules to reflect this new mechanism.
+
+## DECISION-011 — Single-Door Assessment Workflow (Context-Locked)
+
+Date: 2026-09-28
+Status: ACCEPTED
+
+### Context
+Curriculum management was fragmented, leading to orphaned assessments created without a parent `class_id` or `level_id`. This broke the Level-Centric Auto-Assignment architecture.
+
+### Decision
+All assessment creation must pass through a centralized Single-Door Workflow inside Domain C (Class & Curriculum). Assessments can only be initialized from within a Class workspace (Dual-Axis Binder Workspace), automatically inheriting and locking `class_id` and `level_id`.
+
+### Consequences
+- Eliminates orphaned assessment records.
+- Guarantees `class_id` and `level_id` are populated at creation.
+- Level-Centric Auto-Assignment to student batches functions flawlessly upon publishing.
+- Assessment builder UI is locked from modifying scope and tier during editing.
+
+---

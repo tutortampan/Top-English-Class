@@ -2,8 +2,28 @@
 // Stores authenticated student/admin session in sessionStorage only.
 // Never stores plaintext PINs.
 
-const SESSION_KEY = 'tec_session';
-const ADMIN_SESSION_KEY = 'tec_admin_session';
+const SESSION_KEY = 'topscore_session';
+const ADMIN_SESSION_KEY = 'topscore_admin_session';
+
+// Legacy Purge: Clear any old "Top English" branding from storage
+(function purgeLegacyStorage() {
+  try {
+    ['localStorage', 'sessionStorage'].forEach(storeType => {
+      const store = window[storeType];
+      if (!store) return;
+      const keysToRemove = [];
+      for (let i = 0; i < store.length; i++) {
+        const key = store.key(i);
+        if (key && (key.toLowerCase().includes('topenglish') || key.toLowerCase().includes('top_english'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(k => store.removeItem(k));
+    });
+  } catch (e) {
+    console.warn("Legacy purge failed:", e);
+  }
+})();
 
 export function setStudentSession(data) {
   const session = {
@@ -19,6 +39,9 @@ export function setStudentSession(data) {
     class_name: data.class_name || null,
     batch_id: data.batch_id || null,
     batch_name: data.batch_name || null,
+    level_id: data.level_id || null,
+    level_number: data.level_number || null,
+    level_name: data.level_name || null,
     authenticated_at: new Date().toISOString(),
   };
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));

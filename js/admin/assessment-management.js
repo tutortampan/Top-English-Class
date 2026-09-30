@@ -1,16 +1,17 @@
-import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js?v=4.7.0';
-import { openAssessmentBuilder } from './assessment-builder.js?v=4.7.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.0';
-import { getSupabase } from '../supabase.js?v=4.7.0';
-import { DataGrid } from './datagrid.js?v=4.7.0';
+import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js?v=4.7.4';
+import { openAssessmentBuilder } from './assessment-builder.js?v=4.7.4';
+import { openAssessmentBuilderModal as openVocabWizard } from './vocab-vault.js?v=4.7.4';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.4';
+import { getSupabase } from '../supabase.js?v=4.7.4';
+import { DataGrid } from './datagrid.js?v=4.7.4';
 if (typeof window !== 'undefined') window.DataGrid = DataGrid;
 
 let AssessmentsGrid;
 
 export async function renderAssessments(area) {
   const [rawData, allQuestions, allClasses, allLevels, allBoardClasses] = await Promise.all([
-    adminFetchAll('Assessments'),
-    adminFetchAll('questions', 'id, Assessment_id'),
+    adminFetchAll('assessments'),
+    adminFetchAll('assessment_questions', 'id, assessment_id, answer_type'),
     adminFetchAll('programs', 'id, name').catch(() => []),
     adminFetchAll('levels').catch(() => []),
     adminFetchAll('classes').catch(() => [])
@@ -25,12 +26,12 @@ export async function renderAssessments(area) {
   const AssessmentMap = {};
   (rawData || []).forEach(e => { AssessmentMap[e.id] = e; });
 
-  const data = [...rawData].sort((a, b) => (a.Assessment_title || a.name || '').localeCompare(b.Assessment_title || b.name || ''));
+  const data = [...rawData].sort((a, b) => (a.title || a.name || '').localeCompare(b.title || b.name || ''));
 
-  // Calculate KPI metrics (Assessments table uses Assessment_status, not assessment_type)
+  // Calculate KPI metrics (Assessments table uses status, not assessment_type)
   const totalAssessments = data.length;
-  const publishedCount = data.filter(e => e.Assessment_status === 'published').length;
-  const draftCount = data.filter(e => !e.Assessment_status || e.Assessment_status === 'draft' || e.Assessment_status === 'unpublished').length;
+  const publishedCount = data.filter(e => e.status === 'published').length;
+  const draftCount = data.filter(e => !e.status || e.status === 'draft' || e.status === 'unpublished').length;
   const totalQuestions = allQuestions.length;
 
   area.innerHTML = `
@@ -41,12 +42,14 @@ export async function renderAssessments(area) {
           <p class="section-subtitle">Create, organize, publish, and inspect all online assessments</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-          <button class="btn btn-primary btn-sm" id="hub-add-Assessment">+ Create Assessment</button>
+          <button class="btn btn-primary btn-sm" onclick="window.openAssessmentGatewayModal()" id="hub-add-Assessment-wizard">+ Create Assessment</button>
           <button class="btn btn-secondary btn-sm" id="hub-btn-assignments" onclick="window.loadSection('class-assignments')">&#128101; Cohorts &amp; Assignments</button>
-          <button class="btn btn-secondary btn-sm" id="hub-btn-results" onclick="window.loadSection('results')">&#128202; Assessment Results</button>
+          <button class="btn btn-secondary btn-sm" id="hub-btn-results" onclick="window.loadSection('results')">&#128202; Results</button>
           <button class="btn btn-warning btn-sm" id="hub-btn-recalibrate" onclick="window.loadSection('recalibrator')" style="font-weight:700;">&#9889; Recalibrate</button>
           <button class="btn btn-secondary btn-sm" onclick="window.loadSection('import-questions')">&#128229; Import Questions</button>
           <button class="btn btn-secondary btn-sm" onclick="window.loadSection('export-questions')">&#128228; Export Questions</button>
+          <button class="btn btn-secondary btn-sm" onclick="window.loadSection('vocab_vault')">&#128214; Vocab Vault</button>
+          <button class="btn btn-sm" id="hub-btn-open-session" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.4);font-weight:700;" title="Open a live QUIZ/EXAM session for a class">&#128275; Open Session</button>
         </div>
       </div>
 
@@ -74,24 +77,69 @@ export async function renderAssessments(area) {
   `;
 
   document.getElementById('hub-add-Assessment')?.addEventListener('click', () => {
-    window.openCrudModal('Assessments', null);
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width:600px;">
+        <div class="modal-header d-flex justify-between align-center p-3" style="border-bottom:1px solid var(--clr-border);">
+          <div>
+            <h3 class="m-0" style="font-size:1.25rem;">Select Assessment Type</h3>
+            <p class="text-muted m-0 text-xs">Choose the blueprint engine for this assessment</p>
+          </div>
+          <button class="btn btn-ghost" onclick="this.closest('.modal-backdrop').remove()">&times;</button>
+        </div>
+        <div class="modal-body p-4 d-flex flex-column gap-3">
+          <div class="card p-3 d-flex align-center gap-3" style="cursor:pointer; border:1px solid var(--clr-border); transition:all 0.2s; background:var(--clr-bg-2);"
+               onmouseover="this.style.borderColor='var(--clr-primary)'" onmouseout="this.style.borderColor='var(--clr-border)'"
+               onclick="this.closest('.modal-backdrop').remove(); window.openAssessmentBuilder(null);">
+            <div style="font-size:2rem; width:50px; text-align:center;">&#128221;</div>
+            <div>
+              <h4 class="m-0 mb-1" style="font-size:1.1rem;">Standard Assessment</h4>
+              <p class="m-0 text-muted text-sm">Build Evaluations or Comprehensive Assessments from the Question Bank</p>
+            </div>
+          </div>
+          
+          <div class="card p-3 d-flex align-center gap-3" style="cursor:pointer; border:1px solid var(--clr-border); transition:all 0.2s; background:var(--clr-bg-2);"
+               onmouseover="this.style.borderColor='var(--clr-primary)'" onmouseout="this.style.borderColor='var(--clr-border)'"
+               onclick="this.closest('.modal-backdrop').remove(); import('./vocab-vault.js?v=4.7.4').then(m => m.launchVocabBuilderFromHub());">
+            <div style="font-size:2rem; width:50px; text-align:center;">&#128214;</div>
+            <div>
+              <h4 class="m-0 mb-1" style="font-size:1.1rem;">Vocabulary Mastery</h4>
+              <p class="m-0 text-muted text-sm">Auto-generate a Vocab Task, Quiz, or Exam directly from the Vocab Vault</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
   });
 
   const gridData = data.map(r => {
-    const qCount = (allQuestions || []).filter(q => q?.Assessment_id === r?.id).length;
+    const qCount = (allQuestions || []).filter(q => q?.assessment_id === r?.id).length;
     // Assessments table uses program_id; map to program name
     const programName = (r?.program_id && classMap[r.program_id]?.name) ? classMap[r.program_id].name : 'All Programs';
-    const prereqAssessment = (r?.prerequisite_Assessment_id && AssessmentMap[r.prerequisite_Assessment_id]) ? AssessmentMap[r.prerequisite_Assessment_id] : null;
+    const prereqAssessment = (r?.prerequisite_assessment_id && AssessmentMap[r.prerequisite_assessment_id]) ? AssessmentMap[r.prerequisite_assessment_id] : null;
     const boardName = (r?.class_id && boardClassMap[r.class_id]?.name) || r?.classes?.name || '—';
     const lvlObj = (r?.level_id && levelMap[r.level_id]) || r?.levels;
     const lvlNum = lvlObj?.level_number || 1;
     const levelDisplay = window.toLevelLetter ? window.toLevelLetter(lvlNum) : lvlNum;
-    const prereqTitle = prereqAssessment?.Assessment_title || prereqAssessment?.name || r?.prereq?.name || r?.prerequisite?.name || r?.prereq || '';
-    // Assessments table: Assessment_title, Assessment_status, Assessment_type, answer_type, time_limit_minutes, minimum_required_score
-    const title = r?.Assessment_title || r?.display_name || r?.name || 'Untitled';
-    const status = r?.Assessment_status || r?.assessment_type || 'draft';
-    const AssessmentCategory = r?.Assessment_type || 'Daily';
-    const answerType = r?.answer_type || '';
+    const prereqTitle = prereqAssessment?.title || prereqAssessment?.name || r?.prereq?.name || r?.prerequisite?.name || r?.prereq || '';
+    // Assessments table: title, status, assessment_type, answer_type, time_limit_minutes, minimum_required_score
+    const title = r?.title || r?.display_name || r?.name || 'Untitled';
+    const status = r?.status || r?.assessment_type || 'draft';
+    const AssessmentCategory = r?.assessment_type || 'Daily';
+    let answerType = r?.answer_type || '';
+    const asmQs = (allQuestions || []).filter(q => q?.assessment_id === r?.id);
+    if (!answerType && asmQs.length > 0) {
+      const typeCounts = {};
+      asmQs.forEach(q => {
+        if (q.answer_type) typeCounts[q.answer_type] = (typeCounts[q.answer_type] || 0) + 1;
+      });
+      let max = 0;
+      for (const t in typeCounts) {
+        if (typeCounts[t] > max) { max = typeCounts[t]; answerType = t; }
+      }
+    }
     const timeLimit = r?.time_limit_minutes || Math.floor((r?.time_limit_seconds || 3600) / 60);
     const minScore = r?.minimum_required_score || 60;
     
@@ -278,7 +326,7 @@ function formatAnswerType(type) {
 window._publishAssessment = async (AssessmentId, currentStatus) => {
   const newStatus = currentStatus === 'published' ? 'unpublished' : 'published';
   try {
-    await adminUpdate('Assessments', AssessmentId, { Assessment_status: newStatus });
+    await adminUpdate('Assessments', AssessmentId, { status: newStatus });
     showToast(`Assessment ${newStatus}.`, 'success');
     window.loadSection('Assessments');
   } catch(e) { showToast(e.message, 'error'); }
@@ -296,7 +344,7 @@ window._duplicateAssessment = async (AssessmentId) => {
     if (recErr) throw new Error(recErr.message);
 
     // 2. Fetch original questions
-    const { data: questions, error: qErr } = await sb.from('questions').select('*').eq('Assessment_id', AssessmentId);
+    const { data: questions, error: qErr } = await sb.from('questions').select('*').eq('assessment_id', AssessmentId);
     if (qErr) throw new Error(qErr.message);
 
     // 3. Duplicate Assessment
@@ -308,9 +356,9 @@ window._duplicateAssessment = async (AssessmentId) => {
     delete newAssessment.classes;
     delete newAssessment.levels;
     delete newAssessment.institutions;
-    newAssessment.Assessment_title = `${newAssessment.Assessment_title || newAssessment.display_name || 'Assessment'} (Copy)`;
-    newAssessment.display_name = `${newAssessment.display_name || newAssessment.Assessment_title} (Copy)`;
-    newAssessment.Assessment_status = 'draft';
+    newAssessment.title = `${newAssessment.title || newAssessment.display_name || 'Assessment'} (Copy)`;
+    newAssessment.display_name = `${newAssessment.display_name || newAssessment.title} (Copy)`;
+    newAssessment.status = 'draft';
 
     const { data: createdAssessment, error: eErr } = await sb.from('Assessments').insert([newAssessment]).select().single();
     if (eErr) throw new Error(eErr.message);
@@ -318,7 +366,7 @@ window._duplicateAssessment = async (AssessmentId) => {
     // 4. Duplicate Questions
     if (questions && questions.length > 0) {
       const newQuestions = questions.map(q => {
-        const newQ = { ...q, Assessment_id: createdAssessment.id };
+        const newQ = { ...q, assessment_id: createdAssessment.id };
         delete newQ.id;
         delete newQ.created_at;
         delete newQ.updated_at;
@@ -330,9 +378,9 @@ window._duplicateAssessment = async (AssessmentId) => {
     }
 
     // 5. Duplicate Class Assignments
-    const { data: assignments } = await sb.from('Assessment_programs').select('program_id').eq('Assessment_id', AssessmentId);
+    const { data: assignments } = await sb.from('Assessment_programs').select('program_id').eq('assessment_id', AssessmentId);
     if (assignments && assignments.length > 0) {
-       const newAssignments = assignments.map(a => ({ Assessment_id: createdAssessment.id, program_id: a.program_id }));
+       const newAssignments = assignments.map(a => ({ assessment_id: createdAssessment.id, program_id: a.program_id }));
        const { error: assignErr } = await sb.from('Assessment_programs').insert(newAssignments);
        if (assignErr) throw new Error(assignErr.message);
     }
@@ -357,8 +405,8 @@ window.openAssessmentBuilder = async (AssessmentId) => {
 
 export async function renderQuestions(area) {
   const [questions, rawAssessments] = await Promise.all([
-    adminFetchAll('questions'),
-    adminFetchAll('Assessments', 'id, name, Assessment_type').catch(() => [])
+    adminFetchAll('assessment_questions'),
+    adminFetchAll('assessments', 'id, title, assessment_type').catch(() => [])
   ]);
 
   const AssessmentMap = new Map((rawAssessments || []).map(e => [e.id, e]));
@@ -377,8 +425,8 @@ export async function renderQuestions(area) {
   questions.forEach(q => { window._qRecords[q.id] = q; });
 
   const gridData = questions.map(q => {
-    const matchedAssessment = AssessmentMap.get(q.Assessment_id);
-    const AssessmentDisplay = matchedAssessment ? `${matchedAssessment.Assessment_type ? matchedAssessment.Assessment_type + ' — ' : ''}${matchedAssessment.name}` : (q.Assessments ? window.formatAssessmentDisplayName(q.Assessments) : '—');
+    const matchedAssessment = AssessmentMap.get(q.assessment_id);
+    const AssessmentDisplay = matchedAssessment ? `${matchedAssessment.assessment_type ? matchedAssessment.assessment_type + ' — ' : ''}${matchedAssessment.title}` : (q.Assessments ? window.formatAssessmentDisplayName(q.Assessments) : '—');
     return {
       id: q.id,
       order: q.question_order,
@@ -451,7 +499,7 @@ export async function renderQuestions(area) {
 
 export async function renderResults(area) {
   const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
-    adminFetchAll('attempts', '*, students!student_id(name, gender, batch_id, batches!batch_id(name), program_id, programs!program_id(name, institution_id, institutions!institution_id(name))), Assessments!Assessment_id(name, Assessment_type), attempt_answers(id, evaluation_result, score)'),
+    adminFetchAll('attempts', '*, students!student_id(name, gender, batch_id, batches!batch_id(name), program_id, programs!program_id(name, institution_id, institutions!institution_id(name))), assessments!assessment_id(title, assessment_type), attempt_answers(id, evaluation_result, score)'),
     adminFetchAll('institutions'),
     adminFetchAll('programs'),
     adminFetchAll('batches')
@@ -462,7 +510,7 @@ export async function renderResults(area) {
   // Deduplicate by Student + Assessment, keeping highest score only
   const mergedResults = new Map();
   submittedOnly.forEach(r => {
-    const key = `${r.student_id}_${r.Assessment_id}`;
+    const key = `${r.student_id}_${r.assessment_id}`;
     const existing = mergedResults.get(key);
     if (!existing) {
       mergedResults.set(key, r);
@@ -504,7 +552,7 @@ export async function renderResults(area) {
       program: r.students?.programs?.institutions?.name || '—',
       className: r.students?.programs?.name || '—',
       batch: r.students?.batches?.name || '—',
-      AssessmentTitle: r.Assessments?.name || 'Unknown Assessment',
+      AssessmentTitle: r.assessments?.title || 'Unknown Assessment',
       score: r.percentage ? parseFloat(r.percentage).toFixed(1) : '0.0',
       grade: r.grade || '-',
       correct: attCorrect,
@@ -579,4 +627,149 @@ export async function renderResults(area) {
     ]
   });
 }
+  // Wire up Open Session button after grid renders
+  setTimeout(() => {
+    const btn = document.getElementById('hub-btn-open-session');
+    if (btn) btn.addEventListener('click', openSessionModal);
+  }, 100);
 
+/**
+ * Open Session Modal - Tutor Live Control (AGENTS.md §2 - Assessment Timing)
+ * Unlocks a published QUIZ or EXAM assessment for students with a timed window.
+ * Sets session_unlocked_at and session_expires_at on the Assessments record.
+ */
+async function openSessionModal() {
+  const { getSupabase } = await import('../supabase.js?v=4.7.4');
+  const sb = await getSupabase();
+  const { data: assessments, error } = await sb
+    .from('Assessments')
+    .select('id, title, assessment_type, classes(name)')
+    .in('assessment_type', ['QUIZ', 'EXAM'])
+    .eq('status', 'published')
+    .order('title', { ascending: true });
+  if (error) { window.showToast('Failed to load assessments: ' + error.message, 'error'); return; }
+  const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const asmOptions = (assessments || []).map(a =>
+    '<option value="' + esc(a.id) + '">[' + esc(a.assessment_type) + '] ' + esc(a.title || a.id) + ' — ' + esc(a.classes?.name || '—') + '</option>'
+  ).join('');
+  if (!asmOptions) { window.showToast('No published QUIZ or EXAM assessments found.', 'warning'); return; }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'open-session-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = [
+    '<div style="background:var(--clr-surface-1,#1a1f2e);border:1px solid var(--clr-border);border-radius:12px;padding:2rem;max-width:480px;width:95%;box-shadow:0 24px 64px rgba(0,0,0,0.5);">',
+    '  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">',
+    '    <h3 style="color:var(--clr-text-1);font-size:1.1rem;font-weight:700;margin:0;">&#128275; Open Session &mdash; Tutor Live Control</h3>',
+    '    <button id="close-session-modal" style="background:none;border:none;color:var(--clr-text-2);font-size:1.4rem;cursor:pointer;padding:2px 8px;">&#215;</button>',
+    '  </div>',
+    '  <div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1.5rem;">',
+    '    <p style="color:#f59e0b;font-size:0.8rem;margin:0;">&#9888;&#65039; This unlocks the selected QUIZ/EXAM immediately. Students cannot begin once the session window closes.</p>',
+    '  </div>',
+    '  <div style="margin-bottom:1rem;">',
+    '    <label style="font-size:0.85rem;font-weight:600;color:var(--clr-text-2);display:block;margin-bottom:6px;">Assessment (QUIZ / EXAM)</label>',
+    '    <select id="session-asm-select" class="form-control" style="width:100%;"><option value="">-- Select Assessment --</option>' + asmOptions + '</select>',
+    '  </div>',
+    '  <div style="margin-bottom:1.5rem;">',
+    '    <label style="font-size:0.85rem;font-weight:600;color:var(--clr-text-2);display:block;margin-bottom:6px;">Session Duration (minutes)</label>',
+    '    <input type="number" id="session-duration" class="form-control" value="60" min="5" max="480" style="max-width:150px;" />',
+    '    <p style="font-size:0.75rem;color:var(--clr-text-2);margin-top:4px;">Students cannot begin after this window closes.</p>',
+    '  </div>',
+    '  <div style="display:flex;gap:0.75rem;justify-content:flex-end;">',
+    '    <button class="btn btn-ghost btn-sm" id="cancel-session-modal">Cancel</button>',
+    '    <button class="btn btn-sm" id="confirm-open-session" style="background:rgba(245,158,11,0.2);color:#f59e0b;border:1px solid rgba(245,158,11,0.5);font-weight:700;">&#128275; Open Session Now</button>',
+    '  </div>',
+    '</div>'
+  ].join('\n');
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  document.getElementById('close-session-modal').addEventListener('click', close);
+  document.getElementById('cancel-session-modal').addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  document.getElementById('confirm-open-session').addEventListener('click', async () => {
+    const asmId = document.getElementById('session-asm-select').value;
+    const durationMin = parseInt(document.getElementById('session-duration').value) || 60;
+    if (!asmId) { window.showToast('Please select an assessment.', 'warning'); return; }
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + durationMin * 60 * 1000).toISOString();
+    const { error: updErr } = await sb.from('Assessments')
+      .update({ session_unlocked_at: now.toISOString(), session_expires_at: expiresAt })
+      .eq('id', asmId);
+    if (updErr) { window.showToast('Failed to open session: ' + updErr.message, 'error'); }
+    else { window.showToast('Session opened — expires in ' + durationMin + ' minute(s). Students may now begin.', 'success'); close(); }
+  });
+}
+
+window.openAssessmentGatewayModal = async () => {
+  showLoading('Loading Context...');
+  let allClasses, allLevels;
+  try {
+    [allClasses, allLevels] = await Promise.all([
+      adminFetchAll('classes', 'id, name, level_id'),
+      adminFetchAll('levels', 'id, name')
+    ]);
+  } catch (e) {
+    hideLoading();
+    showToast('Failed to load class context', 'error');
+    return;
+  }
+  hideLoading();
+
+  const levelMap = {};
+  (allLevels || []).forEach(l => { levelMap[l.id] = l.name; });
+
+  const classOptions = (allClasses || []).map(c => {
+    const lvlName = levelMap[c.level_id] || 'Unknown Level';
+    return `<option value="${c.id}" data-name="${escapeHtml(c.name || '')}">${escapeHtml(c.name || '')} (Level: ${escapeHtml(lvlName || '')})</option>`;
+  }).join('');
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header d-flex justify-between align-center p-3">
+        <h3 class="fw-700 m-0 text-gradient" style="font-size:1.25rem;">Create New Assessment</h3>
+        <button class="btn btn-ghost btn-sm" id="close-gateway-modal">&#10005;</button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-muted text-sm mb-4">Please select the Class for this assessment. The system will automatically launch the correct assessment module based on the class type.</p>
+        <div class="form-group mb-4">
+          <label class="form-label">Target Class</label>
+          <select id="gateway-class-select" class="form-control" style="width:100%;font-size:1.05rem;padding:0.75rem;">
+            <option value="">-- Select Class --</option>
+            \${classOptions}
+          </select>
+        </div>
+        <div class="d-flex justify-end gap-2 mt-4">
+          <button class="btn btn-secondary" id="cancel-gateway-modal">Cancel</button>
+          <button class="btn btn-primary" id="btn-gateway-next">Next &rarr;</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const close = () => modal.remove();
+  document.getElementById('close-gateway-modal').addEventListener('click', close);
+  document.getElementById('cancel-gateway-modal').addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+  document.getElementById('btn-gateway-next').addEventListener('click', () => {
+    const sel = document.getElementById('gateway-class-select');
+    const classId = sel.value;
+    if (!classId) {
+      showToast('Please select a class first.', 'warning');
+      return;
+    }
+    const className = sel.options[sel.selectedIndex].getAttribute('data-name');
+    close();
+
+    // Context-Aware Routing
+    if ((className || '').toLowerCase().includes('vocab')) {
+      openVocabWizard(null, { classId: classId, className: className, assessmentType: 'VOCAB_MASTERY' });
+    } else {
+      openAssessmentBuilder(null, classId);
+    }
+  });
+};

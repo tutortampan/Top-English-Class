@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TOPS CORE — Student Login</title>
+  <title>TOPS CORE � Student Login</title>
   <meta name="description" content="Login to TOPS CORE to access your English assessments, track your progress, and complete Assessments." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -635,23 +635,23 @@
 
       <!-- Footer -->
       <div class="login-footer">
-        <a href="admin.html" id="admin-portal-link">Top Office →</a>
+        <a href="admin.html" id="admin-portal-link">Top Office ?</a>
       </div>
 
     </div>
   </div>
 
   <script type="module">
-    import { fetchInstitutions, fetchPrograms, fetchBatches, fetchStudentsByProgram, verifyStudentLogin, formatStudentName } from './js/api.js?v=4.7.0';
-    import { setStudentSession, getStudentSession } from './js/session.js?v=4.7.0';
-    import { showToast, showLoading, hideLoading } from './js/app.js?v=4.7.0';
+    import { fetchInstitutions, fetchPrograms, fetchBatches, fetchStudentsByProgram, verifyStudentLogin, formatStudentName } from './js/api.js?v=4.7.4';
+    import { setStudentSession, getStudentSession } from './js/session.js?v=4.7.4';
+    import { showToast, showLoading, hideLoading } from './js/app.js?v=4.7.4';
 
-    // â”€â”€ Redirect if already logged in â”€â”€
+    // ── Redirect if already logged in ──
     if (getStudentSession()) {
       window.location.href = 'dashboard.html';
     }
 
-    // â”€â”€ State â”€â”€
+    // ── State ──
     const state = {
       institutionId: null, institutionName: null,
       programId: null, programName: null,
@@ -659,9 +659,9 @@
       studentId: null, studentName: null,
     };
 
-    // â”€â”€ Remember Me â”€â”€
-    const REMEMBER_KEY = 'tec_saved_login_v2';
-    let rememberEnabled = localStorage.getItem('tec_remember_enabled') === 'true';
+    // ── Remember Me ──
+    const REMEMBER_KEY = 'topscore_saved_login_v2';
+    let rememberEnabled = localStorage.getItem('topscore_remember_enabled') === 'true';
 
     const rmbToggleEl = document.getElementById('rmb-toggle');
     const clearLinkEl = document.getElementById('clear-session-link');
@@ -701,7 +701,7 @@
 
     rmbBanner.addEventListener('click', () => {
       rememberEnabled = !rememberEnabled;
-      localStorage.setItem('tec_remember_enabled', String(rememberEnabled));
+      localStorage.setItem('topscore_remember_enabled', String(rememberEnabled));
       updateRememberUI();
       if (!rememberEnabled) clearSavedLogin();
     });
@@ -714,7 +714,7 @@
 
     updateRememberUI();
 
-    // â”€â”€ Section helpers â”€â”€
+    // ── Section helpers ──
     function unlockSection(id) {
       const el = document.getElementById(id);
       if (el) {
@@ -748,7 +748,7 @@
       }
     }
 
-    // â”€â”€ Render options helper â”€â”€
+    // ── Render options helper ──
     function renderOptions(containerId, searchInputId, items, onSelect, selectedId = null) {
       const container = document.getElementById(containerId);
       const searchInput = document.getElementById(searchInputId);
@@ -805,7 +805,7 @@
       return d.innerHTML;
     }
 
-    // â”€â”€ Step 1: Load Institutions â”€â”€
+    // ── Step 1: Load Institutions ──
     async function loadPrograms(autoSelectId = null) {
       const container = document.getElementById('list-program');
       container.innerHTML = `<div class="opts-spinner"><div class="spinner"></div></div>`;
@@ -835,7 +835,7 @@
       }
     }
 
-    // â”€â”€ Step 2: Load Programs â”€â”€
+    // ── Step 2: Load Programs ──
     async function loadClasses(autoSelectId = null) {
       unlockSection('sec-class');
       const container = document.getElementById('list-class');
@@ -863,7 +863,7 @@
       }
     }
 
-    // â”€â”€ Step 3: Load Batches â”€â”€
+    // ── Step 3: Load Batches ──
     async function loadBatches(autoSelectId = null) {
       unlockSection('sec-batch');
       const container = document.getElementById('list-batch');
@@ -897,7 +897,7 @@
       }
     }
 
-    // â”€â”€ Step 4: Load Students â”€â”€
+    // ── Step 4: Load Students ──
     async function loadStudents(autoSelectId = null) {
       unlockSection('sec-student');
       const container = document.getElementById('list-student');
@@ -922,7 +922,7 @@
       }
     }
 
-    // â”€â”€ Reset cascade from a given step downward â”€â”€
+    // ── Reset cascade from a given step downward ──
     function resetFrom(from) {
       const order = ['class', 'batch', 'student', 'pin'];
       const idx = order.indexOf(from);
@@ -945,7 +945,7 @@
       document.getElementById('login-btn-text').textContent = 'Sign In';
     }
 
-    // â”€â”€ Change buttons â”€â”€
+    // ── Change buttons ──
     document.getElementById('change-program-btn').addEventListener('click', () => {
       reopenSection('sec-program');
       resetFrom('class');
@@ -963,7 +963,7 @@
       resetFrom('pin');
     });
 
-    // â”€â”€ PIN Logic â”€â”€
+    // ── PIN Logic ──
     const pinInputs = [0,1,2,3].map(i => document.getElementById(`pin-${i}`));
     const loginBtn = document.getElementById('login-btn');
 
@@ -1084,7 +1084,7 @@
       setTimeout(() => document.getElementById('pin-0').focus(), 300);
     }
 
-    // â”€â”€ Init â”€â”€
+    // ── Init ──
     restoreSavedLogin();
 
   </script>

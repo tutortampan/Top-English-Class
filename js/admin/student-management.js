@@ -1,13 +1,15 @@
-import { adminFetchAll, formatStudentName, cleanStudentName, adminSoftDelete, clearAdminCache } from '../api.js?v=4.7.0';
-import { getGrade, showToast } from '../app.js?v=4.7.0';
-import { DataGrid } from './datagrid.js?v=4.7.0';
+import { adminFetchAll, formatStudentName, cleanStudentName, adminSoftDelete, clearAdminCache, adminInsert, adminUpdate } from '../api.js?v=4.7.4';
+import { getSupabase } from '../supabase.js?v=4.7.4';
+import { getGrade, showToast } from '../app.js?v=4.7.4';
+import { processAndCompressAvatar, getBustedAvatarUrl } from '../utils/avatar-engine.js?v=4.7.4';
+import { DataGrid } from './datagrid.js?v=4.7.4';
 
 let studentGrid = null;
 
 export async function renderStudents(area) {
   const [rawData, allAttempts, allLevels] = await Promise.all([
-    adminFetchAll('students', '*, programs!program_id(name, is_active), institutions!institution_id(name, is_active), batches!batch_id(name, is_active)'),
-    adminFetchAll('attempts'),
+    adminFetchAll('students', '*, programs!program_id(name, is_active), institutions!institution_id(name, is_active), batches!batch_id(name, is_active, current_level_id)'),
+    adminFetchAll('attempts', '*, assessments(assessment_type, title, class_id)'),
     adminFetchAll('levels')
   ]);
   const levelsMap = new Map();
@@ -33,7 +35,7 @@ export async function renderStudents(area) {
     return true;
   }).map(s => {
     const studentAttempts = allAttempts.filter(a => a.student_id === s.id);
-    const completedAssessmentsCount = new Set(studentAttempts.filter(a => a.status === 'SUBMITTED').map(a => a.Assessment_id)).size;
+    const completedAssessmentsCount = new Set(studentAttempts.filter(a => a.status === 'SUBMITTED').map(a => a.assessment_id || a.Assessment_id)).size;
     const latestAttempt = studentAttempts.sort((a,b) => new Date(b.created_at) - new Date(a.created_at))[0];
     
     // Overall logic from old app.js
@@ -71,6 +73,19 @@ export async function renderStudents(area) {
       }
     }
 
+    // Determine remediation pending
+    const remediationPending = studentAttempts
+      .filter(a => a.status === 'SUBMITTED' && a.assessments?.assessment_type === 'EXAM')
+      .some(a => {
+        if (!a.max_score) return false;
+        const pct = Math.round((a.total_score / a.max_score) * 100);
+        return pct < 60 && !a.is_remedial_unlocked;
+      });
+
+    const batchLevelId = s.batches?.current_level_id;
+    const batchLevel = batchLevelId ? levelsMap.get(batchLevelId) : null;
+    const levelName = batchLevel ? batchLevel.name : '—';
+
     return {
       ...s,
       displayName: cleanStudentName(s.name),
@@ -79,12 +94,14 @@ export async function renderStudents(area) {
       instName: s.institutions?.name || 'N/A',
       progName: s.programs?.name || 'N/A',
       batchName: s.batches?.name || '-',
+      levelName,
       pinDisplay: s.pin || 'NOT SET',
       completedAssessments: completedAssessmentsCount,
       latestActivity: latestAttempt ? new Date(latestAttempt.created_at).toLocaleDateString() : 'Never',
       overallScoreStr,
       globalGrade,
-      overallColor
+      overallColor,
+      remediationPending
     };
   });
 
@@ -93,10 +110,24 @@ export async function renderStudents(area) {
     ? gridData.filter(s => s.batch_id === window._filterBatchId)
     : gridData;
 
+  const remediationPendingCount = filteredGridData.filter(s => s.remediationPending).length;
+
+  // Update sidebar badge
+  const rosterNavBtn = document.querySelector('.admin-nav-item[data-sub="students"]');
+  if (rosterNavBtn) {
+    const existingBadge = rosterNavBtn.querySelector('.remediation-sidebar-badge');
+    if (existingBadge) existingBadge.remove();
+    if (remediationPendingCount > 0) {
+      rosterNavBtn.insertAdjacentHTML('beforeend', `<span class="remediation-sidebar-badge badge badge-warning" style="margin-left:auto;font-size:0.7rem;padding:0.1rem 0.3rem;">${remediationPendingCount}</span>`);
+    }
+  }
+
   area.innerHTML = `
     <div class="section-header">
       <div>
-        <h2 class="section-title">Students <span class="count-chip">${filteredGridData.length} Active</span></h2>
+        <h2 class="section-title">Students <span class="count-chip">${filteredGridData.length} Active</span>
+        ${remediationPendingCount > 0 ? `<span class="badge badge-warning" style="margin-left:8px; font-size: 0.9rem;">⚠️ ${remediationPendingCount} Awaiting Remediation</span>` : ''}
+        </h2>
         <p class="section-subtitle">Manage enrolled students with Batch, Overall Score & Global Grade</p>
       </div>
       <div class="d-flex gap-2">
@@ -155,31 +186,38 @@ export async function renderStudents(area) {
   const exportBtn = document.getElementById('students-export-btn');
   if (exportBtn) {
     exportBtn.onclick = () => {
-      if (!students || !students.length) {
+      if (!filteredGridData || !filteredGridData.length) {
         showToast('No students to export.', 'info');
         return;
       }
       
-      const headers = ['Student Name', 'Program', 'Class', 'PIN', 'Status'];
-      const rows = students.map(s => [
-        s.display_name || s.name || '',
-        s.program_name || '',
-        s.class_name || '',
-        s.personal_pin || '',
-        s.is_active ? 'Active' : 'Inactive'
-      ]);
+      const headers = ['Student Name', 'Institution', 'Program', 'Batch', 'Current Level', 'Assessment Type', 'Score (%)', 'Status', 'Remediation Granted'];
+      const rows = filteredGridData.map(s => {
+        return {
+          'Student Name': s.displayName || s.name || '—',
+          'Institution': s.instName || '—',
+          'Program': s.progName || '—',
+          'Batch': s.batchName || '—',
+          'Current Level': s.level_id ? (levelsMap.get(s.level_id)?.name || '—') : '—',
+          'Assessment Type': s.remediationPending ? 'EXAM' : '—',
+          'Score (%)': s.overallScoreStr || '—',
+          'Status': s.is_active ? 'Active' : 'Inactive',
+          'Remediation Granted': s.remediationPending ? 'No' : (s.overallScoreStr !== '—' ? 'Yes/NA' : '—')
+        };
+      });
       
-      let csvContent = "data:text/csv;charset=utf-8," 
-        + headers.join(",") + "\\n" 
-        + rows.map(e => e.join(",")).join("\\n");
-        
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "students_export.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      try {
+        const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+        ws['!cols'] = [
+          { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 15 }
+        ];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Gradebook");
+        XLSX.writeFile(wb, "Gradebook_Export.xlsx");
+      } catch (err) {
+        console.error("Export error:", err);
+        showToast('Export failed. Make sure the XLSX library is loaded.', 'error');
+      }
     };
   }
   // Initialize DataGrid
@@ -281,7 +319,7 @@ export async function renderStudents(area) {
         btn.textContent = 'Saving...';
         btn.disabled = true;
 
-        const sb = (await import('../supabase.js?v=4.7.0')).getSupabase ? await (await import('../supabase.js?v=4.7.0')).getSupabase() : null;
+        const sb = (await import('../supabase.js?v=4.7.4')).getSupabase ? await (await import('../supabase.js?v=4.7.4')).getSupabase() : null;
         if (!sb) { showToast('Cannot connect.', 'error'); close(); return; }
 
         for (const id of selectedIds) {
@@ -296,7 +334,7 @@ export async function renderStudents(area) {
 
       overlay.querySelector('#bulk-activate').onclick = async () => {
         close();
-        const sb = (await import('../supabase.js?v=4.7.0')).getSupabase ? await (await import('../supabase.js?v=4.7.0')).getSupabase() : null;
+        const sb = (await import('../supabase.js?v=4.7.4')).getSupabase ? await (await import('../supabase.js?v=4.7.4')).getSupabase() : null;
         if (!sb) { showToast('Cannot connect.', 'error'); return; }
         for (const id of selectedIds) await sb.from('students').update({ is_active: true }).eq('id', id);
         showToast(`Activated ${selectedIds.length} students.`, 'success');
@@ -305,7 +343,7 @@ export async function renderStudents(area) {
 
       overlay.querySelector('#bulk-deactivate').onclick = async () => {
         close();
-        const sb = (await import('../supabase.js?v=4.7.0')).getSupabase ? await (await import('../supabase.js?v=4.7.0')).getSupabase() : null;
+        const sb = (await import('../supabase.js?v=4.7.4')).getSupabase ? await (await import('../supabase.js?v=4.7.4')).getSupabase() : null;
         if (!sb) { showToast('Cannot connect.', 'error'); return; }
         for (const id of selectedIds) await sb.from('students').update({ is_active: false }).eq('id', id);
         showToast(`Deactivated ${selectedIds.length} students.`, 'success');
@@ -337,6 +375,10 @@ export async function renderStudents(area) {
       };
     },
     onRowClick: (row) => {
+      if (row.remediationPending && typeof window.openStudentProfile === 'function') {
+        window.openStudentProfile(row.id);
+        return;
+      }
       if (typeof window.openStudentFullEdit === 'function') {
         window.openStudentFullEdit(row, () => renderStudents(area));
       } else if (typeof window.openStudentProfile === 'function') {
@@ -355,7 +397,10 @@ export async function renderStudents(area) {
             <div class="d-flex align-center gap-3">
               ${row.photo_url ? `<img src="${row.photo_url}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">` : `<div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:700;">${initial}</div>`}
               <div>
-                <div class="fw-600" style="color:var(--clr-text-1);">${row.displayName}</div>
+                <div class="fw-600" style="color:var(--clr-text-1);">
+                  ${row.displayName}
+                  ${row.remediationPending ? `<span class="badge badge-warning" style="white-space:nowrap;margin-left:8px;font-size:0.75rem;">⚠️ Remediation Pending</span>` : ''}
+                </div>
                 <div class="text-xs text-muted" style="font-family:monospace;">PIN: ${row.pinDisplay}</div>
               </div>
             </div>
@@ -403,6 +448,14 @@ export async function renderStudents(area) {
         sortable: true,
         align: 'center',
         render: (row) => `<span class="badge" style="background:rgba(255,255,255,0.1);color:#fff;">${row.batchName}</span>`
+      },
+      // 6.5 Level
+      {
+        key: 'levelName',
+        label: 'Level',
+        sortable: true,
+        align: 'center',
+        render: (row) => `<span class="badge badge-neutral" style="font-size:0.75rem;">${row.levelName}</span>`
       },
       // 7. Progress
       {
@@ -454,7 +507,7 @@ export async function renderStudents(area) {
           printBtn.innerHTML = '&#x1F5A8;'; // printer icon
           printBtn.onclick = (e) => {
             e.stopPropagation();
-            import('./dossier_export.js?v=4.7.0').then(m => {
+            import('./dossier_export.js?v=4.7.4').then(m => {
               const edu = [{period: '2026', institution: row.instName, details: 'Enrolled in ' + row.progName}];
               const skills = ['English Proficiency'];
               const studentAttempts = allAttempts.filter(a => a.student_id === row.id && a.status === 'SUBMITTED');
@@ -523,6 +576,314 @@ export function openStudentProfile(studentId, batchStudentIds = [], skipHistory 
   }
 }
 
+// ---- HELPERS ----
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
+// ---- FULL EDIT MODAL (#modal-student-full-edit) ----
+function buildFullEditModal() {
+  if (document.getElementById('modal-student-full-edit')) return;
+  const modal = document.createElement('div');
+  modal.id = 'modal-student-full-edit';
+  modal.className = 'modal-overlay hidden';
+  modal.style.zIndex = '9999';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:680px;width:95%;max-height:90vh;overflow-y:auto;background:var(--clr-surface-2, #0f172a);border:1px solid var(--clr-border);border-radius:12px;box-shadow:0 20px 40px rgba(0,0,0,0.6);">
+      <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;border-bottom:1px solid var(--clr-border);">
+        <h3 id="bfe-title" style="margin:0;font-size:1.15rem;font-weight:800;color:var(--clr-text-1);">Edit Student</h3>
+        <button class="btn-icon" id="bfe-close" title="Close" style="background:transparent;border:none;color:var(--clr-text-2);font-size:1.2rem;cursor:pointer;">&#10005;</button>
+      </div>
+      <div id="bfe-body" style="padding:1.5rem;"></div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:.75rem;padding:1rem 1.5rem;border-top:1px solid var(--clr-border);">
+        <button class="btn btn-ghost" id="bfe-cancel">Cancel</button>
+        <button class="btn btn-primary" id="bfe-save">Save Changes</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function handleGuardClose(modal, onDiscard) {
+  if (window.isProfileDirty) {
+    const saveIt = confirm("⚠️ You have unsaved profile changes.\\n\\nClick OK to SAVE and leave, or CANCEL to discard changes and leave.");
+    if (saveIt) {
+      document.getElementById('bfe-save')?.click();
+      return;
+    } else {
+      window.isProfileDirty = false;
+      if (typeof onDiscard === 'function') onDiscard();
+      modal.classList.add('hidden');
+      return;
+    }
+  }
+  modal.classList.add('hidden');
+}
+
+export async function openStudentFullEdit(student, onSaved) {
+  buildFullEditModal();
+  const modal   = document.getElementById('modal-student-full-edit');
+  const title   = document.getElementById('bfe-title');
+  const body    = document.getElementById('bfe-body');
+  let   saveBtn = document.getElementById('bfe-save');
+
+  // Reset dirty flag and check for local draft buffer
+  window.isProfileDirty = false;
+  const draftKey = 'topscore_student_draft_' + (student?.id || 'new');
+  let draftData = null;
+  try {
+    const rawDraft = localStorage.getItem(draftKey);
+    if (rawDraft) draftData = JSON.parse(rawDraft);
+  } catch (e) { /* ignore */ }
+
+  title.textContent = student ? ('Edit — ' + (student.name || 'Student')) : 'Add New Student';
+
+  // Fetch data for dropdowns and level editing
+  let batches = [];
+  let classes = [];
+  let levels = [];
+  let studentProgress = [];
+  try {
+    const [bRes, cRes, lRes, pRes] = await Promise.all([
+      adminFetchAll('batches'),
+      adminFetchAll('classes'),
+      adminFetchAll('levels'),
+      adminFetchAll('progress')
+    ]);
+    batches = bRes || [];
+    classes = cRes || [];
+    levels = lRes || [];
+    if (student?.id) {
+      studentProgress = (pRes || []).filter(p => p.student_id === student.id);
+    }
+  } catch (err) {
+    console.warn('Could not load lookup data for edit modal:', err);
+  }
+
+  const initialName = draftData?.name ?? (student?.name || '');
+  const initialGender = draftData?.gender ?? (student?.gender || '');
+  const initialBirth = draftData?.birth_date ?? (student?.birth_date || '');
+  const initialPin = draftData?.pin ?? (student?.pin || '1234');
+  const initialBatchId = draftData?.batch_id ?? (student?.batch_id || '');
+  const initialActive = draftData?.is_active ?? (student?.is_active !== false);
+  let currentPhotoUrl = draftData?.photo_url ?? (student?.photo_url || '');
+
+  body.innerHTML = `
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+      <!-- 3:4 Avatar Center-Crop Upload (Left) -->
+      <div style="flex:1;min-width:140px;max-width:180px;text-align:center;">
+        <label class="form-label" style="display:block;margin-bottom:0.5rem;font-size:0.8rem;text-transform:uppercase;color:var(--clr-text-3);">3:4 Avatar</label>
+        <div style="width:120px;height:160px;margin:0 auto;border-radius:8px;overflow:hidden;border:2px solid var(--clr-border);background:rgba(0,0,0,0.25);position:relative;">
+          <img id="bfe-avatar-preview" src="${getBustedAvatarUrl(currentPhotoUrl)}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;" />
+          <div id="bfe-avatar-loading" class="hidden" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;">
+            <div class="spinner" style="width:20px;height:20px;"></div>
+          </div>
+        </div>
+        <div style="margin-top:0.75rem;">
+          <label for="bfe-avatar-file" class="btn btn-secondary btn-xs" style="cursor:pointer;font-size:0.75rem;">
+            📸 Upload (3:4)
+          </label>
+          <input type="file" id="bfe-avatar-file" accept="image/*" style="display:none;" />
+          <div class="text-xs text-muted mt-1" style="font-size:0.7rem;">240x320 WebP &bull; 35% Top Bias</div>
+        </div>
+      </div>
+
+      <!-- Main Fields (Right) -->
+      <div style="flex:2.5;min-width:260px;display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Full Name *</label>
+          <input class="form-control" id="bfe-name" value="${escHtml(initialName)}" placeholder="e.g. Johnathan Doe">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Honorific &amp; Gender</label>
+          <select class="form-control" id="bfe-gender">
+            <option value="">-- Unassigned --</option>
+            <option value="male" ${initialGender === 'male' ? 'selected' : ''}>Mr. (Male)</option>
+            <option value="female" ${initialGender === 'female' ? 'selected' : ''}>Miss (Female)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Date of Birth</label>
+          <input type="date" class="form-control" id="bfe-birth" value="${escHtml(initialBirth)}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Assigned Batch</label>
+          <select class="form-control" id="bfe-batch">
+            <option value="">-- No Batch Assigned --</option>
+            ${batches.map(b => `<option value="${b.id}" ${b.id === initialBatchId ? 'selected' : ''}>${escHtml(b.name)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Personal PIN (Reset)</label>
+          <input type="text" class="form-control" id="bfe-pin" value="${escHtml(initialPin)}" placeholder="1234" autocomplete="new-password">
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Account Status</label>
+          <select class="form-control" id="bfe-active">
+            <option value="true"  ${initialActive ? 'selected' : ''}>Active</option>
+            <option value="false" ${!initialActive  ? 'selected' : ''}>Inactive / Suspended</option>
+          </select>
+        </div>
+
+        ${(() => {
+          if (!classes || classes.length === 0) return '';
+          let html = `
+            <div style="grid-column:1/-1; margin-top:0.5rem; border-top:1px solid var(--clr-border); padding-top:1rem;">
+              <h4 style="margin:0 0 0.75rem 0; font-size:0.95rem; display:flex; justify-content:space-between; align-items:center;">
+                <span>&#128200; Manual Level Assignment</span>
+                <span class="badge badge-neutral" style="font-weight:normal;">Applies instantly upon save</span>
+              </h4>
+              <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:1rem; background:rgba(0,0,0,0.1); padding:1rem; border-radius:8px; border:1px solid var(--clr-border);">
+          `;
+          classes.forEach(cls => {
+            const prog = studentProgress.find(p => p.class_id === cls.id);
+            const currentLevelIndex = draftData?.progress?.[cls.id] ?? (prog ? prog.unlocked_level : 1);
+            let options = '';
+            levels.forEach((lvl, idx) => {
+              const lvlIdx = idx + 1;
+              options += `<option value="${lvlIdx}" ${lvlIdx == currentLevelIndex ? 'selected' : ''}>Level ${lvlIdx} - ${escHtml(lvl.name)}</option>`;
+            });
+            html += `
+              <div class="form-group mb-0">
+                <label class="form-label" style="font-size:0.75rem;">${escHtml(cls.name)}</label>
+                <select class="form-control bfe-class-progress" data-class-id="${cls.id}">
+                  ${options}
+                </select>
+              </div>
+            `;
+          });
+          html += `</div></div>`;
+          return html;
+        })()}
+      </div>
+    </div>
+  `;
+
+  // Write-Ahead Buffer & Dirty Tracking
+  const updateDraft = () => {
+    window.isProfileDirty = true;
+    const progressMap = {};
+    document.querySelectorAll('.bfe-class-progress').forEach(sel => {
+      progressMap[sel.getAttribute('data-class-id')] = parseInt(sel.value, 10);
+    });
+
+    const currentDraft = {
+      name: document.getElementById('bfe-name').value,
+      gender: document.getElementById('bfe-gender').value,
+      birth_date: document.getElementById('bfe-birth').value,
+      batch_id: document.getElementById('bfe-batch').value,
+      pin: document.getElementById('bfe-pin').value,
+      is_active: document.getElementById('bfe-active').value === 'true',
+      photo_url: currentPhotoUrl,
+      progress: progressMap
+    };
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(currentDraft));
+    } catch (e) { /* ignore */ }
+  };
+
+  ['bfe-name', 'bfe-gender', 'bfe-birth', 'bfe-batch', 'bfe-pin', 'bfe-active'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updateDraft);
+    document.getElementById(id)?.addEventListener('change', updateDraft);
+  });
+  document.querySelectorAll('.bfe-class-progress').forEach(sel => sel.addEventListener('change', updateDraft));
+
+  // Avatar Upload Listener (3:4 Center-Crop Engine)
+  const avatarFileInput = document.getElementById('bfe-avatar-file');
+  avatarFileInput?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const loading = document.getElementById('bfe-avatar-loading');
+    loading?.classList.remove('hidden');
+
+    try {
+      const dataUrl = await processAndCompressAvatar(file, 'student');
+      currentPhotoUrl = dataUrl;
+      document.getElementById('bfe-avatar-preview').src = dataUrl;
+      updateDraft();
+      showToast('Student avatar cropped to 3:4 WebP format.', 'success');
+    } catch (err) {
+      showToast('Avatar processing error: ' + err.message, 'error');
+    } finally {
+      loading?.classList.add('hidden');
+      avatarFileInput.value = '';
+    }
+  });
+
+  // Close & Cancel buttons with Unsaved Changes Guard
+  document.getElementById('bfe-close').onclick = () => handleGuardClose(modal, () => localStorage.removeItem(draftKey));
+  document.getElementById('bfe-cancel').onclick = () => handleGuardClose(modal, () => localStorage.removeItem(draftKey));
+
+  // Save Changes
+  const newSaveBtn = saveBtn.cloneNode(true);
+  saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+
+  newSaveBtn.onclick = async () => {
+    const name = document.getElementById('bfe-name').value.trim();
+    if (!name) { showToast('Student name is required.', 'error'); return; }
+
+    const payload = {
+      name,
+      gender:     document.getElementById('bfe-gender').value || null,
+      birth_date: document.getElementById('bfe-birth').value  || null,
+      batch_id:   document.getElementById('bfe-batch').value    || null,
+      is_active:  document.getElementById('bfe-active').value === 'true',
+      photo_url:  currentPhotoUrl || null,
+    };
+    const pinVal = document.getElementById('bfe-pin').value.trim();
+    if (pinVal) payload.pin = pinVal;
+
+    newSaveBtn.disabled = true;
+    newSaveBtn.textContent = 'Saving...';
+    try {
+      const sb = await getSupabase();
+      let finalStudentId = student?.id;
+      
+      if (finalStudentId) {
+        await adminUpdate('students', finalStudentId, payload);
+        showToast('Student updated successfully.', 'success');
+      } else {
+        const created = await adminInsert('students', payload);
+        finalStudentId = created.id;
+        showToast('Student created successfully.', 'success');
+      }
+
+      // Save manual progress assignments
+      const progressPayload = [];
+      document.querySelectorAll('.bfe-class-progress').forEach(sel => {
+        progressPayload.push({
+          student_id: finalStudentId,
+          class_id: sel.getAttribute('data-class-id'),
+          unlocked_level: parseInt(sel.value, 10)
+        });
+      });
+
+      if (progressPayload.length > 0) {
+        await sb.from('progress').upsert(progressPayload, { onConflict: 'student_id,class_id' });
+        clearAdminCache('progress');
+      }
+
+      window.isProfileDirty = false;
+      localStorage.removeItem(draftKey);
+      modal.classList.add('hidden');
+      if (typeof onSaved === 'function') onSaved();
+    } catch (err) {
+      showToast(err.message || 'Save failed.', 'error');
+    } finally {
+      newSaveBtn.disabled = false;
+      newSaveBtn.textContent = 'Save Changes';
+    }
+  };
+
+  modal.classList.remove('hidden');
+}
+
+// Expose globally
+window.openStudentFullEdit = openStudentFullEdit;
 
 

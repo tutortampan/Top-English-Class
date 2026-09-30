@@ -1,5 +1,5 @@
 -- ============================================================
--- TOP ENGLISH CLASS — Migration: Level System, Recalibrator & Exam Fixes
+-- TopsCore — Migration: Level System, Recalibrator & Exam Fixes
 -- Run this in the Supabase SQL Editor
 -- ============================================================
 

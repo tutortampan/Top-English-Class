@@ -1,5 +1,5 @@
 -- ============================================================
--- TOP ENGLISH CLASS — Supabase PostgreSQL Schema (V1 Setup)
+-- TopsCore — Supabase PostgreSQL Schema (V1 Setup)
 -- Run this in Supabase SQL Editor
 -- ============================================================
 
@@ -9,10 +9,15 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- ============================================================
 -- 0. CLEAN RESET (Drops previous tables)
 -- ============================================================
+DROP TABLE IF EXISTS professional_skills CASCADE;
+DROP TABLE IF EXISTS work_records CASCADE;
+DROP TABLE IF EXISTS user_professionals CASCADE;
 DROP TABLE IF EXISTS question_usage_history CASCADE;
-DROP TABLE IF EXISTS challenge_definition_questions CASCADE;
-DROP TABLE IF EXISTS challenge_definition_topics CASCADE;
-DROP TABLE IF EXISTS challenge_instances CASCADE;
+DROP TABLE IF EXISTS assignments CASCADE;
+
+DROP TABLE IF EXISTS assessment_questions CASCADE;
+DROP TABLE IF EXISTS assessment_topics CASCADE;
+DROP TABLE IF EXISTS assessments CASCADE;
 DROP TABLE IF EXISTS additional_members CASCADE;
 DROP TABLE IF EXISTS class_instances CASCADE;
 DROP TABLE IF EXISTS enrollments CASCADE;
@@ -21,6 +26,9 @@ DROP TABLE IF EXISTS topics CASCADE;
 DROP TABLE IF EXISTS question_types CASCADE;
 DROP TABLE IF EXISTS attempt_answers CASCADE;
 DROP TABLE IF EXISTS attempts CASCADE;
+DROP TABLE IF EXISTS challenge_definition_questions CASCADE;
+DROP TABLE IF EXISTS challenge_definition_topics CASCADE;
+DROP TABLE IF EXISTS challenge_instances CASCADE;
 DROP TABLE IF EXISTS challenge_definition_programs CASCADE;
 DROP TABLE IF EXISTS exam_programs CASCADE;
 DROP TABLE IF EXISTS challenge_definitions CASCADE;
@@ -28,6 +36,7 @@ DROP TABLE IF EXISTS exams CASCADE;
 DROP TABLE IF EXISTS students CASCADE;
 DROP TABLE IF EXISTS batches CASCADE;
 DROP TABLE IF EXISTS program_subjects CASCADE;
+DROP TABLE IF EXISTS levels CASCADE;
 DROP TABLE IF EXISTS classes CASCADE;
 DROP TABLE IF EXISTS programs CASCADE;
 DROP TABLE IF EXISTS institutions CASCADE;
@@ -66,6 +75,7 @@ CREATE TABLE programs (
 CREATE TABLE batches (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+  current_level_id UUID REFERENCES levels(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   enrollment_date DATE,
   actual_final_date DATE,
@@ -111,6 +121,15 @@ CREATE TABLE enrollments (
 -- ============================================================
 -- 2. CENTRALIZED CONTENT (QUESTION BANK)
 -- ============================================================
+
+-- LEVELS
+CREATE TABLE levels (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  level_number INTEGER NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 -- CLASSES (Global)
 CREATE TABLE classes (
@@ -185,26 +204,22 @@ CREATE TABLE questions (
 );
 
 -- ============================================================
--- 3. CHALLENGE DEFINITIONS & CHALLENGE INSTANCES
+-- 3. ASSESSMENTS & ASSIGNMENTS
 -- ============================================================
 
--- CHALLENGE DEFINITIONS (Evaluations & Exams)
-CREATE TABLE challenge_definitions (
+-- ASSESSMENTS (Evaluations & Exams)
+CREATE TABLE assessments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  institution_id UUID REFERENCES institutions(id),
-  class_id UUID REFERENCES classes(id),
-  challenge_definition_type TEXT NOT NULL DEFAULT 'EVALUATION' CHECK (challenge_definition_type IN ('EVALUATION', 'EXAM')),
-  title TEXT NOT NULL,
+  class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+  level_id UUID REFERENCES levels(id) ON DELETE SET NULL,
+  assessment_type TEXT DEFAULT 'EVALUATION',
+  title TEXT,
   description TEXT,
-  status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'PUBLISHED', 'ACTIVE', 'CLOSED', 'ARCHIVED')),
-  question_order TEXT NOT NULL DEFAULT 'RANDOM' CHECK (question_order IN ('RANDOM', 'SEQUENTIAL')),
+  status TEXT DEFAULT 'DRAFT',
   availability_start TIMESTAMPTZ,
   availability_end TIMESTAMPTZ,
-  working_duration_minutes INT NOT NULL DEFAULT 60,
-  prerequisite_assessment_id UUID REFERENCES challenge_definitions(id) ON DELETE SET NULL,
-  prerequisite_min_score NUMERIC(5,2) DEFAULT 60.0,
-  retake_allowed BOOLEAN NOT NULL DEFAULT TRUE,
-  max_attempts INT,
+  working_duration_minutes INT DEFAULT 60,
+  prerequisite_assessment_id UUID REFERENCES assessments(id) ON DELETE SET NULL,
   created_by TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -212,32 +227,32 @@ CREATE TABLE challenge_definitions (
 );
 
 -- ASSESSMENT_TOPICS (Topics included in Assessment)
-CREATE TABLE challenge_definition_topics (
+CREATE TABLE assessment_topics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  challenge_definition_id UUID NOT NULL REFERENCES challenge_definitions(id) ON DELETE CASCADE,
+  assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
   topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (challenge_definition_id, topic_id)
+  UNIQUE (assessment_id, topic_id)
 );
 
 -- ASSESSMENT_QUESTIONS (Frozen snapshot when Published)
-CREATE TABLE challenge_definition_questions (
+CREATE TABLE assessment_questions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  challenge_definition_id UUID NOT NULL REFERENCES challenge_definitions(id) ON DELETE CASCADE,
-  question_id UUID REFERENCES questions(id) ON DELETE SET NULL,
+  assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+  question_id UUID,
   question_text_snapshot TEXT NOT NULL,
   accepted_answers_snapshot JSONB NOT NULL DEFAULT '[]'::jsonb,
   topic_snapshot TEXT NOT NULL,
-  question_type_snapshot TEXT,
+  word_type_snapshot TEXT,
   display_order INT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- CHALLENGE INSTANCES (Access Control: Batch or Student)
-CREATE TABLE challenge_instances (
+-- ASSIGNMENTS (Access Control: Batch or Student)
+CREATE TABLE assignments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  challenge_definition_id UUID NOT NULL REFERENCES challenge_definitions(id) ON DELETE CASCADE,
-  challenge_instance_type TEXT NOT NULL CHECK (challenge_instance_type IN ('BATCH', 'STUDENT')),
+  assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+  assignment_type TEXT NOT NULL CHECK (assignment_type IN ('BATCH', 'STUDENT')),
   batch_id UUID REFERENCES batches(id) ON DELETE CASCADE,
   student_id UUID REFERENCES students(id) ON DELETE CASCADE,
   availability_start TIMESTAMPTZ,
@@ -247,17 +262,9 @@ CREATE TABLE challenge_instances (
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT chk_assignment_target CHECK (
-    (challenge_instance_type = 'BATCH' AND batch_id IS NOT NULL AND student_id IS NULL) OR
-    (challenge_instance_type = 'STUDENT' AND student_id IS NOT NULL AND batch_id IS NULL)
+    (assignment_type = 'BATCH' AND batch_id IS NOT NULL AND student_id IS NULL) OR
+    (assignment_type = 'STUDENT' AND student_id IS NOT NULL AND batch_id IS NULL)
   )
-);
-
--- ASSESSMENT_PROGRAMS (Backwards Compatibility)
-CREATE TABLE challenge_definition_programs (
-  challenge_definition_id UUID NOT NULL REFERENCES challenge_definitions(id) ON DELETE CASCADE,
-  program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (challenge_definition_id, program_id)
 );
 
 -- ============================================================
@@ -268,7 +275,7 @@ CREATE TABLE challenge_definition_programs (
 CREATE TABLE attempts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-  challenge_definition_id UUID NOT NULL REFERENCES challenge_definitions(id) ON DELETE CASCADE,
+  assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
   attempt_number INT NOT NULL DEFAULT 1,
   started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at TIMESTAMPTZ NOT NULL,
@@ -309,7 +316,7 @@ CREATE TABLE attempt_answers (
 CREATE TABLE question_usage_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   question_id UUID REFERENCES questions(id) ON DELETE SET NULL,
-  challenge_definition_id UUID REFERENCES challenge_definitions(id) ON DELETE SET NULL,
+  assessment_id UUID REFERENCES assessments(id) ON DELETE SET NULL,
   attempt_id UUID REFERENCES attempts(id) ON DELETE SET NULL,
   student_id UUID REFERENCES students(id) ON DELETE SET NULL,
   used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -363,7 +370,7 @@ CREATE TRIGGER trg_class_instances_updated_at BEFORE UPDATE ON class_instances F
 CREATE TRIGGER trg_subjects_updated_at BEFORE UPDATE ON classes FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_topics_updated_at BEFORE UPDATE ON topics FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_questions_updated_at BEFORE UPDATE ON questions FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER trg_assessments_updated_at BEFORE UPDATE ON challenge_definitions FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER trg_assessments_updated_at BEFORE UPDATE ON assessments FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_attempts_updated_at BEFORE UPDATE ON attempts FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_attempt_answers_updated_at BEFORE UPDATE ON attempt_answers FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
@@ -377,15 +384,15 @@ ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE class_instances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE additional_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE levels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE question_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE challenge_definitions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE challenge_definition_topics ENABLE ROW LEVEL SECURITY;
-ALTER TABLE challenge_definition_questions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE challenge_instances ENABLE ROW LEVEL SECURITY;
-ALTER TABLE challenge_definition_programs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE assessments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE assessment_topics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE assessment_questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attempt_answers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE question_usage_history ENABLE ROW LEVEL SECURITY;
@@ -400,15 +407,15 @@ CREATE POLICY "service_role_all_students" ON students FOR ALL TO service_role US
 CREATE POLICY "service_role_all_enrollments" ON enrollments FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_class_instances" ON class_instances FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_additional_members" ON additional_members FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "service_role_all_levels" ON levels FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_subjects" ON classes FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_topics" ON topics FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_word_types" ON question_types FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_questions" ON questions FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "service_role_all_assessments" ON challenge_definitions FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "service_role_all_assessment_topics" ON challenge_definition_topics FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "service_role_all_assessment_questions" ON challenge_definition_questions FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "service_role_all_assignments" ON challenge_instances FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "service_role_all_assessment_programs" ON challenge_definition_programs FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "service_role_all_assessments" ON assessments FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "service_role_all_assessment_topics" ON assessment_topics FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "service_role_all_assessment_questions" ON assessment_questions FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "service_role_all_assignments" ON assignments FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_attempts" ON attempts FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_attempt_answers" ON attempt_answers FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "service_role_all_question_usage_history" ON question_usage_history FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
@@ -423,15 +430,15 @@ CREATE POLICY "admin_all_students" ON students FOR ALL TO anon USING (TRUE) WITH
 CREATE POLICY "admin_all_enrollments" ON enrollments FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_class_instances" ON class_instances FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_additional_members" ON additional_members FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "admin_all_levels" ON levels FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_subjects" ON classes FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_topics" ON topics FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_word_types" ON question_types FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_questions" ON questions FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "admin_all_assessments" ON challenge_definitions FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "admin_all_assessment_topics" ON challenge_definition_topics FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "admin_all_assessment_questions" ON challenge_definition_questions FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "admin_all_assignments" ON challenge_instances FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "admin_all_assessment_programs" ON challenge_definition_programs FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "admin_all_assessments" ON assessments FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "admin_all_assessment_topics" ON assessment_topics FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "admin_all_assessment_questions" ON assessment_questions FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "admin_all_assignments" ON assignments FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_attempts" ON attempts FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_attempt_answers" ON attempt_answers FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 CREATE POLICY "admin_all_question_usage_history" ON question_usage_history FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
@@ -439,10 +446,30 @@ CREATE POLICY "admin_all_site_settings" ON site_settings FOR ALL TO anon USING (
 CREATE POLICY "admin_all_audit_logs" ON audit_logs FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 
 -- ============================================================
+-- PROGRESS (Student Level Tracking per Class)
+-- ============================================================
+CREATE TABLE progress (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  class_id UUID NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  unlocked_level INT NOT NULL DEFAULT 1,
+  highest_score NUMERIC(5,2) DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(student_id, class_id)
+);
+
+CREATE TRIGGER trg_progress_updated_at BEFORE UPDATE ON progress FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+ALTER TABLE progress ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "admin_all_progress" ON progress FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "service_role_all_progress" ON progress FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+
+-- ============================================================
 -- 8. DEFAULT SEED DATA
 -- ============================================================
 INSERT INTO site_settings (key, value) VALUES
-  ('site_name', 'TOP ENGLISH CLASS'),
+  ('site_name', 'TopsCore'),
   ('site_theme', 'dark'),
   ('login_background_url', NULL),
   ('passing_threshold', '60');
@@ -463,6 +490,14 @@ INSERT INTO question_types (name, is_system, is_active) VALUES
   ('Expression', TRUE, TRUE),
   ('Idiom', TRUE, TRUE)
 ON CONFLICT (name) DO NOTHING;
+
+-- Core Levels
+INSERT INTO levels (level_number, name, description) VALUES
+  (0, 'All Levels', 'Placement Test / Daily Drill / Comprehensive Pool'),
+  (1, '1st Level', 'Basic and Foundational'),
+  (2, '2nd Level', 'Intermediate'),
+  (3, '3rd Level', 'Advanced')
+ON CONFLICT (level_number) DO NOTHING;
 
 -- Global Subjects
 INSERT INTO classes (id, name, code, status, is_active) VALUES
@@ -561,3 +596,4 @@ FOR EACH ROW
 EXECUTE FUNCTION trg_student_batch_change();
 
 ALTER TABLE students ADD COLUMN IF NOT EXISTS education TEXT;
+

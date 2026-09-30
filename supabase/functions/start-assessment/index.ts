@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 // TOP ENGLISH CLASS — Edge Function: start-Assessment (Assessment V1)
 // Server-authoritative assessment start. Creates or resumes an attempt.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -222,17 +222,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 7. Check Attempt Limits
-    if (assessment.max_attempts) {
-      const { count } = await supabase
-        .from("attempts")
-        .select("*", { count: "exact", head: true })
-        .eq("student_id", student_id)
-        .or(`assessment_id.eq.${assessment_id},Assessment_id.eq.${assessment_id}`)
-        .in("status", ["submitted", "auto_submitted", "evaluated", "SUBMITTED", "AUTO_SUBMITTED", "EVALUATED"]);
+    // 7. Check Attempt Limits & Remedial Cap
+    const { data: pastAttemptsData } = await supabase
+      .from("attempts")
+      .select("id, status, is_remedial_unlocked, created_at")
+      .eq("student_id", student_id)
+      .or(`assessment_id.eq.${assessment_id},Assessment_id.eq.${assessment_id}`)
+      .in("status", ["submitted", "auto_submitted", "evaluated", "SUBMITTED", "AUTO_SUBMITTED", "EVALUATED"])
+      .order("created_at", { ascending: false });
 
-      if ((count || 0) >= assessment.max_attempts) {
-        return new Response(JSON.stringify({ error: "Maximum attempts reached for this assessment." }), {
+    const attemptCount = pastAttemptsData?.length || 0;
+
+    if (assessment.max_attempts && attemptCount >= assessment.max_attempts) {
+      return new Response(JSON.stringify({ error: "Maximum attempts reached for this assessment." }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    if (assessment.assessment_type === 'EXAM' && attemptCount >= 1) {
+      const mostRecentAttempt = pastAttemptsData?.[0];
+      if (!mostRecentAttempt?.is_remedial_unlocked) {
+        return new Response(JSON.stringify({ error: "Official Exam attempt completed. Remedial retake requires teacher authorization." }), {
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
@@ -276,8 +286,20 @@ Deno.serve(async (req) => {
     }
 
     // 9. Create New Attempt
-    const durationMinutes = assessment.working_duration_minutes || assessment.time_limit_minutes || 60;
-    const expiresAt = new Date(now.getTime() + durationMinutes * 60 * 1000);
+    let durationMinutes = assessment.working_duration_minutes || assessment.time_limit_minutes || 60;
+    let expiresAt = new Date(now.getTime() + durationMinutes * 60 * 1000);
+
+    // Hard Deadline for EXAM and QUIZ types
+    if (assessment.assessment_type === 'EXAM' || assessment.assessment_type === 'QUIZ') {
+      if (effectiveEnd) {
+        expiresAt = new Date(effectiveEnd);
+      }
+      durationMinutes = 0; // Not duration-based
+    } else if (assessment.assessment_type === 'TASK') {
+      // TASKS have no duration limit; set expiry 10 years in future
+      expiresAt = new Date(now.getTime() + 10 * 365 * 24 * 3600 * 1000);
+      durationMinutes = 0;
+    }
 
     const attemptPayload: any = {
       student_id,
@@ -291,7 +313,7 @@ Deno.serve(async (req) => {
     // Include both column variants for seamless database schema compatibility
     attemptPayload.assessment_id = assessment_id;
     attemptPayload.expires_at = expiresAt.toISOString();
-    attemptPayload.expected_end_at = expiresAt.toISOString();
+
 
     const { data: newAttempt, error: attemptErr } = await supabase
       .from("attempts")
@@ -309,7 +331,9 @@ Deno.serve(async (req) => {
         question_text: sq.question_text_snapshot,
         word_type: sq.word_type_snapshot,
         topic: sq.topic_snapshot,
-        display_order: sq.display_order
+        display_order: sq.display_order,
+        answer_type: sq.answer_type || 'written',
+        options_snapshot: sq.options_snapshot || []
       },
       topic_snapshot: sq.topic_snapshot,
       word_type_snapshot: sq.word_type_snapshot,
@@ -348,3 +372,4 @@ Deno.serve(async (req) => {
     });
   }
 });
+

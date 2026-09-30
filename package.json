@@ -9,5 +9,8 @@
     "@playwright/test": "^1.42.1",
     "@types/node": "^20.11.24",
     "serve": "^14.2.1"
+  },
+  "dependencies": {
+    "puppeteer": "^25.12.0"
   }
 }

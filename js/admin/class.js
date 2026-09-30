@@ -13,9 +13,9 @@ import {
   updateCentralQuestion,
   deleteCentralQuestion,
   fetchAssessmentDefinitions,
-  publishChallengeDefinition,
+  publishAssessmentDefinition,
   fetchAssessmentInstances,
-  createChallengeInstance,
+  createAssessmentInstance,
   adminFetchAll,
   adminSoftDelete,
   clearAdminCache,
@@ -409,14 +409,19 @@ export async function renderWordTypes(area) {
 }
 
 // ============================================================
-// 3. CENTRAL QUESTION BANK
+// 3. QUESTION BANK
 // ============================================================
 export async function renderCentralQuestionBank(area) {
   showLoading();
+  const preFilterClassId = window._filterClassId || null;
+  const preFilterClassName = window._filterClassName || null;
+  // Consume the filter so it doesn't persist across navigations
+  window._filterClassId = null;
+  window._filterClassName = null;
   try {
     const [questions, topics, Classes, wordTypes] = await Promise.all([
-      fetchCentralQuestions(),
-      fetchTopics(),
+      fetchCentralQuestions(preFilterClassId ? { class_id: preFilterClassId } : {}),
+      fetchTopics(preFilterClassId || undefined),
       fetchGlobalClasses(),
       fetchWordTypes()
     ]);
@@ -425,14 +430,21 @@ export async function renderCentralQuestionBank(area) {
     area.innerHTML = `
       <div class="section-header d-flex justify-between align-center flex-wrap gap-3 mb-4">
         <div>
-          <h2 class="section-title text-gradient">Central Question Bank</h2>
-          <p class="section-subtitle">Global repository of questions organized by Topic and Word Type</p>
+          <h2 class="section-title text-gradient">Question Bank${preFilterClassName ? ` — ${escapeHtml(preFilterClassName)}` : ''}</h2>
+          <p class="section-subtitle">${preFilterClassName ? `Questions scoped to class: ${escapeHtml(preFilterClassName)}` : 'Global repository of questions organized by Topic and Word Type'}</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
           <button class="btn btn-primary btn-sm" id="btn-add-question">+ Add New Question</button>
           <button class="btn btn-secondary btn-sm" onclick="window.loadSection('import-questions')">&#128229; Import Excel</button>
         </div>
       </div>
+
+      ${preFilterClassName ? `
+        <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);color:#a5b4fc;font-size:0.85rem;">
+          <span>&#128209; Scoped to Class: <strong>${escapeHtml(preFilterClassName)}</strong></span>
+          <button class="btn btn-ghost btn-xs" onclick="window.loadSection('questions')" style="text-decoration:underline;color:#a5b4fc;">Show All Classes</button>
+        </div>
+      ` : ''}
 
       ${window._filterTopicId ? `
         <div class="mb-3 p-2 rounded d-flex align-center justify-between" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:0.85rem;">
@@ -546,7 +558,7 @@ export async function renderCentralQuestionBank(area) {
         }
       } else if (delBtn) {
         const qId = delBtn.dataset.id;
-        if (confirm('Delete this question from the central question bank?')) {
+        if (confirm('Delete this question from the question bank?')) {
           showLoading();
           try {
             await deleteCentralQuestion(qId);
@@ -780,7 +792,7 @@ export async function renderAssignments(area) {
         if (confirm('Revoke this assessment assignment?')) {
           showLoading();
           try {
-            await adminSoftDelete('assessment_instances', id);
+            await adminSoftDelete('assignments', id);
             showToast('Assignment revoked.', 'success');
             await renderAssignments(area);
           } catch (err) {
@@ -803,9 +815,9 @@ function renderAssignmentRows(list) {
     return `<tr><td colspan="6" class="text-center p-4 text-muted">No active assignments. Click "+ New Assignment" to assign an assessment.</td></tr>`;
   }
   return list.map(a => {
-    const targetName = a.class_instances?.batches?.name
-      ? `&#128101; Batch: ${escapeHtml(a.class_instances.batches.name)} (${escapeHtml(a.class_instances.classes?.name || 'Class')})`
-      : `&#128101; Unknown Target`;
+    const targetName = a.batches?.name
+      ? `&#128101; Batch: ${escapeHtml(a.batches.name)}`
+      : (a.students?.name ? `&#128104;&#8205;&#127891; Student: ${escapeHtml(a.students.name)}` : `&#128101; Unknown Target`);
 
     const windowText = (a.availability_start || a.availability_end)
       ? `${a.availability_start ? new Date(a.availability_start).toLocaleDateString() : 'Now'} &rarr; ${a.availability_end ? new Date(a.availability_end).toLocaleDateString() : 'Forever'}`
@@ -814,7 +826,7 @@ function renderAssignmentRows(list) {
     return `
       <tr>
         <td><strong>${escapeHtml(a.title_override || a.assessments?.title || 'Assessment')}</strong></td>
-        <td><span class="badge badge-info">${escapeHtml(a.assessments?.category || 'EVALUATION')}</span></td>
+        <td><span class="badge badge-info">${escapeHtml(a.assessments?.assessment_type || 'EVALUATION')}</span></td>
         <td>${targetName}</td>
         <td><small>${windowText}</small></td>
         <td><span class="badge badge-success">${escapeHtml(a.status || 'DRAFT')}</span></td>
@@ -893,12 +905,13 @@ function openAssignmentModal({ definitions, batches, classInsts, classes }, onSa
 
     showLoading();
     try {
-      await createChallengeInstance({
-        class_instance_id: ci.id,
+      await createAssessmentInstance({
+        batch_id: batchId,
         assessment_id: definitionId,
+        assignment_type: 'BATCH',
         availability_start: startVal ? new Date(startVal).toISOString() : null,
         availability_end: endVal ? new Date(endVal).toISOString() : null,
-        status: 'READY'
+        status: 'active'
       });
       showToast('Assignment created.', 'success');
       close();
@@ -912,7 +925,7 @@ function openAssignmentModal({ definitions, batches, classInsts, classes }, onSa
 }
 
 // ============================================================
-// 5. CENTRAL QUESTION BANK EXCEL IMPORT (V1 Safe Workflow)
+// 5. QUESTION BANK EXCEL IMPORT (V1 Safe Workflow)
 // ============================================================
 export async function renderCentralQuestionImport(area) {
   showLoading('Loading import environment...');
@@ -1203,7 +1216,7 @@ Existing historical attempt records will NOT be modified.`;
 
       if (!confirm(confirmMsg)) return;
 
-      showLoading('Committing import to Central Question Bank...');
+      showLoading('Committing import to Question Bank...');
       try {
         const sb = await (await import('../supabase.js')).getSupabase();
 
@@ -1428,8 +1441,8 @@ function toLevelLetter(num) {
 }
 
 export async function renderResults(area) {
-  const [rawData, allPrograms, allClasses, allBatches] = await Promise.all([
-    adminFetchAll('attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), assessment_instances(assessments(id, title, category)), attempt_answers(id, evaluation_result, score)'),
+  const [rawData, allInstitutions, allPrograms, allBatches] = await Promise.all([
+    adminFetchAll('attempts', '*, students(name, gender, batch_id, batches(name), program_id, programs(name, institution_id, institutions(name))), assessments(id, title, assessment_type), attempt_answers(id, evaluation_result, score)'),
     adminFetchAll('institutions'),
     adminFetchAll('programs'),
     adminFetchAll('batches')
@@ -1439,7 +1452,7 @@ export async function renderResults(area) {
   const studentBestScoreMap = new Map();
   rawData.forEach(r => {
     if (!['submitted', 'auto_submitted'].includes(r.status)) return;
-    const defId = r.assessment_instances?.assessments?.id;
+    const defId = r.assessments?.id;
     if (!r.student_id || !defId) return;
     const key = `${r.student_id}_${defId}`;
     const pct = parseFloat(r.percentage || 0);
@@ -1453,7 +1466,7 @@ export async function renderResults(area) {
   // Default: sort alphabetically by Student Name (A-Z)
   let allData = [...submittedOnly].sort((a, b) => (a.students?.name || '').localeCompare(b.students?.name || ''));
   if (window._filterAssessmentResults) {
-    allData = allData.filter(r => r.assessment_instances?.assessments?.id === window._filterAssessmentResults);
+    allData = allData.filter(r => r.assessments?.id === window._filterAssessmentResults);
   }
 
   let selectedProg = '';
@@ -1488,7 +1501,7 @@ export async function renderResults(area) {
             <label class="text-xs text-muted d-block mb-1">Filter Program</label>
             <select id="res-filter-prog" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
               <option value="">&mdash; All Institutions &mdash;</option>
-              ${(allPrograms || []).filter(p => !p.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
+              ${(allInstitutions || []).filter(p => !p.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
             </select>
           </div>
 
@@ -1496,7 +1509,7 @@ export async function renderResults(area) {
             <label class="text-xs text-muted d-block mb-1">Filter Class</label>
             <select id="res-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
               <option value="">&mdash; All Programs &mdash;</option>
-              ${(allClasses || []).filter(c => !c.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
+              ${(allPrograms || []).filter(c => !c.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(c => `<option value="${c.id}" data-inst="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
             </select>
           </div>
 
@@ -1504,7 +1517,7 @@ export async function renderResults(area) {
             <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
             <select id="res-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
               <option value="">&mdash; All Batches &mdash;</option>
-              ${(allBatches || []).filter(b => !b.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
+              ${(allBatches || []).filter(b => !b.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(b => `<option value="${b.id}" data-prog="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
             </select>
           </div>
 
@@ -1565,24 +1578,32 @@ export async function renderResults(area) {
       if (bId && r.students?.batch_id !== bId) return false;
       if (q) {
         const sName = (r.students?.name || '').toLowerCase();
-        const eTitle = (r.assessment_instances?.assessments?.title || '').toLowerCase();
-        const eType = (r.assessment_instances?.assessments?.category || '').toLowerCase();
+        const eTitle = (r.assessments?.title || '').toLowerCase();
+        const eType = (r.assessments?.assessment_type || '').toLowerCase();
         if (!sName.includes(q) && !eTitle.includes(q) && !eType.includes(q)) return false;
       }
       return true;
     });
 
-    // Deduplicate by Student + Assessment, keeping highest score only
+    // Deduplicate by Student + Assessment, keeping highest EFFECTIVE score only.
+    // Remedial cap: EXAM/QUIZ remedial attempts are capped at 70% effective score.
+    const getEffectivePct = (r) => {
+      const rawPct = parseFloat(r.percentage || 0);
+      const def = r.assessments || {};
+      const isSummative = (def.assessment_type === 'EXAM' || def.assessment_type === 'QUIZ');
+      if (r.is_remedial_unlocked && isSummative && rawPct > 70) return 70;
+      return rawPct;
+    };
     const mergedResults = new Map();
     filtered.forEach(r => {
-      const key = `${r.student_id}_${r.assessment_instances?.assessments?.id}`;
+      const key = `${r.student_id}_${r.assessments?.id}`;
       const existing = mergedResults.get(key);
       if (!existing) {
         mergedResults.set(key, r);
       } else {
-        const existingScore = parseFloat(existing.percentage || 0);
-        const currentScore = parseFloat(r.percentage || 0);
-        // If current score is higher, or if same score but newer submission, take the new one
+        const existingScore = getEffectivePct(existing);
+        const currentScore = getEffectivePct(r);
+        // If current effective score is higher, or same score but newer submission, take the new one
         if (currentScore > existingScore || (currentScore === existingScore && new Date(r.submitted_at) > new Date(existing.submitted_at))) {
           mergedResults.set(key, r);
         }
@@ -1603,29 +1624,49 @@ export async function renderResults(area) {
       container: 'results-grid-container',
       data: deduplicated,
       pageSize: 20,
-      searchKeys: ['students.name', 'assessment_instances.assessments.title', 'assessment_instances.assessments.category', 'students.programs.name', 'students.programs.institutions.name'],
+      searchKeys: ['students.name', 'assessments.title', 'assessments.assessment_type', 'students.programs.name', 'students.programs.institutions.name'],
       columns: [
         { key: 'students.name', label: 'Student Name', sortable: true, render: (v, r) => `<span class="fw-600" style="color:var(--clr-text-1);">${formatStudentName(r.students?.name, r.students?.gender) || '&mdash;'}</span>` },
         { key: 'students.programs.institutions.name', label: 'Program', sortable: true, render: (v, r) => `<span class="text-muted text-sm">${escapeHtml(r.students?.programs?.institutions?.name || '&mdash;')}</span>` },
         { key: 'students.programs.name', label: 'Class', sortable: true, render: (v, r) => `<span class="text-muted text-sm">${escapeHtml(r.students?.programs?.name || '&mdash;')}</span>` },
         { key: 'students.batches.name', label: 'Batch', sortable: true, render: (v, r) => `<span class="badge ${r.students?.batches?.name ? 'badge-info' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(r.students?.batches?.name || 'Unassigned')}</span>` },
         {
-          key: 'assessment_instances.assessments.title', label: 'Assessment Title', sortable: true, render: (v, r) => {
-            const def = r.assessment_instances?.assessments || {};
-            return `<span class="text-sm fw-600">${def.category ? escapeHtml(def.category) + ' &mdash; ' : ''}${escapeHtml(def.title || '&mdash;')}</span>`;
+          key: 'assessments.title', label: 'Assessment Title', sortable: true, render: (v, r) => {
+            const def = r.assessments || {};
+            return `<span class="text-sm fw-600">${def.assessment_type ? escapeHtml(def.assessment_type) + ' &mdash; ' : ''}${escapeHtml(def.title || '&mdash;')}</span>`;
           }
         },
         {
-          key: 'percentage', label: 'Score', sortable: true, render: (v, r) => `
-              <div class="text-center fw-700 text-grade-${r.grade || 'F'}" style="display:flex;align-items:center;justify-content:center;gap:4px;">
-                <span>${parseFloat(r.percentage || 0).toFixed(1)}%</span>
-                <span class="badge badge-success text-xs" style="font-size:0.65rem;padding:1px 5px;" title="Highest score recorded across attempts">Highest</span>
+          key: 'percentage', label: 'Score', sortable: true, render: (v, r) => {
+            const def = r.assessments || {};
+            const isSummative = (def.assessment_type === 'EXAM' || def.assessment_type === 'QUIZ');
+            const rawPct = parseFloat(r.percentage || 0);
+            const isRemedialCapped = r.is_remedial_unlocked && isSummative && rawPct > 70;
+            const effectivePct = isRemedialCapped ? 70 : rawPct;
+            const effectiveGrade = effectivePct >= 70 ? 'C' : (r.grade || 'F');
+            return `
+              <div class="text-center fw-700" style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                <div style="display:flex;align-items:center;gap:4px;" class="text-grade-${effectiveGrade}">
+                  <span>${effectivePct.toFixed(1)}%</span>
+                  <span class="badge badge-success text-xs" style="font-size:0.65rem;padding:1px 5px;" title="Highest score recorded across attempts">Highest</span>
+                </div>
+                ${isRemedialCapped ? `<span class="badge" style="font-size:0.6rem;padding:1px 6px;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.4);">&#128282; REMEDIAL CAP APPLIED</span>` : ''}
               </div>
-            ` },
-        { key: 'grade', label: 'Grade', sortable: true, render: (v, r) => `<div class="text-center"><span class="grade-badge grade-${r.grade || 'F'}" style="width:30px;height:30px;font-size:0.85rem;">${r.grade || '&mdash;'}</span></div>` },
+            `;
+          }
+        },
+        { key: 'grade', label: 'Grade', sortable: true, render: (v, r) => {
+            const def = r.assessments || {};
+            const isSummative = (def.assessment_type === 'EXAM' || def.assessment_type === 'QUIZ');
+            const rawPct = parseFloat(r.percentage || 0);
+            const isRemedialCapped = r.is_remedial_unlocked && isSummative && rawPct > 70;
+            const displayGrade = isRemedialCapped ? 'C' : (r.grade || getGrade(rawPct));
+            return `<div class="text-center"><span class="grade-badge grade-${displayGrade}" style="width:30px;height:30px;font-size:0.85rem;">${displayGrade}</span></div>`;
+          }
+        },
         {
           key: 'prereq', label: 'Prerequisite', sortable: false, render: (v, r) => {
-            const def = r.assessment_instances?.assessments || {};
+            const def = r.assessments || {};
             const prereqId = def.prerequisite_assessment_id;
             const minScore = Number(def.prerequisite_min_score) || 60;
             if (!prereqId) return '<div class="text-center"><span class="text-muted text-xs">&mdash;</span></div>';
@@ -1673,7 +1714,16 @@ export async function renderResults(area) {
           }
         },
         { key: 'submitted_at', label: 'Submitted At', sortable: true, render: (v, r) => `<div class="text-center text-muted text-xs">${r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '&mdash;'}</div>` },
-        { key: 'actions', label: 'Profile', sortable: false, render: (v, r) => `<div class="text-center"><button class="btn btn-ghost btn-sm results-view-profile-btn" data-sid="${r.student_id}" style="font-size:0.75rem; padding:3px 10px; display:inline-flex; align-items:center; gap:4px;" title="View full student profile">&#128100; Profile</button></div>` }
+        { key: 'actions', label: 'Actions', sortable: false, render: (v, r) => {
+           let btns = `<button class="btn btn-ghost btn-sm results-view-profile-btn" data-sid="${r.student_id}" style="font-size:0.75rem; padding:3px 10px; display:inline-flex; align-items:center; gap:4px;" title="View full student profile">&#128100; Profile</button>`;
+           const def = r.assessments || {};
+           const isSummativeType = (def.assessment_type === 'EXAM' || def.assessment_type === 'QUIZ');
+           const pct = parseFloat(r.percentage || 0);
+           if (isSummativeType && pct < 70 && !r.is_remedial_unlocked) {
+               btns += `<button class="btn btn-warning btn-sm remedi-unlock-btn" data-aid="${r.id}" style="font-size:0.75rem; padding:3px 10px;" title="Unlock Remedial Attempt">&#128275; Allow Remedial</button>`;
+           }
+           return `<div class="text-center d-flex gap-2 justify-center flex-wrap" style="min-width:140px;">${btns}</div>`;
+        } }
       ]
     });
   };
@@ -1712,7 +1762,12 @@ export async function renderResults(area) {
       return;
     }
     const exportData = rowsToExport.map(r => {
-      const def = r.assessment_instances?.assessments || {};
+      const def = r.assessments || {};
+      const rawPct = Number(r.percentage || r.effective_score || 0);
+      const isSummative = (def.assessment_type === 'EXAM' || def.assessment_type === 'QUIZ');
+      const isRemedialCapped = r.is_remedial_unlocked && isSummative && rawPct > 70;
+      const exportPct = isRemedialCapped ? 70 : rawPct;
+      const exportGrade = isRemedialCapped ? 'C' : (r.grade || getGrade(rawPct));
       return {
         'Student Name': r.students?.name || '—',
         'Gender': r.students?.gender ? (r.students.gender === 'female' ? 'Female' : 'Male') : '—',
@@ -1720,10 +1775,12 @@ export async function renderResults(area) {
         'Program': r.students?.programs?.name || '—',
         'Batch': r.students?.batches?.name || '—',
         'Assessment Title': def.title || '—',
-        'Assessment Type': def.category || '—',
+        'Assessment Type': def.assessment_type || '—',
         'Score': r.score != null ? r.score : '—',
-        'Percentage (%)': r.percentage != null ? `${r.percentage}%` : '—',
-        'Grade': r.grade || (r.percentage != null ? getGrade(r.percentage) : '—'),
+        'Raw Percentage (%)': rawPct != null ? `${rawPct}%` : '—',
+        'Effective Percentage (%)': `${exportPct}%`,
+        'Grade': exportGrade,
+        'Remedial Cap Applied': isRemedialCapped ? 'Yes (capped at 70%)' : 'No',
         'Submitted At': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '—',
         'Status': r.status || '—'
       };
@@ -1737,7 +1794,28 @@ export async function renderResults(area) {
     showToast(`Exported ${exportData.length} records to ${filename}`, 'success');
   });
 
-  document.getElementById('results-grid-container').addEventListener('click', e => {
+  document.getElementById('results-grid-container').addEventListener('click', async e => {
+    const remediBtn = e.target.closest('.remedi-unlock-btn');
+    if (remediBtn) {
+      const attemptId = remediBtn.getAttribute('data-aid');
+      if (confirm('Allow this student to retake this Exam as a remedial attempt?')) {
+        const { getSupabase } = await import('../supabase.js');
+        const sb = await getSupabase();
+        const { error } = await sb.from('attempts').update({ is_remedial_unlocked: true }).eq('id', attemptId);
+        if (!error) {
+          // Temporarily imported showToast should be used from scope, we just assume it's available or we use the local DOM alert
+          // showToast is imported at top in class.js
+          const record = allData.find(x => x.id === attemptId);
+          if (record) record.is_remedial_unlocked = true;
+          renderTable();
+          showToast('Remedial attempt unlocked successfully.', 'success');
+        } else {
+          showToast('Failed to unlock: ' + error.message, 'error');
+        }
+      }
+      return;
+    }
+
     const btn = e.target.closest('.results-view-profile-btn');
     if (!btn) return;
     const sid = btn.getAttribute('data-sid');
@@ -1765,14 +1843,14 @@ export async function renderProgressView(area) {
       `;
 
   try {
-    const [allStudents, allPrograms, allClasses, allBatches, allAssignments, allAssessments, allAttempts] = await Promise.all([
+    const [allStudents, allInstitutions, allPrograms, allBatches, allAssignments, allAssessments, allAttempts] = await Promise.all([
       adminFetchAll('students', '*, batches!batch_id(name), programs!program_id(name, institution_id, institutions!institution_id(name))'),
       adminFetchAll('institutions'),
       adminFetchAll('programs'),
       adminFetchAll('batches'),
-      adminFetchAll('assessment_instances', 'student_id, batch_id, assessment_id'),
+      adminFetchAll('assignments', 'student_id, batch_id, assessment_id'),
       adminFetchAll('assessments', 'id, title, level_id, levels(name, level_number)'),
-      adminFetchAll('attempts', '*, students!student_id(name, gender, batch_id, batches!batch_id(name), program_id, programs!program_id(name, institution_id, institutions!institution_id(name))), assessment_instances(assessments(title, category)), attempt_answers(id, evaluation_result, score)')
+      adminFetchAll('attempts', '*, students!student_id(name, gender, batch_id, batches!batch_id(name), program_id, programs!program_id(name, institution_id, institutions!institution_id(name))), assessments(title, assessment_type), attempt_answers(id, evaluation_result, score)')
     ]);
 
     const allData = [];
@@ -1823,7 +1901,7 @@ export async function renderProgressView(area) {
               <label class="text-xs text-muted d-block mb-1">Filter Class</label>
               <select id="prog-filter-class" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
                 <option value="">&mdash; All Programs &mdash;</option>
-                ${(allClasses || []).filter(c => !c.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(c => `<option value="${c.id}" data-prog="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
+                ${(allPrograms || []).filter(c => !c.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(c => `<option value="${c.id}" data-inst="${c.institution_id}">${escapeHtml(c.name)}</option>`).join('')}
               </select>
             </div>
 
@@ -1831,7 +1909,7 @@ export async function renderProgressView(area) {
               <label class="text-xs text-muted d-block mb-1">Filter Batch (Group)</label>
               <select id="prog-filter-batch" class="form-control" style="padding:6px 10px;font-size:0.85rem;">
                 <option value="">&mdash; All Batches &mdash;</option>
-                ${(allBatches || []).filter(b => !b.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(b => `<option value="${b.id}" data-class="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
+                ${(allBatches || []).filter(b => !b.deleted_at).sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(b => `<option value="${b.id}" data-prog="${b.program_id}">${escapeHtml(b.name)}</option>`).join('')}
               </select>
             </div>
 
@@ -2024,7 +2102,7 @@ export async function renderRecalibrator(area) {
   showLoading('Loading Assessments for recalibration&hellip;');
   const allAssessments = await adminFetchAll('assessments');
   hideLoading();
-  const activeAssessments = allAssessments.filter(e => !e.deleted_at).sort((a, b) => (a.Assessment_title || '').localeCompare(b.Assessment_title || ''));
+  const activeAssessments = allAssessments.filter(e => !e.deleted_at).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
 
   area.innerHTML = `
         <div class="section-header">
@@ -2042,7 +2120,7 @@ export async function renderRecalibrator(area) {
               <label class="form-label">Select Target Assessment</label>
               <select class="form-control" id="recalibrator-Assessment-select">
                 <option value="">&mdash; Choose an Assessment to Recalibrate &mdash;</option>
-                ${activeAssessments.map(e => `<option value="${e.id}">[${escapeHtml(e.Assessment_type || 'Assessment')}] ${escapeHtml(e.Assessment_title || e.display_name || e.id)}</option>`).join('')}
+                ${activeAssessments.map(e => `<option value="${e.id}">[${escapeHtml(e.assessment_type || 'Assessment')}] ${escapeHtml(e.title || e.display_name || e.id)}</option>`).join('')}
               </select>
             </div>
             <div style="display: flex; gap: 12px; align-items: flex-end; padding-top: 20px;">
@@ -2288,7 +2366,7 @@ export async function renderClassInstances(area) {
   const [rawData, batches, classes] = await Promise.all([
     adminFetchAll('class_instances', '*, batches!batch_id(name, programs!program_id(name, institutions!institution_id(name)))'),
     adminFetchAll('batches', 'id, name'),
-    adminFetchAll('classes', 'id, name, institution_id')
+    adminFetchAll('classes', 'id, name')
   ]);
 
   const data = [...rawData].sort((a, b) => {

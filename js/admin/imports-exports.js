@@ -1,8 +1,8 @@
-import { adminFetchAll, adminInsert, adminUpdate, formatStudentName, cleanStudentName } from '../api.js?v=4.7.0';
-import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.7.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.0';
-import { callEdgeFunction, getSupabase } from '../supabase.js?v=4.7.0';
-import { downloadAITemplate, AI_MODULES } from './panel-c-builder.js';
+import { adminFetchAll, adminInsert, adminUpdate, formatStudentName, cleanStudentName, clearAdminCache } from '../api.js?v=4.7.4';
+import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.7.4';
+import { showToast, showLoading, hideLoading, updateLoadingProgress } from '../app.js?v=4.7.4';
+import { callEdgeFunction, getSupabase } from '../supabase.js?v=4.7.4';
+import { downloadAITemplate, AI_MODULES } from './panel-c-builder.js?v=4.7.4';
 
 const toLevelLetter = (level) => { return String.fromCharCode(64 + parseInt(level || 1)) || 'A'; };
 
@@ -133,16 +133,7 @@ function calculateAgeFromBirthDate(birthDateStr) {
                 </div>
 
                 <div class="form-group w-100">
-                  <label class="form-label">4. Target Level (Optional / Override)</label>
-                  <select class="form-control" id="import-student-level">
-                    <option value="">- Use Level from Excel File / None -</option>
-                    ${sortedLevels.map(l => `<option value="${l.id}">Level ${toLevelLetter(l.level_number)} (${escapeHtml(l.name)})</option>`).join('')}
-                  </select>
-                  <span class="text-muted text-xs mt-1">Optional. Level is managed manually.</span>
-                </div>
-
-                <div class="form-group w-100">
-                  <label class="form-label">5. Select Spreadsheet File (.xlsx / .xls / .csv)</label>
+                  <label class="form-label">4. Select Spreadsheet File (.xlsx / .xls / .csv)</label>
                   <input type="file" class="form-control" id="import-students-file" accept=".xlsx,.xls,.csv" />
                 </div>
               </div>
@@ -154,11 +145,9 @@ function calculateAgeFromBirthDate(birthDateStr) {
                   <span class="badge badge-info" style="font-size:0.75rem;">Supports English Columns</span>
                 </div>
                 <div class="text-xs text-muted d-flex flex-column gap-1">
-                  <div>&bull; <b>Name:</b> Column <code>NAME</code>, <code>Student Name</code> (Required).</div>
-                  <div>&bull; <b>Gender (Optional):</b> Column <code>GENDER</code>. <em>If left blank, students will select their own gender (Mr. / Miss) upon first login.</em></div>
-                  <div>&bull; <b>Birth Date / Age:</b> Column <code>BIRTH_DATE</code> or <code>AGE</code> (Format: YYYY-MM-DD or age number).</div>
-                  <div>&bull; <b>PIN:</b> Column <code>PIN</code> or <code>Password</code> (Defaults to <code>1234</code> if left blank).</div>
-                  <div>&bull; <b>Institution &amp; Program &amp; Batch:</b> If left blank in the Excel file, the Target Institution, Program, and Batch selected above will be used.</div>
+                  <div>&bull; <b>Required Columns:</b> <code>INSTITUTION</code>, <code>PROGRAM</code>, <code>BATCH</code>, and <code>NAME</code>.</div>
+                  <div>&bull; <b>PIN:</b> Automatically defaults to <code>1234</code>.</div>
+                  <div>&bull; <b>Level:</b> Students are automatically placed in <b>Level 1</b> for all active classes upon import.</div>
                 </div>
               </div>
             </div>
@@ -213,25 +202,16 @@ function calculateAgeFromBirthDate(birthDateStr) {
       document.getElementById('btn-dl-student-template')?.addEventListener('click', () => {
         const sampleData = [
           {
-            'NO': 1,
-            'NAME': 'Alexander Wright',
-            'INSTITUTION': sortedPrograms[0]?.name || 'CEC',
-            'PROGRAM': sortedClasses[0]?.name || 'Camp',
-            'BATCH': 'Batch 2026-A'
+            'INSTITUTION': 'CEC',
+            'PROGRAM': 'Camp',
+            'BATCH': '999',
+            'NAME': 'Zzz'
           },
           {
-            'NO': 2,
-            'NAME': 'Beatrix Potter',
-            'INSTITUTION': sortedPrograms[0]?.name || 'CEC',
-            'PROGRAM': sortedClasses[0]?.name || 'Camp',
-            'BATCH': 'Batch 2026-A'
-          },
-          {
-            'NO': 3,
-            'NAME': 'Christopher Nolan',
-            'INSTITUTION': sortedPrograms[0]?.name || 'CEC',
-            'PROGRAM': sortedClasses[1]?.name || sortedClasses[0]?.name || 'Camp',
-            'BATCH': 'Batch 2026-B'
+            'INSTITUTION': 'CEC',
+            'PROGRAM': 'Camp',
+            'BATCH': '999',
+            'NAME': 'Jane Doe'
           }
         ];
         const ws = XLSX.utils.json_to_sheet(sampleData);
@@ -298,6 +278,21 @@ function calculateAgeFromBirthDate(birthDateStr) {
       if (sortedPrograms.length === 1 && progSelect) {
         progSelect.value = sortedPrograms[0].id;
         progSelect.dispatchEvent(new Event('change'));
+      }
+
+      if (window._filterBatchId) {
+        const batch = sortedBatches.find(b => b.id === window._filterBatchId);
+        if (batch) {
+          const prog = sortedClasses.find(c => c.id === batch.program_id);
+          if (prog && progSelect && classSelect) {
+            progSelect.value = prog.institution_id;
+            progSelect.dispatchEvent(new Event('change'));
+            classSelect.value = batch.program_id;
+            classSelect.dispatchEvent(new Event('change'));
+            if (batchSelect) batchSelect.value = batch.id;
+          }
+        }
+        window._filterBatchId = null;
       }
 
       let parsedStudentsState = [];
@@ -401,10 +396,17 @@ function calculateAgeFromBirthDate(birthDateStr) {
               let pin = getRowVal(row, ['pin', 'password', 'pass', 'kodepin', 'pin_hash']);
               if (!pin) pin = '1234';
 
-              // Program & Class
-              const rowProgName = getRowVal(row, ['institute', 'institution', 'programname', 'namaprogram']);
-              const rowClassName = getRowVal(row, ['program', 'class', 'classname', 'kelas', 'namakelas']);
-              const rowBatchName = getRowVal(row, ['batch', 'batchname', 'namabatch', 'angkatan', 'gelombang']);
+              // Institution, Program & Batch
+              let rowProgName = getRowVal(row, ['institution', 'institute', 'institusi']);
+              let rowClassName = getRowVal(row, ['program', 'programname', 'program_name']);
+              const rowBatchName = getRowVal(row, ['batch', 'batchname', 'angkatan', 'gelombang']);
+              
+              // Legacy format support: If the file uses 'Program' and 'Class' headers instead of 'Institution' and 'Program'
+              const legacyClassVal = getRowVal(row, ['class', 'classname', 'class_name', 'kelas']);
+              if (!rowProgName && rowClassName && legacyClassVal) {
+                rowProgName = rowClassName;
+                rowClassName = legacyClassVal;
+              }
               let finalProgId = selectedProgId;
               let finalProgName = selectedProg?.name || '';
               if (!finalProgId && rowProgName) {
@@ -414,10 +416,7 @@ function calculateAgeFromBirthDate(birthDateStr) {
                   finalProgName = matchedP.name;
                 }
               }
-              if (!finalProgId && sortedPrograms.length > 0) {
-                finalProgId = sortedPrograms[0].id;
-                finalProgName = sortedPrograms[0].name;
-              }
+              // Fallback removed to ensure strict validation of Excel rows
 
               let finalClassId = selectedClassId;
               let finalClassName = selectedClass?.name || '';
@@ -432,13 +431,7 @@ function calculateAgeFromBirthDate(birthDateStr) {
                   }
                 }
               }
-              if (!finalClassId) {
-                const firstClassInProg = sortedClasses.find(c => c.institution_id === finalProgId) || sortedClasses[0];
-                if (firstClassInProg) {
-                  finalClassId = firstClassInProg.id;
-                  finalClassName = firstClassInProg.name;
-                }
-              }
+              // Fallback removed to ensure strict validation of Excel rows
 
               let finalBatchId = selectedBatchId || null;
               let finalBatchName = selectedBatch?.name || '';
@@ -499,18 +492,6 @@ function calculateAgeFromBirthDate(birthDateStr) {
                 existingId = existingDbStudent.id;
               }
 
-              // Optional Level mapping
-              const rowLevelName = getRowVal(row, ['level', 'levelname', 'namalevel', 'tingkat', 'lvl']);
-              let finalLevelId = selectedLevelId || null;
-              let finalLevelName = selectedLevel?.name || '';
-              if (!finalLevelId && rowLevelName) {
-                const matchedL = sortedLevels.find(l => l.name.toLowerCase().trim() === rowLevelName.toLowerCase().trim() || String(l.level_number) === rowLevelName.trim());
-                if (matchedL) {
-                  finalLevelId = matchedL.id;
-                  finalLevelName = matchedL.name;
-                }
-              }
-
               const item = {
                 no: idx + 1,
                 name: formatStudentName(name, gender),
@@ -519,13 +500,11 @@ function calculateAgeFromBirthDate(birthDateStr) {
                 ageDisplay,
                 pin,
                 institutionId: finalProgId,
-                institutionName: finalProgName || 'Program',
+                institutionName: finalProgId ? finalProgName : (rowProgName ? `${rowProgName} (Not Found)` : '—'),
                 programId: finalClassId,
-                programName: finalClassName || 'Class',
+                programName: finalClassId ? finalClassName : (rowClassName ? `${rowClassName} (Not Found)` : '—'),
                 batchId: finalBatchId,
                 batchName: finalBatchName || '—',
-                levelId: finalLevelId,
-                levelName: finalLevelName || '',
                 status,
                 statusMsg,
                 isExisting,
@@ -643,7 +622,14 @@ function calculateAgeFromBirthDate(birthDateStr) {
           let updatedCount = 0;
           const batchCreateCache = {}; // "programId::batchName" -> batchId
 
+          const { data: allClasses } = await sb.from('classes').select('id').eq('is_active', true);
+          
+          const totalOps = readyStudents.length + 1; // +1 for the final progress batch
+          let currentOps = 0;
+
           for (const s of readyStudents) {
+            currentOps++;
+            updateLoadingProgress((currentOps / totalOps) * 100, `Saving student ${currentOps} of ${readyStudents.length}...`);
             // 1. Auto-create batch if needed
             let resolvedBatchId = s.batchId || null;
             if (!resolvedBatchId && s.batchName && s.batchName !== '—' && s.programId) {
@@ -693,7 +679,7 @@ function calculateAgeFromBirthDate(birthDateStr) {
               updatedCount++;
             } else {
               // Insert new student
-              await sb.from('students').insert({
+              const { data: newStudent } = await sb.from('students').insert({
                 name: formattedName,
                 institution_id: s.institutionId || null,
                 program_id: s.programId || null,
@@ -702,10 +688,37 @@ function calculateAgeFromBirthDate(birthDateStr) {
                 birth_date: s.birthDate || null,
                 pin_hash: pinHash,
                 is_active: true
-              });
+              }).select('id').single();
               insertedCount++;
+              if (newStudent) s.existingId = newStudent.id;
             }
           }
+
+          // 4. Initialize Progress (Level 1) for all classes for these students
+          if (allClasses && allClasses.length > 0) {
+            const progressPayload = [];
+            for (const s of readyStudents) {
+              if (s.existingId) {
+                for (const cls of allClasses) {
+                  progressPayload.push({
+                    student_id: s.existingId,
+                    class_id: cls.id,
+                    unlocked_level: 1
+                  });
+                }
+              }
+            }
+            if (progressPayload.length > 0) {
+              updateLoadingProgress(100, 'Initializing level progression for new students...');
+              // ignoreDuplicates ensures we don't accidentally demote a returning student back to level 1
+              await sb.from('progress').upsert(progressPayload, { onConflict: 'student_id,class_id', ignoreDuplicates: true });
+            }
+          }
+
+          // Invalidate caches so the Batches and Students tabs reflect the auto-created entities immediately
+          clearAdminCache('batches');
+          clearAdminCache('students');
+          clearAdminCache('progress');
 
           hideLoading();
           showToast(`Done! ${insertedCount} new students added, ${updatedCount} updated/merged!`, 'success');
@@ -893,8 +906,8 @@ function calculateAgeFromBirthDate(birthDateStr) {
       adminFetchAll('assessments').then(assessments => {
         fetchedAssessmentsList = Array.isArray(assessments) ? assessments : [];
         const sortedAssessments = [...fetchedAssessmentsList].sort((a, b) => {
-          const nameA = `${a?.Assessment_type ? a.Assessment_type + ' - ' : ''}${a?.Assessment_title || ''}`;
-          const nameB = `${b?.Assessment_type ? b.Assessment_type + ' - ' : ''}${b?.Assessment_title || ''}`;
+          const nameA = `${a?.assessment_type ? a.assessment_type + ' - ' : ''}${a?.title || ''}`;
+          const nameB = `${b?.assessment_type ? b.assessment_type + ' - ' : ''}${b?.title || ''}`;
           return nameA.localeCompare(nameB);
         });
         const sel = document.getElementById('import-Assessment-select');
@@ -1287,10 +1300,10 @@ function calculateAgeFromBirthDate(birthDateStr) {
             <select class="form-control" id="export-assessment-select">
               <option value="">— Select Assessment —</option>
               ${[...assessments].sort((a, b) => {
-                const labelA = `${a.Assessment_type ? a.Assessment_type + ' - ' : ''}${a.Assessment_title}`;
-                const labelB = `${b.Assessment_type ? b.Assessment_type + ' - ' : ''}${b.Assessment_title}`;
+                const labelA = `${a.assessment_type ? a.assessment_type + ' - ' : ''}${a.title}`;
+                const labelB = `${b.assessment_type ? b.assessment_type + ' - ' : ''}${b.title}`;
                 return labelA.localeCompare(labelB);
-              }).map(e => `<option value="${e.id}">${e.Assessment_type ? e.Assessment_type + ' - ' : ''}${e.Assessment_title}</option>`).join('')}
+              }).map(e => `<option value="${e.id}">${e.assessment_type ? e.assessment_type + ' - ' : ''}${e.title}</option>`).join('')}
             </select>
           </div>
           <button class="btn btn-primary mt-2" id="export-questions-btn">📤 Download Excel (.xlsx)</button>
@@ -1308,13 +1321,13 @@ function calculateAgeFromBirthDate(birthDateStr) {
           const sb = await getSupabase();
           let questions = [];
           const [directQRes, AssessmentClasses] = await Promise.all([
-            sb.from('questions').select('*').eq('Assessment_id', AssessmentId).is('deleted_at', null),
-            sb.from('Assessment_programs').select('programs(name)').eq('Assessment_id', AssessmentId)
+            sb.from('assessment_questions').select('*').eq('assessment_id', AssessmentId),
+            sb.from('assignments').select('programs(name)').eq('assessment_id', AssessmentId)
           ]);
           questions = directQRes?.data || [];
           if (!questions.length) {
             try {
-              const { data: sections } = await sb.from('Assessment_sections').select('id').eq('Assessment_id', AssessmentId);
+              const { data: sections } = await sb.from('Assessment_sections').select('id').eq('assessment_id', AssessmentId);
               const sectionIds = (sections || []).map(s => s.id);
               if (sectionIds.length > 0) {
                 const { data: secQ } = await sb.from('questions').select('*').in('section_id', sectionIds).is('deleted_at', null);
@@ -1331,10 +1344,10 @@ function calculateAgeFromBirthDate(birthDateStr) {
             'CLASS': programName,
             'Class': q.metadata?.classItem || q.metadata?.Class || selectedAssessment?.classes?.name || 'Vocab',
             'LEVEL': selectedAssessment?.levels?.name || '3rd Step',
-            'TITLE': q.metadata?.title || selectedAssessment?.Assessment_title || 'Practice 1',
+            'TITLE': q.metadata?.title || selectedAssessment?.title || 'Practice 1',
             'WEEK': q.metadata?.week || '1',
             'DAY': q.metadata?.day || '1',
-            'TYPE': q.metadata?.type || selectedAssessment?.Assessment_type || '1 - VERB',
+            'TYPE': q.metadata?.type || selectedAssessment?.assessment_type || '1 - VERB',
             'NO': q.question_order || (idx + 1),
             'QUESTION': q.question_text || '',
             'ANSWER': q.correct_answer || ''
@@ -1358,7 +1371,7 @@ function calculateAgeFromBirthDate(birthDateStr) {
           const workbook = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(workbook, worksheet, 'Questions');
 
-          const fileName = `${(selectedAssessment?.Assessment_title || 'Assessment').replace(/\s+/g, '_')}_Questions.xlsx`;
+          const fileName = `${(selectedAssessment?.title || 'Assessment').replace(/\s+/g, '_')}_Questions.xlsx`;
           XLSX.writeFile(workbook, fileName);
 
           hideLoading();

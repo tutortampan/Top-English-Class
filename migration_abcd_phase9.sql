@@ -1,5 +1,5 @@
 -- ============================================================
--- TOP ENGLISH CLASS — ABCD Architecture Migration (Phase 6 & 9)
+-- TopsCore — ABCD Architecture Migration (Phase 6 & 9)
 -- Non-Destructive Data Migration Script
 -- Run this in Supabase SQL Editor
 -- ============================================================

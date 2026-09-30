@@ -119,8 +119,8 @@ export async function fetchInstitutions(forceRefresh = false) {
         const sb = await getSupabase();
         const { data, error } = await sb.from('institutions')
           .select('id, name')
-          .eq('is_active', true)
-          .is('deleted_at', null)
+          
+          
           .order('name');
         if (error) throw error;
         if (data && data.length) list = data;
@@ -143,8 +143,8 @@ export async function fetchPrograms(institutionId, forceRefresh = false) {
         const { data, error } = await sb.from('programs')
           .select('id, name, institution_id, is_active')
           .eq('institution_id', institutionId)
-          .eq('is_active', true)
-          .is('deleted_at', null)
+          
+          
           .order('name');
         if (error) throw error;
         if (data && data.length) list = data;
@@ -162,13 +162,17 @@ export async function fetchBatches(programId, forceRefresh = false) {
   return withCache(cacheKey, async () => {
     let list = MOCK_BATCHES.filter(b => b.program_id === programId);
     if (!isPlaceholderUrl()) {
+      if (!programId || programId === 'undefined') {
+        console.warn('Cannot fetch batches: programId is undefined');
+        return [];
+      }
       try {
         const sb = await getSupabase();
         const { data, error } = await sb.from('batches')
-          .select('id, name, program_id')
+          .select('id, name, program_id, current_level_id')
           .eq('program_id', programId)
-          .eq('is_active', true)
-          .is('deleted_at', null)
+          
+          
           .order('name');
         if (error) throw error;
         if (data && data.length) list = data;
@@ -188,8 +192,8 @@ export async function fetchStudentsByProgram(programId, batchId = null) {
       let query = sb.from('students')
         .select('id, name, gender, program_id, batch_id')
         .eq('program_id', programId)
-        .eq('is_active', true)
-        .is('deleted_at', null);
+        
+        ;
       if (batchId) {
         query = query.eq('batch_id', batchId);
       }
@@ -339,14 +343,20 @@ export async function uploadStudentPhoto(studentId, photoBase64OrUrl) {
 // STUDENT DASHBOARD & CURRICULUM
 // ============================================================
 
-export async function fetchStudentClasses(programId, institutionId) {
+export async function fetchStudentClasses(programId, institutionId, levelId = null) {
   const sb = await getSupabase();
   try {
-    const { data, error } = await sb.from('classes')
-      .select('id, name, code, description')
-      .eq('is_active', true)
-      .is('deleted_at', null)
+    let query = sb.from('classes')
+      .select('id, name, code, description, level_id, levels(level_number)')
+      
+      
       .order('name');
+      
+    // Classes do not have institution_id directly, they are global or program-specific via class_programs
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    
     if (!error && data && data.length > 0) return data;
   } catch (e) {
     console.warn('Classes query note:', e.message);
@@ -358,9 +368,8 @@ export async function fetchLevels(classId) {
   const sb = await getSupabase();
   const { data, error } = await sb.from('levels')
     .select('id, name, level_number')
-    .eq('class_id', classId)
-    .eq('is_active', true)
-    .is('deleted_at', null)
+    
+    
     .order('level_number');
   if (error) throw error;
   return data;
@@ -375,34 +384,18 @@ export async function fetchStudentProgress(studentId) {
 
 export async function fetchAssessmentsForStudentClass(programId, classId, institutionId) {
   const sb = await getSupabase();
-  let query = sb.from('assessments')
+  const { data, error } = await sb.from('assessments')
     .select('*, levels(id, name, level_number)')
     .eq('class_id', classId)
     .eq('status', 'PUBLISHED')
-    .is('deleted_at', null)
-    .order('name');
+    
+    .order('created_at', { ascending: false });
 
-  if (institutionId) {
-    query = query.eq('institution_id', institutionId);
+  if (error) {
+    console.warn('fetchAssessmentsForStudentClass notice:', error.message);
+    return [];
   }
-
-  let assessmentsList = [];
-  try {
-    const { data, error } = await query;
-    if (!error && data) assessmentsList = data;
-  } catch {
-    // fallback kueri langsung tanpa filter institusi jika relasi belum diisi
-    try {
-      const { data: directData } = await sb.from('assessments')
-        .select('*, levels(id, name, level_number)')
-        .eq('class_id', classId)
-        .eq('status', 'PUBLISHED')
-        .is('deleted_at', null)
-        .order('name');
-      assessmentsList = directData || [];
-    } catch (_) {}
-  }
-  return assessmentsList;
+  return data || [];
 }
 
 export async function fetchAssessmentsForStudentLevel(programId, levelId, institutionId) {
@@ -411,8 +404,8 @@ export async function fetchAssessmentsForStudentLevel(programId, levelId, instit
     .select('*, levels(id, name, level_number)')
     .eq('level_id', levelId)
     .eq('status', 'PUBLISHED')
-    .is('deleted_at', null)
-    .order('name');
+    
+    .order('title');
 
   if (institutionId) query = query.eq('institution_id', institutionId);
 
@@ -426,7 +419,7 @@ export async function fetchAssessmentsForStudentLevel(programId, levelId, instit
 export async function fetchAllStudentAttempts(studentId) {
   const sb = await getSupabase();
   const { data, error } = await sb.from('attempts')
-    .select('id, assessment_id, score, percentage, grade, status, is_best_score, submitted_at, assessments(name, title, assessment_type, classes(name))')
+    .select('id, assessment_id, score, percentage, grade, status, is_best_score, submitted_at, is_remedial_unlocked, assessments(title, assessment_type, classes(name))')
     .eq('student_id', studentId)
     .in('status', ['submitted', 'auto_submitted', 'SUBMITTED', 'AUTO_SUBMITTED'])
     .order('submitted_at', { ascending: false });
@@ -445,7 +438,7 @@ export async function fetchAllStudentAttempts(studentId) {
   const assessmentIds = [...new Set(attempts.map(a => a.assessment_id).filter(Boolean))];
   let assessmentMap = {};
   if (assessmentIds.length > 0) {
-    const { data: asmData } = await sb.from('assessments').select('id, name, title, assessment_type, classes(name)').in('id', assessmentIds);
+    const { data: asmData } = await sb.from('assessments').select('id, title, assessment_type, classes(name)').in('id', assessmentIds);
     if (asmData) asmData.forEach(a => { assessmentMap[a.id] = a; });
   }
 
@@ -484,6 +477,13 @@ export async function startAssessment(studentId, assessmentId) {
   const { data: asmData, error: asmErr } = await sb.from('assessments').select('*').eq('id', assessmentId).single();
   if (asmErr || !asmData) throw new Error('Assessment not found.');
 
+  // Guard: Do NOT insert attempt or start countdown if tutor hasn't unlocked it yet
+  if (asmData.schedule_mode === 'manual' && asmData.is_unlocked === false) {
+    const lockErr = new Error('LOCKED_BY_TUTOR');
+    lockErr.code = 'LOCKED_BY_TUTOR';
+    throw lockErr;
+  }
+
   const assessment = {
     ...asmData,
     name: asmData.title || asmData.name,
@@ -519,7 +519,6 @@ export async function startAssessment(studentId, assessmentId) {
         assessment_id: assessmentId,
         attempt_number: attemptNumber,
         started_at: now.toISOString(),
-        expected_end_at: expectedEnd.toISOString(),
         expires_at: expectedEnd.toISOString(),
         status: 'in_progress',
         score: 0,
@@ -534,29 +533,28 @@ export async function startAssessment(studentId, assessmentId) {
     attempt = newAttempt;
 
     // Masukkan butir soal snapshot
-    const { data: questions } = await sb.from('questions')
+    const { data: questions } = await sb.from('assessment_questions')
       .select('*')
       .eq('assessment_id', assessmentId)
-      .is('deleted_at', null)
-      .order('question_order');
+      
+      .order('display_order');
 
     if (questions && questions.length > 0) {
-      const answerRows = questions.map((q, idx) => ({
+      const answerRows = questions.map((sq, idx) => ({
         attempt_id: attempt.id,
-        question_id: q.id,
+        question_id: sq.question_id || null,
         question_snapshot: {
-          question_text: q.question_text,
-          answer_type: q.answer_type || 'written',
-          options_json: q.options_json,
-          question_order: q.question_order ?? (idx + 1),
-          section_id: 'default',
-          metadata: q.metadata
+          question_text: sq.question_text_snapshot,
+          word_type: sq.word_type_snapshot,
+          topic: sq.topic_snapshot,
+          display_order: sq.display_order ?? (idx + 1),
+          answer_type: sq.answer_type || 'written',
+          options_snapshot: sq.options_snapshot || []
         },
-        topic_snapshot: 'General',
-        question_type_snapshot: q.metadata?.type || q.question_type || null,
-        options_snapshot: q.options_json,
-        correct_answer_snapshot: q.correct_answer || '',
-        accepted_answers_snapshot: q.accepted_answers || (q.correct_answer ? [q.correct_answer] : []),
+        topic_snapshot: sq.topic_snapshot,
+        word_type_snapshot: sq.word_type_snapshot,
+        accepted_answers_snapshot: sq.accepted_answers_snapshot,
+        correct_answer_snapshot: Array.isArray(sq.accepted_answers_snapshot) ? sq.accepted_answers_snapshot.join(';') : String(sq.accepted_answers_snapshot || ''),
         student_answer: null,
         score: 0
       }));
@@ -722,8 +720,8 @@ export async function fetchAttemptResult(attemptId) {
   const { data, error } = await sb.from('attempts')
     .select(`
       id, status, score, percentage, grade, submitted_at, started_at,
-      expected_end_at, assessment_id, is_best_score,
-      assessments:assessment_id(id, name, title, assessment_type, answer_type, classes(name), levels(name))
+      expires_at, assessment_id, is_best_score,
+      assessments:assessment_id(id, title, assessment_type, answer_type, classes(name), levels(name))
     `)
     .eq('id', attemptId)
     .single();
@@ -748,7 +746,7 @@ let _adminCache = new Map();
 
 export function clearAdminCache(table = null) {
   if (table) {
-    const normTable = (table || '').replace('-', '_');
+    const normTable = (table || '').toLowerCase().replace('-', '_');
     for (const key of _adminCache.keys()) {
       if (key.startsWith(normTable + '|')) _adminCache.delete(key);
     }
@@ -758,7 +756,7 @@ export function clearAdminCache(table = null) {
 }
 
 export async function adminFetchAll(table, select = '*', filters = {}, forceRefresh = false) {
-  const normTable = (table || '').replace('-', '_');
+  const normTable = (table || '').toLowerCase().replace('-', '_');
   const cacheKey = normTable + '|' + select + '|' + JSON.stringify(filters);
 
   if (!forceRefresh && _adminCache.has(cacheKey)) {
@@ -769,13 +767,23 @@ export async function adminFetchAll(table, select = '*', filters = {}, forceRefr
     const sb = await getSupabase();
     let query = sb.from(normTable).select(select);
     
-    const noDeletedAtTables = ['attempts', 'attempt_answers', 'progress', 'audit_logs', 'site_settings'];
+    const noDeletedAtTables = [
+      'attempts',
+      'attempt_answers',
+      'progress',
+      'audit_logs',
+      'site_settings',
+      'levels',
+      'assignments',
+      'user_professionals'
+    ];
     if (!noDeletedAtTables.includes(normTable)) {
-      query = query.is('deleted_at', null);
+      query = query;
     }
 
     for (const [key, val] of Object.entries(filters)) {
-      query = query.eq(key, val);
+      const normKey = (key === 'Assessment_id') ? 'assessment_id' : key;
+      query = query.eq(normKey, val);
     }
     
     let { data, error } = await query;
@@ -790,7 +798,7 @@ export async function adminFetchAll(table, select = '*', filters = {}, forceRefr
 }
 
 export async function adminInsert(table, payload) {
-  const normTable = (table || '').replace('-', '_');
+  const normTable = (table || '').toLowerCase().replace('-', '_');
   const sb = await getSupabase();
   const { data, error } = await sb.from(normTable).insert(payload).select().single();
   if (error) throw error;
@@ -799,7 +807,7 @@ export async function adminInsert(table, payload) {
 }
 
 export async function adminUpdate(table, id, payload) {
-  const normTable = (table || '').replace('-', '_');
+  const normTable = (table || '').toLowerCase().replace('-', '_');
   const sb = await getSupabase();
   const { data, error } = await sb.from(normTable).update(payload).eq('id', id).select().single();
   if (error) throw error;
@@ -808,7 +816,7 @@ export async function adminUpdate(table, id, payload) {
 }
 
 export async function adminSoftDelete(table, id) {
-  const normTable = (table || '').replace('-', '_');
+  const normTable = (table || '').toLowerCase().replace('-', '_');
   const sb = await getSupabase();
   const { error } = await sb.from(normTable).update({ deleted_at: new Date().toISOString() }).eq('id', id);
   if (error) throw error;
@@ -863,10 +871,9 @@ export async function fetchAssessments(filters = {}) {
   const sb = await getSupabase();
   try {
     let query = sb.from('assessments').select('*, classes(name), levels(name, level_number)');
-    if (filters.program_id) query = query.eq('program_id', filters.program_id);
-    if (filters.batch_id) query = query.eq('batch_id', filters.batch_id);
+    if (filters.class_id) query = query.eq('class_id', filters.class_id);
     
-    const { data, error } = await query.is('deleted_at', null).order('created_at', { ascending: false });
+    const { data, error } = await query.order('created_at', { ascending: false });
     if (!error && data) return data;
   } catch (err) {
     console.warn('fetchAssessments fallback notice:', err.message);
@@ -875,8 +882,37 @@ export async function fetchAssessments(filters = {}) {
 }
 
 export async function fetchAssignments(filters = {}) {
-  // Alias stabil ke fetchAssessments untuk kompatibilitas V1
-  return await fetchAssessments(filters);
+  const sb = await getSupabase();
+  try {
+    let query = sb.from('assignments').select('*, assessments(*, classes(name), levels(name, level_number))');
+    
+    let orConditions = [];
+    if (filters.batch_id) orConditions.push(`batch_id.eq.${filters.batch_id}`);
+    if (filters.student_id) orConditions.push(`student_id.eq.${filters.student_id}`);
+    
+    if (orConditions.length > 0) {
+      query = query.or(orConditions.join(','));
+    }
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    const validAssessments = [];
+    for (const a of data || []) {
+      if (a.assessments && !a.assessments.deleted_at && a.assessments.status === 'PUBLISHED') {
+        validAssessments.push({
+          ...a.assessments,
+          assignment_id: a.id,
+          availability_start: a.availability_start,
+          availability_end: a.availability_end
+        });
+      }
+    }
+    return validAssessments;
+  } catch (err) {
+    console.warn('fetchAssignments failed:', err.message);
+    return [];
+  }
 }
 
 // ============================================================
@@ -890,13 +926,13 @@ export async function publishAssessmentDefinition(id) {
   return data;
 }
 
-export const publishChallengeDefinition = publishAssessmentDefinition;
+
 
 export async function createAssessmentInstance(payload) {
-  return await adminInsert('assessment_instances', payload);
+  return await adminInsert('assignments', payload);
 }
 
-export const createChallengeInstance = createAssessmentInstance;
+
 
 // ============================================================
 // MISSING ADMIN EXPORTS — Previously caused module link crash
@@ -923,7 +959,7 @@ export async function adminRestore(table, id) {
 // --- Duplicate student detection & merge ---
 export async function detectDuplicateStudents(programId) {
   const sb = await getSupabase();
-  let query = sb.from('students').select('id, name, program_id, batch_id, deleted_at').is('deleted_at', null);
+  let query = sb.from('students').select('id, name, program_id, batch_id, deleted_at');
   if (programId) query = query.eq('program_id', programId);
   const { data, error } = await query;
   if (error) throw error;
@@ -966,7 +1002,7 @@ export async function mergeDuplicateStudents(duplicateGroups) {
 // --- Duplicate question detection & resequencing ---
 export async function detectDuplicateQuestions(assessmentId) {
   const sb = await getSupabase();
-  let query = sb.from('questions').select('id, question_text, assessment_id, question_order').is('deleted_at', null);
+  let query = sb.from('questions').select('id, question_text, assessment_id, question_order');
   if (assessmentId) query = query.eq('assessment_id', assessmentId);
   const { data, error } = await query;
   if (error) throw error;
@@ -982,7 +1018,7 @@ export async function detectDuplicateQuestions(assessmentId) {
 
 export async function resequenceAssessmentQuestions(assessmentId) {
   const sb = await getSupabase();
-  const { data, error } = await sb.from('questions').select('id').eq('assessment_id', assessmentId).is('deleted_at', null).order('question_order');
+  const { data, error } = await sb.from('questions').select('id').eq('assessment_id', assessmentId).order('question_order');
   if (error) throw error;
   const updates = (data || []).map((q, idx) =>
     sb.from('questions').update({ question_order: idx + 1 }).eq('id', q.id)
@@ -1053,7 +1089,8 @@ export async function fetchGlobalClasses(institutionId) {
 
 export async function fetchTopics(classId) {
   const sb = await getSupabase();
-  let query = sb.from('topics').select('*').is('deleted_at', null);
+  // Include class name join so UI can display it without a second query
+  let query = sb.from('topics').select('*, classes(name)');
   if (classId) query = query.eq('class_id', classId);
   const { data, error } = await query.order('topic_order');
   if (error) throw error;
@@ -1075,9 +1112,10 @@ export async function deleteTopic(id) {
 // --- Word types (validation dictionary) ---
 export async function fetchWordTypes(classId) {
   const sb = await getSupabase();
-  let query = sb.from('word_types').select('*');
+  // word_types table has no deleted_at, order by name column
+  let query = sb.from('word_types').select('*').order('name');
   if (classId) query = query.eq('class_id', classId);
-  const { data, error } = await query.order('word_type');
+  const { data, error } = await query;
   if (error) throw error;
   return data || [];
 }
@@ -1092,12 +1130,14 @@ export async function toggleWordType(id, isActive) {
   if (error) throw error;
 }
 
-// --- Central question bank ---
+// --- Question bank ---
 export async function fetchCentralQuestions(filters = {}) {
   const sb = await getSupabase();
-  let query = sb.from('questions').select('*').is('deleted_at', null);
+  // Include topic name join so UI can display it
+  let query = sb.from('questions').select('*, topics(name, class_id)');
   if (filters.assessment_id) query = query.eq('assessment_id', filters.assessment_id);
   if (filters.class_id) query = query.eq('class_id', filters.class_id);
+  if (filters.topic_id) query = query.eq('topic_id', filters.topic_id);
   const { data, error } = await query.order('question_order');
   if (error) throw error;
   return data || [];
@@ -1118,7 +1158,7 @@ export async function deleteCentralQuestion(id) {
 // --- Assessment definitions (admin CRUD) ---
 export async function fetchAssessmentDefinitions(filters = {}) {
   const sb = await getSupabase();
-  let query = sb.from('assessments').select('*, classes(name), levels(name, level_number)').is('deleted_at', null);
+  let query = sb.from('assessments').select('*, classes(name), levels(name, level_number)');
   if (filters.class_id) query = query.eq('class_id', filters.class_id);
   if (filters.institution_id) query = query.eq('institution_id', filters.institution_id);
   const { data, error } = await query.order('created_at', { ascending: false });
@@ -1130,14 +1170,39 @@ export async function createAssessmentDefinition(payload) {
   return await adminInsert('assessments', payload);
 }
 
+export async function createAssessmentDefinitionWithTopics(payload, topicIds = []) {
+  const newAsm = await adminInsert('assessments', payload);
+  if (topicIds && topicIds.length > 0) {
+    const sb = await getSupabase();
+    const topicPayload = topicIds.map(tid => ({ assessment_id: newAsm.id, topic_id: tid }));
+    const { error } = await sb.from('assessment_topics').insert(topicPayload);
+    if (error) throw error;
+  }
+  return newAsm;
+}
+
 export async function updateAssessmentDefinition(id, payload) {
   return await adminUpdate('assessments', id, { ...payload, updated_at: new Date().toISOString() });
+}
+
+export async function updateAssessmentWithTopics(id, payload, topicIds = []) {
+  const updatedAsm = await adminUpdate('assessments', id, { ...payload, updated_at: new Date().toISOString() });
+  const sb = await getSupabase();
+  // Clear existing topics
+  await sb.from('assessment_topics').delete().eq('assessment_id', id);
+  // Insert new topics
+  if (topicIds && topicIds.length > 0) {
+    const topicPayload = topicIds.map(tid => ({ assessment_id: id, topic_id: tid }));
+    const { error } = await sb.from('assessment_topics').insert(topicPayload);
+    if (error) throw error;
+  }
+  return updatedAsm;
 }
 
 // --- Assessment instances ---
 export async function fetchAssessmentInstances(filters = {}) {
   const sb = await getSupabase();
-  let query = sb.from('assessment_instances').select('*');
+  let query = sb.from('assignments').select('*, batches(name), students(name), assessments(title, assessment_type)');
   if (filters.assessment_id) query = query.eq('assessment_id', filters.assessment_id);
   if (filters.batch_id) query = query.eq('batch_id', filters.batch_id);
   const { data, error } = await query.order('created_at', { ascending: false });
@@ -1148,7 +1213,7 @@ export async function fetchAssessmentInstances(filters = {}) {
 // --- Class instances (scheduling) ---
 export async function fetchClassInstances(filters = {}) {
   const sb = await getSupabase();
-  let query = sb.from('class_instances').select('*').is('deleted_at', null);
+  let query = sb.from('class_instances').select('*');
   if (filters.class_id) query = query.eq('class_id', filters.class_id);
   if (filters.batch_id) query = query.eq('batch_id', filters.batch_id);
   const { data, error } = await query.order('created_at', { ascending: false });
@@ -1173,7 +1238,7 @@ export async function addAdditionalMember(instanceId, studentId) {
 // --- Additional Admin Functions ---
 export async function fetchClassMeetings(filters = {}) {
   const sb = await getSupabase();
-  let query = sb.from('class_meetings').select('*').is('deleted_at', null);
+  let query = sb.from('class_meetings').select('*');
   if (filters.class_instance_id) query = query.eq('class_instance_id', filters.class_instance_id);
   const { data, error } = await query.order('created_at', { ascending: false });
   if (error) throw error;
@@ -1216,15 +1281,17 @@ export async function getServerTimeWita() {
 // ============================================================
 // VOCABULARY VAULT — CRUD & IMPORT
 // ============================================================
-export async function fetchVaultWords({ topic = null, search = null, limit = 2500, offset = 0 } = {}) {
+export async function fetchVaultWords({ topic = null, search = null, targetLevel = null, limit = 2500, offset = 0 } = {}) {
   const sb = await getSupabase();
   let query = sb.from('vocabulary_vault')
     .select('*')
-    .is('deleted_at', null)
+    
+    .order('target_level', { ascending: true })
     .order('topic', { ascending: true })
     .order('indonesian', { ascending: true })
     .range(offset, offset + limit - 1);
 
+  if (targetLevel !== null) query = query.eq('target_level', targetLevel);
   if (topic) query = query.eq('topic', topic);
   if (search) {
     const term = search.trim();
@@ -1236,22 +1303,63 @@ export async function fetchVaultWords({ topic = null, search = null, limit = 250
   return data || [];
 }
 
-export async function fetchVaultTopics() {
+export async function fetchVaultTopics(targetLevelNum = null) {
   const sb = await getSupabase();
-  const { data, error } = await sb.from('vocabulary_vault')
+  let query = sb.from('vocabulary_vault')
     .select('topic')
-    .is('deleted_at', null)
-    .order('topic', { ascending: true });
+    ;
+    
+  if (targetLevelNum !== null) {
+    query = query.eq('target_level', targetLevelNum);
+  }
+  
+  const { data, error } = await query.order('topic', { ascending: true });
   if (error) throw error;
   const topics = [...new Set((data || []).map(r => r.topic).filter(Boolean))];
   return topics.sort((a, b) => a.localeCompare(b));
 }
 
+// Bulk-move all words belonging to the given topic names to a new target level
+export async function moveVaultTopicsToLevel(topicNames, targetLevel) {
+  if (!topicNames?.length) throw new Error('No topics selected.');
+  const sb = await getSupabase();
+  const { error } = await sb
+    .from('vocabulary_vault')
+    .update({ target_level: parseInt(targetLevel, 10) })
+    .in('topic', topicNames)
+    ;
+  if (error) throw error;
+}
+
+export async function fetchVaultStats() {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('vocabulary_vault')
+    .select('target_level, topic')
+    ;
+  if (error) throw error;
+  
+  const stats = {};
+  for (const row of (data || [])) {
+    const lvl = row.target_level || 1;
+    if (!stats[lvl]) {
+      stats[lvl] = { total_words: 0, unique_topics: new Set() };
+    }
+    stats[lvl].total_words++;
+    if (row.topic) stats[lvl].unique_topics.add(row.topic);
+  }
+  
+  for (const lvl in stats) {
+    stats[lvl].topics_count = stats[lvl].unique_topics.size;
+    delete stats[lvl].unique_topics;
+  }
+  return stats;
+}
+
 export async function checkVaultDuplicates(newRows) {
   const sb = await getSupabase();
   const { data: vaultData, error } = await sb.from('vocabulary_vault')
-    .select('id, topic, indonesian, english, target_level')
-    .is('deleted_at', null);
+    .select('id, topic, indonesian, english, target_level, word_type')
+    ;
   if (error) throw error;
   const vault = vaultData || [];
 
@@ -1266,15 +1374,15 @@ export async function checkVaultDuplicates(newRows) {
     const rowTopic = normStr(row.topic);
     const rowLevel = parseInt(row.level || row.target_level || 1, 10) || 1;
 
-    const exact = vault.find(v => 
-        normStr(v.english) === rowEng && 
-        normStr(v.indonesian) === rowInd && 
-        normStr(v.topic) === rowTopic && 
-        (v.target_level || 1) === rowLevel
+    const rowType = normStr(row.word_type || 'Verb');
+
+    const conflict = vault.find(v => 
+        normStr(v.indonesian) === rowInd || normStr(v.english) === rowEng
     );
 
-    if (exact) {
-      duplicateConflicts.push({ index: i, row, existingRecord: exact, conflictType: 'EXACT' });
+    if (conflict) {
+      const isExact = normStr(conflict.english) === rowEng;
+      duplicateConflicts.push({ index: i, row, existingRecord: conflict, conflictType: isExact ? 'EXACT' : 'PARTIAL' });
       continue;
     }
 
@@ -1300,7 +1408,7 @@ function sanitizeVaultRow(row) {
   };
 }
 
-export async function importVaultWords(rows, resolutionMap = {}) {
+export async function importVaultWords(rows, resolutionMap = {}, onProgress = null) {
   const sb = await getSupabase();
   const toInsert = [];
   const toUpdate = [];
@@ -1330,24 +1438,92 @@ export async function importVaultWords(rows, resolutionMap = {}) {
   }
 
   const results = { inserted: 0, updated: 0, skipped: 0 };
+  
+  const CHUNK_SIZE = 50;
+  const insertChunks = Math.ceil(toInsert.length / CHUNK_SIZE);
+  const totalOps = insertChunks + toUpdate.length;
+  let currentOps = 0;
+
   if (toInsert.length > 0) {
-    const { error } = await sb.from('vocabulary_vault').insert(toInsert);
-    if (error) throw error;
-    results.inserted = toInsert.length;
+    for (let i = 0; i < toInsert.length; i += CHUNK_SIZE) {
+      const chunk = toInsert.slice(i, i + CHUNK_SIZE);
+      if (onProgress) {
+        currentOps++;
+        onProgress((currentOps / totalOps) * 100, `Inserting new words (Batch ${Math.ceil(i/CHUNK_SIZE)+1}/${insertChunks})...`);
+      }
+      const { error } = await sb.from('vocabulary_vault').insert(chunk);
+      if (error) throw error;
+      results.inserted += chunk.length;
+    }
   }
+
+  let updIndex = 0;
   for (const upd of toUpdate) {
+    updIndex++;
+    if (onProgress) {
+      currentOps++;
+      onProgress((currentOps / totalOps) * 100, `Updating word ${updIndex} of ${toUpdate.length}...`);
+    }
     const { id, ...fields } = upd;
     const { error } = await sb.from('vocabulary_vault').update(fields).eq('id', id);
     if (!error) results.updated++;
   }
+  
   results.skipped = rows.length - results.inserted - results.updated;
   clearApiCache('vault');
   return results;
 }
 
+
+export async function mergeVaultDuplicates(groups) {
+  const sb = await getSupabase();
+  for (const group of groups) {
+    const primary = group[0];
+    const others = group.slice(1);
+    
+    let allEnglish = [];
+    for (const w of group) {
+      allEnglish.push(...(w.english || '').split(/\s*[/;|]\s*/).map(s => s.trim()).filter(Boolean));
+    }
+    const mergedEnglish = [...new Set(allEnglish)].join(' / ');
+    
+    const { error: updErr } = await sb.from('vocabulary_vault').update({
+      english: mergedEnglish,
+      updated_at: new Date().toISOString()
+    }).eq('id', primary.id);
+    if (updErr) throw updErr;
+    
+    for (const o of others) {
+      await sb.from('vocabulary_vault').update({ deleted_at: new Date().toISOString() }).eq('id', o.id);
+    }
+  }
+  clearApiCache('vault');
+  return true;
+}
+
 export async function deleteVaultWord(id) {
   const sb = await getSupabase();
   const { error } = await sb.from('vocabulary_vault').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+  if (error) throw error;
+  clearApiCache('vault');
+  return true;
+}
+
+export async function updateVaultWord(id, payload) {
+  const sb = await getSupabase();
+  payload.updated_at = new Date().toISOString();
+  const { error } = await sb.from('vocabulary_vault').update(payload).eq('id', id);
+  if (error) throw error;
+  clearApiCache('vault');
+  return true;
+}
+
+export async function renameVaultTopic(oldTopic, newTopic) {
+  const sb = await getSupabase();
+  const { error } = await sb.from('vocabulary_vault')
+    .update({ topic: newTopic, updated_at: new Date().toISOString() })
+    .eq('topic', oldTopic)
+    ;
   if (error) throw error;
   clearApiCache('vault');
   return true;
@@ -1390,25 +1566,36 @@ export async function createVocabMasteryAssessment(config) {
     windowStart = null, windowEnd = null,
     durationMinutes = 60,
     quotaMode = 'full', customQuota = null,
-    sourceTopic = null, sourceTaskIds = [], sourceQuizIds = []
+    sourceTopic = null, sourceTaskIds = [], sourceQuizIds = [],
+    answerType = 'written',
+    assessmentType = 'VOCAB_MASTERY'
   } = config;
 
   let vaultWords = [];
   let sourceTopics = [];
 
-  // Determine Target Level
+  // Determine Target Level safely
   let targetLevel = 1;
   let isAllLevels = false;
-  const { data: lvlData } = await sb.from('levels').select('level_number').eq('id', levelId).single();
-  if (lvlData) {
-      targetLevel = lvlData.level_number || 1;
-      if (lvlData.level_number === 0) isAllLevels = true;
+  try {
+    const { data: lvlData } = await sb.from('levels').select('*').eq('id', levelId).single();
+    if (lvlData) {
+        targetLevel = lvlData.level_number || 1;
+        if (lvlData.level_number === 0 || lvlData.level_number == null) isAllLevels = true;
+    }
+  } catch (e) {
+    console.warn("Could not fetch level_number, defaulting to 1");
   }
 
   if (tier === 'TASK') {
     if (!sourceTopic) throw new Error('sourceTopic is required for TASK tier.');
-    let q = sb.from('vocabulary_vault').select('*').eq('topic', sourceTopic).is('deleted_at', null);
+    let q = sb.from('vocabulary_vault').select('*').eq('topic', sourceTopic);
     if (!isAllLevels) q = q.eq('target_level', targetLevel);
+    
+    if (assessmentType === 'IDIOM_PROVERB') {
+      q = q.in('word_type', ['Idiom', 'Proverb', 'Expression', 'Phrase']);
+    }
+    
     const { data, error } = await q.order('topic').order('indonesian');
     if (error) throw error;
     vaultWords = data || [];
@@ -1416,35 +1603,31 @@ export async function createVocabMasteryAssessment(config) {
   } else if (tier === 'QUIZ') {
     if (!sourceTaskIds.length) throw new Error('sourceTaskIds required for QUIZ tier.');
     const { data: taskAsms, error: tErr } = await sb.from('assessments')
-      .select('id, payload')
+      .select('id, description')
       .in('id', sourceTaskIds)
-      .is('deleted_at', null);
+      ;
     if (tErr) throw tErr;
+    
+    const { data: aqs } = await sb.from('assessment_questions').select('topic_snapshot').in('assessment_id', sourceTaskIds);
     const topicsSet = new Set();
-    (taskAsms || []).forEach(a => {
-      const t = a.payload?.source_topic || a.payload?.sourceTopic;
-      if (t) topicsSet.add(t);
+    (aqs || []).forEach(aq => {
+      if (aq.topic_snapshot) topicsSet.add(aq.topic_snapshot);
     });
     sourceTopics = [...topicsSet];
-    let q = sb.from('vocabulary_vault').select('*').in('topic', sourceTopics).is('deleted_at', null);
+    let q = sb.from('vocabulary_vault').select('*').in('topic', sourceTopics);
     if (!isAllLevels) q = q.eq('target_level', targetLevel);
     const { data, error } = await q.order('topic').order('indonesian');
     if (error) throw error;
     vaultWords = data || [];
   } else if (tier === 'EXAM') {
     if (!sourceQuizIds.length) throw new Error('sourceQuizIds required for EXAM tier.');
-    const { data: quizAsms, error: qErr } = await sb.from('assessments')
-      .select('id, payload')
-      .in('id', sourceQuizIds)
-      .is('deleted_at', null);
-    if (qErr) throw qErr;
+    const { data: aqs } = await sb.from('assessment_questions').select('topic_snapshot').in('assessment_id', sourceQuizIds);
     const topicsSet = new Set();
-    (quizAsms || []).forEach(a => {
-      (a.payload?.source_topics || []).forEach(t => topicsSet.add(t));
-      if (a.payload?.source_topic) topicsSet.add(a.payload.source_topic);
+    (aqs || []).forEach(aq => {
+      if (aq.topic_snapshot) topicsSet.add(aq.topic_snapshot);
     });
     sourceTopics = [...topicsSet];
-    let q = sb.from('vocabulary_vault').select('*').in('topic', sourceTopics).is('deleted_at', null);
+    let q = sb.from('vocabulary_vault').select('*').in('topic', sourceTopics);
     if (!isAllLevels) q = q.eq('target_level', targetLevel);
     const { data, error } = await q.order('topic').order('indonesian');
     if (error) throw error;
@@ -1454,8 +1637,20 @@ export async function createVocabMasteryAssessment(config) {
   const totalGatheredWords = vaultWords.length;
   if (!totalGatheredWords) throw new Error('No words found in Vault for the selected source.');
 
+  // Shuffle helper
+  const fisherYates = (arr) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+
   let selectedWords = vaultWords;
-  if (quotaMode === 'custom' && customQuota && customQuota < totalGatheredWords) {
+  // IDIOM_PROVERB: enforce exactly 10 random questions
+  if (assessmentType === 'IDIOM_PROVERB') {
+    selectedWords = fisherYates([...vaultWords]).slice(0, 10);
+  } else if (quotaMode === 'custom' && customQuota && customQuota < totalGatheredWords) {
     const topicMap = new Map();
     for (const w of vaultWords) {
       if (!topicMap.has(w.topic)) topicMap.set(w.topic, []);
@@ -1465,35 +1660,18 @@ export async function createVocabMasteryAssessment(config) {
   }
 
   const assessmentPayload = {
-    name:                 title,
-    title:                title,
-    assessment_type:      tier,
-    module_type:          'VOCAB_MASTERY',
-    institution_id:       institutionId,
-    program_id:           programId,
     class_id:             classId,
     level_id:             levelId,
-    schedule_mode:        scheduleMode,
-    prerequisites:        (tier === 'QUIZ' && sourceTaskIds.length > 0) ? { parents: sourceTaskIds.map(id => ({ assessment_id: id, min_score: 60 })) } : 
-                          (tier === 'EXAM' && sourceQuizIds.length > 0) ? { parents: sourceQuizIds.map(id => ({ assessment_id: id, min_score: 60 })) } : null,
-    is_unlocked:          scheduleMode === 'batch' ? true : false,
-    window_start:         windowStart || null,
-    window_end:           windowEnd || null,
-    time_limit_minutes:   durationMinutes,
-    question_order:       questionOrder,
+    assessment_type:      'VOCAB_' + tier,
+    title:                title,
+    description:          'Vocabulary Mastery (' + tier + '). Topics: ' + sourceTopics.join(', '),
     status:               'PUBLISHED',
-    payload: {
-      module:             'VOCAB_MASTERY',
-      vocab_tier:         tier,
-      source_topic:       sourceTopic || null,
-      source_topics:      sourceTopics,
-      source_task_ids:    sourceTaskIds,
-      source_quiz_ids:    sourceQuizIds,
-      quota_mode:         quotaMode,
-      custom_quota:       customQuota || null,
-      total_source_words: totalGatheredWords,
-      sampled_words:      selectedWords.length
-    },
+    availability_start:   windowStart || null,
+    availability_end:     windowEnd || null,
+    working_duration_minutes: durationMinutes || null,
+    prerequisite_assessment_id: (tier === 'QUIZ' && sourceTaskIds.length > 0) ? sourceTaskIds[0] : 
+                                (tier === 'EXAM' && sourceQuizIds.length > 0) ? sourceQuizIds[0] : null,
+    created_by:           'Admin (Vault)',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
@@ -1502,28 +1680,68 @@ export async function createVocabMasteryAssessment(config) {
   if (asmErr) throw asmErr;
   const assessmentId = newAssessment.id;
 
-  const questionRows = selectedWords.map((word, idx) => ({
-    assessment_id:    assessmentId,
-    question_text:    word.indonesian,
-    correct_answer:   canonicalizeSynonyms(word.english),
-    question_order:   idx + 1,
-    answer_type:      'written',
-    metadata: {
-      topic:     word.topic,
-      word_type: word.word_type || 'Verb'
-    },
-    created_at: new Date().toISOString()
-  }));
+  // Build global pool and per-type pools for distractor selection
+  const allEnglishAnswers = [...new Set(vaultWords.map(w => canonicalizeSynonyms(w.english).split(' / ')[0].trim()))];
+
+  // Same-type distractor pools (for IDIOM_PROVERB: Expression / Idiom / Proverb stay separate)
+  const typeDistractorPools = {};
+  vaultWords.forEach(w => {
+    const type = (w.word_type || 'Vocab').toLowerCase();
+    if (!typeDistractorPools[type]) typeDistractorPools[type] = new Set();
+    typeDistractorPools[type].add(canonicalizeSynonyms(w.english).split(' / ')[0].trim());
+  });
+  
+  for (const type in typeDistractorPools) {
+    typeDistractorPools[type] = Array.from(typeDistractorPools[type]);
+  }
+
+  const aqRows = selectedWords.map((word, idx) => {
+    const answers = canonicalizeSynonyms(word.english).split(' / ').map(s => s.trim()).filter(Boolean);
+    
+    let optionsSnapshot = null;
+    if (answerType === 'dropdown' || answerType === 'dropdown_10') {
+      const correctAns = answers[0];
+      const numDistractors = answerType === 'dropdown_10' ? 9 : 3;
+
+      // For IDIOM_PROVERB: prefer same-type distractors first
+      const wordType = (word.word_type || 'Vocab').toLowerCase();
+      let sameTypePool = (typeDistractorPools[wordType] || []).filter(a => !answers.includes(a));
+      fisherYates(sameTypePool);
+
+      // If same-type pool is too small, pad with global pool
+      const globalPool = allEnglishAnswers.filter(a => !answers.includes(a) && !sameTypePool.includes(a));
+      fisherYates(globalPool);
+      const distractors = [...sameTypePool, ...globalPool].slice(0, numDistractors);
+
+      // Combine correct answer + distractors and shuffle final list
+      const finalOptions = fisherYates([correctAns, ...distractors]);
+      optionsSnapshot = finalOptions;
+    }
+
+    return {
+      assessment_id:             assessmentId,
+      question_id:               null,
+      question_text_snapshot:    word.indonesian,
+      accepted_answers_snapshot: answers,
+      options_snapshot:          optionsSnapshot || [],
+      topic_snapshot:            word.topic || 'General',
+      word_type_snapshot:        word.word_type || 'Verb',
+      answer_type:               answerType,
+      display_order:             idx + 1,
+      created_at: new Date().toISOString()
+    };
+  });
 
   const CHUNK = 200;
-  for (let i = 0; i < questionRows.length; i += CHUNK) {
-    const chunk = questionRows.slice(i, i + CHUNK);
-    const { error: qErr } = await sb.from('questions').insert(chunk);
+  for (let i = 0; i < aqRows.length; i += CHUNK) {
+    const chunk = aqRows.slice(i, i + CHUNK);
+    const { error: qErr } = await sb.from('assessment_questions').insert(chunk);
     if (qErr) throw qErr;
   }
 
   clearApiCache('vault');
   clearApiCache('assessments');
+  clearAdminCache('assessments');
   return { assessmentId, title, tier, totalWords: totalGatheredWords, sampledWords: selectedWords.length, sourceTopics };
 }
 
@@ -1538,14 +1756,17 @@ export async function checkAndTriggerLevelUp(studentId, currentLevelId) {
     .single();
   if (lvlErr || !levelData) return { levelUp: false, newLevel: null, status: 'ERROR' };
 
-  // Audits ALL EXAM assessments in this level across ALL classes
+  // Level-up gate: ONLY the Vocabulary Mastery EXAM (tier = EXAM) for this level
+  // The single exam that counts is the Vocab Mastery EXAM with >= 60% to advance
   const { data: exams, error: exErr } = await sb.from('assessments')
     .select('id, levels!inner(level_number)')
     .eq('level_id', currentLevelId)
     .neq('levels.level_number', 0)
-    .eq('assessment_type', 'EXAM')
+    .in('assessment_type', ['EXAM', 'VOCAB_EXAM'])
     .eq('status', 'PUBLISHED')
-    .is('deleted_at', null);
+    
+    .order('created_at', { ascending: false })
+    .limit(1); // Only the most recent EXAM counts as the gating assessment
   if (exErr || !exams || exams.length === 0) return { levelUp: false, newLevel: null, status: 'NO_EXAMS' };
 
   const examIds = exams.map(e => e.id);
@@ -1579,5 +1800,105 @@ export async function checkAndTriggerLevelUp(studentId, currentLevelId) {
   if (nlErr || !nextLevel) return { levelUp: false, newLevel: null, status: 'NEXT_LEVEL_NOT_FOUND' };
 
   await sb.from('students').update({ level_id: nextLevel.id }).eq('id', studentId);
+  
+  if (typeof sessionStorage !== 'undefined') {
+    const sessionStr = sessionStorage.getItem('topscore_session');
+    if (sessionStr) {
+      try {
+        const sessionObj = JSON.parse(sessionStr);
+        sessionObj.level_id = nextLevel.id;
+        sessionObj.level_name = nextLevel.name;
+        sessionObj.level_number = nextLevelNum;
+        sessionStorage.setItem('topscore_session', JSON.stringify(sessionObj));
+      } catch (e) {
+        console.error('Error updating session storage for level up', e);
+      }
+    }
+    sessionStorage.setItem('topscore_pending_levelup_celebration', nextLevel.name);
+  }
+
   return { levelUp: true, newLevel: nextLevel.name, status: 'LEVELED_UP' };
+}
+
+export async function fetchStudentLevel(studentId) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('students')
+    .select(`
+      batch_id,
+      batches:batch_id(current_level_id, levels:current_level_id(id, level_number, name))
+    `)
+    .eq('id', studentId)
+    .single();
+  
+  if (error || !data) {
+    if (error) console.error("fetchStudentLevel Error:", error);
+    return { level_id: null, level_number: 1, level_name: '1st Level' };
+  }
+  
+  const lvlId = data.batches?.current_level_id || null;
+  const lvlNum = data.batches?.levels?.level_number || 1;
+  const lvlName = data.batches?.levels?.name || '1st Level';
+  return { level_id: lvlId, level_number: lvlNum, level_name: lvlName };
+}
+
+export async function exportVaultWords(mode = 'all') {
+  const sb = await getSupabase();
+  let query = sb.from('vocab_vault')
+    .select('level, topic, indonesian, english, word_type, created_at')
+    .order('topic', { ascending: true })
+    .order('indonesian', { ascending: true });
+
+  if (mode === 'single_words') {
+    // Exclude phrases
+    // We cannot use NOT IN easily if some are NULL, but we can do it if word_type is not null
+    // or just fetch all and filter in JS if simpler, but let's filter in JS to be safe with NULLs.
+  }
+
+  const { data: words, error } = await query;
+
+  if (error) throw new Error('Failed to fetch words for export: ' + error.message);
+  if (!words || words.length === 0) throw new Error('No words found in Vault.');
+
+  let filteredWords = words;
+  if (mode === 'single_words') {
+    filteredWords = words.filter(w => !['expression', 'idiom', 'proverb'].includes((w.word_type || '').toLowerCase()));
+  } else if (mode === 'phrases') {
+    filteredWords = words.filter(w => ['expression', 'idiom', 'proverb'].includes((w.word_type || '').toLowerCase()));
+  }
+  
+  if (filteredWords.length === 0) throw new Error('No words found in Vault for this category.');
+
+  // Format data for Excel
+  const exportData = filteredWords.map(w => ({
+    LEVEL: w.level || '1',
+    TOPIC: w.topic || '',
+    'WORD TYPE': w.word_type || 'Vocab',
+    INDONESIAN: w.indonesian || '',
+    ENGLISH: w.english || ''
+  }));
+
+  // Create workbook and worksheet
+  const ws = XLSX.utils.json_to_sheet(exportData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "VaultWords");
+
+  // Export
+  XLSX.writeFile(wb, `Vocabulary_Vault_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+export async function adminUnlockRemedialExam(attemptId) {
+  const sb = await getSupabase();
+  const { data, error } = await sb.from('attempts')
+    .update({ is_remedial_unlocked: true, updated_at: new Date().toISOString() })
+    .eq('id', attemptId)
+    .select().single();
+  if (error) throw error;
+  clearAdminCache('attempts');
+  return data;
+}
+
+if (typeof window !== 'undefined') {
+  window.adminFetchAll = adminFetchAll;
+  window.adminUpdate = adminUpdate;
+  window.adminInsert = adminInsert;
 }

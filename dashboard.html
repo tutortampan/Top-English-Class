@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=4.7.0" />
-  <link rel="stylesheet" href="css/dashboard.css?v=4.7.0" />
-  <link rel="stylesheet" href="css/components/avatars.css?v=4.7.0" />
+  <link rel="stylesheet" href="css/style.css?v=4.7.4" />
+  <link rel="stylesheet" href="css/dashboard.css?v=4.7.4" />
+  <link rel="stylesheet" href="css/components/avatars.css?v=4.7.4" />
   <style>
     /* ============================================================
        COMPACT MOBILE-FIRST STUDENT DASHBOARD STYLES
@@ -787,10 +787,10 @@
   </div>
 
   <script type="module">
-    import { fetchStudentClasses, fetchStudentProgress, fetchAssessmentsForStudentClass, fetchStudentAttemptsForAssessment, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, updateStudentEducation, formatStudentName, fetchAssignments, fetchAssessments, toOrdinalLevel } from './js/api.js?v=4.7.0';
-    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.7.0';
-    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.7.0';
-    import { testMicrophoneCapability } from './js/speech.js?v=4.7.0';
+    import { fetchStudentClasses, fetchStudentProgress, fetchAssessmentsForStudentClass, fetchStudentAttemptsForAssessment, fetchAllStudentAttempts, updateStudentPin, uploadStudentPhoto, updateStudentGender, updateStudentBirthday, updateStudentEducation, formatStudentName, fetchAssignments, fetchAssessments, toOrdinalLevel, fetchBatches, fetchStudentLevel } from './js/api.js?v=4.7.4';
+    import { requireStudentSession, clearStudentSession, updateStudentSessionGender } from './js/session.js?v=4.7.4';
+    import { showToast, showLoading, hideLoading, getGrade, withTimeout } from './js/app.js?v=4.7.4';
+    import { testMicrophoneCapability } from './js/speech.js?v=4.7.4';
 
 
     function escapeHtml(str) {
@@ -1319,7 +1319,7 @@
           }
           if (hasEducation && !session.education) {
              session.education = st.education;
-             const { setStudentSession } = await import('./js/session.js?v=4.7.0');
+             const { setStudentSession } = await import('./js/session.js?v=4.7.4');
              setStudentSession(session);
           }
         }
@@ -1369,7 +1369,7 @@
           try {
             await updateStudentEducation(session.student_id, eduList);
             session.education = eduList;
-            const { setStudentSession } = await import('./js/session.js?v=4.7.0');
+            const { setStudentSession } = await import('./js/session.js?v=4.7.4');
             setStudentSession(session);
             showToast('Academic background verified!', 'success');
             doResolve();
@@ -1394,15 +1394,39 @@
 
         showLoading('Loading your dashboard…');
 
-        // Fetch legacy data + V1 assignments concurrently
+        const studentLvl = await fetchStudentLevel(session.student_id);
+        if (studentLvl.level_id) {
+          session.level_id = studentLvl.level_id;
+          session.level_number = studentLvl.level_number;
+          session.level_name = studentLvl.level_name;
+          sessionStorage.setItem('topscore_session', JSON.stringify(session));
+        }
+
+        // Check for Level-Up Celebration
+        const celebration = sessionStorage.getItem('topscore_pending_levelup_celebration');
+        if (celebration) {
+          sessionStorage.removeItem('topscore_pending_levelup_celebration');
+          setTimeout(() => {
+            if (typeof window.Swal !== 'undefined') {
+              Swal.fire({
+                title: '🎉 Level Up!',
+                text: `Congratulations! You have unlocked ${celebration}.`,
+                icon: 'success',
+                confirmButtonColor: '#6366f1'
+              });
+            } else {
+              showToast(`🎉 Congratulations! You have unlocked ${celebration}.`, 'success');
+            }
+          }, 1000);
+        }
+
         const [Classes, progress, attempts, assignmentsRaw, assessmentsRaw] = await withTimeout(
           Promise.all([
-            fetchStudentClasses(session.program_id, session.institution_id),
+            fetchStudentClasses(session.program_id, session.institution_id, null),
             fetchStudentProgress(session.student_id),
             fetchAllStudentAttempts(session.student_id),
-            // V1: fetch assignments for this student's batch + individual
-            fetchAssignments({ batch_id: session.batch_id, student_id: session.student_id }).catch(() => []),
-            fetchAssessments({ program_id: session.program_id, batch_id: session.batch_id }).catch(() => [])
+            Promise.resolve([]),
+            fetchAssessments({ class_id: null }).catch(() => [])
           ]),
           20000,
           'Fetching dashboard data'
@@ -1411,13 +1435,9 @@
         hideLoading();
         renderClasses(Classes, progress);
 
-        // V1: assessments are directly assigned to program or batch, so no need to cross-check with instances
-        const v1Assessments = assessmentsRaw || [];
-        if (v1Assessments.length > 0) {
-          await renderAssignedAssessments(v1Assessments, attempts);
-        }
-
-        await computeOverallStats(attempts, v1Assessments);
+        const myClassIds = Classes.map(c => c.id);
+        const myAssessments = assessmentsRaw.filter(a => myClassIds.includes(a.class_id) || myClassIds.includes(a.Class_id));
+        await computeOverallStats(attempts, myAssessments);
         setupProfileModal(attempts);
       } catch(e) {
         hideLoading();
@@ -1430,6 +1450,8 @@
       if (subjCountEl) subjCountEl.textContent = rawClasses.length;
 
       const grid = document.getElementById('classes-grid');
+      grid.innerHTML = '';
+
       if (!rawClasses.length) {
         grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
           <div class="empty-state__icon">📚</div>
@@ -1439,39 +1461,95 @@
         return;
       }
 
+      const activeClasses = [];
+      const completedClasses = [];
+      const studentLevelNum = session.level_number || 1;
+      const studentLevelId = session.level_id;
+
+      rawClasses.forEach(c => {
+        const cLvlNum = c.levels?.level_number;
+        const isCurrentLevel = (studentLevelId && c.level_id === studentLevelId) || (studentLevelNum && cLvlNum === studentLevelNum);
+        
+        // A class is active if it's explicitly unleveled (0) OR if it matches the student's valid level
+        if (cLvlNum === 0 || isCurrentLevel) {
+          activeClasses.push(c);
+        } else if (studentLevelNum && cLvlNum < studentLevelNum) {
+          completedClasses.push(c);
+        }
+      });
+
       // Strict alphabetical sorting (A to Z)
-      const Classes = [...rawClasses].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      activeClasses.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      completedClasses.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
       const classIcons = ['&#128218;', '&#9999;&#65039;', '&#128483;&#65039;', '&#127911;', '&#128200;', '&#127757;', '&#128214;', '&#128172;'];
-      grid.innerHTML = '';
+      
+      if (activeClasses.length === 0) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+          <div class="empty-state__icon">📚</div>
+          <h3>No Active Classes</h3>
+          <p>You don't have any active classes for your current level.</p>
+        </div>`;
+      } else {
+        activeClasses.forEach((subj, idx) => {
+          const subjProgress = progress.filter(p => p.Class_id === subj.id);
+          const isCompleted = subjProgress.some(p => p.is_completed);
+          const pct = isCompleted ? 100 : 0;
 
-      Classes.forEach((subj, idx) => {
-        const subjProgress = progress.filter(p => p.Class_id === subj.id);
-        const isCompleted = subjProgress.some(p => p.is_completed);
-        const pct = isCompleted ? 100 : 0;
+          const card = document.createElement('div');
+          card.className = 'class-card';
+          card.setAttribute('role', 'button');
+          card.setAttribute('tabindex', '0');
+          card.setAttribute('aria-label', `Class: ${subj.name}`);
+          card.innerHTML = `
+            <div class="class-icon">${classIcons[idx % classIcons.length]}</div>
+            <div class="class-name">${subj.name}</div>
+            <div class="text-sm text-muted mb-3">${isCompleted ? "Completed" : "In Progress"}</div>
+            <div class="score-bar-wrap">
+              <div class="score-bar" style="width:${pct}%"></div>
+            </div>
+          `;
+          card.addEventListener('click', () => openClassModal(subj, progress));
+          card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openClassModal(subj, progress); });
+          grid.appendChild(card);
+        });
+      }
 
-        const card = document.createElement('div');
-        card.className = 'class-card';
-        card.setAttribute('role', 'button');
-        card.setAttribute('tabindex', '0');
-        card.setAttribute('aria-label', `Class: ${subj.name}`);
-        card.innerHTML = `
-          <div class="class-icon">${classIcons[idx % classIcons.length]}</div>
-          <div class="class-name">${subj.name}</div>
-          <div class="text-sm text-muted mb-3">${isCompleted ? "Completed" : "In Progress"}</div>
-          <div class="score-bar-wrap">
-            <div class="score-bar" style="width:${pct}%"></div>
-          </div>
-          
-        `;
-
-        card.addEventListener('click', () => openClassModal(subj, progress));
-        card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openClassModal(subj, progress); });
-        grid.appendChild(card);
-
-        // Render level dots
+      if (completedClasses.length > 0) {
+        const drawer = document.createElement('details');
+        drawer.style.cssText = 'grid-column:1/-1; margin-top:24px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; background:rgba(255,255,255,0.02); overflow:hidden;';
         
-      });
+        const summary = document.createElement('summary');
+        summary.style.cssText = 'padding:16px; cursor:pointer; font-weight:600; color:var(--clr-text-2); outline:none; user-select:none; display:flex; align-items:center; gap:8px;';
+        summary.innerHTML = `<span>🎓</span> Completed Milestones (Previous Levels)`;
+        drawer.appendChild(summary);
+
+        const compGrid = document.createElement('div');
+        compGrid.className = 'classes-grid';
+        compGrid.style.cssText = 'padding:16px; border-top:1px solid rgba(255,255,255,0.05); gap:16px;';
+        
+        completedClasses.forEach((subj, idx) => {
+          const card = document.createElement('div');
+          card.className = 'class-card';
+          card.style.opacity = '0.75';
+          card.setAttribute('role', 'button');
+          card.setAttribute('tabindex', '0');
+          card.innerHTML = `
+            <div class="class-icon" style="filter:grayscale(1)">${classIcons[idx % classIcons.length]}</div>
+            <div class="class-name">${subj.name}</div>
+            <div class="text-sm text-muted mb-3">Locked / Read-Only</div>
+            <div class="score-bar-wrap">
+              <div class="score-bar" style="width:100%; background:var(--clr-success);"></div>
+            </div>
+          `;
+          card.addEventListener('click', () => openClassModal(subj, progress));
+          card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openClassModal(subj, progress); });
+          compGrid.appendChild(card);
+        });
+        
+        drawer.appendChild(compGrid);
+        grid.appendChild(drawer);
+      }
     }
 
     // ── openClassModal: Opens the Level Modal for a Class ──
@@ -1498,8 +1576,8 @@
 
         if (!Assessments || Assessments.length === 0) {
           container.innerHTML = `<div style="padding:2.5rem 1.5rem;text-align:center;color:var(--clr-text-3);">
-            <div style="font-size:2.5rem;margin-bottom:0.75rem;">📈­</div>
-            <p style="font-size:0.9rem;">No published Assessments for this Class yet.</p></div>`;
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">📈</div>
+            <p style="font-size:0.9rem;">No published Assessments available in this Class yet.</p></div>`;
           return;
         }
 
@@ -1566,9 +1644,23 @@
               statusBadge = `<span style="background:${badgeBg};color:${badgeClr};border:1px solid ${badgeClr}33;
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">
                               ${passed ? '&#10003; Passed' : '&#10007; Failed'} ${bestPct.toFixed(0)}%</span>`;
-              actionBtn   = `<button onclick="location.href='result.html?attempt_id=${best.id}'"
-                              style="background:rgba(255,255,255,0.06);color:var(--clr-text-2);border:1px solid var(--clr-border);
-                              padding:6px 14px;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;">View Result</button>`;
+
+              if (Assessment.assessment_type === 'EXAM' && !passed) {
+                if (best.is_remedial_unlocked) {
+                  actionBtn = `<button onclick="location.href='assessment.html?assessment_id=${Assessment.id}'"
+                                style="background:var(--clr-accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;
+                                font-size:0.78rem;font-weight:700;cursor:pointer;">🔓 Remedial Attempt Authorized — Start Retake</button>`;
+                } else {
+                  actionBtn = `<div style="display:flex; flex-direction:column; align-items:flex-end; text-align:right;">
+                                 <span style="background:rgba(239,68,68,0.15);color:#f87171;padding:4px 8px;border-radius:4px;font-size:0.7rem;font-weight:700; border: 1px solid rgba(239,68,68,0.3); margin-bottom:4px;">🔒 Locked (Remediation Required)</span>
+                                 <span style="font-size:0.65rem;color:var(--clr-text-3);">Official Exam score is below passing threshold.<br>Contact your tutor for remedial authorization.</span>
+                               </div>`;
+                }
+              } else {
+                actionBtn = `<button onclick="location.href='result.html?attempt_id=${best.id}'"
+                                style="background:rgba(255,255,255,0.06);color:var(--clr-text-2);border:1px solid var(--clr-border);
+                                padding:6px 14px;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;">View Result</button>`;
+              }
             } else {
               statusBadge = `<span style="background:rgba(99,102,241,0.12);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">Not Started</span>`;
@@ -1622,6 +1714,10 @@
 
     // --- V1: Render Assigned Assessments Section ---
     // (Existing assessments logic)
+    // --- Render Completed Assessments Section (Bottom of Dashboard) ---
+    // --- Profile Modal & History ---
+    // --- Level Modal close ---
+    // --- Gamification: Show Level Up Popup ---
     // --- Render Completed Assessments Section (Bottom of Dashboard) ---
     // --- Profile Modal & History ---
     // --- Level Modal close ---
@@ -1731,7 +1827,14 @@
           statusBadge = `<span class="badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);">\u25BA In Progress</span>`;
           actionBtn = `<button class="btn btn-warning btn-sm" data-aid="${asm.id}">Resume</button>`;
         } else if (isCompleted) {
-          const retakesAllowed = asm.max_attempts == null || (asm.max_attempts > (allAttempts.filter(a => (a.assessment_id || a.Assessment_id) === asm.id && a.status !== 'IN_PROGRESS').length));
+          const asmTypeCheck = asm.assessment_type || asm.Assessment_type || 'Assessment';
+          let retakesAllowed = asm.max_attempts == null || (asm.max_attempts > (allAttempts.filter(a => (a.assessment_id || a.Assessment_id) === asm.id && a.status !== 'IN_PROGRESS').length));
+          
+          if (asmTypeCheck === 'EXAM' && !passed) {
+             const remedialUnlocked = allAttempts.some(a => (a.assessment_id || a.Assessment_id) === asm.id && a.is_remedial_unlocked === true);
+             if (!remedialUnlocked) retakesAllowed = false;
+          }
+
           statusBadge = passed
             ? `<span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);">\u2713 Passed</span>`
             : `<span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);">Needs Improvement</span>`;
@@ -1800,7 +1903,7 @@
       // Wire up buttons
       section.querySelectorAll('[data-aid]').forEach(btn => {
         btn.addEventListener('click', () => {
-          sessionStorage.setItem('tec_assessment_id', btn.dataset.aid);
+          sessionStorage.setItem('topscore_assessment_id', btn.dataset.aid);
           window.location.href = 'assessment.html';
         });
       });
@@ -2366,6 +2469,7 @@
     loadDashboard();
   </script></body>
 </html>
+
 
 
 

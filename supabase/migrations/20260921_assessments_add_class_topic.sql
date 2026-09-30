@@ -1,5 +1,5 @@
 -- ============================================================
--- TOP ENGLISH CLASS: Add missing columns to assessments table
+-- TopsCore: Add missing columns to assessments table
 -- ============================================================
 -- The live assessments table is missing class_id, topic_id, and assessment_type.
 -- These were defined in 20260917_topscore_modules_assessments.sql but that 

@@ -1,11 +1,15 @@
-import { adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete } from '../api.js?v=4.7.0';
-import { getSupabase } from '../supabase.js?v=4.7.0';
-import { generateExecutiveCV } from './cv-export.js?v=4.7.0';
-import { getBustedAvatarUrl } from '../utils/avatar-engine.js?v=4.7.0';
-import { showToast } from '../app.js?v=4.7.0';
+import { adminFetchAll, adminInsert, adminUpdate, adminSoftDelete, adminHardDelete, formatStudentName } from '../api.js?v=4.7.4';
+import { getSupabase } from '../supabase.js?v=4.7.4';
+import { generateExecutiveCV } from './cv-export.js?v=4.7.4';
+import { getBustedAvatarUrl } from '../utils/avatar-engine.js?v=4.7.4';
+import { showToast } from '../app.js?v=4.7.4';
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 async function ensureProfessionalProfile() {
-  const records = await adminFetchAll('user_professionals');
+  const records = []; // Deprecated user_professionals
   if (records && records.length > 0) {
     return records[0];
   }
@@ -15,14 +19,18 @@ async function ensureProfessionalProfile() {
 export async function renderDashboard(container) {
   const profile = await ensureProfessionalProfile();
   
-  // Fetch some metrics for the dashboard
-  const [students, classes, classMeetings] = await Promise.all([
+  // Fetch metrics for the dashboard (Merged Board & Admin)
+  const [students, classes, classMeetings, programs, batches, institutions] = await Promise.all([
     adminFetchAll('students'),
     adminFetchAll('classes'),
-    adminFetchAll('class_meetings', '*, class_instances(classes(name))')
+    adminFetchAll('class_meetings', '*, class_instances(classes(name))'),
+    adminFetchAll('programs'),
+    adminFetchAll('batches'),
+    adminFetchAll('institutions')
   ]);
   
-  const activeStudents = students.filter(s => s.is_active).length;
+  const activeStudents = students.filter(s => s.is_active && !s.deleted_at).length;
+  const totalStudents = students.filter(s => !s.deleted_at).length;
   const activeClasses = classes.filter(c => c.is_active).length;
   
   const upcomingMeetings = classMeetings
@@ -30,9 +38,48 @@ export async function renderDashboard(container) {
     .sort((a,b) => new Date(a.scheduled_date) - new Date(b.scheduled_date))
     .slice(0, 5);
 
+  const recentStudents = students
+    .filter(s => !s.deleted_at)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 5);
+
+  const sortedInstitutions = [...institutions].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const instsHtml = sortedInstitutions.map(inst => {
+    const instProgs = programs.filter(p => p.institution_id === inst.id).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    return `
+      <div class="glass-card" style="padding:1rem; margin-bottom:1rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+           <h3 style="margin:0; font-size:1.1rem;">&#x1F3E2; ${escHtml(inst.name)}</h3>
+           <div style="display:flex; align-items:center; gap:0.5rem;">
+             <span class="badge ${inst.is_active !== false ? 'badge-success' : 'badge-neutral'}">${inst.is_active !== false ? 'Active' : 'Inactive'}</span>
+             <button class="btn btn-ghost btn-xs" onclick='window._editRecord("institutions", "${inst.id}", ${JSON.stringify(JSON.stringify(inst))})' title="Edit Institution" style="padding:0 0.4rem; height:auto; min-height:0;">✏️</button>
+           </div>
+        </div>
+        <h4 style="margin:0 0 .5rem 0; font-size:.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--fm-text-muted);">Programs</h4>
+        <div style="display:flex; flex-direction:column; gap:.25rem;">
+          ${instProgs.length === 0 ? '<div class="text-muted text-sm">No programs.</div>' : instProgs.map(p => {
+             const progBatches = batches.filter(b => b.program_id === p.id).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+             return `
+             <div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.02); padding:.4rem; border-radius:6px; border:1px solid var(--clr-border);">
+                <div>
+                   <div class="fw-600 text-sm">${escHtml(p.name)}</div>
+                   <div class="text-xs text-muted">${progBatches.length} Batches &bull; ${progBatches.map(b=> `<span style="cursor:pointer; text-decoration:underline;" onclick='window.openCrudModal("batches", ${JSON.stringify(b).replace(/'/g, "&#39;")})' title="Edit Batch">${escHtml(b.name)}</span>`).join(', ')}</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <span class="badge ${p.is_active !== false ? 'badge-success' : 'badge-neutral'}">${p.is_active !== false ? 'Active' : 'Inactive'}</span>
+                  <button class="btn btn-ghost btn-xs" onclick='window._editRecord("programs", "${p.id}", ${JSON.stringify(JSON.stringify(p))})' title="Edit Program" style="padding:0 0.4rem; height:auto; min-height:0;">✏️</button>
+                </div>
+             </div>
+             `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+
   container.innerHTML = `
     <div class="header-actions">
-      <h2>Executive Dashboard</h2>
+      <h2>Master Dashboard</h2>
       <button class="btn btn-primary" id="btn-export-cv">📄 Export Executive CV (A4)</button>
     </div>
     
@@ -42,18 +89,23 @@ export async function renderDashboard(container) {
       <div style="flex: 6.5; min-width: 300px; display: flex; flex-direction: column; gap: 1.5rem;">
         
         <!-- Key Metrics -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem;">
           <div class="glass-card" style="padding: 1.5rem; text-align: center;">
-            <div style="font-size: 2.5rem; font-weight: 800; color: var(--clr-primary);">${activeStudents}</div>
-            <div class="text-muted text-sm text-uppercase fw-700">Active Students</div>
+            <div style="font-size: 2.2rem; font-weight: 800; color: var(--clr-primary);">${totalStudents}</div>
+            <div class="text-muted text-sm text-uppercase fw-700">Students</div>
+            <div class="text-xs text-muted mt-1">${activeStudents} active</div>
           </div>
           <div class="glass-card" style="padding: 1.5rem; text-align: center;">
-            <div style="font-size: 2.5rem; font-weight: 800; color: var(--clr-accent-1);">${activeClasses}</div>
-            <div class="text-muted text-sm text-uppercase fw-700">Active Classes</div>
+            <div style="font-size: 2.2rem; font-weight: 800; color: var(--clr-accent-1);">${programs.length}</div>
+            <div class="text-muted text-sm text-uppercase fw-700">Programs</div>
           </div>
           <div class="glass-card" style="padding: 1.5rem; text-align: center;">
-            <div style="font-size: 2.5rem; font-weight: 800; color: #10b981;">${upcomingMeetings.length}</div>
-            <div class="text-muted text-sm text-uppercase fw-700">Upcoming Classes</div>
+            <div style="font-size: 2.2rem; font-weight: 800; color: #10b981;">${batches.length}</div>
+            <div class="text-muted text-sm text-uppercase fw-700">Batches</div>
+          </div>
+          <div class="glass-card" style="padding: 1.5rem; text-align: center;">
+            <div style="font-size: 2.2rem; font-weight: 800; color: #f59e0b;">${institutions.length}</div>
+            <div class="text-muted text-sm text-uppercase fw-700">Institutions</div>
           </div>
         </div>
 
@@ -77,6 +129,12 @@ export async function renderDashboard(container) {
           </div>
         </div>
         
+        <!-- Organization Hierarchy -->
+        <div id="board-inst-panels" style="display:flex; flex-direction:column;">
+          <h3 style="margin:0 0 1rem 0; font-size:1.2rem; font-weight:800; position: sticky; top: 0; z-index: 10; padding-bottom: 0.5rem; background: var(--fm-bg);">Organization Hierarchy</h3>
+          ${instsHtml || '<p class="text-muted">No institutions available.</p>'}
+        </div>
+
       </div>
       
       <!-- RIGHT ZONE (35%) -->
@@ -120,6 +178,26 @@ export async function renderDashboard(container) {
             ).join('')}
           </div>
         </div>
+
+        <!-- Recently Added Students -->
+        <div class="glass-card" style="padding: 1rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+            <h3 style="margin:0;font-size:1rem;font-weight:800;">&#x1F550; Recently Added</h3>
+            <button class="btn btn-ghost btn-sm" onclick="window.loadSection('students')">View All</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.25rem;">
+            ${recentStudents.length === 0 ? '<p class="text-muted text-sm">No students yet.</p>' :
+              recentStudents.map(s =>
+                '<div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem;background:rgba(255,255,255,0.02);border-radius:8px;border:1px solid var(--clr-border);">'
+                + '<div>'
+                + '<div class="fw-700 text-sm">' + escHtml(formatStudentName(s.name, s.gender)) + '</div>'
+                + '<div class="text-xs text-muted">' + new Date(s.created_at).toLocaleDateString() + '</div>'
+                + '</div>'
+                + '<span class="badge ' + (s.is_active !== false ? 'badge-success' : 'badge-neutral') + '">' + (s.is_active !== false ? 'Active' : 'Inactive') + '</span>'
+                + '</div>'
+              ).join('')}
+          </div>
+        </div>
         
       </div>
     </div>
@@ -129,16 +207,16 @@ export async function renderDashboard(container) {
       <!-- Scratchpad -->
       <div class="glass-card" style="flex: 1; min-width: 250px; padding: 1.5rem;">
         <h3 style="margin-top:0;">&#128201; Workspace Scratchpad</h3>
-        <textarea style="width: 100%; height: 120px; background: rgba(0,0,0,0.1); border: 1px solid var(--clr-border); border-radius: 8px; padding: 0.8rem; color: var(--clr-text-1); font-family: inherit; resize: none;" placeholder="Jot down quick notes here..."></textarea>
+        <textarea id="admin-scratchpad" style="width: 100%; height: 120px; background: rgba(0,0,0,0.1); border: 1px solid var(--clr-border); border-radius: 8px; padding: 0.8rem; color: var(--clr-text-1); font-family: inherit; resize: none;" placeholder="Jot down quick notes here..."></textarea>
       </div>
       
       <!-- Audit Logs Preview -->
       <div class="glass-card" style="flex: 1; min-width: 250px; padding: 1.5rem;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <h3 style="margin:0;">&#128737;&#65039; System Audit</h3>
-          <button class="btn btn-ghost btn-sm" onclick="window.loadSection('audit')">View All</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.loadSection('desk')">View All</button>
         </div>
-        <div class="text-muted text-sm mt-3">Recent system events are logged securely. Monitor activity in the detailed Audit Log section.</div>
+        <div id="admin-audit-preview" class="text-muted text-sm mt-3">Loading recent events...</div>
       </div>
     </div>
   `;
@@ -163,6 +241,47 @@ export async function renderDashboard(container) {
       );
     });
   }
+
+  // Scratchpad persistence
+  const scratchpad = document.getElementById('admin-scratchpad');
+  if (scratchpad) {
+    scratchpad.value = localStorage.getItem('topscore_admin_scratchpad') || '';
+    scratchpad.addEventListener('input', (e) => {
+      localStorage.setItem('topscore_admin_scratchpad', e.target.value);
+    });
+  }
+
+  // Live audit preview
+  (async () => {
+    const preview = document.getElementById('admin-audit-preview');
+    if (!preview) return;
+    try {
+      const sb = await getSupabase();
+      const { data, error } = await sb.from('audit_logs')
+        .select('action, entity_type, created_at, actor_role')
+        .order('created_at', { ascending: false })
+        .limit(4);
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        preview.innerHTML = 'No recent system events.';
+        return;
+      }
+      let html = '<div style="display:flex;flex-direction:column;gap:0.4rem;">';
+      data.forEach(log => {
+        const time = new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        html += '<div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:0.2rem;">'
+          + '<span style="color:var(--clr-text-2);font-size:0.8rem;">[' + time + '] ' + escHtml(log.action || '') + ' ' + escHtml(log.entity_type || '') + '</span>'
+          + '<span class="badge badge-neutral" style="font-size:0.6rem;">' + escHtml(log.actor_role || 'admin') + '</span>'
+          + '</div>';
+      });
+      html += '</div>';
+      preview.innerHTML = html;
+    } catch (err) {
+      console.warn('Could not load audit preview:', err);
+      const p = document.getElementById('admin-audit-preview');
+      if (p) p.innerHTML = 'Audit log unavailable.';
+    }
+  })();
 }
 
 // ---------------------------------------------------------------------------

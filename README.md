@@ -1,4 +1,4 @@
-# TOP ENGLISH CLASS
+# TopsCore
 
 Online English assessment and testing platform built with Static HTML/CSS/JS and Supabase backend.
 

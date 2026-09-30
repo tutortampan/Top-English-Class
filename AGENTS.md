@@ -38,7 +38,7 @@ The user has granted standing, unconditional permission to execute all `powershe
 
 ## 1.1 Name
 
-**TOP ENGLISH PROGRAM**
+**TopsCore**
 
 ## 1.2 Product Type
 
@@ -110,14 +110,15 @@ These are implementation rules, not suggestions.
 
 ## 2.1 Admin primary navigation
 
-Exactly four primary product tabs:
+The admin navigation uses the **ABCD System** hierarchy:
+1. `A — ADMIN` (Executive Dashboard, Profiles, etc.)
+2. `B — BOARD` (Batches, Rosters, Progress)
+3. `C — CLASS` (Classes, Levels, Topics, Assessments, Banks, Vaults)
+4. `D — DATA`
 
-1. `DATABASE`
-2. `PROGRAM`
-3. `STUDENT`
-4. `ASSESSMENT`
+Do not attempt to merge or erase this hierarchy.
 
-Do not merge PROGRAM and STUDENT into one primary tab.
+
 
 ## 2.2 Student business ID
 
@@ -156,18 +157,16 @@ Server MUST verify that:
 Never store plaintext PINs.
 Never put plaintext PINs in logs or audit records.
 
-## 2.4 Class assignment
+## 2.4 Class and Level Assignment
 
-Admin assigns Classes to Programs.
+Classes (Subjects) are assigned to a **Level** (e.g., Telling Story 1 belongs to 1st Level).
+A Student/Batch progresses through Levels.
 
-A Student inherits the Classes assigned to their PROGRAM.
+## 2.5 Assessment Auto-Assignment (Level-Centric)
 
-## 2.5 Assessment Assignment
-
-Assessments belong to a **Class**. 
-Assessments are assigned to Students via two methods:
-1. **By Batch:** An Assessment is assigned to an entire Batch, meaning all Students in that Batch inherit it.
-2. **By Student:** An Assessment is assigned individually to a specific Student.
+Assessments are created within a **Class**.
+Because that Class belongs to a **Level**, the system automatically assigns the assessment to any Batch/Student that has unlocked that Level. 
+There is NO manual assessment-to-batch assignment required. Batches inherit assessments automatically based on their current Level.
 
 ### Important naming note
 
@@ -2158,7 +2157,7 @@ Preserve attempt history using immutable snapshots.
 
 # 31. FINAL DEFINITION OF DONE
 
-TOP ENGLISH PROGRAM is ready for production only when:
+TopsCore is ready for production only when:
 
 - business rules are implemented and tested;
 - PostgreSQL schema and RLS are verified;
@@ -2214,4 +2213,4 @@ REPORT EXACT RESULT
 CONTINUE
 ```
 
-The primary objective is not merely to generate code. It is to maintain a **correct, testable, auditable, and restartable application state** throughout the lifetime of TOP ENGLISH PROGRAM.
+The primary objective is not merely to generate code. It is to maintain a **correct, testable, auditable, and restartable application state** throughout the lifetime of TopsCore.

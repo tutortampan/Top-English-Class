@@ -1,5 +1,5 @@
 -- ============================================================
--- TOP ENGLISH CLASS - V5 Architecture DB Migration
+-- TopsCore - V5 Architecture DB Migration
 -- Purge "Challenge" terminology and establish "category"
 -- ============================================================
 

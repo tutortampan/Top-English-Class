@@ -3,9 +3,9 @@
  * Panel C (Class & Assessment Management) Dashboard
  * Handles Smart Auto-Naming, Assessment Duplication, Prerequisite Engine, and AI Module Templates
  */
-import { adminFetchAll, adminSoftDelete } from "../api.js?v=4.7.0";
-import { getSupabase } from "../supabase.js?v=4.7.0";
-import { showToast } from "../app.js?v=4.7.0";
+import { adminFetchAll, adminSoftDelete } from "../api.js?v=4.7.4";
+import { getSupabase } from "../supabase.js?v=4.7.4";
+import { showToast } from "../app.js?v=4.7.4";
 
 // AI Module Definitions
 export const AI_MODULES = {
@@ -465,6 +465,11 @@ window.openAIAssessmentEditor = async (assessmentId) => {
   if (error || !asm) {
     showToast("Error loading assessment", "error");
     return;
+  }
+  
+  if (asm.assessment_type && (asm.assessment_type.includes('VOCAB') || asm.assessment_type.includes('IDIOM'))) {
+    const { openAssessmentBuilderModal } = await import('./vocab-vault.js?v=4.7.4');
+    return openAssessmentBuilderModal(null, { editAssessment: asm });
   }
   
   const [classes, topics] = await Promise.all([

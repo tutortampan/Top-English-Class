@@ -1,4 +1,4 @@
-﻿// TOPS CORE � Centralized Assessment Wizard V1
+// TOPS CORE � Centralized Assessment Wizard V1
 // Implements multi-step Evaluation & Assessment creation, topic derivation from Evaluations,
 // live question counts, inline assignments, and frozen snapshots on publish.
 import {
@@ -8,6 +8,8 @@ import {
   fetchAssessmentDefinitions,
   createAssessmentDefinition,
   updateAssessmentDefinition,
+  createAssessmentDefinitionWithTopics,
+  updateAssessmentWithTopics,
   publishAssessmentDefinition,
   createAssessmentInstance,
   fetchBatches,
@@ -27,7 +29,7 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-export async function openAssessmentBuilder(assessmentId = null) {
+export async function openAssessmentBuilder(assessmentId = null, initialClassId = null) {
   const isEdit = !!assessmentId;
 
   const builderDiv = document.createElement('div');
@@ -92,7 +94,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
                   <select class="form-control" id="wiz-class"></select>
                 </div>
 
-                <div class="form-group mb-3">
+                <div class="form-group mb-3" id="wiz-duration-group">
                   <label class="form-label">Working Duration (Minutes) *</label>
                   <input type="number" class="form-control" id="wiz-duration" value="60" min="5" max="300" />
                 </div>
@@ -329,14 +331,15 @@ export async function openAssessmentBuilder(assessmentId = null) {
     hideLoading();
 
     // Populate Classes dropdown
-    const subSel = document.getElementById('wiz-Class');
+    const subSel = document.getElementById('wiz-class');
     subSel.innerHTML = allClasses.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+    if (!isEdit && initialClassId) subSel.value = initialClassId;
 
     // Populate Prerequisite dropdown
     const prereqSel = document.getElementById('wiz-prereq');
     prereqSel.innerHTML = `<option value="">None (Available immediately)</option>` +
       existingAssessments.filter(a => a.id !== assessmentId).map(a => `
-        <option value="${a.id}">${escapeHtml(a.title)} (${escapeHtml(a.category || 'EVALUATION')})</option>
+        <option value="${a.id}">${escapeHtml(a.title)} (${escapeHtml(a.assessment_type || 'EVALUATION')})</option>
       `).join('');
 
     // Populate Batches dropdown
@@ -444,7 +447,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
     // Render source Evaluations checkboxes (Assessment mode)
     const renderAssessmentEvaluations = () => {
       const currentClassId = subSel.value;
-      const evals = existingAssessments.filter(a => a.class_id === currentClassId && (a.category || 'EVALUATION') === 'EVALUATION');
+      const evals = existingAssessments.filter(a => a.class_id === currentClassId && (a.assessment_type || 'EVALUATION') === 'EVALUATION');
       const container = document.getElementById('wiz-evaluations-container');
 
       if (!evals.length) {
@@ -519,12 +522,12 @@ export async function openAssessmentBuilder(assessmentId = null) {
     }
 
     if (editAssessment) {
-      const isAssessment = (editAssessment.category || '').toUpperCase() === 'Assessment';
+      const isAssessment = (editAssessment.assessment_type || '').toUpperCase() === 'Assessment';
       const typeRadio = builderDiv.querySelector(`input[name="wiz-type"][value="${isAssessment ? 'Assessment' : 'EVALUATION'}"]`);
       if (typeRadio) typeRadio.checked = true;
 
       const titleInput = document.getElementById('wiz-title');
-      if (titleInput) titleInput.value = editAssessment.title || editAssessment.Assessment_title || '';
+      if (titleInput) titleInput.value = editAssessment.title || editAssessment.title || '';
 
       if (editAssessment.class_id && subSel) {
         subSel.value = editAssessment.class_id;
@@ -540,8 +543,8 @@ export async function openAssessmentBuilder(assessmentId = null) {
       }
 
       const prereqSelEl = document.getElementById('wiz-prereq');
-      if (prereqSelEl && (editAssessment.prerequisite_assessment_id || editAssessment.prerequisite_Assessment_id)) {
-        prereqSelEl.value = editAssessment.prerequisite_assessment_id || editAssessment.prerequisite_Assessment_id;
+      if (prereqSelEl && (editAssessment.prerequisite_assessment_id || editAssessment.prerequisite_assessment_id)) {
+        prereqSelEl.value = editAssessment.prerequisite_assessment_id || editAssessment.prerequisite_assessment_id;
       }
 
       if (editAssessment.availability_start) {
@@ -558,7 +561,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
         editAssessment.assessment_topics.forEach(t => selectedTopicIds.add(t.topic_id));
       }
       // Also check questions linked to this Assessment for topic_ids
-      const linkedQuestions = allQuestions.filter(q => q.Assessment_id === assessmentId || q.assessment_id === assessmentId);
+      const linkedQuestions = allQuestions.filter(q => q.assessment_id === assessmentId || q.assessment_id === assessmentId);
       linkedQuestions.forEach(q => {
         if (q.topic_id) selectedTopicIds.add(q.topic_id);
       });
@@ -675,7 +678,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
         if (!asmId) {
           const newAsm = await createAssessmentDefinitionWithTopics({
             class_id: ClassId,
-            category: typeVal,
+            assessment_type: (editAssessment && editAssessment.assessment_type && !['EVALUATION', 'ASSESSMENT'].includes(editAssessment.assessment_type.toUpperCase())) ? editAssessment.assessment_type : typeVal,
             title,
             working_duration_minutes: duration,
             question_order: order,
@@ -688,7 +691,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
         } else {
           await updateAssessmentWithTopics(asmId, {
             class_id: ClassId,
-            category: typeVal,
+            assessment_type: (editAssessment && editAssessment.assessment_type && !['EVALUATION', 'ASSESSMENT'].includes(editAssessment.assessment_type.toUpperCase())) ? editAssessment.assessment_type : typeVal,
             title,
             working_duration_minutes: duration,
             question_order: order,
@@ -719,7 +722,7 @@ export async function openAssessmentBuilder(assessmentId = null) {
         }
 
         if (targetStatus === 'PUBLISHED') {
-          const res = await publishAssessment(asmId);
+          const res = await publishAssessmentDefinition(asmId);
           showToast(`Assessment published with ${res.total_questions} frozen questions!`, 'success');
         } else {
           showToast(isEdit ? 'Assessment updated successfully.' : 'Assessment saved as draft.', 'success');

@@ -1,4 +1,4 @@
-﻿import { calculateGrade } from './grading.js';
+import { calculateGrade } from './grading.js';
 
 // TOPS CORE — Toast Notification System
 let toastContainer = null;
@@ -67,6 +67,32 @@ export function hideLoading() {
       try { el.remove(); } catch(e) {}
     });
   } catch(e) {}
+}
+
+export function updateLoadingProgress(percent, message = null) {
+  if (!_overlay) return;
+  
+  let pbarContainer = _overlay.querySelector('.progress-container');
+  if (!pbarContainer) {
+    pbarContainer = document.createElement('div');
+    pbarContainer.className = 'progress-container';
+    pbarContainer.style = 'width:240px;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;margin-top:12px;overflow:hidden;position:relative;';
+    
+    const pbarFill = document.createElement('div');
+    pbarFill.className = 'progress-fill';
+    pbarFill.style = 'height:100%;background:var(--clr-primary);width:0%;transition:width 0.2s ease;';
+    
+    pbarContainer.appendChild(pbarFill);
+    _overlay.appendChild(pbarContainer);
+  }
+  
+  const fill = pbarContainer.querySelector('.progress-fill');
+  if (fill) fill.style.width = Math.max(0, Math.min(100, percent)) + '%';
+  
+  if (message) {
+    const p = _overlay.querySelector('p');
+    if (p) p.textContent = message;
+  }
 }
 
 export function withTimeout(promise, ms, actionName = 'Operation') {

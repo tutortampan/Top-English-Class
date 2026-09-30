@@ -1,5 +1,5 @@
-﻿/* ============================================================
-   TOP ENGLISH CLASS — ADMIN CONSOLE
+/* ============================================================
+   TopsCore � ADMIN CONSOLE
    Football Manager-Inspired Matte Management Workstation
    Tactile, High-Density, Professional Academy Interface
    ============================================================ */
@@ -530,6 +530,23 @@ body, html {
   background: rgba(100, 116, 139, 0.12);
   color: var(--fm-text-secondary);
   border-color: rgba(100, 116, 139, 0.25);
+}
+
+/* Vocabulary Vault — Level badges */
+.badge-level-1 {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.badge-level-2 {
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+.badge-level-3 {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.3);
 }
 
 /* Recent Form Guide Pills (W/D/L or Grade badges) */
@@ -1099,7 +1116,7 @@ input[type="checkbox"], input[type="radio"] {
    11. TEXT UTILITIES & LEGACY CLASS COMPATIBILITY
    ============================================================ */
 
-/* Matte tactical "gradient" — replaces old neon gradients with
+/* Matte tactical "gradient" � replaces old neon gradients with
    a crisp high-contrast tactical blue label */
 .text-gradient {
   background: none !important;
@@ -1438,7 +1455,7 @@ textarea.form-control {
 }
 
 /* ============================================================
-   19. ADMIN LOGIN SCREEN — ORB AMBIENT EFFECTS
+   19. ADMIN LOGIN SCREEN � ORB AMBIENT EFFECTS
    ============================================================ */
 
 .orb {
@@ -1469,7 +1486,7 @@ textarea.form-control {
    20. SECTION-SPECIFIC DOMAIN VIEW POLISH
    ============================================================ */
 
-/* Recalibrator, Import, and Settings sections use inline styles — 
+/* Recalibrator, Import, and Settings sections use inline styles � 
    provide sensible defaults for their containers */
 .admin-content > div > h2.section-title {
   font-size: 1.35rem !important;
@@ -1824,7 +1841,7 @@ tr.deleted-row td {
 }
 
 /* ============================================================
-   14. PILAR [D] DATA — ANTI-GRAVITY SPATIAL DESIGN SYSTEM
+   14. PILAR [D] DATA � ANTI-GRAVITY SPATIAL DESIGN SYSTEM
    ============================================================ */
 
 .antigravity-panel {
@@ -1956,3 +1973,475 @@ tr.deleted-row td {
   cursor: pointer;
   font-size: 1rem;
 }
+\n
+/* =========================================================
+   EXCEL-STYLE SPREADSHEET GRID (BATCHES MATRIX)
+   ========================================================= */
+.matrix-table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--fm-bg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.matrix-actions-row {
+  display: flex;
+  white-space: nowrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.matrix-table th {
+  position: relative;
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  padding: 12px 14px;
+  border-bottom: 2px solid var(--fm-border);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+.matrix-table th:last-child {
+  border-right: none;
+}
+.matrix-table td {
+  padding: 0.75rem 1rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+.matrix-table td:last-child {
+  border-right: none;
+}
+.matrix-table tr.students-row td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.1);
+}
+.matrix-table tbody tr:hover td {
+  background: rgba(99, 102, 241, 0.04);
+}
+.col-resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 10;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+}
+.col-resizer:hover, .col-resizer.active {
+  background-color: var(--fm-primary, #6366f1);
+}
+
+/* --- Level Tabs Navigation --- */
+.level-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--clr-border);
+  padding-bottom: 0.5rem;
+}
+
+/* --- Binder Layout for Curriculum & Classes --- */
+.binder-layout {
+  display: flex;
+  margin-top: 1rem;
+  align-items: flex-start;
+}
+
+.binder-sidebar {
+  flex: 0 0 140px;
+  /* Push down by the height of the top tabs (approx 42px) */
+  margin-top: 41px; 
+  position: relative;
+  z-index: 2; /* Ensure it stays above the canvas left border */
+}
+
+.binder-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.level-tabs-vertical {
+  display: flex;
+  flex-direction: column;
+}
+
+.level-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--clr-text-2);
+  padding: 0.75rem 1rem;
+  border-radius: 8px 0 0 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: right;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 2px;
+}
+
+.level-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--clr-text-1);
+}
+
+.level-tab-btn.active {
+  background: #151521; /* Match application background or use rgba mix */
+  background: linear-gradient(90deg, rgba(99,102,241,0.05) 0%, rgba(99,102,241,0.02) 100%);
+  border: 1px solid var(--clr-primary);
+  border-right: 1px solid transparent; /* Hide right border to connect to canvas */
+  color: var(--clr-primary);
+  margin-right: -1px; /* Overlap the canvas left border */
+}
+
+/* --- Class Sub-Tabs Navigation --- */
+.class-sub-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0;
+  overflow-x: auto;
+  position: relative;
+  z-index: 2; /* Ensure it stays above the canvas top border */
+}
+
+.class-tab-btn {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--clr-border);
+  border-bottom: none;
+  color: var(--clr-text-2);
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px 8px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.class-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--clr-text-1);
+}
+
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   MASTER-DETAIL SPLIT PANE — Curriculum & Classes Workspace
+   ════════════════════════════════════════════════════════════ */
+
+.split-pane-layout {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 24px;
+  height: calc(100vh - 120px);
+  overflow: hidden;
+}
+
+/* ── LEFT: Master Subject List ── */
+.split-master-pane {
+  width: 300px;
+  flex-shrink: 0;
+  height: 100%;
+  background: var(--bg-card, #1e293b);
+  border-radius: 12px;
+  padding: 16px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, #334155);
+  display: flex;
+  flex-direction: column;
+}
+
+.split-master-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.split-master-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--clr-text-2);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  width: 100%;
+}
+
+.split-master-item:hover {
+  background: rgba(99, 102, 241, 0.06);
+  color: var(--clr-text-1);
+  border-color: rgba(99, 102, 241, 0.15);
+}
+
+.split-master-item.active {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--clr-primary);
+  border-color: var(--clr-primary);
+  font-weight: 700;
+}
+
+.split-master-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.split-master-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.split-master-add {
+  margin: 0.5rem;
+  width: calc(100% - 1rem);
+  border: 1px dashed var(--clr-border) !important;
+  font-size: 0.8rem;
+}
+
+/* ── RIGHT: Detail Canvas ── */
+.split-detail-pane {
+  flex-grow: 1;
+  height: 100%;
+  background: var(--bg-card, #1e293b);
+  border-radius: 12px;
+  padding: 24px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, #334155);
+  display: flex;
+  flex-direction: column;
+}
+
+.split-detail-header {
+  padding: 0 0 1rem 0;
+  border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.06));
+}
+
+.split-detail-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--clr-text-1);
+  margin: 0;
+}
+
+.split-detail-breadcrumb {
+  font-size: 0.78rem;
+  color: var(--clr-text-3);
+  margin-top: 0.2rem;
+}
+
+/* ── Level Pill Bar ── */
+.split-level-pills {
+  display: flex;
+  gap: 0.6rem;
+  padding: 1.25rem 0;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.06));
+}
+
+.level-pill {
+  padding: 0.35rem 0.9rem;
+  border-radius: 20px;
+  border: 1px solid var(--clr-border);
+  background: transparent;
+  color: var(--clr-text-2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.level-pill:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: var(--clr-primary);
+}
+
+.level-pill.active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+  font-weight: 700;
+}
+
+.level-pill.no-class {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.level-pill.no-class:hover {
+  background: transparent;
+  border-color: var(--clr-border);
+  color: var(--clr-text-2);
+}
+
+.pill-empty {
+  font-size: 0.7rem;
+  color: var(--clr-text-3);
+  margin-left: 2px;
+}
+
+/* ── Detail Canvas Area ── */
+.split-detail-canvas {
+  padding: 1.5rem 0;
+  flex: 1;
+}
+
+.split-canvas-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--clr-text-3);
+}
+
+.split-canvas-empty .empty-state-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.split-canvas-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.split-canvas-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* ── Stats Card ── */
+.split-stats-card,
+.split-toolbar-card {
+  flex: 1;
+  min-width: 200px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--clr-border);
+  border-radius: 10px;
+  padding: 1rem 1.15rem;
+}
+
+.split-stats-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--clr-text-3);
+  margin-bottom: 0.6rem;
+}
+
+.split-stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.split-stats-row:last-child {
+  border-bottom: none;
+}
+
+/* ── Assessments Panel ── */
+.split-assessments-panel {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--clr-border);
+  border-radius: 10px;
+  padding: 1rem 1.15rem;
+}
+
+/* ── Data Table ── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--clr-text-3);
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.data-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--clr-text-2);
+  vertical-align: middle;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tr:hover td {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+/* ── Status Badges ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.badge-success  { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+.badge-warning  { background: rgba(245,158,11,0.12);  color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+.badge-muted    { background: rgba(255,255,255,0.06); color: var(--clr-text-3); border: 1px solid var(--clr-border); }
+.badge-danger   { background: rgba(239,68,68,0.12);   color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .split-pane-layout {
+    flex-direction: column;
+    height: auto;
+  }
+  .split-master-pane {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+  .split-master-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .split-detail-pane {
+    height: auto;
+  }
+  .split-canvas-row {
+    flex-direction: column;
+  }
+}
+
+/* Typography and Shadows Enhancement */
+.split-master-pane, .split-detail-pane { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }

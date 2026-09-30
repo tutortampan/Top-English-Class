@@ -1,6 +1,6 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-test.describe('Top English Program - E2E System Tests', () => {
+test.describe('TopsCore - E2E System Tests', () => {
 test.beforeEach(async ({ page }) => {
 await page.goto('/');
 });

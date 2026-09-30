@@ -1,4 +1,4 @@
-﻿// TOPS CORE â€” Centralized Excel Parser & Normalizer
+// TOPS CORE â€” Centralized Excel Parser & Normalizer
 // Phases 5, 6, 7
 
 /**
@@ -152,9 +152,9 @@ export function processStudentImportRows(normalizedRows, defaultContext = {}) {
       }
     }
 
-    // Academic hierarchy: Institution, Program, Batch (Level is optional & managed manually)
-    const programName = String(row.institute || row.institution || defaultContext.programName || '').trim();
-    const className = String(row.program || defaultContext.className || '').trim();
+    // Academic hierarchy: Institution, Program, Batch
+    const institutionName = String(row.institution || defaultContext.institutionName || '').trim();
+    const programName = String(row.program || defaultContext.programName || '').trim();
     const batchName = String(row.batch || defaultContext.batchName || '').trim();
     const pin = String(row.pin || '1234').trim();
 
@@ -164,8 +164,8 @@ export function processStudentImportRows(normalizedRows, defaultContext = {}) {
       gender,
       birth_date: birthDate,
       pin,
+      institutionName,
       programName,
-      className,
       batchName,
       levelName: String(row.level || '').trim() || null, // Optional Level
       status: 'ready'

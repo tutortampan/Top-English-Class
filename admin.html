@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=4.7.0" />
-  <link rel="stylesheet" href="css/admin.css?v=4.7.0" />
-  <link rel="stylesheet" href="css/components/avatars.css?v=4.7.0" />
+  <link rel="stylesheet" href="css/style.css?v=4.7.6" />
+  <link rel="stylesheet" href="css/admin.css?v=4.7.6" />
+  <link rel="stylesheet" href="css/components/avatars.css?v=4.7.6" />
   <!-- SheetJS for Excel Import / Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <meta name="view-transition" content="same-origin" />
@@ -59,47 +59,37 @@
         <!-- DOMAIN A: Admin (Executive Workspace) -->
         <div class="nav-domain-group" data-domain="admin">
           <div class="nav-domain-header"><span class="domain-icon">&#128188;</span>A — Admin</div>
+          <div class="admin-nav-item" data-sub="cv_generator"><span class="nav-icon">&#128196;</span>CV Generator</div>
           <div class="admin-nav-item active" data-sub="dashboard"><span class="nav-icon">&#128202;</span>Executive Dashboard</div>
           <div class="admin-nav-item" data-sub="profile"><span class="nav-icon">&#128100;</span>My Profile</div>
           <div class="admin-nav-item" data-sub="schedule"><span class="nav-icon">&#128197;</span>Personal Schedule</div>
           <div class="admin-nav-item" data-sub="work_records"><span class="nav-icon">&#128194;</span>Work Records</div>
-          <div class="admin-nav-item" data-sub="cv_generator"><span class="nav-icon">&#128196;</span>CV Generator</div>
         </div>
 
         <!-- DOMAIN B: Board (Registry & Roster) -->
         <div class="nav-domain-group" data-domain="board">
           <div class="nav-domain-header"><span class="domain-icon">&#128208;</span>B — Board</div>
-          <div class="admin-nav-item" data-sub="board_overview"><span class="nav-icon">&#128203;</span>Board Overview</div>
           <div class="admin-nav-item" data-sub="institutions"><span class="nav-icon">&#127970;</span>Batches</div>
-          <div class="admin-nav-item" data-sub="students"><span class="nav-icon">&#127891;</span>Students Roster</div>
-          <div class="admin-nav-item" data-sub="progress-view"><span class="nav-icon">&#128200;</span>Student Progress</div>
           <div class="admin-nav-item" data-sub="import-students"><span class="nav-icon">&#128229;</span>Import Students</div>
+          <div class="admin-nav-item" data-sub="progress-view"><span class="nav-icon">&#128200;</span>Student Progress</div>
+          <div class="admin-nav-item" data-sub="students"><span class="nav-icon">&#127891;</span>Students Roster</div>
         </div>
 
         <!-- DOMAIN C: Class (Curriculum & AI Assessment Engine) -->
         <div class="nav-domain-group" data-domain="class">
           <div class="nav-domain-header"><span class="domain-icon">&#9889;</span>C — Class</div>
-          <div class="admin-nav-item" data-sub="classes"><span class="nav-icon">&#128218;</span>Classes (Level 1)</div>
-          <div class="admin-nav-item" data-sub="levels"><span class="nav-icon">&#128200;</span>Levels</div>
-          <div class="admin-nav-item" data-sub="topics"><span class="nav-icon">&#127991;&#65039;</span>Topics (Level 2)</div>
-          <div class="admin-nav-item" data-sub="assessments"><span class="nav-icon">&#128194;</span>Assessments</div>
-          <div class="admin-nav-item" data-sub="import_ai_assessments"><span class="nav-icon">&#128229;</span>Import AI Assessments</div>
-          <div class="admin-nav-item" data-sub="class_instances"><span class="nav-icon">&#128197;</span>Class Instances</div>
-          <div class="admin-nav-item" data-sub="questions"><span class="nav-icon">&#10067;</span>Central Question Bank</div>
-          <div class="admin-nav-item" data-sub="import-questions"><span class="nav-icon">&#128229;</span>Import Questions</div>
-          <div class="admin-nav-item" data-sub="export-questions"><span class="nav-icon">&#128228;</span>Export Questions</div>
-          <div class="admin-nav-item" data-sub="results"><span class="nav-icon">&#128202;</span>Assessment Results</div>
-          <div class="admin-nav-item" data-sub="question_types"><span class="nav-icon">&#128284;</span>Validation Dictionary</div>
-          <div class="admin-nav-item" data-sub="vocab_vault"><span class="nav-icon">&#128214;</span>Vocabulary Vault</div>
-          <div class="admin-nav-item" data-sub="recalibrator"><span class="nav-icon">&#9889;</span>Recalibration Engine</div>
+          <div class="admin-nav-item" data-sub="classes"><span class="nav-icon">📚</span>Classes</div>
+          <div class="admin-nav-item" data-sub="assessments"><span class="nav-icon">📝</span>Assessments</div>
         </div>
 
         <!-- DOMAIN D: DATA (System Administration, Security & Health) -->
         <div class="nav-domain-group" data-domain="desk">
           <div class="nav-domain-header"><span class="domain-icon">&#128737;&#65039;</span>D &mdash; DATA</div>
-          <div class="admin-nav-item" data-sub="recycle"><span class="nav-icon">&#9851;&#65039;</span>Recycle Bin</div>
+          <div class="admin-nav-item" data-sub="modules"><span class="nav-icon">📦</span>Modules (Core Blocks)</div>
+          <div class="admin-nav-item" data-sub="vocab_vault"><span class="nav-icon">&#128214;</span>Vocabulary Vault</div>
           <div class="admin-nav-item" data-sub="audit"><span class="nav-icon">&#128203;</span>Activity &amp; Audit Logs</div>
           <div class="admin-nav-item" data-sub="health"><span class="nav-icon">&#127973;</span>Data Health &amp; Connectivity</div>
+          <div class="admin-nav-item" data-sub="recycle"><span class="nav-icon">&#9851;&#65039;</span>Recycle Bin</div>
           <div class="admin-nav-item" data-sub="settings"><span class="nav-icon">&#9881;&#65039;</span>Site Settings &amp; Cost Guard</div>
         </div>
       </nav>
@@ -399,11 +389,38 @@
     </div>
   </div>
 
+  <!-- Add Class Modal -->
+  <div class="modal-backdrop hidden" id="add-class-modal" role="dialog" aria-modal="true" style="z-index:var(--z-modal,1000);">
+    <div class="modal-box" style="max-width:400px; padding:24px;">
+      <div class="modal-header" style="margin-bottom:16px; border-bottom:1px solid var(--clr-border); padding-bottom:12px;">
+        <div>
+          <h3 style="margin:0; font-size:1.25rem;">➕ Add Class</h3>
+          <p class="text-xs text-muted" style="margin:4px 0 0;" id="add-class-level-label">Inheriting Level</p>
+        </div>
+        <button class="btn btn-ghost btn-icon" onclick="document.getElementById('add-class-modal').classList.add('hidden')">✕</button>
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">Class Name</label>
+        <input type="text" id="add-class-name" class="form-control" placeholder="e.g. Storytelling 1" required>
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">Level</label>
+        <select id="add-class-level-id" class="form-control" required>
+          <option value="">Select Level...</option>
+        </select>
+      </div>
+      <div class="d-flex gap-2 justify-end mt-4">
+        <button class="btn btn-ghost" onclick="document.getElementById('add-class-modal').classList.add('hidden')">Cancel</button>
+        <button class="btn btn-primary" id="add-class-save-btn">Save Class</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
-    import { DataGrid } from './js/admin/datagrid.js?v=4.7.0';
+    import { DataGrid } from './js/admin/datagrid.js?v=4.7.6';
     window.DataGrid = DataGrid;
   </script>
-  <script type="module" src="js/admin/app.js?v=4.7.0"></script>
+  <script type="module" src="js/admin/app.js?v=4.7.6"></script>
 </body>
 </html>
 

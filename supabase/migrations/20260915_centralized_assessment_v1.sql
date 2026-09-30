@@ -1,5 +1,5 @@
 -- ============================================================
--- TOP ENGLISH CLASS — Centralized Assessment System V1 Migration
+-- TopsCore — Centralized Assessment System V1 Migration
 -- Strictly Safe & Non-Destructive: Preserves all historical questions, exams, and attempts
 -- ============================================================
 

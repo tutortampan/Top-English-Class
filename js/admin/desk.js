@@ -15,10 +15,10 @@ import {
   adminHardDelete,
   clearAdminCache,
   testSupabaseConnection
-} from '../api.js?v=4.7.0';
-import { getSupabase } from '../supabase.js?v=4.7.0';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.0';
-import { openDuplicateStudentsModal, openDuplicateQuestionsModal } from './crud-modals.js?v=4.7.0';
+} from '../api.js?v=4.7.4';
+import { getSupabase } from '../supabase.js?v=4.7.4';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.4';
+import { openDuplicateStudentsModal, openDuplicateQuestionsModal } from './crud-modals.js?v=4.7.4';
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -85,7 +85,7 @@ export async function renderRecycleBin(container) {
       const items = [
         ...stds.map(r => ({ ...r, _table: 'students', _entityType: 'Student', _name: r.name || 'Unnamed Student' })),
         ...progs.map(r => ({ ...r, _table: 'programs', _entityType: 'Class', _name: r.name || 'Unnamed Class' })),
-        ...Assessments.map(r => ({ ...r, _table: 'Assessments', _entityType: 'Assessment', _name: r.Assessment_title || r.title || 'Unnamed Assessment' })),
+        ...Assessments.map(r => ({ ...r, _table: 'Assessments', _entityType: 'Assessment', _name: r.title || r.title || 'Unnamed Assessment' })),
         ...quests.map(r => ({ ...r, _table: 'questions', _entityType: 'Question', _name: r.question_text || 'Unnamed Question' }))
       ];
 
@@ -666,9 +666,9 @@ export async function renderDataHealth(container) {
     try {
       const [students, Assessments, attempts, questions, attemptAnswers, progress] = await Promise.all([
         adminFetchAll('students', 'id, name, deleted_at'),
-        adminFetchAll('Assessments', 'id, Assessment_title, deleted_at'),
-        adminFetchAll('attempts', 'id, student_id, Assessment_id, status, created_at'),
-        adminFetchAll('questions', 'id, Assessment_id, question_text'),
+        adminFetchAll('assessments', 'id, title, deleted_at'),
+        adminFetchAll('attempts', 'id, student_id, assessment_id, status, created_at'),
+        adminFetchAll('assessment_questions', 'id, assessment_id, question_text'),
         adminFetchAll('attempt_answers', 'id, attempt_id'),
         adminFetchAll('progress', 'id, student_id').catch(() => [])
       ]);
@@ -679,11 +679,11 @@ export async function renderDataHealth(container) {
 
       const orphanedAttempts = (attempts || []).filter(a => 
         (a.student_id && !studentIdSet.has(a.student_id)) || 
-        (a.Assessment_id && !AssessmentIdSet.has(a.Assessment_id))
+        (a.assessment_id && !AssessmentIdSet.has(a.assessment_id))
       );
 
       const orphanedQuestions = (questions || []).filter(q => 
-        q.Assessment_id && !AssessmentIdSet.has(q.Assessment_id)
+        q.assessment_id && !AssessmentIdSet.has(q.assessment_id)
       );
 
       const orphanedAnswers = (attemptAnswers || []).filter(ans => 
@@ -761,7 +761,7 @@ export async function renderSettings(area) {
   const settings = Object.fromEntries((data || []).map(r => [r.key, r.value]));
 
   // Local config cache
-  const currentCustomPass = localStorage.getItem('tec_admin_custom_password') || '';
+  const currentCustomPass = localStorage.getItem('topscore_admin_custom_password') || '';
   const cooldownSecs = settings.ai_cooldown_limit_seconds || localStorage.getItem('ai_cooldown_limit_seconds') || '60';
   const maxAudioSecs = settings.ai_max_audio_duration_seconds || localStorage.getItem('ai_max_audio_duration_seconds') || '180';
 
@@ -978,10 +978,10 @@ export async function renderSettings(area) {
   document.getElementById('btn-save-admin-password')?.addEventListener('click', () => {
     const customPass = document.getElementById('setting-custom-password').value.trim();
     if (customPass) {
-      localStorage.setItem('tec_admin_custom_password', customPass);
+      localStorage.setItem('topscore_admin_custom_password', customPass);
       showToast('Custom admin password saved.', 'success');
     } else {
-      localStorage.removeItem('tec_admin_custom_password');
+      localStorage.removeItem('topscore_admin_custom_password');
       showToast('Custom password cleared. Default (admin123) restored.', 'info');
     }
   });

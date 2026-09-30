@@ -1,5 +1,5 @@
 -- ============================================================
--- TOP ENGLISH CLASS — Migrate Legacy Exams to Assessments
+-- TopsCore — Migrate Legacy Exams to Assessments
 -- ============================================================
 
 -- 1. Ensure a "Legacy Exam" module exists for the required module_id

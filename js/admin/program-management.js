@@ -1,6 +1,141 @@
-import { adminFetchAll, adminSoftDelete } from '../api.js?v=4.7.0';
-import { showToast } from '../app.js?v=4.7.0';
-import { DataGrid } from './datagrid.js?v=4.7.0';
+import { adminFetchAll, adminUpdate, adminInsert, adminSoftDelete } from '../api.js?v=4.7.4';
+import { showToast } from '../app.js?v=4.7.4';
+import { DataGrid } from './datagrid.js?v=4.7.4';
+
+window.makeTableResizable = function(table, storageKey) {
+  const cols = table.querySelectorAll('th');
+  const savedWidths = JSON.parse(localStorage.getItem(storageKey) || '{}');
+  
+  [].forEach.call(cols, function (col, idx) {
+    if (savedWidths[idx]) {
+      col.style.width = savedWidths[idx];
+    }
+    
+    const resizer = document.createElement('div');
+    resizer.classList.add('col-resizer');
+    col.appendChild(resizer);
+    col.style.position = 'relative';
+
+    let x = 0;
+    let w = 0;
+
+    const mouseDownHandler = function (e) {
+      x = e.clientX;
+      const styles = window.getComputedStyle(col);
+      w = parseInt(styles.width, 10);
+      document.addEventListener('mousemove', mouseMoveHandler);
+      document.addEventListener('mouseup', mouseUpHandler);
+      resizer.classList.add('active');
+    };
+
+    const mouseMoveHandler = function (e) {
+      const dx = e.clientX - x;
+      col.style.width = `${w + dx}px`;
+    };
+
+    const mouseUpHandler = function () {
+      resizer.classList.remove('active');
+      document.removeEventListener('mousemove', mouseMoveHandler);
+      document.removeEventListener('mouseup', mouseUpHandler);
+      
+      // Save widths
+      const currentWidths = {};
+      [].forEach.call(cols, function (c, i) {
+        currentWidths[i] = c.style.width;
+      });
+      localStorage.setItem(storageKey, JSON.stringify(currentWidths));
+    };
+
+    resizer.addEventListener('mousedown', mouseDownHandler);
+  });
+};
+
+window.openChangeLevelModal = async (batchId, currentLevelId) => {
+  try {
+    const levels = await window.adminFetchAll('levels');
+    
+    let optionsHtml = levels.map(l => 
+      `<option value="${l.id}" ${l.id === currentLevelId ? 'selected' : ''}>${escapeHtml(l.name)}</option>`
+    ).join('');
+
+    const modalHtml = `
+      <div id="changeLevelModal" class="modal-overlay" style="z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;">
+        <div class="modal-content card" style="min-width: 350px; background: var(--fm-bg-card);">
+          <div class="modal-header d-flex justify-between align-center mb-3">
+            <h3 class="fw-700 m-0 text-md">Change Level</h3>
+            <button class="btn btn-ghost btn-xs text-muted" onclick="document.getElementById('changeLevelModal').remove()" style="font-size: 1.25rem;">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label text-xs fw-600">Select Level</label>
+              <select id="newLevelSelect" class="form-control">
+                ${optionsHtml}
+              </select>
+            </div>
+            <div class="d-flex justify-end gap-2 mt-4">
+              <button class="btn btn-secondary" onclick="document.getElementById('changeLevelModal').remove()">Cancel</button>
+              <button class="btn btn-primary" id="confirmLevelBtn">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    document.getElementById('confirmLevelBtn').onclick = async () => {
+      const selectedLevelId = document.getElementById('newLevelSelect').value;
+      const btn = document.getElementById('confirmLevelBtn');
+      btn.disabled = true;
+      btn.innerText = 'Saving...';
+      
+      try {
+        const { getSupabase } = await import('../supabase.js?v=4.7.4');
+        const sb = await getSupabase();
+        
+        // Update batch
+        const { error: batchErr } = await sb.from('batches').update({ current_level_id: selectedLevelId }).eq('id', batchId);
+        if (batchErr) throw batchErr;
+        
+        // Update students
+        const { error: stuErr } = await sb.from('students').update({ level_id: selectedLevelId }).eq('batch_id', batchId);
+        if (stuErr) throw stuErr;
+        
+        // Clear cache and refresh
+        if (window.clearAdminCache) {
+          window.clearAdminCache('batches');
+          window.clearAdminCache('students');
+        }
+        
+        document.getElementById('changeLevelModal').remove();
+        if (window.showToast) window.showToast('Level updated successfully.', 'success');
+        
+        // Refresh UI
+        if (window.loadSection) {
+          window.loadSection('programs');
+        }
+      } catch (e) {
+        console.error('Error changing level:', e);
+        if (window.showToast) window.showToast('Failed to update level.', 'error');
+        btn.disabled = false;
+        btn.innerText = 'Save Changes';
+      }
+    };
+  } catch (err) {
+    console.error('Failed to load levels:', err);
+    if (window.showToast) window.showToast('Failed to load levels.', 'error');
+  }
+};
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 if (typeof window !== 'undefined' && !window.DataGrid) window.DataGrid = DataGrid;
 
 let programsGrid, batchesGrid;
@@ -183,13 +318,11 @@ export async function renderBatches(area) {
 
   const gridData = filteredData.map(r => {
     const pName = r.programs?.institutions?.name || '-';
-    const cName = r.programs?.name || '-';
     const studentCount = allStudents.filter(s => s.batch_id === r.id && s.is_active).length;
     
     return {
       id: r.id,
       program: pName,
-      className: cName,
       name: r.name,
       studentCount,
       status: r.is_active ? 'Active' : 'Inactive',
@@ -201,7 +334,7 @@ export async function renderBatches(area) {
     container: 'batches-grid-container',
     data: gridData,
     pageSize: 50,
-    searchKeys: ['program', 'className', 'name'],
+    searchKeys: ['program', 'name'],
     bulkActions: true,
     onRowClick: (row) => {
       const body = `
@@ -212,8 +345,8 @@ export async function renderBatches(area) {
           </div>
           <hr style="border-color:var(--fm-border-subtle); margin:0;">
           <div>
-            <div class="text-sm text-muted mb-1">Program & Class</div>
-            <div class="fw-600">${escapeHtml(row.program)} / ${escapeHtml(row.className)}</div>
+            <div class="text-sm text-muted mb-1">Program</div>
+            <div class="fw-600">${escapeHtml(row.program)}</div>
           </div>
           <div>
             <div class="text-sm text-muted mb-1">Enrollment</div>
@@ -235,15 +368,6 @@ export async function renderBatches(area) {
         sortable: true, 
         render: (val, row) => { 
           const nameStr = row?._raw?.programs?.name || row?._raw?.program_name || val;
-          return escapeHtml(String(nameStr || 'N/A')); 
-        } 
-      },
-      { 
-        key: 'className', 
-        label: 'Class', 
-        sortable: true, 
-        render: (val, row) => { 
-          const nameStr = row?._raw?.classes?.name || row?._raw?.class_name || val;
           return escapeHtml(String(nameStr || 'N/A')); 
         } 
       },
@@ -289,241 +413,249 @@ export async function renderBatches(area) {
 }
 
 export async function renderUnifiedInstitutions(area) {
-  const [batches, programs, institutions, allStudents] = await Promise.all([
+  const [batches, programs, institutions, allStudents, allLevels] = await Promise.all([
     adminFetchAll('batches', '*'),
     adminFetchAll('programs', '*'),
     adminFetchAll('institutions', '*'),
-    adminFetchAll('students', 'id, is_active, batch_id')
+    adminFetchAll('students', 'id, is_active, batch_id'),
+    adminFetchAll('levels', 'id, name, level_number')
   ]);
 
-  // Map programs and institutions by ID for easy lookup
-  const instMap = institutions.reduce((acc, i) => ({...acc, [i.id]: i}), {});
-  const progMap = programs.reduce((acc, p) => ({...acc, [p.id]: p}), {});
+  const instMap = institutions.reduce((acc, i) => { acc[i.id] = { ...i, programs: {} }; return acc; }, {});
+  const progMap = programs.reduce((acc, p) => { acc[p.id] = { ...p, batches: [] }; return acc; }, {});
+  const levelsMap = (allLevels || []).reduce((acc, l) => { acc[l.id] = l; return acc; }, {});
 
-  // Build the flattened rows
-  // To handle empty programs/institutions, we could iterate over all.
-  // But for now, we'll iterate over all batches, PLUS any programs without batches, PLUS any institutions without programs.
-  let gridData = [];
-  
-  // 1. Batches
+  programs.forEach(p => {
+    if (instMap[p.institution_id]) instMap[p.institution_id].programs[p.id] = progMap[p.id];
+  });
+
   batches.forEach(b => {
-    const prog = progMap[b.program_id] || {};
-    const inst = instMap[prog.institution_id] || {};
-    const activeStudents = allStudents.filter(s => s.batch_id === b.id && s.is_active !== false).length;
+    if (progMap[b.program_id]) {
+      b.activeStudents = allStudents.filter(s => s.batch_id === b.id && s.is_active !== false).length;
+      progMap[b.program_id].batches.push(b);
+    }
+  });
+
+  let hierarchy = [];
+  const isPersonal = (name) => (name || '').toLowerCase().includes('personal') || (name || '').toLowerCase().includes('private');
+
+  const instList = Object.values(instMap).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const b2bList = instList.filter(i => !isPersonal(i.name));
+  const personalList = instList.filter(i => isPersonal(i.name));
+  const allOrderedInsts = [...b2bList, ...personalList];
+
+  allOrderedInsts.forEach(inst => {
+    let instNode = { id: inst.id, name: inst.name || 'Unknown', is_active: inst.is_active, raw: inst, rowspan: 0, programs: [] };
+    const progs = Object.values(inst.programs).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     
-    gridData.push({
-      id: b.id, // ID for DataGrid key
-      batchId: b.id,
-      programId: prog.id,
-      institutionId: inst.id,
-      institutionName: inst.name || 'Unknown',
-      programName: prog.name || 'Unknown',
-      batchName: b.name || 'Unknown',
-      enrollmentDate: b.enrollment_date || '-',
-      graduateDate: b.actual_final_date || '-',
-      studentCount: activeStudents,
-      status: (b.is_active !== false) ? 'Active' : 'Inactive',
-      type: 'Batch',
-      _batchRaw: b,
-      _progRaw: prog,
-      _instRaw: inst
-    });
+    if (progs.length === 0) {
+      instNode.rowspan = 2;
+    } else {
+      progs.forEach(prog => {
+        let progNode = { id: prog.id, name: prog.name || 'Unknown', is_active: prog.is_active, raw: prog, rowspan: 0, batches: [] };
+        const progBatches = [...prog.batches].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        
+        if (progBatches.length === 0) {
+          progNode.rowspan = 2;
+        } else {
+          progBatches.forEach(b => {
+            progNode.batches.push({ id: b.id, name: b.name || 'Unknown', is_active: b.is_active, students: b.activeStudents, raw: b });
+            progNode.rowspan += 2;
+          });
+        }
+        instNode.programs.push(progNode);
+        instNode.rowspan += progNode.rowspan;
+      });
+    }
+    hierarchy.push(instNode);
   });
 
-  // 2. Programs without batches (REMOVED: User requested Batch only view)
-  // 3. Institutions without programs (REMOVED: User requested Batch only view)
-
-  // Sort by Institution -> Program -> Batch
-  gridData.sort((a, b) => {
-    if (a.institutionName !== b.institutionName) return a.institutionName.localeCompare(b.institutionName);
-    if (a.programName !== b.programName) return a.programName.localeCompare(b.programName);
-    return a.batchName.localeCompare(b.batchName);
-  });
-
-  area.innerHTML = `
-    <div class="section-header d-flex justify-between align-center">
+  let html = `
+    <div class="section-header d-flex justify-between align-center mb-4 flex-wrap gap-3">
       <div>
-        <h2 class="section-title">Batches <span class="count-chip">${gridData.length} Total Rows</span></h2>
-        <p class="section-subtitle">Manage batch enrollments and schedules.</p>
-      </div>
-      <div style="display:flex;gap:0.5rem;">
-        <button class="btn btn-primary btn-sm" onclick="window.openCrudModal('batches', null)">+ Batch</button>
+        <h2 class="section-title">Unified Blueprint Control <span class="count-chip">${batches.length} Batches</span></h2>
+        <p class="section-subtitle">Central hub for structural entity generation and assignment</p>
       </div>
     </div>
     
-    <div id="unified-grid-container" class="card" style="padding:1rem;"></div>
+    <!-- Master Action Ribbon -->
+    <div class="card p-3 mb-4 d-flex justify-between align-center" style="background: var(--clr-surface-alt); border: 1px solid var(--clr-border);">
+       <div>
+          <h3 style="margin: 0; color: var(--clr-text-1);">Hierarchy Control</h3>
+          <div class="text-xs text-muted mt-1">Manage global architecture entities</div>
+       </div>
+       <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-secondary btn-sm" onclick="if (window.openCrudModal) window.openCrudModal('institutions', null); else window._addRecord('institutions');">➕ Add Institution</button>
+          <button class="btn btn-secondary btn-sm" onclick="if (window.openCrudModal) window.openCrudModal('programs', null); else window._addRecord('programs');">➕ Add Program</button>
+          <button class="btn btn-secondary btn-sm" onclick="if (window.openCrudModal) window.openCrudModal('levels', null); else window._addRecord('levels');">➕ Add Level</button>
+          <button class="btn btn-secondary btn-sm" onclick="if (window.openCrudModal) window.openCrudModal('classes', null); else window._addRecord('classes');">➕ Add Class</button>
+          <button class="btn btn-primary btn-sm" onclick="if (window.openCrudModal) window.openCrudModal('batches', null); else window._addRecord('batches');">➕ Add Batch</button>
+       </div>
+    </div>
   `;
 
-  // Attach drawer functions to the window so the grid can call them
-  window._showInstitutionDrawer = (id) => {
-    const row = gridData.find(r => r.institutionId === id);
-    if (!row || !row._instRaw) return;
-    const body = `
-      <div style="display:flex; flex-direction:column; gap:1rem;">
-        <div>
-          <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.institutionName)}</h4>
-          <div class="text-muted text-sm">Institution details available in Board Overview.</div>
-        </div>
-      </div>
+  hierarchy.forEach((inst, instIdx) => {
+    html += `
+      <div class="card mb-4" style="padding:0; overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;">
+        <table class="matrix-table" id="matrix-table-${instIdx}">
+          <colgroup>
+            <col style="width: 18%; min-width: 140px;">
+            <col style="width: 22%; min-width: 160px;">
+            <col style="width: 12%; min-width: 90px;">
+            <col style="width: 48%; min-width: 380px;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>INSTITUTION</th>
+              <th>PROGRAM</th>
+              <th style="text-align: center;">BATCH</th>
+              <th>LEVEL / DATA</th>
+            </tr>
+          </thead>
+          <tbody>
     `;
-    const footer = `
-      <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
-      <button class="btn btn-outline" onclick='window.loadSection("board_overview"); closeRecordDrawer();'>Board Overview</button>
-      <button class="btn btn-primary" onclick='window._editRecord("institutions", "${id}", ${JSON.stringify(JSON.stringify(row._instRaw))}); closeRecordDrawer();'>Edit</button>
-    `;
-    if (window.openRecordDrawer) window.openRecordDrawer('Institution Details', body, footer);
-  };
 
-  window._showProgramDrawer = (id) => {
-    const row = gridData.find(r => r.programId === id);
-    if (!row || !row._progRaw) return;
-    const isActive = row._progRaw.is_active !== false;
-    const body = `
-      <div style="display:flex; flex-direction:column; gap:1rem;">
-        <div>
-          <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.programName)}</h4>
-          <div class="text-muted text-sm">Status: <strong class="${isActive ? 'text-success' : 'text-muted'}">${isActive ? 'Active' : 'Inactive'}</strong></div>
-        </div>
-        <hr style="border-color:var(--fm-border-subtle); margin:0;">
-        <div>
-          <div class="text-sm text-muted mb-1">Parent Institution</div>
-          <div class="fw-600">${escapeHtml(row.institutionName)}</div>
-        </div>
-      </div>
-    `;
-    const footer = `
-      <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
-      <button class="btn btn-primary" onclick='window._editRecord("programs", "${id}", ${JSON.stringify(JSON.stringify(row._progRaw))}); closeRecordDrawer();'>Edit</button>
-    `;
-    if (window.openRecordDrawer) window.openRecordDrawer('Program Details', body, footer);
-  };
-
-  window._showBatchDrawer = (id) => {
-    const row = gridData.find(r => r.batchId === id);
-    if (!row || !row._batchRaw) return;
-    const isActive = row._batchRaw.is_active !== false;
-    const body = `
-      <div style="display:flex; flex-direction:column; gap:1rem;">
-        <div>
-          <h4 style="margin:0; font-size:1.2rem;">${escapeHtml(row.batchName)}</h4>
-          <div class="text-muted text-sm">Status: <strong class="${isActive ? 'text-success' : 'text-muted'}">${row.status}</strong></div>
-        </div>
-        <hr style="border-color:var(--fm-border-subtle); margin:0;">
-        <div>
-          <div class="text-sm text-muted mb-1">Hierarchy</div>
-          <div class="fw-600">${escapeHtml(row.institutionName)} / ${escapeHtml(row.programName)}</div>
-        </div>
-        <div>
-          <div class="text-sm text-muted mb-1">Enrollment</div>
-          <div class="fw-600">${row.studentCount} Active Students</div>
-        </div>
-        <div>
-          <div class="text-sm text-muted mb-1">Enrollment Date</div>
-          <div class="fw-600">${escapeHtml(row.enrollmentDate)}</div>
-        </div>
-        <div>
-          <div class="text-sm text-muted mb-1">Graduate Date</div>
-          <div class="fw-600">${escapeHtml(row.graduateDate)}</div>
-        </div>
-      </div>
-    `;
-    const footer = `
-      <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
-      <button class="btn btn-outline" onclick='window._filterBatchId="${id}"; window._filterBatchName="${escapeHtml(row.batchName)}"; window.loadSection("students"); closeRecordDrawer();'>View Students</button>
-      <button class="btn btn-primary" onclick='window._editRecord("batches", "${id}", ${JSON.stringify(row._batchRaw).replace(/'/g, "&#39;")}); closeRecordDrawer();'>Edit</button>
-    `;
-    if (window.openRecordDrawer) window.openRecordDrawer('Batch Details', body, footer);
-  };
-
-  new (DataGrid || window.DataGrid)({
-    container: 'unified-grid-container',
-    data: gridData,
-    pageSize: 50,
-    searchKeys: ['institutionName', 'programName', 'batchName'],
-    bulkActions: false,
-    columns: [
-      { 
-        key: 'institutionName', 
-        label: 'Institution', 
-        sortable: true,
-        render: (val, row) => {
-          if (row.institutionId) {
-             return `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); window._showInstitutionDrawer('${row.institutionId}')" class="text-primary fw-600" style="text-decoration:none;">${escapeHtml(val)}</a>`;
-          }
-          return escapeHtml(val);
-        }
-      },
-      { 
-        key: 'programName', 
-        label: 'Program', 
-        sortable: true,
-        render: (val, row) => {
-          if (row.programId) {
-             return `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); window._showProgramDrawer('${row.programId}')" class="text-primary fw-600" style="text-decoration:none;">${escapeHtml(val)}</a>`;
-          }
-          return escapeHtml(val);
-        }
-      },
-      { 
-        key: 'batchName', 
-        label: 'Batch', 
-        sortable: true,
-        render: (val, row) => {
-          if (row.batchId) {
-             return `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); window._showBatchDrawer('${row.batchId}')" class="text-primary fw-600" style="text-decoration:none;">${escapeHtml(val)}</a>`;
-          }
-          return escapeHtml(val);
-        }
-      },
-      { 
-        key: 'enrollmentDate', 
-        label: 'Enrollment Date', 
-        sortable: true 
-      },
-      { 
-        key: 'graduateDate', 
-        label: 'Graduate Date', 
-        sortable: true 
-      },
-      { 
-        key: 'studentCount', 
-        label: 'Students', 
-        sortable: true,
-        render: (val) => val > 0 ? `${val} <span style="color:var(--fm-text-muted);font-size:0.8rem;">Active</span>` : '-'
-      },
-      { 
-        key: 'status', 
-        label: 'Status', 
-        sortable: true,
-        render: (val) => {
-          if (val === '-') return val;
-          return val === 'Active' 
-            ? '<span class="status-badge status-active">ACTIVE</span>'
-            : '<span class="status-badge status-inactive">INACTIVE</span>';
-        }
-      },
-      {
-        key: 'actions',
-        label: '',
-        sortable: false,
-        align: 'right',
-        render: (val, row) => {
-          return `
-            <button class="btn btn-ghost btn-xs text-primary" onclick='event.stopPropagation(); window._showBatchDrawer("${row.batchId}");' title="Options">⋮</button>
+    let isFirstInstRow = true;
+    
+    if (inst.programs.length === 0) {
+      html += `
+        <tr class="level-row">
+          <td rowspan="2" style="font-weight: 600;">${escapeHtml(inst.name)}</td>
+          <td rowspan="2" style="color: var(--fm-text-muted);">—</td>
+          <td rowspan="2" style="color: var(--fm-text-muted); text-align: center;">—</td>
+          <td style="border-bottom: none;">LEVEL: <span class="badge badge-neutral">No Batches</span></td>
+        </tr>
+        <tr class="students-row">
+          <td>STUDENTS: 0 Enrolled</td>
+        </tr>
+      `;
+    } else {
+      inst.programs.forEach(prog => {
+        let isFirstProgRow = true;
+        
+        if (prog.batches.length === 0) {
+          html += `
+            <tr class="level-row">
+              ${isFirstInstRow ? `<td rowspan="${inst.rowspan}" style="font-weight: 600;">${escapeHtml(inst.name)}</td>` : ''}
+              <td rowspan="2">
+                <div class="fw-600">${escapeHtml(prog.name)}</div>
+              </td>
+              <td rowspan="2" style="color: var(--fm-text-muted); text-align: center;">—</td>
+              <td style="border-bottom: none;">LEVEL: <span class="badge badge-neutral">No Batches</span></td>
+            </tr>
+            <tr class="students-row">
+              <td>STUDENTS: 0 Enrolled</td>
+            </tr>
           `;
+          isFirstInstRow = false;
+          return;
         }
-      }
-    ]
+
+        prog.batches.forEach(batch => {
+          const levelData = levelsMap[batch.raw.current_level_id];
+          const levelBadge = levelData ? `<span class="badge badge-primary">🏷️ ${escapeHtml(levelData.name)}</span>` : `<span class="badge badge-neutral">No Level Set</span>`;
+
+          html += `
+            <tr class="level-row">
+              ${isFirstInstRow ? `<td rowspan="${inst.rowspan}" style="font-weight: 600;">${escapeHtml(inst.name)}</td>` : ''}
+              ${isFirstProgRow ? `<td rowspan="${prog.rowspan}">
+                <div class="fw-600">${escapeHtml(prog.name)}</div>
+              </td>` : ''}
+              <td rowspan="2" style="text-align: center;">
+                <div class="fw-600">${escapeHtml(batch.name)}</div>
+              </td>
+              <td style="border-bottom: none; padding-bottom: 0.25rem;">
+                <div class="d-flex align-center justify-between" style="flex-wrap: nowrap;">
+                  <div>LEVEL: ${levelBadge}</div>
+                  <button class="btn btn-ghost btn-xs text-primary" style="text-decoration: underline; white-space: nowrap;" onclick="window.openChangeLevelModal('${batch.id}', '${batch.raw.current_level_id || ''}')">Change Level</button>
+                </div>
+              </td>
+            </tr>
+            <tr class="students-row">
+              <td style="padding-top: 0.25rem;">
+                <div class="matrix-actions-row" style="justify-content: space-between; width: 100%;">
+                  <div class="matrix-actions-row">
+                    STUDENTS: ${batch.students} Enrolled &nbsp;&nbsp; 
+                    <a href="#" class="text-primary fw-600" style="text-decoration: underline; font-size: 0.85rem;" onclick='event.preventDefault(); window._filterBatchId="${batch.id}"; window._filterBatchName="${escapeHtml(batch.name)}"; window.loadSection("students");'>[ Manage Roster ↗ ]</a>
+                  </div>
+                  <div class="matrix-actions-row">
+                     <button class="btn btn-ghost btn-xs text-success" onclick="window.openStudentFullEdit({ batch_id: '${batch.id}' })">+ Add Student</button>
+                     <button class="btn btn-ghost btn-xs text-primary" onclick="window._filterBatchId='${batch.id}'; window.loadSection('import-students')">📥 Import</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          `;
+          isFirstInstRow = false;
+          isFirstProgRow = false;
+        });
+      });
+    }
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
   });
+
+  area.innerHTML = html;
+  
+  if (window.makeTableResizable) {
+    area.querySelectorAll('.matrix-table').forEach((table, idx) => {
+      window.makeTableResizable(table, 'batches-matrix-widths-' + idx);
+    });
+  }
 }
 
-// Utility function copied from app.js to prevent undefined errors
-function escapeHtml(unsafe) {
-  if (!unsafe) return '';
-  return String(unsafe)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+window.openChangeLevelModal = async function(batchId, currentLevelId) {
+  const levels = await adminFetchAll('levels', 'id, name, level_number');
+  if (!levels || levels.length === 0) {
+    return alert('No levels defined in the system. Create them first.');
+  }
+  
+  levels.sort((a,b) => (a.level_number || 0) - (b.level_number || 0));
+  
+  let selectHtml = '<select id="level-select" class="form-control mb-4" style="width:100%; padding: 8px;">';
+  selectHtml += '<option value="">-- No Level --</option>';
+  levels.forEach(l => {
+    let label = escapeHtml(l.name);
+    if (l.level_number) {
+      const num = l.level_number;
+      const s = ["th", "st", "nd", "rd"], v = num % 100;
+      const ord = num + (s[(v - 20) % 10] || s[v] || s[0]);
+      label = `${ord} Level (${label})`;
+    }
+    selectHtml += `<option value="${l.id}" ${l.id === currentLevelId ? 'selected' : ''}>${label}</option>`;
+  });
+  selectHtml += '</select>';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-backdrop';
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <div class="modal-content" style="max-width: 400px; width: 100%; padding: 24px; background: var(--fm-bg-card); border-radius: 8px;">
+      <h3 style="margin-bottom: 16px;">Change Batch Level</h3>
+      ${selectHtml}
+      <div style="display: flex; gap: 8px; justify-content: flex-end;">
+        <button class="btn btn-outline" id="cancel-level-btn">Cancel</button>
+        <button class="btn btn-primary" id="save-level-btn">Save</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+  
+  document.getElementById('cancel-level-btn').onclick = () => overlay.remove();
+  document.getElementById('save-level-btn').onclick = async () => {
+    const newLevelId = document.getElementById('level-select').value;
+    overlay.remove();
+    if (newLevelId !== currentLevelId) {
+      const res = await adminUpdate('batches', batchId, { current_level_id: newLevelId || null });
+      if (res) {
+        showToast('Batch level updated successfully.', 'success');
+        window.loadSection('batches');
+      }
+    }
+  };
+};
