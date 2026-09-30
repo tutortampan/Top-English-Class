@@ -30,7 +30,6 @@ import {
   fetchClassInstanceRoster,
   addAdditionalMember
 } from '../api.js';
-import { openAssessmentBuilder } from './assessment-builder.js';
 import { showToast, showLoading, hideLoading, getGrade } from '../app.js';
 import { parseExcelWorkbook, processCentralBankQuestionImport } from '../excel-parser.js';
 import { openStudentProfile } from './student-management.js';

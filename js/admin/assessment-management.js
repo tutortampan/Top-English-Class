@@ -76,43 +76,6 @@ export async function renderAssessments(area) {
     <div id="Assessments-grid-container" class="card mt-4" style="padding:1rem;"></div>
   `;
 
-  document.getElementById('hub-add-Assessment')?.addEventListener('click', () => {
-    const modal = document.createElement('div');
-    modal.className = 'modal-backdrop';
-    modal.innerHTML = `
-      <div class="modal-content" style="max-width:600px;">
-        <div class="modal-header d-flex justify-between align-center p-3" style="border-bottom:1px solid var(--clr-border);">
-          <div>
-            <h3 class="m-0" style="font-size:1.25rem;">Select Assessment Type</h3>
-            <p class="text-muted m-0 text-xs">Choose the blueprint engine for this assessment</p>
-          </div>
-          <button class="btn btn-ghost" onclick="this.closest('.modal-backdrop').remove()">&times;</button>
-        </div>
-        <div class="modal-body p-4 d-flex flex-column gap-3">
-          <div class="card p-3 d-flex align-center gap-3" style="cursor:pointer; border:1px solid var(--clr-border); transition:all 0.2s; background:var(--clr-bg-2);"
-               onmouseover="this.style.borderColor='var(--clr-primary)'" onmouseout="this.style.borderColor='var(--clr-border)'"
-               onclick="this.closest('.modal-backdrop').remove(); window.openAssessmentBuilder(null);">
-            <div style="font-size:2rem; width:50px; text-align:center;">&#128221;</div>
-            <div>
-              <h4 class="m-0 mb-1" style="font-size:1.1rem;">Standard Assessment</h4>
-              <p class="m-0 text-muted text-sm">Build Evaluations or Comprehensive Assessments from the Question Bank</p>
-            </div>
-          </div>
-          
-          <div class="card p-3 d-flex align-center gap-3" style="cursor:pointer; border:1px solid var(--clr-border); transition:all 0.2s; background:var(--clr-bg-2);"
-               onmouseover="this.style.borderColor='var(--clr-primary)'" onmouseout="this.style.borderColor='var(--clr-border)'"
-               onclick="this.closest('.modal-backdrop').remove(); import('./vocab-vault.js?v=4.7.4').then(m => m.launchVocabBuilderFromHub());">
-            <div style="font-size:2rem; width:50px; text-align:center;">&#128214;</div>
-            <div>
-              <h4 class="m-0 mb-1" style="font-size:1.1rem;">Vocabulary Mastery</h4>
-              <p class="m-0 text-muted text-sm">Auto-generate a Vocab Task, Quiz, or Exam directly from the Vocab Vault</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  });
 
   const gridData = data.map(r => {
     const qCount = (allQuestions || []).filter(q => q?.assessment_id === r?.id).length;
@@ -211,13 +174,8 @@ export async function renderAssessments(area) {
           </div>
         </div>
       `;
-      const footer = `
-        <button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>
-        <button class="btn btn-outline" onclick="window.openAssessmentBuilder('${r?.id || ''}'); closeRecordDrawer();">Edit Builder</button>
-        <button class="btn ${r?.status === 'published' ? 'btn-danger' : 'btn-success'}" onclick="window._publishAssessment('${r?.id || ''}', '${r?.status || 'draft'}'); closeRecordDrawer();">
-          ${r?.status === 'published' ? 'Unpublish' : 'Publish'}
-        </button>
-      `;
+      // Footer: close only — Edit & Publish actions are in the grid row to avoid duplication
+      const footer = `<button class="btn btn-secondary" onclick="closeRecordDrawer()">Close</button>`;
       if (window.openRecordDrawer) window.openRecordDrawer('Assessment Details', body, footer);
     },
     columns: [
@@ -738,7 +696,7 @@ window.openAssessmentGatewayModal = async () => {
           <label class="form-label">Target Class</label>
           <select id="gateway-class-select" class="form-control" style="width:100%;font-size:1.05rem;padding:0.75rem;">
             <option value="">-- Select Class --</option>
-            \${classOptions}
+            ${classOptions}
           </select>
         </div>
         <div class="d-flex justify-end gap-2 mt-4">
