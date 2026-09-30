@@ -1617,10 +1617,7 @@
         // Render
         let html = '';
         for (const lvl of sortedLevels) {
-          html += `<div style="margin-bottom:1.5rem;">
-            <div style="font-size:0.75rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;
-                        color:var(--clr-text-3);padding:0.4rem 0;border-bottom:1px solid var(--clr-border);
-                        margin-bottom:0.75rem;">${lvl.name}</div>`;
+          let lvlHtml = '';
           for (const Assessment of lvl.Assessments) {
             const best      = bestByAssessment[Assessment.id];
             const inProg    = inProgByAssessment[Assessment.id];
@@ -1645,12 +1642,7 @@
             let statusBadge = '';
             let actionBtn   = '';
             if (!prereqMet) {
-              statusBadge = `<span style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);
-                              padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">🔒 Locked</span>`;
-              actionBtn   = `<div style="display:flex; flex-direction:column; align-items:flex-end; text-align:right;">
-                               <span style="font-size:0.65rem;color:var(--clr-text-3);">Requires passing: <b>${prereqTitle}</b></span>
-                               <button disabled style="opacity:0.45;cursor:not-allowed;background:rgba(255,255,255,0.05);border:1px solid var(--clr-border);padding:6px 14px;border-radius:6px;font-size:0.78rem;font-weight:700;margin-top:4px;">Locked</button>
-                             </div>`;
+              continue; // Hide locked assessments completely
             } else if (inProg) {
               statusBadge = `<span style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">&#9203; In Progress</span>`;
@@ -1709,7 +1701,17 @@
               </div>
             </div>`;
           }
-          html += `</div>`;
+          if (lvlHtml) {
+            html += `<div style="margin-bottom:1.5rem;">
+              <div style="font-size:0.75rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;
+                          color:var(--clr-text-3);padding:0.4rem 0;border-bottom:1px solid var(--clr-border);
+                          margin-bottom:0.75rem;">${lvl.name}</div>
+              ${lvlHtml}
+            </div>`;
+          }
+        }
+        if (!html) {
+          html = `<div style="padding:2.5rem 1.5rem;text-align:center;color:var(--clr-text-3);"><p>More assessments will unlock as you progress!</p></div>`;
         }
         container.innerHTML = html;
 
@@ -1837,8 +1839,7 @@
         const isCompleted = bestAtt && ['SUBMITTED', 'AUTO_SUBMITTED'].includes(bestAtt.status);
 
         if (!prereqMet) {
-          statusBadge = `<span class="badge" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);">\uD83D\uDD12 Locked: ${escapeHtml(prereqTitle)}</span>`;
-          actionBtn = `<button class="btn btn-sm" disabled style="opacity:0.45;cursor:not-allowed;background:rgba(255,255,255,0.05);border:1px solid var(--clr-border);">Locked</button>`;
+          continue; // Hide locked assessments completely
         } else if (!inWindow) {
           statusBadge = `<span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3);">Not Yet Available</span>`;
           actionBtn = `<button class="btn btn-sm" disabled style="opacity:0.45;cursor:not-allowed;background:rgba(255,255,255,0.05);border:1px solid var(--clr-border);">Unavailable</button>`;
