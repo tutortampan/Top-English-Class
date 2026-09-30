@@ -43,7 +43,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   const isScriptOrDoc = event.request.destination === 'script' || 
                         event.request.destination === 'document' || 
-                        url.pathname.endsWith('.js') || 
+                        url.pathname.endsWith('.js?v=4.7.5') || 
                         url.pathname.endsWith('.html');
 
   if (isScriptOrDoc) {

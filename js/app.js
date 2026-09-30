@@ -1,4 +1,4 @@
-import { calculateGrade } from './grading.js';
+import { calculateGrade } from './grading.js?v=4.7.5';
 
 // TOPS CORE — Toast Notification System
 let toastContainer = null;

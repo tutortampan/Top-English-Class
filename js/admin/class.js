@@ -29,10 +29,10 @@ import {
   formatStudentName,
   fetchClassInstanceRoster,
   addAdditionalMember
-} from '../api.js';
-import { showToast, showLoading, hideLoading, getGrade } from '../app.js';
-import { parseExcelWorkbook, processCentralBankQuestionImport } from '../excel-parser.js';
-import { openStudentProfile } from './student-management.js';
+} from '../api.js?v=4.7.5';
+import { showToast, showLoading, hideLoading, getGrade } from '../app.js?v=4.7.5';
+import { parseExcelWorkbook, processCentralBankQuestionImport } from '../excel-parser.js?v=4.7.5';
+import { openStudentProfile } from './student-management.js?v=4.7.5';
 
 function escapeHtml(str) {
   return String(str || '')
@@ -1217,7 +1217,7 @@ Existing historical attempt records will NOT be modified.`;
 
       showLoading('Committing import to Question Bank...');
       try {
-        const sb = await (await import('../supabase.js')).getSupabase();
+        const sb = await (await import('../supabase.js?v=4.7.5')).getSupabase();
 
         // PHASE 1: ROBUST TOPIC PRE-FETCHING & NORMALIZATION
         const { data: dbTopics } = await sb.from('topics').select('id, name');
@@ -1798,7 +1798,7 @@ export async function renderResults(area) {
     if (remediBtn) {
       const attemptId = remediBtn.getAttribute('data-aid');
       if (confirm('Allow this student to retake this Exam as a remedial attempt?')) {
-        const { getSupabase } = await import('../supabase.js');
+        const { getSupabase } = await import('../supabase.js?v=4.7.5');
         const sb = await getSupabase();
         const { error } = await sb.from('attempts').update({ is_remedial_unlocked: true }).eq('id', attemptId);
         if (!error) {

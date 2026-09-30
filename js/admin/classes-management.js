@@ -1,7 +1,7 @@
-import { adminFetchAll, adminInsert, adminSoftDelete } from '../api.js?v=4.7.4';
-import { showToast } from '../app.js?v=4.7.4';
-import { openAssessmentBuilder } from './assessment-builder.js?v=4.7.4';
-import { openAssessmentBuilderModal as openVocabWizard } from './vocab-vault.js?v=4.7.4';
+import { adminFetchAll, adminInsert, adminSoftDelete } from '../api.js?v=4.7.5';
+import { showToast } from '../app.js?v=4.7.5';
+import { openAssessmentBuilder } from './assessment-builder.js?v=4.7.5';
+import { openAssessmentBuilderModal as openVocabWizard } from './vocab-vault.js?v=4.7.5';
 
 window.handleCreateClassAssessment = (classId, className) => {
   if ((className || '').toLowerCase().includes('vocab')) {

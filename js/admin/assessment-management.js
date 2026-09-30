@@ -1,9 +1,9 @@
-import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js?v=4.7.4';
-import { openAssessmentBuilder } from './assessment-builder.js?v=4.7.4';
-import { openAssessmentBuilderModal as openVocabWizard } from './vocab-vault.js?v=4.7.4';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.4';
-import { getSupabase } from '../supabase.js?v=4.7.4';
-import { DataGrid } from './datagrid.js?v=4.7.4';
+import { adminFetchAll, adminUpdate, adminSoftDelete, clearAdminCache } from '../api.js?v=4.7.5';
+import { openAssessmentBuilder } from './assessment-builder.js?v=4.7.5';
+import { openAssessmentBuilderModal as openVocabWizard } from './vocab-vault.js?v=4.7.5';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.5';
+import { getSupabase } from '../supabase.js?v=4.7.5';
+import { DataGrid } from './datagrid.js?v=4.7.5';
 if (typeof window !== 'undefined') window.DataGrid = DataGrid;
 
 let AssessmentsGrid;
@@ -597,7 +597,7 @@ export async function renderResults(area) {
  * Sets session_unlocked_at and session_expires_at on the Assessments record.
  */
 async function openSessionModal() {
-  const { getSupabase } = await import('../supabase.js?v=4.7.4');
+  const { getSupabase } = await import('../supabase.js?v=4.7.5');
   const sb = await getSupabase();
   const { data: assessments, error } = await sb
     .from('Assessments')

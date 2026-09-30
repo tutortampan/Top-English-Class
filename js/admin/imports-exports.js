@@ -1,8 +1,8 @@
-import { adminFetchAll, adminInsert, adminUpdate, formatStudentName, cleanStudentName, clearAdminCache } from '../api.js?v=4.7.4';
-import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.7.4';
-import { showToast, showLoading, hideLoading, updateLoadingProgress } from '../app.js?v=4.7.4';
-import { callEdgeFunction, getSupabase } from '../supabase.js?v=4.7.4';
-import { downloadAITemplate, AI_MODULES } from './panel-c-builder.js?v=4.7.4';
+import { adminFetchAll, adminInsert, adminUpdate, formatStudentName, cleanStudentName, clearAdminCache } from '../api.js?v=4.7.5';
+import { parseExcelWorkbook, processStudentImportRows, processQuestionImportRows } from '../excel-parser.js?v=4.7.5';
+import { showToast, showLoading, hideLoading, updateLoadingProgress } from '../app.js?v=4.7.5';
+import { callEdgeFunction, getSupabase } from '../supabase.js?v=4.7.5';
+import { downloadAITemplate, AI_MODULES } from './panel-c-builder.js?v=4.7.5';
 
 const toLevelLetter = (level) => { return String.fromCharCode(64 + parseInt(level || 1)) || 'A'; };
 

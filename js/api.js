@@ -1,7 +1,7 @@
 // TOPS CORE — API Module (Stabilized & Synchronized)
 // Centralized server & database interface for TOPS CORE LMS.
-import { getSupabase, SUPABASE_URL, callEdgeFunction } from './supabase.js';
-import { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCorrectAnswers, stripHyphens } from './grading.js';
+import { getSupabase, SUPABASE_URL, callEdgeFunction } from './supabase.js?v=4.7.5';
+import { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCorrectAnswers, stripHyphens } from './grading.js?v=4.7.5';
 
 export { evaluateAnswer, calculatePercentage, isPassing, calculateGrade, parseCorrectAnswers, stripHyphens, callEdgeFunction };
 

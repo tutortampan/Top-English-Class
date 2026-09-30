@@ -17,8 +17,8 @@ import {
   createTopic,
   adminFetchAll,
   clearAdminCache
-} from '../api.js';
-import { showToast, showLoading, hideLoading } from '../app.js';
+} from '../api.js?v=4.7.5';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.5';
 
 function escapeHtml(str) {
   return String(str || '')

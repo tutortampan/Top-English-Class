@@ -19,9 +19,9 @@ import {
   renameVaultTopic,
   exportVaultWords,
   updateAssessmentDefinition
-} from '../api.js?v=4.7.4';
-import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.4';
-import { getSupabase } from '../supabase.js?v=4.7.4';
+} from '../api.js?v=4.7.5';
+import { showToast, showLoading, hideLoading } from '../app.js?v=4.7.5';
+import { getSupabase } from '../supabase.js?v=4.7.5';
 
 // ─── Helpers ───────────────────────────────────────────────
 
@@ -1301,7 +1301,7 @@ function _renderTopicManager(area, words, topics) {
         if (!newTopic || newTopic.trim() === "" || newTopic === oldTopic) return;
         
         try {
-          const { showLoading, hideLoading, showToast } = await import('../app.js?v=4.7.4'); // unified v=4.7.4
+          const { showLoading, hideLoading, showToast } = await import('../app.js?v=4.7.5'); // unified v=4.7.4
           showLoading();
           await renameVaultTopic(oldTopic, newTopic.trim());
           hideLoading();
@@ -1325,8 +1325,8 @@ function _renderTopicManager(area, words, topics) {
         const newLevel = parseInt(e.target.value, 10);
         
         // Dynamic import to avoid missing dependencies in older backup
-        const { moveVaultTopicsToLevel } = await import('../api.js?v=4.7.4');
-        const { showLoading, hideLoading, showToast } = await import('../app.js?v=4.7.4');
+        const { moveVaultTopicsToLevel } = await import('../api.js?v=4.7.5');
+        const { showLoading, hideLoading, showToast } = await import('../app.js?v=4.7.5');
         
         showLoading();
         try {
@@ -1359,7 +1359,7 @@ function _renderTopicManager(area, words, topics) {
       const area = document.getElementById('vault-tab-content').parentElement.parentElement;
       if (area) {
         // Trigger a fresh render by re-calling renderVocabularyVault
-        import('./vocab-vault.js').then(m => m.renderVocabularyVault(area));
+        import('./vocab-vault.js?v=4.7.5').then(m => m.renderVocabularyVault(area));
       }
     });
   });

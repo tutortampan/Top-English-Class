@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TOPS CORE � Student Login</title>
+  <title>TOPS CORE � Student Login</title>
   <meta name="description" content="Login to TOPS CORE to access your English assessments, track your progress, and complete Assessments." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -642,9 +642,9 @@
   </div>
 
   <script type="module">
-    import { fetchInstitutions, fetchPrograms, fetchBatches, fetchStudentsByProgram, verifyStudentLogin, formatStudentName } from './js/api.js?v=4.7.4';
-    import { setStudentSession, getStudentSession } from './js/session.js?v=4.7.4';
-    import { showToast, showLoading, hideLoading } from './js/app.js?v=4.7.4';
+    import { fetchInstitutions, fetchPrograms, fetchBatches, fetchStudentsByProgram, verifyStudentLogin, formatStudentName } from './js/api.js?v=4.7.5';
+    import { setStudentSession, getStudentSession } from './js/session.js?v=4.7.5';
+    import { showToast, showLoading, hideLoading } from './js/app.js?v=4.7.5';
 
     // ── Redirect if already logged in ──
     if (getStudentSession()) {
@@ -1092,7 +1092,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
+        navigator.serviceWorker.register('sw.js?v=4.7.5')
           .then(registration => console.log('ServiceWorker registered with scope:', registration.scope))
           .catch(error => console.warn('ServiceWorker registration failed:', error));
       });
