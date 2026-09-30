@@ -26,7 +26,27 @@ export async function renderAssessments(area) {
   const AssessmentMap = {};
   (rawData || []).forEach(e => { AssessmentMap[e.id] = e; });
 
-  const data = [...rawData].sort((a, b) => (a.title || a.name || '').localeCompare(b.title || b.name || ''));
+  const getDepth = (id, visited = new Set()) => {
+    if (!id || visited.has(id)) return 0;
+    visited.add(id);
+    const item = AssessmentMap[id];
+    if (!item) return 0;
+    const prereqId = item.prerequisite_assessment_id || item.prerequisite_id;
+    if (!prereqId) return 0;
+    return 1 + getDepth(prereqId, visited);
+  };
+
+  (rawData || []).forEach(e => { e._depth = getDepth(e.id); });
+
+  const data = [...rawData].sort((a, b) => {
+    const progA = a.program_id || '';
+    const progB = b.program_id || '';
+    if (progA !== progB) return progA.localeCompare(progB);
+    const lvlA = a.level_id || '';
+    const lvlB = b.level_id || '';
+    if (lvlA !== lvlB) return lvlA.localeCompare(lvlB);
+    return (a._depth || 0) - (b._depth || 0);
+  });
 
   // Calculate KPI metrics (Assessments table uses status, not assessment_type)
   const totalAssessments = data.length;
@@ -197,8 +217,17 @@ export async function renderAssessments(area) {
               <span><span class="badge badge-primary" style="font-size:0.6rem; padding: 2px 6px;">LVL ${r?.level || '-'}</span></span>
               <span><span class="badge badge-neutral" style="font-size:0.6rem; padding: 2px 6px;">ORD ${r?.order || '-'}</span></span>
             </div>
-            ${prereqDisplay ? `<div class="mt-2"><span class="badge badge-warning text-xs">&#9888;&#65039; Prereq: ${escapeHtml(prereqDisplay)}</span></div>` : ''}
           `;
+        }
+      },
+      { 
+        key: 'prereq', 
+        label: 'Prerequisite', 
+        sortable: true,
+        render: (val, row) => {
+          const r = (row && typeof row === 'object') ? row : (val && typeof val === 'object' ? val : {}) || {};
+          const prereqDisplay = r?.prereq?.name || r?.prerequisite?.name || r?.prereq || '';
+          return prereqDisplay ? `<span class="badge badge-warning text-xs" style="white-space: normal; text-align: left;">&#9888;&#65039; ${escapeHtml(prereqDisplay)}</span>` : '<span class="text-muted text-xs">—</span>';
         }
       },
       { 

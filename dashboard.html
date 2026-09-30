@@ -1625,14 +1625,33 @@
             const best      = bestByAssessment[Assessment.id];
             const inProg    = inProgByAssessment[Assessment.id];
             const bestPct   = best ? parseFloat(best.percentage || 0) : null;
-            const passed    = bestPct !== null && bestPct >= (Assessment.pass_threshold || 60);
+            const passed    = bestPct !== null && bestPct >= (Assessment.minimum_required_score || Assessment.pass_threshold || 60);
             const grade     = bestPct !== null ? getGrade(bestPct) : null;
             const gradeColors = { S:'#f59e0b',A:'#10b981',B:'#3b82f6',C:'#f59e0b',D:'#ea580c',E:'#ef4444',F:'#94a3b8' };
             const gradeColor  = grade ? (gradeColors[grade] || '#94a3b8') : null;
 
+            // Prerequisite Gating Logic
+            let prereqMet = true;
+            let prereqTitle = '';
+            if (Assessment.prerequisite_id) {
+               const prereqBest = bestByAssessment[Assessment.prerequisite_id];
+               const prereqPct = prereqBest ? parseFloat(prereqBest.percentage || 0) : null;
+               const pObj = Assessments.find(a => a.id === Assessment.prerequisite_id);
+               const pMinScore = pObj ? (pObj.minimum_required_score || pObj.pass_threshold || 60) : 60;
+               prereqMet = prereqPct !== null && prereqPct >= pMinScore;
+               prereqTitle = pObj ? (pObj.display_name || pObj.title || pObj.name || 'Prerequisite') : 'Prerequisite Assessment';
+            }
+
             let statusBadge = '';
             let actionBtn   = '';
-            if (inProg) {
+            if (!prereqMet) {
+              statusBadge = `<span style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);
+                              padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">🔒 Locked</span>`;
+              actionBtn   = `<div style="display:flex; flex-direction:column; align-items:flex-end; text-align:right;">
+                               <span style="font-size:0.65rem;color:var(--clr-text-3);">Requires passing: <b>${prereqTitle}</b></span>
+                               <button disabled style="opacity:0.45;cursor:not-allowed;background:rgba(255,255,255,0.05);border:1px solid var(--clr-border);padding:6px 14px;border-radius:6px;font-size:0.78rem;font-weight:700;margin-top:4px;">Locked</button>
+                             </div>`;
+            } else if (inProg) {
               statusBadge = `<span style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);
                               padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;text-transform:uppercase;">&#9203; In Progress</span>`;
               actionBtn   = `<button onclick="location.href='assessment.html?attempt_id=${inProg.id}&assessment_id=${inProg.assessment_id || ''}'"
@@ -1796,8 +1815,8 @@
               prereqTitle = `Aggregate Avg Required: ${asm.prerequisites.aggregate_avg_threshold}% (Current: ${Math.round(avg)}%)`;
             }
           }
-        } else if (asm.prerequisite_assessment_id || asm.prerequisite_Assessment_id) {
-          const pid = asm.prerequisite_assessment_id || asm.prerequisite_Assessment_id;
+        } else if (asm.prerequisite_id || asm.prerequisite_assessment_id || asm.prerequisite_Assessment_id) {
+          const pid = asm.prerequisite_id || asm.prerequisite_assessment_id || asm.prerequisite_Assessment_id;
           const prereqBest = bestByAssessment[pid];
           const prereqPct = prereqBest ? parseFloat(prereqBest.percentage || 0) : null;
           prereqMet = prereqPct !== null && prereqPct >= (asm.prerequisite_min_score || 60);

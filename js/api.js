@@ -818,6 +818,13 @@ export async function adminUpdate(table, id, payload) {
 export async function adminSoftDelete(table, id) {
   const normTable = (table || '').toLowerCase().replace('-', '_');
   const sb = await getSupabase();
+  if (normTable === 'assessments') {
+    await sb.from('assessment_questions').delete().eq('assessment_id', id);
+    const { error } = await sb.from('assessments').delete().eq('id', id);
+    if (error) throw error;
+    clearAdminCache(normTable);
+    return;
+  }
   const { error } = await sb.from(normTable).update({ deleted_at: new Date().toISOString() }).eq('id', id);
   if (error) throw error;
   clearAdminCache(normTable);
@@ -1400,6 +1407,7 @@ function canonicalizeSynonyms(str) {
 
 function sanitizeVaultRow(row) {
   return {
+    theme:      String(row.theme || '').trim().replace(/\s+/g, ' '),
     topic:      String(row.topic || '').trim().replace(/\s+/g, ' '),
     indonesian: String(row.indonesian || '').trim().replace(/\s+/g, ' '),
     english:    canonicalizeSynonyms(row.english),
@@ -1843,8 +1851,9 @@ export async function fetchStudentLevel(studentId) {
 
 export async function exportVaultWords(mode = 'all') {
   const sb = await getSupabase();
-  let query = sb.from('vocab_vault')
-    .select('level, topic, indonesian, english, word_type, created_at')
+  let query = sb.from('vocabulary_vault')
+    .select('target_level, theme, topic, indonesian, english, word_type, created_at')
+    .order('target_level', { ascending: true })
     .order('topic', { ascending: true })
     .order('indonesian', { ascending: true });
 
@@ -1870,7 +1879,8 @@ export async function exportVaultWords(mode = 'all') {
 
   // Format data for Excel
   const exportData = filteredWords.map(w => ({
-    LEVEL: w.level || '1',
+    LEVEL: w.target_level || '1',
+    THEME: w.theme || '',
     TOPIC: w.topic || '',
     'WORD TYPE': w.word_type || 'Vocab',
     INDONESIAN: w.indonesian || '',
@@ -1895,6 +1905,251 @@ export async function adminUnlockRemedialExam(attemptId) {
   if (error) throw error;
   clearAdminCache('attempts');
   return data;
+}
+
+export async function autoGenerateAssessmentsHierarchy(programId, institutionId, targetLevels) {
+  const sb = await getSupabase();
+  const results = { tasks: 0, quizzes: 0, exams: 0 };
+
+  // Fetch vocabulary class_id
+  const { data: vocabClassData } = await sb.from('classes')
+    .select('id')
+    .ilike('name', '%Vocab%')
+    .limit(1).single();
+  const vocabClassId = vocabClassData ? vocabClassData.id : null;
+
+  const fisherYates = (arr) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+
+  for (const levelNum of targetLevels) {
+    // Determine the actual level_id
+    const { data: lvlData } = await sb.from('levels')
+      .select('id')
+      .eq('level_number', levelNum)
+      .limit(1).single();
+    if (!lvlData) continue;
+    const levelId = lvlData.id;
+
+    // Purge existing auto-generated assessments for this level & program
+    const { data: oldAssessments } = await sb.from('assessments')
+      .select('id')
+      .eq('level_id', levelId)
+      .eq('program_id', programId)
+      .eq('created_by', 'Auto-Generator');
+      
+    if (oldAssessments && oldAssessments.length > 0) {
+      const oldIds = oldAssessments.map(a => a.id);
+      // Delete questions first to avoid FK constraint
+      await sb.from('assessment_questions').delete().in('assessment_id', oldIds);
+      // Delete assessments
+      await sb.from('assessments').delete().in('id', oldIds);
+    }
+
+    // Fetch Words for Level
+    const { data: words, error } = await sb.from('vocabulary_vault')
+      .select('*')
+      .eq('target_level', levelNum)
+      .order('theme')
+      .order('topic')
+      .order('indonesian');
+
+    if (error || !words || words.length === 0) continue;
+
+    const allEnglishAnswers = [...new Set(words.map(w => canonicalizeSynonyms(w.english).split(' / ')[0].trim()))];
+
+    const themes = {};
+    for (const w of words) {
+      const th = w.theme || 'General';
+      const tp = w.topic || 'Uncategorized';
+      if (!themes[th]) themes[th] = {};
+      if (!themes[th][tp]) themes[th][tp] = [];
+      themes[th][tp].push(w);
+    }
+
+    let previousAssessmentId = null;
+    let levelQuizIds = [];
+
+    // Helper for questions
+    const isPhrase = (w) => ['idiom', 'proverb', 'expression', 'phrase'].includes((w.word_type || '').toLowerCase());
+    const getQuizExamAnswerType = (w) => isPhrase(w) ? 'dropdown' : 'written';
+    const toOrdinal = (n) => {
+      const s = ["th", "st", "nd", "rd"];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
+    const titleCase = (str) => {
+      if (!str) return '';
+      return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    };
+
+    async function createQuestions(assessmentId, wordList, answerTypeResolver = 'written', maxCount = null) {
+      let finalWords = [...wordList];
+      fisherYates(finalWords); // Always shuffle for random order
+      if (maxCount && finalWords.length > maxCount) {
+        finalWords = finalWords.slice(0, maxCount);
+      }
+      const aqRows = finalWords.map((word, idx) => {
+        const answers = canonicalizeSynonyms(word.english).split(' / ').map(s => s.trim()).filter(Boolean);
+        let optionsSnapshot = null;
+        let answerType = typeof answerTypeResolver === 'function' ? answerTypeResolver(word) : answerTypeResolver;
+
+        if (answerType.startsWith('dropdown') || answerType === 'multiple_choice') {
+          const correctAns = answers[0];
+          const globalPool = allEnglishAnswers.filter(a => !answers.includes(a));
+          fisherYates(globalPool);
+          const distractors = globalPool.slice(0, 3);
+          optionsSnapshot = fisherYates([correctAns, ...distractors]);
+        }
+        return {
+          assessment_id: assessmentId,
+          question_text_snapshot: word.indonesian,
+          accepted_answers_snapshot: answers,
+          options_snapshot: optionsSnapshot || [],
+          topic_snapshot: word.topic || 'General',
+          word_type_snapshot: word.word_type || 'Verb',
+          answer_type: answerType,
+          display_order: idx + 1,
+          created_at: new Date().toISOString()
+        };
+      });
+
+      for (let i = 0; i < aqRows.length; i += 200) {
+        const chunk = aqRows.slice(i, i + 200);
+        await sb.from('assessment_questions').insert(chunk);
+      }
+    }
+
+    // Get Institution and Program names for naming convention
+    const { data: instData } = await sb.from('institutions').select('name').eq('id', institutionId).single();
+    const instName = instData ? (instData.name.includes('CEC') ? 'CEC' : instData.name) : 'Inst';
+    const { data: progData } = await sb.from('programs').select('name').eq('id', programId).single();
+    const progName = progData ? progData.name : 'Prog';
+
+    let taskCounter = 1;
+    let quizCounter = 1;
+    let examCounter = 1;
+
+    for (const theme of Object.keys(themes).sort()) {
+      const topics = themes[theme];
+      let lastTaskOfThemeId = null;
+
+      for (const topic of Object.keys(topics).sort()) {
+        const topicWords = topics[topic];
+        if (topicWords.length === 0) continue;
+
+        // 1. Create Task
+        const cleanTopic = topic.replace(/^\d+\.\s*/, '');
+        const taskName = `${instName} ${progName} ${toOrdinal(levelNum)}-Step Task ${taskCounter++} ${titleCase(theme)} - ${titleCase(cleanTopic)}`;
+        const { data: task, error: taskErr } = await sb.from('assessments').insert({
+          title: taskName,
+          description: `Auto-generated task for ${topic}`,
+          assessment_type: 'VOCAB_TASK',
+          status: 'PUBLISHED',
+          program_id: programId,
+          institution_id: institutionId,
+          class_id: vocabClassId,
+          level_id: levelId,
+          working_duration_minutes: 60,
+          prerequisite_id: previousAssessmentId,
+          prerequisite_assessment_id: previousAssessmentId,
+          created_by: 'Auto-Generator'
+        }).select('id').single();
+        if (taskErr) throw taskErr;
+        results.tasks++;
+        previousAssessmentId = task.id;
+        lastTaskOfThemeId = task.id;
+
+        await createQuestions(task.id, topicWords, () => 'speech_to_text');
+      }
+
+        // 2. Create Quiz for Theme
+      if (lastTaskOfThemeId) {
+        // Collect all words from the theme for the quiz
+        const themeWords = Object.values(topics).flat();
+        const quizName = `${instName} ${progName} ${toOrdinal(levelNum)}-Step Quiz ${quizCounter++} ${titleCase(theme)}`;
+        const { data: quiz, error: quizErr } = await sb.from('assessments').insert({
+          title: quizName,
+          description: `Auto-generated quiz for ${theme}`,
+          assessment_type: 'VOCAB_QUIZ',
+          status: 'PUBLISHED',
+          program_id: programId,
+          institution_id: institutionId,
+          class_id: vocabClassId,
+          level_id: levelId,
+          working_duration_minutes: 60,
+          prerequisite_id: lastTaskOfThemeId,
+          prerequisite_assessment_id: lastTaskOfThemeId,
+          created_by: 'Auto-Generator'
+        }).select('id').single();
+        if (quizErr) throw quizErr;
+        results.quizzes++;
+        previousAssessmentId = quiz.id;
+        levelQuizIds.push(quiz.id);
+
+        await createQuestions(quiz.id, themeWords, getQuizExamAnswerType, 20); // Pick up to 20 random words
+      }
+    }
+
+    // 3. Create Exam for Level (Split Vocab vs Phrase)
+    if (levelQuizIds.length > 0) {
+      const vocabWords = words.filter(w => !isPhrase(w));
+      const phraseWords = words.filter(w => isPhrase(w));
+
+      if (vocabWords.length > 0) {
+        const examName = `${instName} ${progName} ${toOrdinal(levelNum)}-Step Exam ${examCounter++} Vocabulary Mastery`;
+        const { data: exam, error: examErr } = await sb.from('assessments').insert({
+          title: examName,
+          description: `Auto-generated Vocabulary exam for Level ${levelNum}`,
+          assessment_type: 'VOCAB_EXAM',
+          status: 'PUBLISHED',
+          program_id: programId,
+          institution_id: institutionId,
+          class_id: vocabClassId,
+          level_id: levelId,
+          working_duration_minutes: 90,
+          prerequisite_id: previousAssessmentId,
+          prerequisite_assessment_id: previousAssessmentId,
+          created_by: 'Auto-Generator'
+        }).select('id').single();
+        if (examErr) throw examErr;
+        results.exams++;
+        previousAssessmentId = exam.id;
+
+        await createQuestions(exam.id, vocabWords, getQuizExamAnswerType);
+      }
+
+      if (phraseWords.length > 0) {
+        const examName = `${instName} ${progName} ${toOrdinal(levelNum)}-Step Exam ${examCounter++} Phrase Recognition`;
+        const { data: exam, error: examErr } = await sb.from('assessments').insert({
+          title: examName,
+          description: `Auto-generated Phrase exam for Level ${levelNum}`,
+          assessment_type: 'VOCAB_EXAM',
+          status: 'PUBLISHED',
+          program_id: programId,
+          institution_id: institutionId,
+          class_id: vocabClassId,
+          level_id: levelId,
+          working_duration_minutes: 90,
+          prerequisite_id: previousAssessmentId,
+          prerequisite_assessment_id: previousAssessmentId,
+          created_by: 'Auto-Generator'
+        }).select('id').single();
+        if (examErr) throw examErr;
+        results.exams++;
+        previousAssessmentId = exam.id;
+
+        await createQuestions(exam.id, phraseWords, getQuizExamAnswerType);
+      }
+    }
+  }
+
+  clearApiCache('assessments');
+  return results;
 }
 
 if (typeof window !== 'undefined') {
